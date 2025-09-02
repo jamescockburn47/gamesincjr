@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Space Runner - Demo</title>
+  <style>
+        body {
+            margin: 0;
+            padding: 20px;
+            background: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+        
+        canvas {
+            border: 2px solid #333;
+            background: #111;
+            display: block;
+        }
+        
+        .controls {
+            margin-top: 20px;
+            text-align: center;
+        }
+        
+        .score {
+            font-size: 24px;
+            margin-bottom: 10px;
+        }
+        
+        .game-status {
+            font-size: 18px;
+            margin-bottom: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            transition: all 0.3s ease;
+        }
+        
+        .game-status.focused {
+            background: #00ff00;
+            color: #000;
+        }
+        
+        .game-status.unfocused {
+            background: #ff6600;
+            color: #fff;
+        }
+        
+        canvas {
+            cursor: pointer;
+        }
+  </style>
+</head>
+<body>
+    <h1>Space Runner</h1>
+    <div class="score">Score: <span id="score">0</span></div>
+    <div class="game-status unfocused" id="gameStatus">Game paused - Click to start playing</div>
+    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <div class="controls">
+        <p>Use ARROW KEYS or WASD to move</p>
+        <p>Dodge the asteroids!</p>
+        <p><strong>Click the game area to focus controls, click outside to unfocus</strong></p>
+    </div>
+
+  <script>
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+        const scoreElement = document.getElementById('score');
+        const gameStatusElement = document.getElementById('gameStatus');
+
+        // Game state
+        let score = 0;
+        let gameRunning = true;
+        let gameFocused = false;
+        let keys = {};
+
+        // Player
+        const player = {
+            x: canvas.width / 2,
+            y: canvas.height - 50,
+            width: 20,
+            height: 20,
+            speed: 5
+        };
+
+        // Asteroids
+        let asteroids = [];
+        const asteroidSpeed = 2;
+
+        // Event listeners
+        document.addEventListener('keydown', (e) => {
+            if (gameFocused) {
+                keys[e.key.toLowerCase()] = true;
+            }
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (gameFocused) {
+                keys[e.key.toLowerCase()] = false;
+            }
+        });
+
+        // Canvas focus events
+        canvas.addEventListener('click', () => {
+            gameFocused = true;
+            gameStatusElement.textContent = 'Game focused - Controls active!';
+            gameStatusElement.className = 'game-status focused';
+            canvas.style.border = '2px solid #00ff00';
+        });
+
+        // Click outside to unfocus
+        document.addEventListener('click', (e) => {
+            if (!canvas.contains(e.target)) {
+                gameFocused = false;
+                gameStatusElement.textContent = 'Game paused - Click to resume';
+                gameStatusElement.className = 'game-status unfocused';
+                canvas.style.border = '2px solid #333';
+                // Clear all keys when unfocusing
+                keys = {};
+            }
+        });
+
+        // Create asteroid
+        function createAsteroid() {
+            asteroids.push({
+                x: Math.random() * (canvas.width - 30),
+                y: -30,
+                width: 30,
+                height: 30,
+                speed: asteroidSpeed + Math.random() * 2
+            });
+        }
+
+        // Update player position
+        function updatePlayer() {
+            if (gameFocused) {
+                if (keys['arrowleft'] || keys['a']) {
+                    player.x = Math.max(0, player.x - player.speed);
+                }
+                if (keys['arrowright'] || keys['d']) {
+                    player.x = Math.min(canvas.width - player.width, player.x + player.speed);
+                }
+                if (keys['arrowup'] || keys['w']) {
+                    player.y = Math.max(0, player.y - player.speed);
+                }
+                if (keys['arrowdown'] || keys['s']) {
+                    player.y = Math.min(canvas.height - player.height, player.y + player.speed);
+                }
+            }
+        }
+
+        // Update asteroids
+        function updateAsteroids() {
+            for (let i = asteroids.length - 1; i >= 0; i--) {
+                const asteroid = asteroids[i];
+                asteroid.y += asteroid.speed;
+
+                // Remove asteroids that are off screen
+                if (asteroid.y > canvas.height) {
+                    asteroids.splice(i, 1);
+                    score += 10;
+                    scoreElement.textContent = score;
+                }
+
+                // Check collision
+                if (asteroid.x < player.x + player.width &&
+                    asteroid.x + asteroid.width > player.x &&
+                    asteroid.y < player.y + player.height &&
+                    asteroid.y + asteroid.height > player.y) {
+                    gameRunning = false;
+                    alert('Game Over! Final Score: ' + score);
+                    resetGame();
+                }
+            }
+        }
+
+        // Reset game
+        function resetGame() {
+            score = 0;
+            scoreElement.textContent = score;
+            asteroids = [];
+            player.x = canvas.width / 2;
+            player.y = canvas.height - 50;
+            gameRunning = true;
+            gameFocused = false;
+            gameStatusElement.textContent = 'Game paused - Click to start playing';
+            gameStatusElement.className = 'game-status unfocused';
+            canvas.style.border = '2px solid #333';
+            keys = {};
+        }
+
+        // Draw functions
+        function drawPlayer() {
+            ctx.fillStyle = '#00ff00';
+            ctx.fillRect(player.x, player.y, player.width, player.height);
+        }
+
+        function drawAsteroids() {
+            ctx.fillStyle = '#ff6600';
+            asteroids.forEach(asteroid => {
+                ctx.fillRect(asteroid.x, asteroid.y, asteroid.width, asteroid.height);
+            });
+        }
+
+        function draw() {
+            // Clear canvas
+            ctx.fillStyle = '#111';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw game objects
+            drawPlayer();
+            drawAsteroids();
+        }
+
+        // Game loop
+        function gameLoop() {
+            if (gameRunning && gameFocused) {
+                updatePlayer();
+                updateAsteroids();
+
+                // Create new asteroids occasionally
+                if (Math.random() < 0.02) {
+                    createAsteroid();
+                }
+
+                draw();
+            } else if (gameRunning && !gameFocused) {
+                // Game is running but not focused - just draw the current state
+                draw();
+            }
+
+      requestAnimationFrame(gameLoop);
+    }
+
+        // Start the game
+        gameLoop();
+  </script>
+</body>
+</html>

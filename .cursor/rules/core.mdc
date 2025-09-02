@@ -1,0 +1,22 @@
+# GamesIncJr Project Rules
+AlwaysApply: true
+
+Context:
+This is a no-code style Next.js site to showcase and sell AI-generated games (father + son project). Keep code minimal, readable, and educational.
+
+Constraints:
+- Framework: Next.js App Router (TypeScript).
+- Styling: Tailwind CSS + shadcn/ui ONLY.
+- Data source: src/data/games.json (no DB unless explicitly requested).
+- Demos: iframe HTML builds from /public/demos/<slug>/index.html.
+- Images: /public/games/<slug>/...
+- Do NOT add extra dependencies, state managers, analytics, or scaffolding without being asked.
+- Keep components short, typed, accessible (semantic HTML, labels, alt text).
+- Mobile-first responsive layout. Avoid heavy client JS; prefer server components.
+- Keep file tree stable; when adding files, explain the change in 1–2 lines.
+- Minimise bundle size; no unnecessary abstractions.
+
+When I ask for features:
+- Modify only the necessary files.
+- Show a brief summary of changes (files touched + purpose).
+- If a new dependency is truly required, ask for approval first and justify.
