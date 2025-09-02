@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Gravity Lander - Demo</title>
+  <style>
+    html,body{ height:100%; }
+    body{ margin:0; background:#05070d; color:#d9e1ff; font-family:Arial, Helvetica, sans-serif; display:flex; flex-direction:column; align-items:center; }
+    h1{ margin:16px 0 8px; }
+    .hud{ display:flex; gap:16px; margin-bottom:8px; }
+    .badge{ background:#121a31; padding:6px 10px; border-radius:8px; border:1px solid #223061; }
+    .stage{ position:relative; width:100%; max-width:900px; aspect-ratio:4/3; }
+    canvas{ position:absolute; inset:0; width:100%; height:100%; border:2px solid #1c2b57; background:linear-gradient(#071021,#0b1530); image-rendering:pixelated; touch-action:none; }
+    .mobile{ position:fixed; bottom:16px; left:50%; transform:translateX(-50%); display:none; gap:10px; z-index:50; background:rgba(0,0,0,.25); border:1px solid #274a93; border-radius:12px; padding:10px; backdrop-filter:blur(6px); }
+    .mobile button{ width:64px; height:64px; border-radius:12px; border:1px solid #274a93; background:#142446; color:#d9e1ff; font-size:18px; }
+    @media (pointer:coarse){ .mobile{ display:flex; } }
+  </style>
+  </head>
+  <body>
+    <h1>Gravity Lander</h1>
+    <div class="hud">
+      <div class="badge">Fuel: <span id="fuel">100</span></div>
+      <div class="badge">V-Speed: <span id="vs">0.0</span></div>
+      <div class="badge">Score: <span id="score">0</span></div>
+    </div>
+    <div class="stage"><canvas id="game" width="800" height="600" aria-label="Gravity Lander"></canvas></div>
+    <div class="mobile" aria-label="Mobile controls">
+      <button id="left">◀︎</button>
+      <button id="thrust">▲</button>
+      <button id="right">▶︎</button>
+    </div>
+
+    <script>
+      const canvas=document.getElementById('game');
+      const ctx=canvas.getContext('2d');
+      const fuelEl=document.getElementById('fuel');
+      const vsEl=document.getElementById('vs');
+      const scoreEl=document.getElementById('score');
+      const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+
+      const g = 0.05; // gravity
+      const thrustPower = 0.09;
+      const rotPower = 0.04;
+      let wind = 0.0;
+
+      const lander={ x:400, y:80, vx:0, vy:0, angle:0, fuel:100, alive:true };
+      let pad={ x: 540, y: 520, w: 120 };
+      let score=0;
+
+      const keys={};
+      document.addEventListener('keydown', e=>{ keys[e.key.toLowerCase()] = true; if(e.key===' '){ e.preventDefault(); }});
+      document.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()] = false; });
+      if(isTouch){
+        const bind=(id,on,off)=>{
+          const el=document.getElementById(id);
+          el.addEventListener('touchstart', e=>{ e.preventDefault(); on(); }, {passive:false});
+          el.addEventListener('touchend', e=>{ e.preventDefault(); off(); }, {passive:false});
+          el.addEventListener('mousedown', on);
+          el.addEventListener('mouseup', off);
+          el.addEventListener('mouseleave', off);
+        };
+        bind('left', ()=>keys['arrowleft']=true, ()=>keys['arrowleft']=false);
+        bind('right', ()=>keys['arrowright']=true, ()=>keys['arrowright']=false);
+        bind('thrust', ()=>keys['arrowup']=true, ()=>keys['arrowup']=false);
+      }
+
+      function reset(){
+        lander.x = 200 + Math.random()*400;
+        lander.y = 80;
+        lander.vx = (Math.random()-0.5)*1.2;
+        lander.vy = 0;
+        lander.angle = 0;
+        lander.fuel = 100;
+        lander.alive = true;
+        wind = (Math.random()-0.5)*0.02;
+        pad = { x: 100 + Math.random()*600, y: 520, w: 100 + Math.random()*80 };
+      }
+
+      function update(){
+        if(!lander.alive) return;
+        // rotation
+        if(keys['arrowleft']||keys['a']) lander.angle -= rotPower;
+        if(keys['arrowright']||keys['d']) lander.angle += rotPower;
+        // thrust
+        if((keys['arrowup']||keys['w']) && lander.fuel>0){
+          lander.vx += Math.sin(lander.angle)*thrustPower;
+          lander.vy -= Math.cos(lander.angle)*thrustPower;
+          lander.fuel = Math.max(0, lander.fuel - 0.2);
+        }
+        // gravity & wind
+        lander.vy += g;
+        lander.vx += wind;
+        // integrate
+        lander.x += lander.vx;
+        lander.y += lander.vy;
+
+        // bounds
+        if(lander.x<20){ lander.x=20; lander.vx=0; }
+        if(lander.x>canvas.width-20){ lander.x=canvas.width-20; lander.vx=0; }
+
+        // landing / crash
+        if(lander.y>pad.y-10){
+          const within = lander.x>pad.x && lander.x<pad.x+pad.w;
+          const soft = Math.abs(lander.vy) < 1.2 && Math.abs(lander.vx) < 0.8 && Math.abs(lander.angle) < 0.5;
+          if(within && soft){
+            score += Math.max(0, Math.floor(1000 - (Math.abs(lander.vy)*200 + (100-lander.fuel)*2)));
+            scoreEl.textContent = score;
+            alert('Successful Landing!');
+            const name = prompt('Enter your name to submit score (optional):', '');
+            if (name !== null) {
+              fetch('/api/scores/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ slug:'gravity-lander', score, name }) });
+            }
+            reset();
+          } else {
+            lander.alive=false;
+            alert('Crash!');
+            const name = prompt('Enter your name to submit score (optional):', '');
+            if (name !== null) {
+              fetch('/api/scores/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ slug:'gravity-lander', score, name }) });
+            }
+            reset();
+          }
+        }
+
+        fuelEl.textContent = Math.round(lander.fuel).toString();
+        vsEl.textContent = lander.vy.toFixed(2);
+      }
+
+      function render(){
+        ctx.clearRect(0,0,canvas.width,canvas.height);
+        // ground
+        ctx.fillStyle='#0f1a35';
+        ctx.fillRect(0,540,canvas.width,60);
+        // landing pad
+        ctx.fillStyle='#2ee6a6';
+        ctx.fillRect(pad.x, pad.y, pad.w, 6);
+        // lander
+        ctx.save();
+        ctx.translate(lander.x, lander.y);
+        ctx.rotate(lander.angle);
+        ctx.fillStyle='#d9e1ff';
+        ctx.fillRect(-8,-10,16,20);
+        ctx.fillStyle='#39ff14'; ctx.fillRect(-6,10,12,2); // legs
+        ctx.restore();
+      }
+
+      function resize(){
+        const rect = canvas.parentElement.getBoundingClientRect();
+        const dpr = Math.min(window.devicePixelRatio || 1, 2);
+        canvas.width = Math.floor(rect.width * dpr);
+        canvas.height = Math.floor(rect.height * dpr);
+        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      }
+      window.addEventListener('resize', resize);
+      resize();
+
+      function loop(){ update(); render(); requestAnimationFrame(loop); }
+      reset(); loop();
+    </script>
+  </body>
+  </html>
+
+

@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Pixel Pac Run - Demo</title>
+  <style>
+    html,body{ height:100%; }
+    body{ margin:0; background:#0b0f1a; color:#e6edff; font-family:Arial, Helvetica, sans-serif; display:flex; flex-direction:column; align-items:center; }
+    h1{ margin:16px 0 8px; }
+    .hud{ display:flex; gap:16px; margin-bottom:8px; }
+    .badge{ background:#131c33; padding:6px 10px; border-radius:8px; border:1px solid #24325f; }
+    .stage{ position:relative; width:100%; max-width:900px; aspect-ratio:16/9; }
+    canvas{ position:absolute; inset:0; width:100%; height:100%; border:2px solid #1c2b57; background:#0f1630; image-rendering:pixelated; touch-action:none; }
+    .mobile{ position:fixed; bottom:16px; left:50%; transform:translateX(-50%); display:none; gap:10px; z-index:50; background:rgba(0,0,0,.25); border:1px solid #274a93; border-radius:12px; padding:10px; backdrop-filter:blur(6px); }
+    .mobile button{ width:160px; height:60px; border-radius:12px; border:1px solid #274a93; background:#142446; color:#d9e1ff; font-size:18px; }
+    @media (pointer:coarse){ .mobile{ display:flex; } }
+  </style>
+</head>
+<body>
+  <h1>Pixel Pac Run</h1>
+  <div class="hud">
+    <div class="badge">Score: <span id="score">0</span></div>
+    <div class="badge">Best: <span id="best">0</span></div>
+  </div>
+  <div class="stage"><canvas id="game" width="800" height="450" aria-label="Pixel Pac Run"></canvas></div>
+  <div class="mobile" aria-label="Mobile controls">
+    <button id="jump">Tap to Jump</button>
+  </div>
+
+  <script>
+    const canvas=document.getElementById('game');
+    const ctx=canvas.getContext('2d');
+    const scoreEl=document.getElementById('score');
+    const bestEl=document.getElementById('best');
+    const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+
+    let score=0, best=0, running=true, grounded=true;
+    const player={ x:100, y:360, w:30, h:30, vy:0 };
+    const g=0.6, jumpV=-11;
+    const obstacles=[]; // {x,y,w,h}
+
+    function spawn(){
+      const h=30+Math.random()*40;
+      obstacles.push({ x: canvas.width+40, y: 420-h, w: 24+Math.random()*24, h});
+    }
+
+    function update(){
+      if(!running) return;
+      // gravity
+      player.vy += g;
+      player.y += player.vy;
+      if(player.y>360){ player.y=360; player.vy=0; grounded=true; }
+      // move obstacles
+      for(let i=obstacles.length-1;i>=0;i--){
+        obstacles[i].x -= 6;
+        if(obstacles[i].x <-60) obstacles.splice(i,1);
+        // collide
+        const o=obstacles[i]; if(!o) continue;
+        if(player.x<o.x+o.w && player.x+player.w>o.x && player.y<o.y+o.h && player.y+player.h>o.y){
+          running=false;
+          best=Math.max(best, score);
+          bestEl.textContent=best;
+          const name = prompt('Game Over! Score '+score+'. Enter your name to submit (optional):','');
+          if(name!==null){ fetch('/api/scores/save',{ method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ slug:'pixel-pac-run', score, name })}); }
+        }
+      }
+      // score
+      score += 1; scoreEl.textContent=score;
+      // spawn
+      if(Math.random()<0.03) spawn();
+    }
+
+    function render(){
+      ctx.clearRect(0,0,canvas.width,canvas.height);
+      // ground
+      ctx.fillStyle='#1c2b57'; ctx.fillRect(0,420,canvas.width,6);
+      // player
+      ctx.fillStyle='#33aaff'; ctx.fillRect(player.x, player.y, player.w, player.h);
+      // obstacles
+      ctx.fillStyle='#ff2d95'; for(const o of obstacles){ ctx.fillRect(o.x,o.y,o.w,o.h); }
+    }
+
+    function jump(){ if(grounded){ player.vy = jumpV; grounded=false; } }
+    document.addEventListener('keydown', e=>{ if(e.key===' '||e.key==='ArrowUp'){ e.preventDefault(); jump(); }});
+    if(isTouch){
+      const btn=document.getElementById('jump');
+      const go=e=>{ e.preventDefault(); jump(); };
+      btn.addEventListener('touchstart', go, {passive:false});
+      btn.addEventListener('mousedown', go);
+    }
+
+    function resize(){
+      const rect = canvas.parentElement.getBoundingClientRect();
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      canvas.width = Math.floor(rect.width * dpr);
+      canvas.height = Math.floor(rect.height * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    }
+    window.addEventListener('resize', resize);
+    resize();
+
+    function loop(){ update(); render(); requestAnimationFrame(loop); }
+    loop();
+  </script>
+</body>
+</html>
+
+

@@ -86,7 +86,7 @@
     ball.x+=ball.dx; ball.y+=ball.dy;
     if(ball.x<8||ball.x>canvas.width-8) ball.dx*=-1;
     if(ball.y<20) ball.dy*=-1;
-    if(ball.y>canvas.height+20){ lives--; livesEl.textContent=lives; ball.stuck=true; if(lives<=0){ running=false; } }
+    if(ball.y>canvas.height+20){ lives--; livesEl.textContent=lives; ball.stuck=true; if(lives<=0){ running=false; const name = prompt('Enter your name to submit score (optional):', ''); if (name !== null) { fetch('/api/scores/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ slug:'brick-blitz-84', score, name }) }); } } }
 
     // paddle collide
     if(ball.x>paddle.x && ball.x<paddle.x+paddle.w && ball.y>paddle.y-8 && ball.y<paddle.y+12){

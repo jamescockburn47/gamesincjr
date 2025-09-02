@@ -184,7 +184,11 @@
                     asteroid.y < player.y + player.height &&
                     asteroid.y + asteroid.height > player.y) {
                     gameRunning = false;
-                    alert('Game Over! Final Score: ' + score);
+                    const final = score;
+                    const name = prompt('Game Over! Final Score: ' + final + '\nEnter your name to submit score (optional):', '');
+                    if (name !== null) {
+                      fetch('/api/scores/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: 'space-runner', score: final, name }) });
+                    }
                     resetGame();
                 }
             }

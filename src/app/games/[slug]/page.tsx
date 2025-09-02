@@ -5,6 +5,7 @@ import ComingSoon from '@/components/ComingSoon';
 import GamePlayer from '@/components/GamePlayer';
 import type { Metadata } from 'next';
 import { getUserFromCookies, hasAccessToGame } from '@/lib/user-session';
+import { Suspense } from 'react';
 
 interface GamePageProps {
   params: {
@@ -102,6 +103,10 @@ export default async function GamePage({ params }: GamePageProps) {
           </div>
         )}
         <GamePlayer game={game} />
+        {/* Scoreboard */}
+        <Suspense>
+          <Scores slug={game.slug} />
+        </Suspense>
       </div>
 
       {/* Screenshots Grid */}
@@ -131,4 +136,28 @@ export default async function GamePage({ params }: GamePageProps) {
       </div>
     </div>
   );
+}
+
+async function Scores({ slug }: { slug: string }) {
+  try {
+    const res = await fetch(`${process.env.APP_URL || ''}/api/scores/top?slug=${encodeURIComponent(slug)}`, { cache: 'no-store' });
+    const data = await res.json();
+    const top: Array<{ name: string; score: number }> = data?.top || [];
+    if (!top.length) return null;
+    return (
+      <div className="mt-6">
+        <h3 className="text-xl font-semibold mb-3">Top Scores</h3>
+        <ul className="divide-y divide-gray-200 rounded-lg border">
+          {top.map((row, i) => (
+            <li key={i} className="flex items-center justify-between px-4 py-2 bg-white">
+              <span className="font-medium text-gray-700">#{i + 1} {row.name}</span>
+              <span className="font-bold text-gray-900">{row.score}</span>
+            </li>
+          ))}
+        </ul>
+      </div>
+    );
+  } catch {
+    return null;
+  }
 }

@@ -25,7 +25,7 @@
     "gameType": "html5",
     "engine": "vanilla-js",
     "version": "0.1.0",
-    "status": "coming-soon"
+    "status": "released"
   },
   {
     "slug": "pixel-pac-run",
@@ -39,7 +39,7 @@
     "gameType": "html5",
     "engine": "vanilla-js",
     "version": "0.1.0",
-    "status": "coming-soon"
+    "status": "released"
   },
   {
     "slug": "turbo-outracer",
@@ -95,7 +95,7 @@
     "gameType": "html5",
     "engine": "vanilla-js",
     "version": "0.1.0",
-    "status": "coming-soon"
+    "status": "released"
   },
   {
     "slug": "vector-asteroids",

@@ -156,7 +156,14 @@
     for(const l of lasers){ glowRect(l.x, l.y, l.w, l.h, l.color); }
   }
 
-  function gameOver(){ running=false; statusEl.textContent = `Game Over. Final score ${score}. Reload to try again.`; }
+  function gameOver(){
+    running=false;
+    statusEl.textContent = `Game Over. Final score ${score}. Reload to try again.`;
+    const name = prompt(`Enter your name to submit score (optional):`, '');
+    if (name !== null) {
+      fetch('/api/scores/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ slug:'neon-invaders', score, name }) });
+    }
+  }
 
   function resize(){
     const rect = canvas.parentElement.getBoundingClientRect();
