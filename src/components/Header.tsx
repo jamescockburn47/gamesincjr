@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import Logo from './Logo';
 import { getUserFromCookies } from '@/lib/user-session';
+import LangSwitch from './LangSwitch';
 
 export default async function Header() {
   const user = await getUserFromCookies();
@@ -53,6 +54,7 @@ export default async function Header() {
             >
               🎮 Play Now
             </Link>
+            <LangSwitch />
             <Link href="/account" className="text-gray-300 hover:text-white transition-colors text-sm px-2 py-1 rounded hover:bg-white/10">
               {user.email ? 'Account' : 'Sign In'}
             </Link>
