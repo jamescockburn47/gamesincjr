@@ -13,9 +13,8 @@ export default function Home() {
             <h1 className="pixel-text text-5xl text-gray-900 mb-2">GAMES inc. Jr</h1>
             <div className="modern-text text-gray-600 mb-4">by kids, for kids. imagination is the only limit</div>
             <p className="modern-text text-lg mb-6">
-              Welcome to the ultimate gaming playground! 🚀 Experience amazing HTML5 games,
-              from retro arcade classics to cutting-edge AI adventures.
-              <span className="font-semibold"> No downloads, just pure fun!</span>
+              Welcome. Play HTML5 games right in your browser — from simple retro ideas to AI‑assisted experiments.
+              <span className="font-semibold"> No downloads.</span>
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/games" className="gaming-btn gaming-glow text-lg px-8 py-4">🎯 Browse All Games</Link>
@@ -36,19 +35,13 @@ export default function Home() {
           </div>
           <div className="game-card p-8 text-center">
             <div className="text-5xl mb-6 pixel-bounce">🤖</div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">AI-Powered</h3>
-            <p className="text-gray-600 leading-relaxed">
-              Experience the future of gaming with AI-generated content and intelligent gameplay. 
-              <span className="text-cyan-500 font-semibold"> Every play is unique!</span>
-            </p>
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">AI‑Assisted</h3>
+            <p className="text-gray-600 leading-relaxed">We use AI to help prototype and iterate on ideas faster.</p>
           </div>
           <div className="game-card p-8 text-center">
             <div className="text-5xl mb-6 pixel-bounce">🎨</div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">Beautiful Design</h3>
-            <p className="text-gray-600 leading-relaxed">
-              Stunning visuals and smooth animations. Games that look as good as they play. 
-              <span className="text-yellow-500 font-semibold"> Eye candy included!</span>
-            </p>
+            <h3 className="text-2xl font-bold text-gray-800 mb-4">Clear & Playable</h3>
+            <p className="text-gray-600 leading-relaxed">Simple controls, readable visuals, short sessions.</p>
           </div>
         </div>
 
@@ -64,11 +57,7 @@ export default function Home() {
                   <div className="text-4xl mr-4">🚀</div>
                   <h3 className="text-3xl font-bold text-gray-800">Space Runner</h3>
                 </div>
-                <p className="text-gray-600 mb-6 text-lg leading-relaxed">
-                  Dash between asteroids in this procedurally generated arcade adventure! 
-                  Features AI-generated levels that adapt to your skill level. 
-                  <span className="text-orange-500 font-semibold">Can you survive the cosmic chaos?</span>
-                </p>
+                <p className="text-gray-600 mb-6 text-lg leading-relaxed">Dodge asteroids, survive, set a better score.</p>
                 <div className="flex flex-wrap gap-3 mb-8">
                   <span className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-4 py-2 rounded-full text-sm font-bold">Arcade</span>
                   <span className="bg-gradient-to-r from-green-500 to-emerald-400 text-white px-4 py-2 rounded-full text-sm font-bold">Runner</span>

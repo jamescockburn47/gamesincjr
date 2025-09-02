@@ -36,7 +36,7 @@ export default function GiochiPage() {
                 </CardHeader>
                 <CardContent className="p-6">
                   <h2 className="font-bold text-xl mb-3 text-gray-800 group-hover:text-orange-600 transition-colors">{game.title}</h2>
-                  <p className="text-gray-600 mb-4 leading-relaxed">{game.description || 'Descrizione non disponibile'}</p>
+                  <p className="text-gray-600 mb-4 leading-relaxed">{(game as unknown as { description_it?: string }).description_it || game.description || 'Descrizione non disponibile'}</p>
                   <div className="flex flex-wrap gap-2 mb-4">
                     {game.tags?.map((tag) => (
                       <span key={tag} className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-3 py-1 rounded-full text-xs font-bold shadow-sm">{tag}</span>
