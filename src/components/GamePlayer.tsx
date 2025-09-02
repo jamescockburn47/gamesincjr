@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Game } from '@/lib/games';
 
 interface GamePlayerProps {
@@ -10,22 +10,98 @@ interface GamePlayerProps {
 export default function GamePlayer({ game }: GamePlayerProps) {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const containerRef = useRef<HTMLDivElement | null>(null);
+  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const isClient = useMemo(() => typeof window !== 'undefined', []);
+
+  useEffect(() => {
+    if (!isClient) return;
+    const setVh = () => {
+      const vh = window.innerHeight * 0.01;
+      document.documentElement.style.setProperty('--vh', `${vh}px`);
+    };
+    setVh();
+    window.addEventListener('resize', setVh);
+    return () => window.removeEventListener('resize', setVh);
+  }, [isClient]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    const onFsChange = () => {
+      const fsEl = document.fullscreenElement || (document as any).webkitFullscreenElement;
+      setIsFullscreen(!!fsEl);
+    };
+    document.addEventListener('fullscreenchange', onFsChange);
+    // @ts-ignore - webkit
+    document.addEventListener('webkitfullscreenchange', onFsChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFsChange);
+      // @ts-ignore - webkit
+      document.removeEventListener('webkitfullscreenchange', onFsChange);
+    };
+  }, [isClient]);
+
+  const enterFullscreen = async () => {
+    try {
+      const target = containerRef.current;
+      if (!target) return;
+      if (target.requestFullscreen) await target.requestFullscreen();
+      // @ts-ignore - webkit
+      else if (target.webkitRequestFullscreen) await target.webkitRequestFullscreen();
+    } catch {}
+  };
+
+  const exitFullscreen = async () => {
+    try {
+      if (document.fullscreenElement) await document.exitFullscreen();
+      // @ts-ignore - webkit
+      else if ((document as any).webkitFullscreenElement) {
+        // @ts-ignore - webkit
+        (document as any).webkitExitFullscreen?.();
+      }
+    } catch {}
+  };
 
   // Handle different game types
   const renderGameContent = () => {
     switch (game.gameType) {
       case 'html5':
         return (
-          <div className="relative w-full pb-[56.25%] rounded-xl overflow-hidden border">
-            <iframe
-              src={game.demoPath}
-              className="absolute inset-0 w-full h-full"
-              title={`${game.title} Demo`}
-              loading="lazy"
-              referrerPolicy="no-referrer"
-              sandbox="allow-scripts allow-same-origin"
-              allow="fullscreen"
-            />
+          <div ref={containerRef} className="relative w-full rounded-xl overflow-hidden border bg-black">
+            {/* Controls overlay */}
+            <div className="absolute left-2 top-2 z-10 flex gap-2">
+              {!isFullscreen ? (
+                <button onClick={enterFullscreen} className="rounded-md bg-white/10 px-3 py-1 text-xs text-white backdrop-blur hover:bg-white/20 border border-white/20">
+                  Fullscreen
+                </button>
+              ) : (
+                <button onClick={exitFullscreen} className="rounded-md bg-white/10 px-3 py-1 text-xs text-white backdrop-blur hover:bg-white/20 border border-white/20">
+                  Exit
+                </button>
+              )}
+            </div>
+
+            {/* Responsive viewport-fit container on mobile */}
+            <div
+              className="relative w-full"
+              style={{
+                height: isClient ? 'min(70vh, calc(var(--vh, 1vh) * 100 - 80px))' : undefined,
+                aspectRatio: isClient ? undefined : '16 / 9',
+              }}
+            >
+              <iframe
+                ref={iframeRef}
+                src={game.demoPath}
+                className="absolute inset-0 h-full w-full"
+                title={`${game.title} Demo`}
+                loading="lazy"
+                referrerPolicy="no-referrer"
+                sandbox="allow-scripts allow-same-origin"
+                allow="fullscreen"
+                allowFullScreen
+              />
+            </div>
           </div>
         );
 

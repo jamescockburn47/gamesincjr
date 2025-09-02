@@ -2,14 +2,16 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Brick Blitz '84 - Demo</title>
   <style>
+    html,body{ height:100%; }
     body{ margin:0; background:#0b0f1a; color:#e6edff; font-family:Arial, Helvetica, sans-serif; display:flex; flex-direction:column; align-items:center; }
     h1{ margin:16px 0 8px; }
     .hud{ display:flex; gap:16px; margin-bottom:8px; }
     .badge{ background:#131c33; padding:6px 10px; border-radius:8px; border:1px solid #24325f; }
-    canvas{ border:2px solid #1c2b57; background:#0e1426; image-rendering:pixelated; touch-action:none; }
+    .stage{ position:relative; width:100%; max-width:900px; aspect-ratio:4/3; }
+    canvas{ position:absolute; inset:0; width:100%; height:100%; border:2px solid #1c2b57; background:#0e1426; image-rendering:pixelated; touch-action:none; }
     .mobile{ position:fixed; bottom:16px; left:50%; transform:translateX(-50%); display:none; gap:10px; z-index:50; background:rgba(0,0,0,.25); border:1px solid #274a93; border-radius:12px; padding:10px; backdrop-filter:blur(6px); }
     .mobile button{ width:120px; height:48px; border-radius:10px; border:1px solid #274a93; background:#142446; color:#d9e1ff; font-size:16px; }
     @media (pointer:coarse){ .mobile{ display:flex; } }
@@ -22,7 +24,7 @@
     <div class="badge">Lives: <span id="lives">3</span></div>
     <div class="badge">Level: <span id="level">1</span></div>
   </div>
-  <canvas id="game" width="800" height="600" aria-label="Brick Blitz game"></canvas>
+  <div class="stage"><canvas id="game" width="800" height="600" aria-label="Brick Blitz game"></canvas></div>
   <div class="mobile" aria-label="Mobile controls">
     <button id="left">◀︎ Left</button>
     <button id="right">Right ▶︎</button>
@@ -114,6 +116,16 @@
     // bricks
     for(const b of bricks){ ctx.fillStyle=b.color; ctx.fillRect(b.x,b.y,b.w,b.h); }
   }
+
+  function resize(){
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
 
   function loop(){ update(); draw(); requestAnimationFrame(loop); }
   paddle.y=canvas.height-24; spawnLevel(); loop();

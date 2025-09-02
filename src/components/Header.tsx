@@ -2,12 +2,15 @@ import Link from 'next/link';
 import Logo from './Logo';
 import { getUserFromCookies } from '@/lib/user-session';
 import LangSwitch from './LangSwitch';
+import dynamic from 'next/dynamic';
+
+const MobileNav = dynamic(() => import('./MobileNav'), { ssr: false });
 
 export default async function Header() {
   const user = await getUserFromCookies();
   return (
     <header className="gaming-bg border-b-2 border-orange-200 sticky top-0 z-50 shadow-lg">
-      <div className="container mx-auto px-4 py-4">
+      <div className="container mx-auto px-4 py-2 sm:py-4">
         <div className="flex items-center justify-between">
           <Link href="/" className="flex items-center space-x-3 hover:scale-105 transition-transform duration-200">
             <Logo size="md" className="controller-glow" />
@@ -17,7 +20,7 @@ export default async function Header() {
             </div>
           </Link>
           
-          <nav className="flex items-center space-x-4">
+          <nav className="hidden sm:flex items-center space-x-4">
             <Link 
               href="/" 
               className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
@@ -59,6 +62,10 @@ export default async function Header() {
               {user.email ? 'Account' : 'Sign In'}
             </Link>
           </nav>
+          <div className="sm:hidden flex items-center gap-2">
+            <LangSwitch />
+            <MobileNav />
+          </div>
         </div>
       </div>
     </header>

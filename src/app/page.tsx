@@ -6,19 +6,19 @@ export default function Home() {
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-20">
         <div className="mb-20">
-          <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-10 text-center text-gray-800">
+          <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-6 sm:p-10 text-center text-gray-800">
             <div className="pixel-bounce mb-4">
-              <div className="text-6xl">🎮</div>
+              <div className="text-4xl sm:text-6xl">🎮</div>
             </div>
-            <h1 className="pixel-text text-5xl text-gray-900 mb-2">GAMES inc. Jr</h1>
+            <h1 className="pixel-text text-3xl sm:text-5xl text-gray-900 mb-2">GAMES inc. Jr</h1>
             <div className="modern-text text-gray-600 mb-4">by kids, for kids. imagination is the only limit</div>
-            <p className="modern-text text-lg mb-6">
+            <p className="modern-text text-base sm:text-lg mb-6">
               Welcome. Play HTML5 games right in your browser — from simple retro ideas to AI‑assisted experiments.
               <span className="font-semibold"> No downloads.</span>
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/games" className="gaming-btn gaming-glow text-lg px-8 py-4">🎯 Browse All Games</Link>
-              <Link href="/games/space-runner" className="clean-btn text-lg px-8 py-4">🚀 Try Space Runner</Link>
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
+              <Link href="/games" className="gaming-btn gaming-glow text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">🎯 Browse All Games</Link>
+              <Link href="/games/space-runner" className="clean-btn text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">🚀 Try Space Runner</Link>
             </div>
           </div>
         </div>
@@ -50,25 +50,25 @@ export default function Home() {
           <h2 className="pixel-text text-4xl font-bold text-yellow-400 mb-12 tracking-wider">
             FEATURED GAME
           </h2>
-          <div className="game-card p-10 max-w-6xl mx-auto">
+          <div className="game-card p-6 sm:p-10 max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="text-left">
                 <div className="flex items-center mb-6">
-                  <div className="text-4xl mr-4">🚀</div>
-                  <h3 className="text-3xl font-bold text-gray-800">Space Runner</h3>
+                  <div className="text-3xl sm:text-4xl mr-4">🚀</div>
+                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-800">Space Runner</h3>
                 </div>
-                <p className="text-gray-600 mb-6 text-lg leading-relaxed">Dodge asteroids, survive, set a better score.</p>
+                <p className="text-gray-600 mb-6 text-base sm:text-lg leading-relaxed">Dodge asteroids, survive, set a better score.</p>
                 <div className="flex flex-wrap gap-3 mb-8">
                   <span className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-4 py-2 rounded-full text-sm font-bold">Arcade</span>
                   <span className="bg-gradient-to-r from-green-500 to-emerald-400 text-white px-4 py-2 rounded-full text-sm font-bold">Runner</span>
                   <span className="bg-gradient-to-r from-purple-500 to-pink-400 text-white px-4 py-2 rounded-full text-sm font-bold">8+</span>
                   <span className="bg-gradient-to-r from-orange-500 to-red-400 text-white px-4 py-2 rounded-full text-sm font-bold">AI-Generated</span>
                 </div>
-                <div className="flex flex-col sm:flex-row gap-4">
-                  <Link href="/games/space-runner" className="gaming-btn gaming-glow text-lg px-8 py-4">🎮 Play Now</Link>
+                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                  <Link href="/games/space-runner" className="gaming-btn gaming-glow text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">🎮 Play Now</Link>
                   <Link 
                     href="/games/space-runner" 
-                    className="bg-gradient-to-r from-gray-600 to-gray-700 text-white px-8 py-4 rounded-lg text-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
+                    className="bg-gradient-to-r from-gray-600 to-gray-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
                   >
                     📖 Learn More
                   </Link>

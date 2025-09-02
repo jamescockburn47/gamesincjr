@@ -5,9 +5,10 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Space Runner - Demo</title>
   <style>
+        html, body { height: 100%; }
         body {
             margin: 0;
-            padding: 20px;
+            padding: 16px;
             background: #000;
             color: #fff;
             font-family: Arial, sans-serif;
@@ -17,11 +18,8 @@
             min-height: 100vh;
         }
         
-        canvas {
-            border: 2px solid #333;
-            background: #111;
-            display: block;
-        }
+        .stage { position: relative; width: 100%; max-width: 900px; aspect-ratio: 16/9; }
+        canvas { position: absolute; inset: 0; width: 100%; height: 100%; border: 2px solid #333; background: #111; display: block; }
         
         .controls {
             margin-top: 20px;
@@ -66,7 +64,7 @@
     <h1>Space Runner</h1>
     <div class="score">Score: <span id="score">0</span></div>
     <div class="game-status unfocused" id="gameStatus">Game paused - Click to start playing</div>
-    <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <div class="stage"><canvas id="gameCanvas" width="800" height="450"></canvas></div>
     <div class="mobile-controls" id="mobileControls" aria-label="Mobile controls">
       <button class="btn-up" aria-label="Up">⬆️</button>
       <button class="btn-left" aria-label="Left">⬅️</button>
@@ -286,6 +284,17 @@
           bind('.btn-left', 'arrowleft');
           bind('.btn-right', 'arrowright');
         }
+
+        // Resize handling for DPR and container size
+        function resizeCanvas() {
+          const rect = canvas.parentElement.getBoundingClientRect();
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          canvas.width = Math.floor(rect.width * dpr);
+          canvas.height = Math.floor(rect.height * dpr);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
 
         // Start the game
         gameLoop();

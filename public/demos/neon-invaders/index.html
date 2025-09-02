@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
   <title>Neon Invaders - Demo</title>
   <style>
     :root { --bg:#0a0f1c; --grid:#121a31; --neon:#39ff14; --laser:#ff2d95; --ship:#33aaff; }
@@ -11,7 +11,8 @@
     h1 { margin:16px 0 8px; font-weight:800; letter-spacing:1px; }
     .hud { display:flex; gap:16px; margin-bottom:8px; align-items:center; }
     .badge { background:#122042; padding:6px 10px; border-radius:8px; border:1px solid #203064; }
-    canvas { border:2px solid #1b2a52; background:radial-gradient(1200px 600px at 50% -200px, #1a2c57 0%, #0a0f1c 60%); image-rendering:pixelated; touch-action:none; }
+    .stage { position:relative; width:100%; max-width:900px; aspect-ratio:4/3; }
+    canvas { position:absolute; inset:0; width:100%; height:100%; border:2px solid #1b2a52; background:radial-gradient(1200px 600px at 50% -200px, #1a2c57 0%, #0a0f1c 60%); image-rendering:pixelated; touch-action:none; }
     .status { margin:8px 0 12px; padding:8px 12px; border-radius:8px; background:#18305e; border:1px solid #274a93; }
     .mobile { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); display:none; gap:10px; z-index:50; background:rgba(0,0,0,.25); border:1px solid #274a93; border-radius:12px; padding:10px; backdrop-filter:blur(6px); }
     .mobile button { width:64px; height:64px; border-radius:12px; border:1px solid #274a93; background:#142446; color:#d9e1ff; font-size:18px; }
@@ -26,7 +27,7 @@
     <div class="badge">Wave: <span id="wave">1</span></div>
   </div>
   <div id="status" class="status">Tap or click the canvas to focus controls. Arrow keys / A,D to move. Space to shoot.</div>
-  <canvas id="game" width="800" height="600" aria-label="Neon Invaders game"></canvas>
+  <div class="stage"><canvas id="game" width="800" height="600" aria-label="Neon Invaders game"></canvas></div>
   <div class="mobile" aria-label="Mobile controls">
     <button id="left">◀︎</button>
     <button id="shoot">⨁</button>
@@ -156,6 +157,16 @@
   }
 
   function gameOver(){ running=false; statusEl.textContent = `Game Over. Final score ${score}. Reload to try again.`; }
+
+  function resize(){
+    const rect = canvas.parentElement.getBoundingClientRect();
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.floor(rect.width * dpr);
+    canvas.height = Math.floor(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
 
   function loop(){ update(); render(); requestAnimationFrame(loop); }
   spawnWave(); loop();
