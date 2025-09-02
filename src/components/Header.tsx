@@ -44,6 +44,12 @@ export default async function Header() {
               Tutorials
             </Link>
             <Link 
+              href="/tech" 
+              className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
+            >
+              How it works
+            </Link>
+            <Link 
               href="/about" 
               className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
             >

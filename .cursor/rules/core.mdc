@@ -1,15 +1,65 @@
+---
+alwaysApply: true
+---
+
 # GamesIncJr Project Rules
+
+AlwaysApply: true
+
+Context
+- Next.js + Tailwind + shadcn/ui site for simple, playable web games. Keep code minimal, readable, accessible, and easy for a 7–10 year old to reason about with guidance.
+
+Constraints
+- Framework: Next.js App Router (TypeScript).
+- Styling: Tailwind CSS + shadcn/ui ONLY.
+- Data source: `src/data/games.json` (no DB unless explicitly requested).
+- Demos: HTML5 games live under `/public/demos/<slug>/index.html` and embedded via iframe; level‑1 preview must always be playable.
+- Images: `/public/games/<slug>/...` (SVG/PNG). Prefer `next/image` when we decide to remove warnings.
+- Security: keep light headers in `next.config.ts`; no downloads; demos sandboxed; avoid client‑only JS unless needed.
+- Auth: minimal cookie session for demo; magic‑link later. Never block the demo.
+- Internationalisation: path‑based `/it` mirror; when adding content, add Italian variants (`*_it` fields) or localised pages.
+- Keep components short, typed, accessible (semantic HTML, labels, alt text).
+- Mobile-first; include touch controls for demos.
+- No new deps without explicit approval.
+- Explain edits briefly (files touched + why).
+
+Operational
+- Always push to Git after changes so Vercel redeploys.
+- Disable static caching for dynamic lists where needed (`revalidate = 0`).
+- Prefer server components; only use `'use client'` when handling events.
+
+Data layer
+- `src/lib/games.ts` validates JSON at import; expose `getGames`, `getGameBySlug`, `getGamePaths`.
+- Optional localised fields: `description_it`, later `title_it`.
+
+Community feed
+- Public API: `/api/community/list`, `/api/community/post`.
+- Storage: Upstash KV via `KV_REST_API_URL`, `KV_REST_API_TOKEN`; in-memory fallback acceptable for dev.
+
+Email
+- Contact: `hello@gamesincjr.com`. MX + SPF configured (ImprovMX or Workspace). DKIM optional until outbound sending is added.
+
+Copy style
+- Keep language clear and non‑hyperbolic. Emphasise “no downloads” and “simple controls”.
+
+When I ask for features
+- Modify only what’s necessary.
+- Show a short change summary.
+- Ask before adding dependencies; justify.
+# GamesIncJr Project Rules
+
 AlwaysApply: true
 
 Context:
 This is a no-code style Next.js site to showcase and sell AI-generated games (father + son project). Keep code minimal, readable, and educational.
 
 Constraints:
+
 - Framework: Next.js App Router (TypeScript).
 - Styling: Tailwind CSS + shadcn/ui ONLY.
-- Data source: src/data/games.json (no DB unless explicitly requested).
-- Demos: iframe HTML builds from /public/demos/<slug>/index.html.
-- Images: /public/games/<slug>/...
+- Data source: `src/data/games.json` (no DB unless explicitly requested).
+- Demos: iframe HTML builds from `/public/demos/<slug>/index.html` (write `<slug>` literally or show as code).
+- Images: `/public/games/<slug>/...`
 - Do NOT add extra dependencies, state managers, analytics, or scaffolding without being asked.
 - Keep components short, typed, accessible (semantic HTML, labels, alt text).
 - Mobile-first responsive layout. Avoid heavy client JS; prefer server components.
@@ -17,6 +67,7 @@ Constraints:
 - Minimise bundle size; no unnecessary abstractions.
 
 When I ask for features:
+
 - Modify only the necessary files.
 - Show a brief summary of changes (files touched + purpose).
 - If a new dependency is truly required, ask for approval first and justify.
