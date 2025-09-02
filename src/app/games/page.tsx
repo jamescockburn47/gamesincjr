@@ -67,8 +67,8 @@ export default function GamesPage() {
                 
                 <CardFooter className="p-6 pt-0">
                   <div className="flex items-center justify-between w-full">
-                    <div className="text-2xl font-bold text-green-600">
-                      {game.price ? `£${game.price}` : '🆓 Free'}
+                    <div className="text-sm font-semibold text-gray-700 bg-yellow-100 px-3 py-1 rounded-full">
+                      Included with subscription
                     </div>
                     <div className="text-sm text-gray-500">
                       {game.gameType || 'html5'}
