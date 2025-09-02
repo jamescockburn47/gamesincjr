@@ -1,36 +1,41 @@
 import Link from 'next/link';
+import Logo from './Logo';
 
 export default function Header() {
   return (
-    <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
+    <header className="gaming-bg border-b-2 border-orange-200 sticky top-0 z-50 shadow-lg">
       <div className="container mx-auto px-4 py-4">
         <div className="flex items-center justify-between">
-          <Link href="/" className="text-2xl font-bold text-gray-900 hover:text-blue-600 transition-colors">
-            Games Inc Jr
+          <Link href="/" className="flex items-center space-x-3 hover:scale-105 transition-transform duration-200">
+            <Logo size="md" className="controller-glow" />
+            <div className="hidden sm:block">
+              <div className="pixel-text text-yellow-400 text-sm font-bold tracking-wider">GAMES inc.</div>
+              <div className="text-orange-400 text-xl font-bold">Jr</div>
+            </div>
           </Link>
           
-          <nav className="flex items-center space-x-6">
+          <nav className="flex items-center space-x-4">
             <Link 
               href="/" 
-              className="text-gray-600 hover:text-gray-900 transition-colors"
+              className="text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
             >
               Home
             </Link>
             <Link 
               href="/games" 
-              className="text-gray-600 hover:text-gray-900 transition-colors"
+              className="text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
             >
               Games
             </Link>
             <Link 
               href="/games/space-runner" 
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+              className="gaming-btn gaming-glow"
             >
-              Play Now
+              🎮 Play Now
             </Link>
             <Link 
               href="/admin/login" 
-              className="text-gray-500 hover:text-gray-700 transition-colors text-sm"
+              className="text-gray-300 hover:text-white transition-colors text-sm px-2 py-1 rounded hover:bg-white/10"
             >
               Admin
             </Link>
