@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Brick Blitz '84 - Demo</title>
+  <style>
+    body{ margin:0; background:#0b0f1a; color:#e6edff; font-family:Arial, Helvetica, sans-serif; display:flex; flex-direction:column; align-items:center; }
+    h1{ margin:16px 0 8px; }
+    .hud{ display:flex; gap:16px; margin-bottom:8px; }
+    .badge{ background:#131c33; padding:6px 10px; border-radius:8px; border:1px solid #24325f; }
+    canvas{ border:2px solid #1c2b57; background:#0e1426; image-rendering:pixelated; touch-action:none; }
+    .mobile{ position:fixed; bottom:16px; left:50%; transform:translateX(-50%); display:none; gap:10px; z-index:50; background:rgba(0,0,0,.25); border:1px solid #274a93; border-radius:12px; padding:10px; backdrop-filter:blur(6px); }
+    .mobile button{ width:120px; height:48px; border-radius:10px; border:1px solid #274a93; background:#142446; color:#d9e1ff; font-size:16px; }
+    @media (pointer:coarse){ .mobile{ display:flex; } }
+  </style>
+</head>
+<body>
+  <h1>Brick Blitz '84</h1>
+  <div class="hud">
+    <div class="badge">Score: <span id="score">0</span></div>
+    <div class="badge">Lives: <span id="lives">3</span></div>
+    <div class="badge">Level: <span id="level">1</span></div>
+  </div>
+  <canvas id="game" width="800" height="600" aria-label="Brick Blitz game"></canvas>
+  <div class="mobile" aria-label="Mobile controls">
+    <button id="left">◀︎ Left</button>
+    <button id="right">Right ▶︎</button>
+  </div>
+
+  <script>
+  const canvas=document.getElementById('game');
+  const ctx=canvas.getContext('2d');
+  const scoreEl=document.getElementById('score');
+  const livesEl=document.getElementById('lives');
+  const levelEl=document.getElementById('level');
+  const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+
+  let focused=true, running=true;
+  let score=0, lives=3, level=1;
+  const paddle={ x:canvas.width/2-50, y:canvas.height-24, w:100, h:12, speed:7 };
+  const ball={ x:canvas.width/2, y:canvas.height-60, r:7, dx:4, dy:-4, stuck:false };
+  let bricks=[]; // {x,y,w,h,hp,color}
+
+  function rand(a,b){ return Math.random()*(b-a)+a; }
+  function newColor(){ const hues=[200,220,260]; const h=hues[Math.floor(Math.random()*hues.length)]; return `hsl(${h} 80% 60%)`; }
+
+  function spawnLevel(){
+    bricks=[];
+    const rows=3+Math.min(5, level);
+    const cols=10;
+    const margin=40, top=60, bw=(canvas.width-2*margin)/cols-6, bh=20;
+    for(let r=0;r<rows;r++){
+      for(let c=0;c<cols;c++){
+        const hp = 1 + Math.floor(r/2);
+        bricks.push({ x: margin + c*(bw+6), y: top + r*(bh+6), w:bw, h:bh, hp, color:newColor() });
+      }
+    }
+    paddle.x=canvas.width/2-paddle.w/2; ball.x=canvas.width/2; ball.y=canvas.height-60; ball.dx=4*Math.sign(ball.dx||1); ball.dy=-4; ball.stuck=true;
+  }
+
+  // Input
+  const keys={};
+  document.addEventListener('keydown', e=>{ keys[e.key.toLowerCase()]=true; if(e.key===' '){ ball.stuck=false; }});
+  document.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()]=false; });
+  if(isTouch){
+    const bind=(id,dir)=>{
+      const el=document.getElementById(id);
+      el.addEventListener('touchstart', e=>{ e.preventDefault(); keys[dir]=true; }, {passive:false});
+      el.addEventListener('touchend', e=>{ e.preventDefault(); keys[dir]=false; }, {passive:false});
+      el.addEventListener('mousedown', ()=>keys[dir]=true);
+      el.addEventListener('mouseup', ()=>keys[dir]=false);
+      el.addEventListener('mouseleave', ()=>keys[dir]=false);
+    };
+    bind('left','arrowleft'); bind('right','arrowright');
+  }
+
+  function update(){
+    if(!running) return;
+    if(keys['arrowleft']||keys['a']) paddle.x=Math.max(8,paddle.x-paddle.speed);
+    if(keys['arrowright']||keys['d']) paddle.x=Math.min(canvas.width-paddle.w-8,paddle.x+paddle.speed);
+    if(ball.stuck){ ball.x=paddle.x+paddle.w/2; ball.y=paddle.y-12; return; }
+
+    ball.x+=ball.dx; ball.y+=ball.dy;
+    if(ball.x<8||ball.x>canvas.width-8) ball.dx*=-1;
+    if(ball.y<20) ball.dy*=-1;
+    if(ball.y>canvas.height+20){ lives--; livesEl.textContent=lives; ball.stuck=true; if(lives<=0){ running=false; } }
+
+    // paddle collide
+    if(ball.x>paddle.x && ball.x<paddle.x+paddle.w && ball.y>paddle.y-8 && ball.y<paddle.y+12){
+      const hit=(ball.x-(paddle.x+paddle.w/2))/(paddle.w/2);
+      ball.dx = hit*6; ball.dy = -Math.abs(ball.dy);
+    }
+
+    // bricks
+    for(let i=bricks.length-1;i>=0;i--){
+      const b=bricks[i];
+      if(ball.x>b.x && ball.x<b.x+b.w && ball.y>b.y && ball.y<b.y+b.h){
+        ball.dy*=-1; b.hp--; if(b.hp<=0){ bricks.splice(i,1); score+=10; scoreEl.textContent=score; }
+      }
+    }
+
+    if(bricks.length===0){ level++; levelEl.textContent=level; spawnLevel(); }
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    // walls
+    ctx.fillStyle='#1c2b57'; ctx.fillRect(0,0,canvas.width,12);
+    // paddle
+    ctx.fillStyle='#33aaff'; ctx.fillRect(paddle.x,paddle.y,paddle.w,paddle.h);
+    // ball
+    ctx.fillStyle='#ff2d95'; ctx.beginPath(); ctx.arc(ball.x,ball.y,ball.r,0,Math.PI*2); ctx.fill();
+    // bricks
+    for(const b of bricks){ ctx.fillStyle=b.color; ctx.fillRect(b.x,b.y,b.w,b.h); }
+  }
+
+  function loop(){ update(); draw(); requestAnimationFrame(loop); }
+  paddle.y=canvas.height-24; spawnLevel(); loop();
+  </script>
+</body>
+</html>
+
+

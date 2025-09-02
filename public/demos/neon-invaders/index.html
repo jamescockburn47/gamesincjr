@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Neon Invaders - Demo</title>
+  <style>
+    :root { --bg:#0a0f1c; --grid:#121a31; --neon:#39ff14; --laser:#ff2d95; --ship:#33aaff; }
+    html,body { height:100%; }
+    body { margin:0; background:var(--bg); color:#d9e1ff; font-family:Arial, Helvetica, sans-serif; display:flex; flex-direction:column; align-items:center; }
+    h1 { margin:16px 0 8px; font-weight:800; letter-spacing:1px; }
+    .hud { display:flex; gap:16px; margin-bottom:8px; align-items:center; }
+    .badge { background:#122042; padding:6px 10px; border-radius:8px; border:1px solid #203064; }
+    canvas { border:2px solid #1b2a52; background:radial-gradient(1200px 600px at 50% -200px, #1a2c57 0%, #0a0f1c 60%); image-rendering:pixelated; touch-action:none; }
+    .status { margin:8px 0 12px; padding:8px 12px; border-radius:8px; background:#18305e; border:1px solid #274a93; }
+    .mobile { position:fixed; bottom:16px; left:50%; transform:translateX(-50%); display:none; gap:10px; z-index:50; background:rgba(0,0,0,.25); border:1px solid #274a93; border-radius:12px; padding:10px; backdrop-filter:blur(6px); }
+    .mobile button { width:64px; height:64px; border-radius:12px; border:1px solid #274a93; background:#142446; color:#d9e1ff; font-size:18px; }
+    @media (pointer:coarse){ .mobile{ display:flex; } }
+  </style>
+</head>
+<body>
+  <h1>Neon Invaders</h1>
+  <div class="hud">
+    <div class="badge">Score: <span id="score">0</span></div>
+    <div class="badge">Lives: <span id="lives">3</span></div>
+    <div class="badge">Wave: <span id="wave">1</span></div>
+  </div>
+  <div id="status" class="status">Tap or click the canvas to focus controls. Arrow keys / A,D to move. Space to shoot.</div>
+  <canvas id="game" width="800" height="600" aria-label="Neon Invaders game"></canvas>
+  <div class="mobile" aria-label="Mobile controls">
+    <button id="left">◀︎</button>
+    <button id="shoot">⨁</button>
+    <button id="right">▶︎</button>
+  </div>
+
+  <script>
+  const canvas = document.getElementById('game');
+  const ctx = canvas.getContext('2d');
+  const scoreEl = document.getElementById('score');
+  const livesEl = document.getElementById('lives');
+  const waveEl = document.getElementById('wave');
+  const statusEl = document.getElementById('status');
+  const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+
+  let focused = false, running = true;
+  let keys = {};
+  let score = 0, lives = 3, wave = 1;
+
+  const player = { x: canvas.width/2, y: canvas.height-40, w: 36, h: 14, speed: 5, cooldown: 0 };
+  const lasers = []; // {x,y,w,h,dy,owner}
+  let fleet = [];
+  let fleetDir = 1; // 1 right, -1 left
+  let stepTimer = 0;
+
+  function spawnWave(nCols=10, nRows=4){
+    fleet = [];
+    const startX = 80, startY = 80, gapX=50, gapY=40;
+    for(let r=0;r<nRows;r++){
+      for(let c=0;c<nCols;c++){
+        fleet.push({ x:startX + c*gapX, y:startY + r*gapY, w:28, h:18, hp:1 + Math.floor(wave/3) });
+      }
+    }
+    fleetDir = 1;
+  }
+
+  function rect(x,y,w,h, color){ ctx.fillStyle=color; ctx.fillRect(x,y,w,h); }
+  function glowRect(x,y,w,h, color){ ctx.shadowColor=color; ctx.shadowBlur=12; ctx.fillStyle=color; ctx.fillRect(x,y,w,h); ctx.shadowBlur=0; }
+
+  function shoot(owner){
+    const dy = owner==='player' ? -8 : 4;
+    const color = owner==='player' ? 'var(--laser)' : '#ffad2d';
+    lasers.push({ x: owner==='player'? player.x-2+player.w/2 : owner.x+owner.w/2-2, y: owner==='player'? player.y-6 : owner.y+owner.h+2, w:4, h:10, dy, color, owner});
+  }
+
+  // Input
+  document.addEventListener('keydown', e=>{ if(focused){ keys[e.key.toLowerCase()] = true; if(e.key===' '){ e.preventDefault(); }} });
+  document.addEventListener('keyup', e=>{ if(focused){ keys[e.key.toLowerCase()] = false; }} );
+  canvas.addEventListener('click', ()=>{ focused=true; statusEl.textContent='Controls active. Good luck!'; });
+  document.addEventListener('click', (e)=>{ if(!canvas.contains(e.target)){ focused=false; statusEl.textContent='Game paused. Click the canvas to resume.'; }});
+
+  if(isTouch){
+    const left=document.getElementById('left'), right=document.getElementById('right'), shootBtn=document.getElementById('shoot');
+    const bind=(el, fnDown, fnUp)=>{
+      el.addEventListener('touchstart', e=>{ e.preventDefault(); focused=true; fnDown(); }, {passive:false});
+      el.addEventListener('touchend', e=>{ e.preventDefault(); fnUp(); }, {passive:false});
+      el.addEventListener('mousedown', ()=>{ focused=true; fnDown(); });
+      el.addEventListener('mouseup', ()=>fnUp());
+      el.addEventListener('mouseleave', ()=>fnUp());
+    };
+    bind(left, ()=>keys['arrowleft']=true, ()=>keys['arrowleft']=false);
+    bind(right, ()=>keys['arrowright']=true, ()=>keys['arrowright']=false);
+    bind(shootBtn, ()=>shoot('player'), ()=>{});
+  }
+
+  function update(){
+    if(!running) return;
+    // Player
+    if(focused){
+      if(keys['arrowleft']||keys['a']) player.x = Math.max(8, player.x - player.speed);
+      if(keys['arrowright']||keys['d']) player.x = Math.min(canvas.width - player.w - 8, player.x + player.speed);
+      if((keys[' ']||keys['space']) && player.cooldown<=0){ shoot('player'); player.cooldown = 12; }
+    }
+    if(player.cooldown>0) player.cooldown--;
+
+    // Fleet movement
+    stepTimer++;
+    if(stepTimer % Math.max(20 - wave*2, 5) === 0){
+      let hitEdge=false;
+      for(const e of fleet){ e.x += 10*fleetDir; if(e.x<20 || e.x+e.w>canvas.width-20) hitEdge=true; }
+      if(hitEdge){
+        for(const e of fleet){ e.y += 16; }
+        fleetDir *= -1;
+      }
+      // random enemy shots
+      if(Math.random()<0.4 && fleet.length){
+        const shooter = fleet[Math.floor(Math.random()*fleet.length)];
+        shoot(shooter);
+      }
+    }
+
+    // Lasers
+    for(let i=lasers.length-1;i>=0;i--){
+      const l=lasers[i]; l.y += l.dy; if(l.y<-20||l.y>canvas.height+20){ lasers.splice(i,1); continue; }
+      if(l.owner==='player'){
+        for(let j=fleet.length-1;j>=0;j--){
+          const e=fleet[j];
+          if(l.x<e.x+e.w && l.x+l.w>e.x && l.y<e.y+e.h && l.y+l.h>e.y){
+            lasers.splice(i,1); e.hp--; if(e.hp<=0){ fleet.splice(j,1); score+=10; scoreEl.textContent=score; } break;
+          }
+        }
+      } else {
+        if(l.x<player.x+player.w && l.x+l.w>player.x && l.y<player.y+player.h && l.y+l.h>player.y){
+          lasers.splice(i,1); lives--; livesEl.textContent=lives; focused=false; statusEl.textContent='You were hit! Click to resume.'; if(lives<=0){ gameOver(); }
+        }
+      }
+    }
+
+    // Win wave
+    if(fleet.length===0){ wave++; waveEl.textContent=wave; spawnWave(10, Math.min(5, 3+Math.floor(wave/2))); }
+  }
+
+  function drawGrid(){
+    ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+    for(let y=0;y<canvas.height;y+=40){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(canvas.width,y); ctx.stroke(); }
+  }
+
+  function render(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
+    drawGrid();
+    // Player
+    glowRect(player.x, player.y, player.w, player.h, 'var(--ship)');
+    // Enemies
+    for(const e of fleet){ glowRect(e.x, e.y, e.w, e.h, 'var(--neon)'); }
+    // Lasers
+    for(const l of lasers){ glowRect(l.x, l.y, l.w, l.h, l.color); }
+  }
+
+  function gameOver(){ running=false; statusEl.textContent = `Game Over. Final score ${score}. Reload to try again.`; }
+
+  function loop(){ update(); render(); requestAnimationFrame(loop); }
+  spawnWave(); loop();
+  </script>
+</body>
+</html>
+
+
