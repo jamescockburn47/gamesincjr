@@ -20,7 +20,7 @@ export default function GiochiPage() {
 
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {games.map((game) => (
-            <Link key={game.slug} href={`/games/${game.slug}`}>
+            <Link key={game.slug} href={`/it/games/${game.slug}`}>
               <Card className="game-card h-full cursor-pointer group">
                 <CardHeader className="p-0">
                   <div className="aspect-video bg-gradient-to-br from-gray-800 to-gray-900 rounded-t-xl overflow-hidden relative">

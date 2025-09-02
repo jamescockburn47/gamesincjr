@@ -85,7 +85,7 @@ export default function GamePlayer({ game }: GamePlayerProps) {
     switch (game.gameType) {
       case 'html5':
         return (
-          <div ref={containerRef} className="relative w-full rounded-xl overflow-hidden border bg-black">
+          <div ref={containerRef} className="relative w-full rounded-xl overflow-hidden border bg-black fullscreen-target">
             {/* Controls overlay */}
             <div className="absolute left-2 top-2 z-10 flex gap-2">
               {!isFullscreen ? (
@@ -99,14 +99,8 @@ export default function GamePlayer({ game }: GamePlayerProps) {
               )}
             </div>
 
-            {/* Responsive viewport-fit container on mobile */}
-            <div
-              className="relative w-full"
-              style={{
-                height: isClient ? 'min(70vh, calc(var(--vh, 1vh) * 100 - 80px))' : undefined,
-                aspectRatio: isClient ? undefined : '16 / 9',
-              }}
-            >
+            {/* Viewport container: aspect ratio by default; fills screen in fullscreen via CSS */}
+            <div className="relative w-full aspect-video game-viewport">
               <iframe
                 ref={iframeRef}
                 src={game.demoPath}

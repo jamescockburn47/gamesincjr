@@ -180,6 +180,23 @@
   .gaming-btn:hover {
     @apply from-orange-600 to-yellow-500;
   }
+
+  /* Fullscreen tweaks for game container */
+  .fullscreen-target:fullscreen {
+    border-radius: 0 !important;
+  }
+  .fullscreen-target:fullscreen .game-viewport {
+    width: 100vw;
+    height: 100vh;
+  }
+  /* Safari/WebKit */
+  .fullscreen-target:-webkit-full-screen {
+    border-radius: 0 !important;
+  }
+  .fullscreen-target:-webkit-full-screen .game-viewport {
+    width: 100vw;
+    height: 100vh;
+  }
   
   /* Clean button styles */
   .clean-btn {

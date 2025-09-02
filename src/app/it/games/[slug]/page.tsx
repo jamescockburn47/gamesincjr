@@ -11,7 +11,7 @@ export default function GiocoIt({ params }: Params) {
     <div className="container mx-auto px-4 py-8">
       <div className="mb-8">
         <h1 className="text-4xl font-bold mb-4">{game.title}</h1>
-        <p className="text-lg text-gray-600">{game.description || 'Nessuna descrizione disponibile'}</p>
+        <p className="text-lg text-gray-600">{(game as unknown as { description_it?: string }).description_it || game.description || 'Nessuna descrizione disponibile'}</p>
       </div>
       <div className="mb-12" data-demo-section>
         <div className="bg-yellow-50 border border-yellow-200 text-yellow-900 rounded-lg p-4 mb-4">
