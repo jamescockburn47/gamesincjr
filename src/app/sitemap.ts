@@ -1,5 +1,6 @@
 import type { MetadataRoute } from 'next';
 import { getGames } from '@/lib/games';
+export const revalidate = 0;
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const games = getGames();

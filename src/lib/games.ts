@@ -61,7 +61,7 @@ const validatedGames: Game[] = gamesData.map((game, index) => {
 
 // Helper functions
 export function getGames(): Game[] {
-  return validatedGames;
+  return [...validatedGames];
 }
 
 export function getGameBySlug(slug: string): Game | null {

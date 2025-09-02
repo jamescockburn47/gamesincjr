@@ -1,4 +1,5 @@
 import Link from 'next/link';
+export const revalidate = 0;
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
 import { getGames } from '@/lib/games';
 

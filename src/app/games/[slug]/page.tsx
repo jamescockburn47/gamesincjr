@@ -91,18 +91,17 @@ export default async function GamePage({ params }: GamePageProps) {
 
       {/* Game Player Section */}
       <div className="mb-12" data-demo-section>
-        {/* Access notice */}
-        {hasAccessToGame(user.tier, 0) ? (
-          <GamePlayer game={game} />
-        ) : (
-          <div className="bg-yellow-50 border border-yellow-200 text-yellow-900 rounded-lg p-4">
+        {/* Show a notice for non-subscribers, but ALWAYS render the demo */}
+        {!hasAccessToGame(user.tier, 0) && (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-900 rounded-lg p-4 mb-4">
             <p className="modern-text">
-              You&apos;re on the free tier. You can try level 1. To unlock all levels, please{' '}
+              Preview mode: you can play level 1 here. To unlock all levels, please{' '}
               <a className="underline" href="/about">choose a subscription tier</a> and then sign in on the{' '}
               <a className="underline" href="/account">Account</a> page.
             </p>
           </div>
         )}
+        <GamePlayer game={game} />
       </div>
 
       {/* Screenshots Grid */}
