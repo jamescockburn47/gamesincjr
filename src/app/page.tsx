@@ -9,13 +9,13 @@ export default function Home() {
           <div className="pixel-bounce mb-8">
             <div className="text-6xl mb-4">🎮</div>
           </div>
-          <h1 className="pixel-text text-6xl text-white mb-6">
+          <h1 className="pixel-text text-6xl text-gray-100 mb-6">
             GAMES inc. Jr
           </h1>
           <p className="modern-text text-xl text-gray-200 mb-8 max-w-3xl mx-auto">
             Welcome to the ultimate gaming playground! 🚀 Experience amazing HTML5 games, 
             from retro arcade classics to cutting-edge AI adventures. 
-            <span className="text-white font-semibold"> No downloads, just pure fun!</span>
+            <span className="font-semibold"> No downloads, just pure fun!</span>
           </p>
           <div className="flex flex-col sm:flex-row gap-6 justify-center">
             <Link 
@@ -116,14 +116,14 @@ export default function Home() {
 
         {/* How It Works Section */}
         <div className="text-center mt-20 mb-20">
-          <h2 className="pixel-text text-4xl text-white mb-12">
+          <h2 className="pixel-text text-4xl text-gray-100 mb-12">
             How It Works
           </h2>
           
           <div className="max-w-4xl mx-auto">
             <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 mb-8 border border-white/20">
               <div className="text-6xl mb-6">👦💻</div>
-              <h3 className="heading-text text-2xl text-white mb-4">Meet Our 7-Year-Old Developer</h3>
+              <h3 className="heading-text text-2xl text-gray-100 mb-4">Meet Our 7-Year-Old Developer</h3>
               <p className="modern-text text-gray-200 text-lg leading-relaxed">
                 All games on this platform are created by a talented 7-year-old using Cursor AI! 
                 Every idea, design, and line of code comes from this young developer&apos;s imagination. 
@@ -142,7 +142,7 @@ export default function Home() {
               
               <div className="bg-gradient-to-br from-cyan-400/20 to-blue-500/20 rounded-xl p-6 border border-cyan-200/30">
                 <div className="text-4xl mb-4">📚</div>
-                <h4 className="heading-text text-xl text-white mb-3">Learn to Code</h4>
+                <h4 className="heading-text text-xl text-gray-100 mb-3">Learn to Code</h4>
                 <p className="modern-text text-gray-200">
                   We offer tutorials showing kids how to create their own games using AI tools, just like our developer does!
                 </p>
@@ -151,17 +151,15 @@ export default function Home() {
 
             <div className="bg-gradient-to-r from-green-500/20 to-emerald-400/20 rounded-xl p-6 border border-green-200/30">
               <div className="text-4xl mb-4">💡</div>
-              <h4 className="heading-text text-xl text-white mb-3">Suggest Games</h4>
-              <p className="modern-text text-gray-200">
-                Have an idea for a game? Contact us! If we build it, you&apos;ll get free access to it in your subscription.
-              </p>
+              <h4 className="heading-text text-xl text-gray-100 mb-3">Suggest Games</h4>
+              <p className="modern-text text-gray-200">Have an idea for a game? <a className="underline text-yellow-300" href="mailto:hello@gamesincjr.com">Contact us</a> and we&apos;ll try to build it. If we ship it, it will be added to your subscription <span className="font-semibold">for free</span>.</p>
             </div>
           </div>
         </div>
 
         {/* Subscription Tiers */}
         <div className="text-center mb-20">
-          <h2 className="pixel-text text-4xl text-white mb-12">
+          <h2 className="pixel-text text-4xl text-gray-100 mb-12">
             Simple Subscription Tiers
           </h2>
           

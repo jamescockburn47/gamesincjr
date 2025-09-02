@@ -53,7 +53,13 @@
         
         canvas {
             cursor: pointer;
+            touch-action: none; /* avoid scrolling while touching canvas */
         }
+
+        /* Mobile controls */
+        .mobile-controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 12px; z-index: 50; background: rgba(0,0,0,0.35); padding: 10px; border-radius: 12px; backdrop-filter: blur(6px); }
+        .mobile-controls button { width: 56px; height: 56px; border-radius: 50%; border: 1px solid #555; background: #222; color: #fff; font-size: 20px; }
+        @media (pointer: coarse) { .mobile-controls { display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(2, 56px); grid-auto-flow: dense; } .btn-up { grid-column: 2; grid-row: 1; } .btn-left { grid-column: 1; grid-row: 2; } .btn-down { grid-column: 2; grid-row: 2; } .btn-right { grid-column: 3; grid-row: 2; } }
   </style>
 </head>
 <body>
@@ -61,6 +67,12 @@
     <div class="score">Score: <span id="score">0</span></div>
     <div class="game-status unfocused" id="gameStatus">Game paused - Click to start playing</div>
     <canvas id="gameCanvas" width="800" height="400"></canvas>
+    <div class="mobile-controls" id="mobileControls" aria-label="Mobile controls">
+      <button class="btn-up" aria-label="Up">⬆️</button>
+      <button class="btn-left" aria-label="Left">⬅️</button>
+      <button class="btn-down" aria-label="Down">⬇️</button>
+      <button class="btn-right" aria-label="Right">➡️</button>
+    </div>
     <div class="controls">
         <p>Use ARROW KEYS or WASD to move</p>
         <p>Dodge the asteroids!</p>
@@ -236,6 +248,28 @@
 
       requestAnimationFrame(gameLoop);
     }
+
+        // Mobile controls
+        const mobileControls = document.getElementById('mobileControls');
+        const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
+        function pressKey(code, pressed) { keys[code] = pressed; }
+        if (isTouch) {
+          const bind = (selector, code) => {
+            const el = mobileControls.querySelector(selector);
+            const start = (e) => { e.preventDefault(); gameFocused = true; pressKey(code, true); };
+            const end = (e) => { e.preventDefault(); pressKey(code, false); };
+            el.addEventListener('touchstart', start, { passive: false });
+            el.addEventListener('touchend', end, { passive: false });
+            el.addEventListener('touchcancel', end, { passive: false });
+            el.addEventListener('mousedown', start);
+            el.addEventListener('mouseup', end);
+            el.addEventListener('mouseleave', end);
+          };
+          bind('.btn-up', 'arrowup');
+          bind('.btn-down', 'arrowdown');
+          bind('.btn-left', 'arrowleft');
+          bind('.btn-right', 'arrowright');
+        }
 
         // Start the game
         gameLoop();
