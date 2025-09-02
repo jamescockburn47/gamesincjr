@@ -1,5 +1,6 @@
 @import "tailwindcss";
 @import "tw-animate-css";
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
@@ -141,8 +142,21 @@
 
   /* Custom utility classes */
   .pixel-text {
-    font-family: 'Courier New', monospace;
-    text-shadow: 2px 2px 0px rgba(0, 0, 0, 0.3);
+    font-family: 'Inter', sans-serif;
+    font-weight: 800;
+    letter-spacing: -0.02em;
+  }
+  
+  .modern-text {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+  }
+  
+  .heading-text {
+    font-family: 'Inter', sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.01em;
   }
 
   .gaming-glow {
@@ -159,11 +173,18 @@
 
   /* Gaming button styles */
   .gaming-btn {
-    @apply bg-gradient-to-r from-orange-500 to-yellow-400 text-white font-bold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200;
+    @apply bg-gradient-to-r from-orange-500 to-yellow-400 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200;
+    font-family: 'Inter', sans-serif;
   }
 
   .gaming-btn:hover {
     @apply from-orange-600 to-yellow-500;
+  }
+  
+  /* Clean button styles */
+  .clean-btn {
+    @apply bg-white text-gray-800 font-medium py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 border border-gray-200;
+    font-family: 'Inter', sans-serif;
   }
 
   /* Card hover effects */

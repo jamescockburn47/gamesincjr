@@ -9,21 +9,21 @@ export default function Header() {
           <Link href="/" className="flex items-center space-x-3 hover:scale-105 transition-transform duration-200">
             <Logo size="md" className="controller-glow" />
             <div className="hidden sm:block">
-              <div className="pixel-text text-yellow-400 text-sm font-bold tracking-wider">GAMES inc.</div>
-              <div className="text-orange-400 text-xl font-bold">Jr</div>
+              <div className="pixel-text text-yellow-400 text-sm">GAMES inc.</div>
+              <div className="heading-text text-orange-400 text-xl">Jr</div>
             </div>
           </Link>
           
           <nav className="flex items-center space-x-4">
             <Link 
               href="/" 
-              className="text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
+              className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
             >
               Home
             </Link>
             <Link 
               href="/games" 
-              className="text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
+              className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
             >
               Games
             </Link>
