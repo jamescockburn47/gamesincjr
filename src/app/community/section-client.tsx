@@ -9,26 +9,27 @@ export default function CommunityClient() {
   const [name, setName] = useState('');
   const [text, setText] = useState('');
 
-  useEffect(() => {
-    const raw = localStorage.getItem('gi_feedback');
-    if (raw) setMessages(JSON.parse(raw));
-  }, []);
-
-  function save(list: Message[]) {
-    setMessages(list);
-    localStorage.setItem('gi_feedback', JSON.stringify(list.slice(-100)));
+  async function refresh() {
+    const res = await fetch('/api/community/list', { cache: 'no-store' });
+    const data = await res.json();
+    setMessages(data.items || []);
   }
 
-  function submit(e: React.FormEvent) {
+  useEffect(() => {
+    refresh();
+    const t = setInterval(refresh, 5000);
+    return () => clearInterval(t);
+  }, []);
+
+  async function submit(e: React.FormEvent) {
     e.preventDefault();
     if (!text.trim()) return;
-    const entry: Message = {
-      id: crypto.randomUUID(),
-      name: name.trim() || 'Anon',
-      text: text.trim(),
-      ts: Date.now(),
-    };
-    save([...messages, entry]);
+    await fetch('/api/community/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ name, text }),
+    });
+    await refresh();
     setText('');
   }
 
