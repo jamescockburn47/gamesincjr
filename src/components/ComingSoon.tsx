@@ -10,10 +10,10 @@ interface ComingSoonProps {
 export default function ComingSoon({ gameTitle, hasDemo }: ComingSoonProps) {
   return (
     <section className="bg-gray-50 rounded-xl p-8 text-center">
-      <h3 className="text-xl font-semibold mb-4">Download Coming Soon</h3>
+      <h3 className="text-xl font-semibold mb-4">More Levels Coming</h3>
       <p className="text-gray-600 mb-6">
-        The full version of {gameTitle} will be available for download soon. 
-        {hasDemo && ' Try the demo above to get a taste of the action!'}
+        We&apos;re adding new stages and features to {gameTitle}. 
+        {hasDemo && ' Play the demo above now; full content unlocks with a subscription.'}
       </p>
       <div className="flex gap-4 justify-center">
         {hasDemo && (
@@ -27,13 +27,6 @@ export default function ComingSoon({ gameTitle, hasDemo }: ComingSoonProps) {
             Play Demo
           </Button>
         )}
-        <Button 
-          disabled 
-          aria-disabled="true"
-          title="Download will be available soon"
-        >
-          Coming Soon
-        </Button>
       </div>
     </section>
   );

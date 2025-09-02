@@ -103,6 +103,7 @@
         // Asteroids
         let asteroids = [];
         const asteroidSpeed = 2;
+        let starfield = Array.from({length:120},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,s:Math.random()*2+0.5}));
 
         // Event listeners
         document.addEventListener('keydown', (e) => {
@@ -208,8 +209,12 @@
 
         // Draw functions
         function drawPlayer() {
+            // glow ship
             ctx.fillStyle = '#00ff00';
+            ctx.shadowColor = '#00ff00';
+            ctx.shadowBlur = 10;
             ctx.fillRect(player.x, player.y, player.width, player.height);
+            ctx.shadowBlur = 0;
         }
 
         function drawAsteroids() {
@@ -219,10 +224,21 @@
             });
         }
 
+        function drawStars(){
+            ctx.fillStyle = '#222';
+            ctx.fillRect(0,0,canvas.width,canvas.height);
+            ctx.fillStyle = '#ffffff';
+            starfield.forEach(st=>{
+                ctx.globalAlpha = 0.5 + Math.random()*0.5;
+                ctx.fillRect(st.x, st.y, st.s, st.s);
+                ctx.globalAlpha = 1;
+                st.y += st.s*0.4; if(st.y>canvas.height){ st.y= -2; st.x=Math.random()*canvas.width; }
+            });
+        }
+
         function draw() {
-            // Clear canvas
-            ctx.fillStyle = '#111';
-            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            // Starfield background
+            drawStars();
 
             // Draw game objects
             drawPlayer();
@@ -236,7 +252,7 @@
                 updateAsteroids();
 
                 // Create new asteroids occasionally
-                if (Math.random() < 0.02) {
+                if (Math.random() < 0.04) {
                     createAsteroid();
                 }
 
