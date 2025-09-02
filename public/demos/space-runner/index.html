@@ -63,7 +63,17 @@
 <body>
     <h1>Space Runner</h1>
     <div class="score">Score: <span id="score">0</span></div>
-    <div class="game-status unfocused" id="gameStatus">Game paused - Click to start playing</div>
+    <div class="game-status unfocused" id="gameStatus">Click Start to play</div>
+    <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);z-index:1000;">
+      <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:700px;color:#fff;text-align:center">
+        <h2 style="margin:0 0 10px">Space Runner</h2>
+        <p style="margin:0 0 6px">Goal: dodge asteroids and score points.</p>
+        <p style="margin:0 0 6px">Desktop: Arrow keys / WASD to move.</p>
+        <p style="margin:0 0 12px">Mobile: use on‑screen buttons below.</p>
+        <button id="startBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Start</button>
+      </div>
+    </div>
+    <div id="countdown" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:999;color:#fff;font-size:64px;font-family:Arial,Helvetica,sans-serif">5</div>
     <div class="stage"><canvas id="gameCanvas" width="800" height="450"></canvas></div>
     <div class="mobile-controls" id="mobileControls" aria-label="Mobile controls">
       <button class="btn-up" aria-label="Up">⬆️</button>
@@ -87,6 +97,7 @@
         let score = 0;
         let gameRunning = true;
         let gameFocused = false;
+        let gameState = 'menu'; // menu | countdown | playing
         let keys = {};
 
         // Player
@@ -100,7 +111,7 @@
 
         // Asteroids
         let asteroids = [];
-        const asteroidSpeed = 2;
+        const asteroidSpeed = 1.4; // slower baseline
         let starfield = Array.from({length:120},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,s:Math.random()*2+0.5}));
 
         // Event listeners
@@ -116,10 +127,43 @@
             }
         });
 
+        // Start + fullscreen + countdown
+        const overlay = document.getElementById('overlay');
+        const startBtn = document.getElementById('startBtn');
+        const countdownEl = document.getElementById('countdown');
+
+        function requestFs() {
+          const el = document.documentElement;
+          if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+        }
+
+        startBtn.addEventListener('click', () => {
+          requestFs();
+          overlay.style.display = 'none';
+          gameState = 'countdown';
+          let t = 5;
+          countdownEl.style.display = 'flex';
+          countdownEl.textContent = String(t);
+          const iv = setInterval(()=>{
+            t -= 1;
+            countdownEl.textContent = String(t);
+            if (t <= 0) {
+              clearInterval(iv);
+              countdownEl.style.display = 'none';
+              gameState = 'playing';
+              gameFocused = true;
+              gameStatusElement.textContent = 'Controls active';
+              gameStatusElement.className = 'game-status focused';
+              canvas.style.border = '2px solid #00ff00';
+            }
+          }, 1000);
+        });
+
         // Canvas focus events
         canvas.addEventListener('click', () => {
+            if (gameState !== 'playing') return;
             gameFocused = true;
-            gameStatusElement.textContent = 'Game focused - Controls active!';
+            gameStatusElement.textContent = 'Controls active';
             gameStatusElement.className = 'game-status focused';
             canvas.style.border = '2px solid #00ff00';
         });
@@ -128,7 +172,7 @@
         document.addEventListener('click', (e) => {
             if (!canvas.contains(e.target)) {
                 gameFocused = false;
-                gameStatusElement.textContent = 'Game paused - Click to resume';
+                if (gameState === 'playing') gameStatusElement.textContent = 'Game paused - Click to resume';
                 gameStatusElement.className = 'game-status unfocused';
                 canvas.style.border = '2px solid #333';
                 // Clear all keys when unfocusing
@@ -203,7 +247,7 @@
             player.y = canvas.height - 50;
             gameRunning = true;
             gameFocused = false;
-            gameStatusElement.textContent = 'Game paused - Click to start playing';
+            gameStatusElement.textContent = 'Click Start to play';
             gameStatusElement.className = 'game-status unfocused';
             canvas.style.border = '2px solid #333';
             keys = {};
@@ -249,7 +293,7 @@
 
         // Game loop
         function gameLoop() {
-            if (gameRunning && gameFocused) {
+            if (gameState === 'playing' && gameRunning && gameFocused) {
                 updatePlayer();
                 updateAsteroids();
 
@@ -259,7 +303,7 @@
                 }
 
                 draw();
-            } else if (gameRunning && !gameFocused) {
+            } else if (gameState === 'playing' && gameRunning && !gameFocused) {
                 // Game is running but not focused - just draw the current state
                 draw();
             }

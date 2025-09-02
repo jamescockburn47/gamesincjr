@@ -24,6 +24,15 @@
     <div class="badge">Lives: <span id="lives">3</span></div>
     <div class="badge">Level: <span id="level">1</span></div>
   </div>
+  <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:1000;">
+    <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:680px;color:#fff;text-align:center">
+      <h2 style="margin:0 0 8px">Brick Blitz '84</h2>
+      <p style="margin:0 0 6px">Goal: break all bricks, don’t drop the ball.</p>
+      <p style="margin:0 0 12px">Controls: Arrows/A,D. Tap once to launch.</p>
+      <button id="startBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Start</button>
+    </div>
+  </div>
+  <div id="countdown" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:999;color:#fff;font-size:64px;font-family:Arial,Helvetica,sans-serif">5</div>
   <div class="stage"><canvas id="game" width="800" height="600" aria-label="Brick Blitz game"></canvas></div>
   <div class="mobile" aria-label="Mobile controls">
     <button id="left">◀︎ Left</button>
@@ -38,7 +47,7 @@
   const levelEl=document.getElementById('level');
   const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 
-  let focused=true, running=true;
+  let focused=false, running=true, state='menu';
   let score=0, lives=3, level=1;
   const paddle={ x:canvas.width/2-50, y:canvas.height-24, w:100, h:12, speed:7 };
   const ball={ x:canvas.width/2, y:canvas.height-60, r:7, dx:4, dy:-4, stuck:false };
@@ -79,6 +88,7 @@
 
   function update(){
     if(!running) return;
+    if(state!=='playing') return;
     if(keys['arrowleft']||keys['a']) paddle.x=Math.max(8,paddle.x-paddle.speed);
     if(keys['arrowright']||keys['d']) paddle.x=Math.min(canvas.width-paddle.w-8,paddle.x+paddle.speed);
     if(ball.stuck){ ball.x=paddle.x+paddle.w/2; ball.y=paddle.y-12; return; }
@@ -126,6 +136,15 @@
   }
   window.addEventListener('resize', resize);
   resize();
+
+  const overlay=document.getElementById('overlay');
+  const startBtn=document.getElementById('startBtn');
+  const countdownEl=document.getElementById('countdown');
+  function requestFs(){ const el=document.documentElement; if(el.requestFullscreen) el.requestFullscreen().catch(()=>{}); }
+  startBtn.addEventListener('click', ()=>{
+    requestFs(); overlay.style.display='none'; state='countdown'; let t=5; countdownEl.style.display='flex'; countdownEl.textContent=String(t);
+    const iv=setInterval(()=>{ t-=1; countdownEl.textContent=String(t); if(t<=0){ clearInterval(iv); countdownEl.style.display='none'; state='playing'; focused=true; } },1000);
+  });
 
   function loop(){ update(); draw(); requestAnimationFrame(loop); }
   paddle.y=canvas.height-24; spawnLevel(); loop();
