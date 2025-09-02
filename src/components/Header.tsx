@@ -1,7 +1,9 @@
 import Link from 'next/link';
 import Logo from './Logo';
+import { getUserFromCookies } from '@/lib/user-session';
 
-export default function Header() {
+export default async function Header() {
+  const user = await getUserFromCookies();
   return (
     <header className="gaming-bg border-b-2 border-orange-200 sticky top-0 z-50 shadow-lg">
       <div className="container mx-auto px-4 py-4">
@@ -39,11 +41,8 @@ export default function Header() {
             >
               🎮 Play Now
             </Link>
-            <Link 
-              href="/admin/login" 
-              className="text-gray-300 hover:text-white transition-colors text-sm px-2 py-1 rounded hover:bg-white/10"
-            >
-              Admin
+            <Link href="/account" className="text-gray-300 hover:text-white transition-colors text-sm px-2 py-1 rounded hover:bg-white/10">
+              {user.email ? 'Account' : 'Sign In'}
             </Link>
           </nav>
         </div>

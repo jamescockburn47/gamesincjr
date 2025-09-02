@@ -4,6 +4,7 @@ import { getGameBySlug } from '@/lib/games';
 import ComingSoon from '@/components/ComingSoon';
 import GamePlayer from '@/components/GamePlayer';
 import type { Metadata } from 'next';
+import { getUserFromCookies, hasAccessToGame } from '@/lib/user-session';
 
 interface GamePageProps {
   params: {
@@ -40,8 +41,9 @@ export async function generateMetadata({ params }: GamePageProps): Promise<Metad
   };
 }
 
-export default function GamePage({ params }: GamePageProps) {
+export default async function GamePage({ params }: GamePageProps) {
   const game = getGameBySlug(params.slug);
+  const user = await getUserFromCookies();
 
   if (!game) {
     notFound();
@@ -91,7 +93,18 @@ export default function GamePage({ params }: GamePageProps) {
 
       {/* Game Player Section */}
       <div className="mb-12" data-demo-section>
-        <GamePlayer game={game} />
+        {/* Access notice */}
+        {hasAccessToGame(user.tier, 0) ? (
+          <GamePlayer game={game} />
+        ) : (
+          <div className="bg-yellow-50 border border-yellow-200 text-yellow-900 rounded-lg p-4">
+            <p className="modern-text">
+              You&apos;re on the free tier. You can try level 1. To unlock all levels, please{' '}
+              <a className="underline" href="/about">choose a subscription tier</a> and then sign in on the{' '}
+              <a className="underline" href="/account">Account</a> page.
+            </p>
+          </div>
+        )}
       </div>
 
       {/* Screenshots Grid */}
