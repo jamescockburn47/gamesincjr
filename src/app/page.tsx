@@ -5,31 +5,21 @@ export default function Home() {
     <main className="min-h-screen gaming-bg pixel-pattern">
       {/* Hero Section */}
       <div className="container mx-auto px-4 py-20">
-        <div className="text-center mb-20">
-          <div className="pixel-bounce mb-8">
-            <div className="text-6xl mb-4">🎮</div>
-          </div>
-          <h1 className="pixel-text text-6xl text-gray-100 mb-6">
-            GAMES inc. Jr
-          </h1>
-          <p className="modern-text text-xl text-gray-200 mb-8 max-w-3xl mx-auto">
-            Welcome to the ultimate gaming playground! 🚀 Experience amazing HTML5 games, 
-            from retro arcade classics to cutting-edge AI adventures. 
-            <span className="font-semibold"> No downloads, just pure fun!</span>
-          </p>
-          <div className="flex flex-col sm:flex-row gap-6 justify-center">
-            <Link 
-              href="/games" 
-              className="gaming-btn gaming-glow text-lg px-10 py-4"
-            >
-              🎯 Browse All Games
-            </Link>
-            <Link 
-              href="/games/space-runner" 
-              className="clean-btn text-lg px-10 py-4"
-            >
-              🚀 Try Space Runner
-            </Link>
+        <div className="mb-20">
+          <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-10 text-center text-gray-800">
+            <div className="pixel-bounce mb-4">
+              <div className="text-6xl">🎮</div>
+            </div>
+            <h1 className="pixel-text text-5xl text-gray-900 mb-4">GAMES inc. Jr</h1>
+            <p className="modern-text text-lg mb-6">
+              Welcome to the ultimate gaming playground! 🚀 Experience amazing HTML5 games,
+              from retro arcade classics to cutting-edge AI adventures.
+              <span className="font-semibold"> No downloads, just pure fun!</span>
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <Link href="/games" className="gaming-btn gaming-glow text-lg px-8 py-4">🎯 Browse All Games</Link>
+              <Link href="/games/space-runner" className="clean-btn text-lg px-8 py-4">🚀 Try Space Runner</Link>
+            </div>
           </div>
         </div>
 
@@ -114,112 +104,27 @@ export default function Home() {
           </div>
         </div>
 
-        {/* How It Works Section */}
-        <div className="text-center mt-20 mb-20">
-          <h2 className="pixel-text text-4xl text-gray-100 mb-12">
-            How It Works
-          </h2>
-          
-          <div className="max-w-4xl mx-auto">
-            <div className="bg-white/10 backdrop-blur-sm rounded-2xl p-8 mb-8 border border-white/20">
-              <div className="text-6xl mb-6">👦💻</div>
-              <h3 className="heading-text text-2xl text-gray-100 mb-4">Meet Our 7-Year-Old Developer</h3>
-              <p className="modern-text text-gray-200 text-lg leading-relaxed">
-                All games on this platform are created by a talented 7-year-old using Cursor AI! 
-                Every idea, design, and line of code comes from this young developer&apos;s imagination. 
-                <span className="text-yellow-300 font-semibold"> It&apos;s gaming by kids, for kids!</span>
-              </p>
-            </div>
-
-            <div className="grid md:grid-cols-2 gap-8 mb-8">
-              <div className="bg-gradient-to-br from-orange-500/20 to-yellow-400/20 rounded-xl p-6 border border-orange-200/30">
-                <div className="text-4xl mb-4">🎮</div>
-                <h4 className="heading-text text-xl text-white mb-3">Try Before You Buy</h4>
-                <p className="modern-text text-gray-200">
-                  Test the first level of any game for free! If you love it, subscribe to unlock all levels and new games.
-                </p>
+        {/* Suggest a Game Callout (About has full details) */}
+        <div className="mt-20 mb-12">
+          <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl p-10">
+            <div className="grid md:grid-cols-3 gap-6 items-center">
+              <div className="text-5xl text-center md:text-left">💡</div>
+              <div className="md:col-span-2">
+                <h3 className="heading-text text-2xl text-gray-900 mb-2">Suggest a Game</h3>
+                <p className="modern-text text-gray-700">Have an idea? <a className="underline" href="mailto:hello@gamesincjr.com">Contact us</a> and we&apos;ll try to build it. If we ship it, it&apos;s added to your subscription for free.</p>
               </div>
-              
-              <div className="bg-gradient-to-br from-cyan-400/20 to-blue-500/20 rounded-xl p-6 border border-cyan-200/30">
-                <div className="text-4xl mb-4">📚</div>
-                <h4 className="heading-text text-xl text-gray-100 mb-3">Learn to Code</h4>
-                <p className="modern-text text-gray-200">
-                  We offer tutorials showing kids how to create their own games using AI tools, just like our developer does!
-                </p>
-              </div>
-            </div>
-
-            <div className="bg-gradient-to-r from-green-500/20 to-emerald-400/20 rounded-xl p-6 border border-green-200/30">
-              <div className="text-4xl mb-4">💡</div>
-              <h4 className="heading-text text-xl text-gray-100 mb-3">Suggest Games</h4>
-              <p className="modern-text text-gray-200">Have an idea for a game? <a className="underline text-yellow-300" href="mailto:hello@gamesincjr.com">Contact us</a> and we&apos;ll try to build it. If we ship it, it will be added to your subscription <span className="font-semibold">for free</span>.</p>
             </div>
           </div>
         </div>
 
-        {/* Subscription Tiers */}
-        <div className="text-center mb-20">
-          <h2 className="pixel-text text-4xl text-gray-100 mb-12">
-            Simple Subscription Tiers
-          </h2>
-          
-          <div className="grid md:grid-cols-4 gap-6 max-w-6xl mx-auto">
-            <div className="bg-white rounded-xl p-6 shadow-lg">
-              <div className="text-3xl mb-4">🎯</div>
-              <h3 className="heading-text text-xl text-gray-800 mb-2">Starter</h3>
-              <div className="text-3xl font-bold text-orange-500 mb-4">£2.99/year</div>
-              <p className="modern-text text-gray-600 mb-4">Access to 1 game</p>
-              <div className="text-sm text-gray-500">Perfect for trying us out</div>
-            </div>
-            
-            <div className="bg-white rounded-xl p-6 shadow-lg border-2 border-orange-200">
-              <div className="text-3xl mb-4">🚀</div>
-              <h3 className="heading-text text-xl text-gray-800 mb-2">Explorer</h3>
-              <div className="text-3xl font-bold text-orange-500 mb-4">£4.99/year</div>
-              <p className="modern-text text-gray-600 mb-4">Access to 3 games</p>
-              <div className="text-sm text-gray-500">Most popular choice</div>
-            </div>
-            
-            <div className="bg-white rounded-xl p-6 shadow-lg">
-              <div className="text-3xl mb-4">⭐</div>
-              <h3 className="heading-text text-xl text-gray-800 mb-2">Adventurer</h3>
-              <div className="text-3xl font-bold text-orange-500 mb-4">£7.99/year</div>
-              <p className="modern-text text-gray-600 mb-4">Access to 5 games</p>
-              <div className="text-sm text-gray-500">For serious gamers</div>
-            </div>
-            
-            <div className="bg-white rounded-xl p-6 shadow-lg">
-              <div className="text-3xl mb-4">👑</div>
-              <h3 className="heading-text text-xl text-gray-800 mb-2">Champion</h3>
-              <div className="text-3xl font-bold text-orange-500 mb-4">£12.99/year</div>
-              <p className="modern-text text-gray-600 mb-4">Access to 10 games</p>
-              <div className="text-sm text-gray-500">All games + new releases</div>
-            </div>
-          </div>
-          
-          <div className="mt-8">
-            <p className="modern-text text-gray-200 text-lg">
-              <span className="text-yellow-300 font-semibold">All tiers include:</span> New games added regularly, 
-              coding tutorials, and the ability to suggest games!
-            </p>
-          </div>
-        </div>
+        {/* Pricing removed from homepage (see About) */}
 
         {/* Call to Action */}
         <div className="text-center">
-          <div className="bg-gradient-to-r from-orange-500/20 to-yellow-400/20 rounded-2xl p-12 border-2 border-orange-200">
-            <h2 className="pixel-text text-3xl text-white mb-6">
-              Ready to Play?
-            </h2>
-            <p className="modern-text text-gray-200 text-lg mb-8">
-              Join our community of young gamers and developers! 🎉
-            </p>
-            <Link 
-              href="/games" 
-              className="gaming-btn gaming-glow text-xl px-12 py-5"
-            >
-              🎯 Start Gaming Now!
-            </Link>
+          <div className="max-w-4xl mx-auto bg-white rounded-2xl p-10 shadow-xl">
+            <h2 className="pixel-text text-3xl text-gray-900 mb-4">Ready to Play?</h2>
+            <p className="modern-text text-gray-700 text-lg mb-6">Join our community of young gamers and developers! 🎉</p>
+            <Link href="/games" className="gaming-btn gaming-glow text-xl px-12 py-5">🎯 Start Gaming Now!</Link>
           </div>
         </div>
       </div>

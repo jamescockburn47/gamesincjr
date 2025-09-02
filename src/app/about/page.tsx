@@ -30,6 +30,10 @@ export default function AboutPage() {
             <li className="bg-white/10 rounded-xl p-4"><strong className="text-yellow-300">Explorer</strong> — £2/year • Access 3 games</li>
             <li className="bg-white/10 rounded-xl p-4"><strong className="text-yellow-300">Champion</strong> — £3/year • Access 10 games</li>
           </ul>
+          <div className="modern-text text-gray-200 mt-4">
+            <p className="mb-1"><strong className="text-yellow-300">Premium AI Tier</strong> — For games with live AI features (e.g., smart NPCs or generative levels), a small recurring add‑on may apply to cover API costs.</p>
+            <p>We&apos;ll always keep prices as low as possible.</p>
+          </div>
           <p className="modern-text text-gray-200 mt-4">Own a game? You&apos;ll get <strong className="text-gray-100">free level updates</strong> forever.</p>
         </section>
 
