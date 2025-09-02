@@ -3,6 +3,21 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import type { Game } from '@/lib/games';
 
+// Extended types for vendor-prefixed fullscreen APIs (iOS Safari, older browsers)
+type FullscreenDocument = Document & {
+  webkitFullscreenElement?: Element | null;
+  webkitExitFullscreen?: () => Promise<void> | void;
+};
+
+type FullscreenElement = HTMLElement & {
+  webkitRequestFullscreen?: () => Promise<void> | void;
+};
+
+interface WebkitFullscreenEvents {
+  addEventListener(type: 'webkitfullscreenchange', listener: EventListener): void;
+  removeEventListener(type: 'webkitfullscreenchange', listener: EventListener): void;
+}
+
 interface GamePlayerProps {
   game: Game;
 }
@@ -29,16 +44,17 @@ export default function GamePlayer({ game }: GamePlayerProps) {
   useEffect(() => {
     if (!isClient) return;
     const onFsChange = () => {
-      const fsEl = document.fullscreenElement || (document as any).webkitFullscreenElement;
+      const fsDoc = document as FullscreenDocument;
+      const fsEl = document.fullscreenElement || fsDoc.webkitFullscreenElement || null;
       setIsFullscreen(!!fsEl);
     };
     document.addEventListener('fullscreenchange', onFsChange);
-    // @ts-ignore - webkit
-    document.addEventListener('webkitfullscreenchange', onFsChange);
+    // iOS Safari vendor-prefixed event (optional at runtime)
+    const vendorDoc = document as Document & Partial<WebkitFullscreenEvents>;
+    try { vendorDoc.addEventListener?.('webkitfullscreenchange', onFsChange as EventListener); } catch {}
     return () => {
       document.removeEventListener('fullscreenchange', onFsChange);
-      // @ts-ignore - webkit
-      document.removeEventListener('webkitfullscreenchange', onFsChange);
+      try { vendorDoc.removeEventListener?.('webkitfullscreenchange', onFsChange as EventListener); } catch {}
     };
   }, [isClient]);
 
@@ -46,19 +62,20 @@ export default function GamePlayer({ game }: GamePlayerProps) {
     try {
       const target = containerRef.current;
       if (!target) return;
-      if (target.requestFullscreen) await target.requestFullscreen();
-      // @ts-ignore - webkit
-      else if (target.webkitRequestFullscreen) await target.webkitRequestFullscreen();
+      const el = target as FullscreenElement;
+      if (el.requestFullscreen) await el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
     } catch {}
   };
 
   const exitFullscreen = async () => {
     try {
       if (document.fullscreenElement) await document.exitFullscreen();
-      // @ts-ignore - webkit
-      else if ((document as any).webkitFullscreenElement) {
-        // @ts-ignore - webkit
-        (document as any).webkitExitFullscreen?.();
+      else {
+        const fsDoc = document as FullscreenDocument;
+        if (fsDoc.webkitFullscreenElement) {
+          fsDoc.webkitExitFullscreen?.();
+        }
       }
     } catch {}
   };

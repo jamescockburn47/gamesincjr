@@ -2,9 +2,7 @@ import Link from 'next/link';
 import Logo from './Logo';
 import { getUserFromCookies } from '@/lib/user-session';
 import LangSwitch from './LangSwitch';
-import dynamic from 'next/dynamic';
-
-const MobileNav = dynamic(() => import('./MobileNav'), { ssr: false });
+import MobileNav from './MobileNav';
 
 export default async function Header() {
   const user = await getUserFromCookies();
