@@ -1,5 +1,4 @@
 import React from 'react';
-import Image from 'next/image';
 
 interface LogoProps {
   className?: string;
@@ -13,24 +12,17 @@ export default function Logo({ className = '', size = 'md' }: LogoProps) {
     lg: 'w-48 h-32'
   };
 
-  // Try to load the actual logo, fallback to placeholder
-  const logoSrc = '/images/logo.png'; // Replace with your actual logo
-  const placeholderSrc = '/images/logo-placeholder.svg';
-
   return (
     <div className={`${sizeClasses[size]} ${className} relative`}>
-      <Image
-        src={logoSrc}
+      <img
+        src="/images/logo.png"
         alt="Games Inc Jr Logo"
-        width={200}
-        height={120}
         className="w-full h-full object-contain"
         onError={(e) => {
           // Fallback to placeholder if main logo fails to load
           const target = e.target as HTMLImageElement;
-          target.src = placeholderSrc;
+          target.src = '/images/logo-placeholder.svg';
         }}
-        priority
       />
     </div>
   );
