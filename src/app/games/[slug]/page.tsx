@@ -81,9 +81,7 @@ export default async function GamePage({ params }: GamePageProps) {
             ))}
           </div>
           
-          <div className="text-3xl font-bold text-green-600">
-            {game.price ? `£${game.price}` : 'Free'}
-          </div>
+          {/* Pricing moved to subscriptions; no per-game price */}
           
           <Button size="lg" className="w-fit">
             Buy

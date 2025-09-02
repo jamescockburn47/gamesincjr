@@ -38,6 +38,7 @@ export default function AboutPage() {
             <p>We&apos;ll always keep prices as low as possible.</p>
           </div>
           <p className="modern-text text-gray-700 mt-4">Own a game? You&apos;ll get <strong>free level updates</strong> forever.</p>
+          <p className="modern-text text-gray-600 mt-2 text-sm">Subscriptions do not auto‑renew. We&apos;ll ask you before the year ends if you want to re‑subscribe.</p>
         </section>
 
         {/* Categories */}

@@ -10,7 +10,8 @@ export default function Home() {
             <div className="pixel-bounce mb-4">
               <div className="text-6xl">🎮</div>
             </div>
-            <h1 className="pixel-text text-5xl text-gray-900 mb-4">GAMES inc. Jr</h1>
+            <h1 className="pixel-text text-5xl text-gray-900 mb-2">GAMES inc. Jr</h1>
+            <div className="modern-text text-gray-600 mb-4">by kids, for kids. imagination is the only limit</div>
             <p className="modern-text text-lg mb-6">
               Welcome to the ultimate gaming playground! 🚀 Experience amazing HTML5 games,
               from retro arcade classics to cutting-edge AI adventures.
@@ -75,12 +76,7 @@ export default function Home() {
                   <span className="bg-gradient-to-r from-orange-500 to-red-400 text-white px-4 py-2 rounded-full text-sm font-bold">AI-Generated</span>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link 
-                    href="/games/space-runner" 
-                    className="gaming-btn gaming-glow text-lg px-8 py-4"
-                  >
-                    🎮 Play Now - £2.99
-                  </Link>
+                  <Link href="/games/space-runner" className="gaming-btn gaming-glow text-lg px-8 py-4">🎮 Play Now</Link>
                   <Link 
                     href="/games/space-runner" 
                     className="bg-gradient-to-r from-gray-600 to-gray-700 text-white px-8 py-4 rounded-lg text-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"

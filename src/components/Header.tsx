@@ -30,6 +30,18 @@ export default async function Header() {
               Games
             </Link>
             <Link 
+              href="/community" 
+              className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
+            >
+              Community
+            </Link>
+            <Link 
+              href="/tutorials" 
+              className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
+            >
+              Tutorials
+            </Link>
+            <Link 
               href="/about" 
               className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
             >
