@@ -123,7 +123,8 @@ export default function Home() {
         <div className="text-center">
           <div className="max-w-4xl mx-auto bg-white rounded-2xl p-10 shadow-xl">
             <h2 className="pixel-text text-3xl text-gray-900 mb-4">Ready to Play?</h2>
-            <p className="modern-text text-gray-700 text-lg mb-6">Join our community of young gamers and developers! 🎉</p>
+            <p className="modern-text text-gray-700 text-lg mb-2">Join our community of young gamers and developers! 🎉</p>
+            <p className="modern-text text-gray-600 text-sm mb-6">No downloads — safer by design. Games run in your browser with restricted permissions.</p>
             <Link href="/games" className="gaming-btn gaming-glow text-xl px-12 py-5">🎯 Start Gaming Now!</Link>
           </div>
         </div>
