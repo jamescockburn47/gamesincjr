@@ -1,118 +1,289 @@
 import Link from 'next/link';
 
+// Compact data sets keep the JSX below easy to scan.
+const heroStats = [
+  {
+    value: '25+',
+    label: 'Arcade, puzzles & story games',
+    accent: 'text-sky-500',
+  },
+  {
+    value: '8-13',
+    label: 'Designed with players aged 8-13',
+    accent: 'text-rose-500',
+  },
+  {
+    value: '100%',
+    label: 'Browser based, no installs',
+    accent: 'text-amber-500',
+  },
+];
+
+const featureCards = [
+  {
+    icon: '🌈',
+    title: 'Kid-first design',
+    description:
+      'Rounded layouts, friendly animations and big tap targets make play comfortable on any screen.',
+    bullets: [
+      'Soft gradients keep focus on the action with playful colour pops.',
+      'Accessibility-first type sizes and contrast for emerging readers.',
+    ],
+  },
+  {
+    icon: '🧭',
+    title: 'Always know what to do next',
+    description:
+      'Guided mission cards and floating helpers turn every session into an easy-to-follow adventure.',
+    bullets: [
+      'Short quests with clear goals and celebratory feedback.',
+      'Optional hints that explain concepts instead of giving away answers.',
+    ],
+  },
+  {
+    icon: '🛡️',
+    title: 'Family friendly & safe',
+    description:
+      'We moderate experiences and keep everything in-browser so you can relax while they play.',
+    bullets: [
+      'No downloads, ads or surprise pop-ups—ever.',
+      'Parent dashboards highlight progress, favourites and play time.',
+    ],
+  },
+];
+
+const collapsibleSections = [
+  {
+    icon: '🧠',
+    title: 'Skill-building adventures',
+    summary: 'Mini missions sharpen logic, creativity and teamwork.',
+    details: [
+      'Challenge cards break bigger ideas into manageable steps with colourful visual cues.',
+      'Optional “level up” tasks appear once players feel ready for more complexity.',
+      'Every mission ends with a reflective prompt so kids can share what they discovered.',
+    ],
+  },
+  {
+    icon: '🎨',
+    title: 'Create, remix and show off',
+    summary: 'Shareable studios let players tweak levels, stories and characters.',
+    details: [
+      'Templates, stickers and sound packs make it easy to customise without needing code.',
+      'Collaborative rooms (with adult approval) encourage friends to co-create in real time.',
+      'Built-in exports turn creations into printable zines or quick highlight reels.',
+    ],
+  },
+  {
+    icon: '👪',
+    title: 'Made with families in mind',
+    summary: 'Clear controls for grown-ups keep things safe and stress free.',
+    details: [
+      'Parent view summarises achievements, favourite genres and recommended next steps.',
+      'Play-time reminders are gentle, customisable and pause the fun without fuss.',
+      'You choose which community events or tutorials your child can join.',
+    ],
+  },
+];
+
 export default function Home() {
   return (
-    <main className="min-h-screen gaming-bg pixel-pattern">
-      {/* Hero Section */}
-      <div className="container mx-auto px-4 py-20">
-        <div className="mb-20">
-          <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-6 sm:p-10 text-center text-gray-800">
-            <div className="pixel-bounce mb-4">
-              <div className="text-4xl sm:text-6xl">🎮</div>
-            </div>
-            <h1 className="pixel-text text-3xl sm:text-5xl text-gray-900 mb-2">GAMES inc. Jr</h1>
-            <div className="modern-text text-gray-600 mb-4">by kids, for kids. imagination is the only limit</div>
-            <p className="modern-text text-base sm:text-lg mb-6">
-              Welcome. Play HTML5 games right in your browser — from simple retro ideas to AI‑assisted experiments.
-              <span className="font-semibold"> No downloads.</span>
-            </p>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 justify-center">
-              <Link href="/games" className="gaming-btn gaming-glow text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">🎯 Browse All Games</Link>
-              <Link href="/games/space-runner" className="clean-btn text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">🚀 Try Space Runner</Link>
-            </div>
-          </div>
-        </div>
+    <main className="relative overflow-hidden bg-gradient-to-br from-sky-50 via-white to-rose-50">
+      {/* Floating colour orbs add a playful backdrop without overpowering content. */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute -top-10 right-1/4 h-64 w-64 rounded-full bg-sky-200/40 blur-3xl" />
+        <div className="absolute bottom-0 left-1/3 h-72 w-72 rounded-full bg-rose-200/40 blur-3xl" />
+        <div className="absolute top-1/3 left-0 h-56 w-56 rounded-full bg-amber-200/40 blur-3xl" />
+      </div>
 
-        {/* Features Grid */}
-        <div className="grid md:grid-cols-3 gap-8 mb-20">
-          <div className="game-card p-8 text-center">
-            <div className="text-5xl mb-6 pixel-bounce">⚡</div>
-            <h3 className="heading-text text-2xl text-gray-800 mb-4">Instant Play</h3>
-            <p className="modern-text text-gray-600">
-              No downloads, no installations. Just click and play amazing games directly in your browser. 
-              <span className="text-orange-500 font-semibold"> Ready in seconds!</span>
+      <div className="container mx-auto px-4 pb-24 pt-16 lg:pt-24">
+        {/* Hero section */}
+        <section className="grid gap-12 lg:grid-cols-12 lg:items-center">
+          <div className="lg:col-span-7">
+            <span className="inline-flex items-center rounded-full bg-white/80 px-4 py-1 text-sm font-semibold text-sky-700 shadow-sm ring-1 ring-sky-100">
+              Built by kids, guided by educators
+            </span>
+            <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+              Ultra-clean play spaces crafted for curious minds
+            </h1>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
+              Games inc. Jr blends imaginative worlds with smart guardrails. Kids get bright, responsive interfaces and mission-based challenges designed to grow with them—no downloads, no complicated menus.
             </p>
-          </div>
-          <div className="game-card p-8 text-center">
-            <div className="text-5xl mb-6 pixel-bounce">🤖</div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">AI‑Assisted</h3>
-            <p className="text-gray-600 leading-relaxed">We use AI to help prototype and iterate on ideas faster.</p>
-          </div>
-          <div className="game-card p-8 text-center">
-            <div className="text-5xl mb-6 pixel-bounce">🎨</div>
-            <h3 className="text-2xl font-bold text-gray-800 mb-4">Clear & Playable</h3>
-            <p className="text-gray-600 leading-relaxed">Simple controls, readable visuals, short sessions.</p>
-          </div>
-        </div>
 
-        {/* Featured Game */}
-        <div className="text-center">
-          <h2 className="pixel-text text-4xl font-bold text-yellow-400 mb-12 tracking-wider">
-            FEATURED GAME
-          </h2>
-          <div className="game-card p-6 sm:p-10 max-w-6xl mx-auto">
-            <div className="grid lg:grid-cols-2 gap-12 items-center">
-              <div className="text-left">
-                <div className="flex items-center mb-6">
-                  <div className="text-3xl sm:text-4xl mr-4">🚀</div>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-gray-800">Space Runner</h3>
+            <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
+              <Link
+                href="/games"
+                className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 via-sky-400 to-cyan-400 px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+              >
+                🎯 Browse all games
+              </Link>
+              <Link
+                href="/games/space-runner"
+                className="inline-flex items-center justify-center rounded-xl bg-white/80 px-8 py-4 text-base font-semibold text-slate-800 shadow-md ring-1 ring-sky-100 transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+              >
+                🚀 Jump into Space Runner
+              </Link>
+            </div>
+
+            <dl className="mt-10 grid gap-6 sm:grid-cols-3">
+              {heroStats.map((stat) => (
+                <div
+                  key={stat.label}
+                  className="rounded-2xl bg-white/80 p-5 text-center shadow-sm ring-1 ring-slate-100 backdrop-blur"
+                >
+                  <dt className={`text-3xl font-bold ${stat.accent}`}>{stat.value}</dt>
+                  <dd className="mt-2 text-sm text-slate-600">{stat.label}</dd>
                 </div>
-                <p className="text-gray-600 mb-6 text-base sm:text-lg leading-relaxed">Dodge asteroids, survive, set a better score.</p>
-                <div className="flex flex-wrap gap-3 mb-8">
-                  <span className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-4 py-2 rounded-full text-sm font-bold">Arcade</span>
-                  <span className="bg-gradient-to-r from-green-500 to-emerald-400 text-white px-4 py-2 rounded-full text-sm font-bold">Runner</span>
-                  <span className="bg-gradient-to-r from-purple-500 to-pink-400 text-white px-4 py-2 rounded-full text-sm font-bold">8+</span>
-                  <span className="bg-gradient-to-r from-orange-500 to-red-400 text-white px-4 py-2 rounded-full text-sm font-bold">AI-Generated</span>
-                </div>
-                <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
-                  <Link href="/games/space-runner" className="gaming-btn gaming-glow text-base sm:text-lg px-6 sm:px-8 py-3 sm:py-4">🎮 Play Now</Link>
-                  <Link 
-                    href="/games/space-runner" 
-                    className="bg-gradient-to-r from-gray-600 to-gray-700 text-white px-6 sm:px-8 py-3 sm:py-4 rounded-lg text-base sm:text-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200"
-                  >
-                    📖 Learn More
-                  </Link>
-                </div>
-              </div>
-              <div className="relative">
-                <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl h-80 flex items-center justify-center border-4 border-orange-200 shadow-2xl">
-                  <div className="text-center">
-                    <div className="text-6xl mb-4">🌌</div>
-                    <div className="text-cyan-300 font-bold text-lg">Space Runner</div>
-                    <div className="text-gray-400 text-sm">Game Preview</div>
+              ))}
+            </dl>
+          </div>
+
+          <div className="lg:col-span-5">
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-400 via-indigo-400 to-purple-400 p-1 shadow-xl">
+              <div className="space-y-6 rounded-[22px] bg-white/90 p-8 backdrop-blur">
+                <div className="flex items-center gap-4">
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-3xl">🌌</span>
+                  <div>
+                    <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">Featured world</p>
+                    <p className="text-2xl font-bold text-slate-900">Space Runner</p>
                   </div>
                 </div>
-                <div className="absolute -top-4 -right-4 w-8 h-8 bg-yellow-400 rounded-full gaming-glow"></div>
-                <div className="absolute -bottom-4 -left-4 w-6 h-6 bg-orange-400 rounded-full gaming-glow"></div>
+                <p className="text-sm leading-6 text-slate-600">
+                  Dash through nebula lanes, dodge comet clusters and unlock custom ships. Dynamic difficulty keeps the thrill alive while learning reflexes and planning skills.
+                </p>
+                <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-center text-sky-100 shadow-inner">
+                  <p className="text-lg font-semibold tracking-wide text-white">Live mission: Cosmic Sprint</p>
+                  <p className="mt-2 text-sm text-slate-300">Beat three star checkpoints in under 90 seconds to earn the Aurora badge.</p>
+                </div>
+                <Link
+                  href="/games/space-runner"
+                  className="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-rose-400 via-amber-400 to-yellow-400 px-6 py-3 text-sm font-semibold text-slate-900 shadow-lg transition hover:brightness-110"
+                >
+                  Start the launch countdown
+                </Link>
               </div>
             </div>
           </div>
-        </div>
+        </section>
 
-        {/* Suggest a Game Callout (About has full details) */}
-        <div className="mt-20 mb-12">
-          <div className="max-w-5xl mx-auto bg-white rounded-2xl shadow-xl p-10">
-            <div className="grid md:grid-cols-3 gap-6 items-center">
-              <div className="text-5xl text-center md:text-left">💡</div>
-              <div className="md:col-span-2">
-                <h3 className="heading-text text-2xl text-gray-900 mb-2">Suggest a Game</h3>
-                <p className="modern-text text-gray-700">Have an idea? <a className="underline" href="mailto:hello@gamesincjr.com">Contact us</a> and we&apos;ll try to build it. If we ship it, it&apos;s added to your subscription for free.</p>
+        {/* Feature summary cards */}
+        <section className="mt-24">
+          <h2 className="text-center text-3xl font-bold text-slate-900 sm:text-4xl">
+            Clean, modern UI with joyful colour moments
+          </h2>
+          <p className="mt-4 text-center text-base text-slate-600">
+            Every screen favours clarity first—then adds sparkles of colour to celebrate wins and guide the eye.
+          </p>
+
+          <div className="mt-12 grid gap-6 lg:grid-cols-3">
+            {featureCards.map((card) => (
+              <article
+                key={card.title}
+                className="group flex h-full flex-col rounded-3xl bg-white/90 p-8 shadow-lg ring-1 ring-slate-100 transition hover:-translate-y-1 hover:shadow-xl"
+              >
+                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-3xl transition group-hover:scale-110">
+                  {card.icon}
+                </div>
+                <h3 className="mt-6 text-2xl font-semibold text-slate-900">{card.title}</h3>
+                <p className="mt-3 text-sm leading-6 text-slate-600">{card.description}</p>
+                <ul className="mt-5 space-y-3 text-sm text-slate-600">
+                  {card.bullets.map((bullet) => (
+                    <li key={bullet} className="flex items-start gap-2">
+                      <span className="mt-1 text-lg text-amber-400">★</span>
+                      <span>{bullet}</span>
+                    </li>
+                  ))}
+                </ul>
+              </article>
+            ))}
+          </div>
+        </section>
+
+        {/* Collapsible info panels keep details handy without overwhelming the page. */}
+        <section className="mt-24">
+          <div className="mx-auto max-w-4xl text-center">
+            <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">Dive deeper when you&apos;re ready</h2>
+            <p className="mt-4 text-base text-slate-600">
+              Expand the sections below to explore how Games inc. Jr balances joyful exploration with thoughtful guardrails.
+            </p>
+          </div>
+
+          <div className="mt-12 space-y-4">
+            {collapsibleSections.map((section) => (
+              <details
+                key={section.title}
+                className="group rounded-3xl border border-sky-100 bg-white/90 p-6 shadow-sm transition hover:border-sky-200"
+              >
+                <summary className="flex cursor-pointer list-none items-center justify-between gap-6">
+                  <div className="flex items-center gap-4">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-2xl">
+                      {section.icon}
+                    </span>
+                    <div>
+                      <h3 className="text-xl font-semibold text-slate-900">{section.title}</h3>
+                      <p className="text-sm text-slate-600">{section.summary}</p>
+                    </div>
+                  </div>
+                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-lg text-sky-600 transition group-open:rotate-45">
+                    +
+                  </span>
+                </summary>
+                <div className="mt-4 space-y-3 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-600">
+                  {section.details.map((detail) => (
+                    <p key={detail}>{detail}</p>
+                  ))}
+                </div>
+              </details>
+            ))}
+          </div>
+        </section>
+
+        {/* Closing call to action */}
+        <section className="mt-24">
+          <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
+            <div className="rounded-3xl bg-white/90 p-8 shadow-lg ring-1 ring-slate-100">
+              <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">Ready for launch?</h2>
+              <p className="mt-4 text-base leading-7 text-slate-600">
+                Join a welcoming universe designed for curious kids and confident families. Explore solo, team up with friends or start designing your own mini worlds—the tools and tutorials are right inside your browser.
+              </p>
+              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                <Link
+                  href="/community"
+                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-violet-500 via-purple-400 to-pink-400 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:brightness-110"
+                >
+                  🌟 Meet the community
+                </Link>
+                <Link
+                  href="/tutorials"
+                  className="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-base font-semibold text-slate-800 shadow-md ring-1 ring-slate-200 transition hover:bg-slate-50"
+                >
+                  📚 Explore tutorials
+                </Link>
+              </div>
+            </div>
+            <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-200 via-cyan-100 to-rose-200 p-1 shadow-xl">
+              <div className="rounded-[26px] bg-white/90 p-8">
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Why kids come back</p>
+                <ul className="mt-6 space-y-4 text-base leading-7 text-slate-700">
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1 text-lg">💬</span>
+                    <span>Friendly reminders and celebration screens cheer on progress without overwhelming the experience.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1 text-lg">🧩</span>
+                    <span>Levels are intentionally bite-sized so kids can play a full loop in five minutes or less.</span>
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-1 text-lg">🎁</span>
+                    <span>Earnable badges unlock new colour themes and stickers to personalise dashboards and avatars.</span>
+                  </li>
+                </ul>
+                <p className="mt-6 text-sm text-slate-500">
+                  Pro tip: Use the parent dashboard to schedule weekend challenges or quiet creativity time.
+                </p>
               </div>
             </div>
           </div>
-        </div>
-
-        {/* Pricing removed from homepage (see About) */}
-
-        {/* Call to Action */}
-        <div className="text-center">
-          <div className="max-w-4xl mx-auto bg-white rounded-2xl p-10 shadow-xl">
-            <h2 className="pixel-text text-3xl text-gray-900 mb-4">Ready to Play?</h2>
-            <p className="modern-text text-gray-700 text-lg mb-2">Join our community of young gamers and developers! 🎉</p>
-            <p className="modern-text text-gray-600 text-sm mb-6">No downloads — safer by design. Games run in your browser with restricted permissions.</p>
-            <Link href="/games" className="gaming-btn gaming-glow text-xl px-12 py-5">🎯 Start Gaming Now!</Link>
-          </div>
-        </div>
+        </section>
       </div>
     </main>
   );

@@ -18,12 +18,10 @@ export default function LangSwitch() {
   return (
     <Link
       href={target}
-      className="modern-text text-xs px-2 py-1 rounded border border-white/20 bg-white/10 text-white hover:bg-white/20"
+      className="inline-flex items-center justify-center rounded-xl border border-sky-100 bg-white/70 px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-600 shadow-sm transition hover:bg-white hover:text-sky-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
       aria-label={isIt ? 'Passa a Inglese' : 'Switch to Italian'}
     >
       {isIt ? 'EN' : 'IT'}
     </Link>
   );
 }
-
-
