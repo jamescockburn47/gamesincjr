@@ -1,0 +1,47 @@
+<svg width="640" height="360" viewBox="0 0 640 360" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title2 desc2">
+  <title id="title2">Alien Unicorn Alliance mission summary</title>
+  <desc id="desc2">End-of-run summary panel showing score, best streak and distance flown with a glowing background.</desc>
+  <defs>
+    <linearGradient id="bg2" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#101230" />
+      <stop offset="0.5" stop-color="#221743" />
+      <stop offset="1" stop-color="#320f3a" />
+    </linearGradient>
+    <radialGradient id="halo" cx="0.5" cy="0.5" r="0.6">
+      <stop offset="0" stop-color="#ff9efa" stop-opacity="0.75" />
+      <stop offset="1" stop-color="#320f3a" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#1d204a" />
+      <stop offset="1" stop-color="#2b2861" />
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#bg2)" />
+  <circle cx="320" cy="140" r="180" fill="url(#halo)" opacity="0.65" />
+  <g opacity="0.25" fill="#9bc8ff">
+    <circle cx="120" cy="80" r="1.6" />
+    <circle cx="200" cy="40" r="1.8" />
+    <circle cx="440" cy="60" r="1.4" />
+    <circle cx="540" cy="110" r="1.6" />
+    <circle cx="500" cy="40" r="1.3" />
+    <circle cx="320" cy="70" r="1.7" />
+    <circle cx="260" cy="120" r="1.1" />
+  </g>
+  <g transform="translate(120 90)">
+    <rect x="0" y="0" width="400" height="220" rx="28" fill="url(#panel)" stroke="rgba(124, 159, 255, 0.45)" stroke-width="2" />
+    <text x="32" y="56" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="28" fill="#ffe8ff" letter-spacing="1.5">Mission summary</text>
+    <text x="32" y="84" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="13" fill="#bcd4ff" letter-spacing="1.4">Harmony Grove // Run 05</text>
+    <rect x="32" y="110" width="336" height="52" rx="16" fill="rgba(72, 96, 172, 0.55)" stroke="rgba(148, 182, 255, 0.4)" />
+    <text x="48" y="142" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="20" fill="#f9f6ff">Final score</text>
+    <text x="290" y="142" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="26" fill="#ffffff" text-anchor="end">128,540</text>
+    <rect x="32" y="176" width="336" height="40" rx="14" fill="rgba(72, 96, 172, 0.35)" />
+    <text x="48" y="202" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="16" fill="#d7e1ff">Best streak</text>
+    <text x="290" y="202" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="20" fill="#ffffff" text-anchor="end">27</text>
+    <rect x="32" y="224" width="336" height="40" rx="14" fill="rgba(72, 96, 172, 0.35)" />
+    <text x="48" y="250" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="16" fill="#d7e1ff">Distance flown</text>
+    <text x="290" y="250" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="20" fill="#ffffff" text-anchor="end">38.4 km</text>
+    <rect x="32" y="268" width="220" height="40" rx="14" fill="#ff8cf9" opacity="0.9" />
+    <text x="60" y="294" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="16" fill="#240829" letter-spacing="1">Submit score</text>
+  </g>
+  <text x="320" y="330" text-anchor="middle" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="18" fill="#c6d4ff" letter-spacing="2">“Alliance pulses convert raids into crystal showers.”</text>
+</svg>

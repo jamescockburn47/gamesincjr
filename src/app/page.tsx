@@ -117,10 +117,10 @@ export default function Home() {
                 🎯 Browse all games
               </Link>
               <Link
-                href="/games/space-runner"
+                href="/games/alien-unicorn-alliance"
                 className="inline-flex items-center justify-center rounded-xl bg-white/80 px-8 py-4 text-base font-semibold text-slate-800 shadow-md ring-1 ring-sky-100 transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
               >
-                🚀 Jump into Space Runner
+                🦄 Enter Alien Unicorn Alliance
               </Link>
             </div>
 
@@ -141,24 +141,24 @@ export default function Home() {
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-400 via-indigo-400 to-purple-400 p-1 shadow-xl">
               <div className="space-y-6 rounded-[22px] bg-white/90 p-8 backdrop-blur">
                 <div className="flex items-center gap-4">
-                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-3xl">🌌</span>
+                  <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-3xl">🦄</span>
                   <div>
                     <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">Featured world</p>
-                    <p className="text-2xl font-bold text-slate-900">Space Runner</p>
+                    <p className="text-2xl font-bold text-slate-900">Alien Unicorn Alliance</p>
                   </div>
                 </div>
                 <p className="text-sm leading-6 text-slate-600">
-                  Dash through nebula lanes, dodge comet clusters and unlock custom ships. Dynamic difficulty keeps the thrill alive while learning reflexes and planning skills.
+                  Glide through aurora meadows, rescue starlit foals and outsmart raider drones with a dazzling starlight pulse. The more harmony crystals you chain, the brighter the score climbs.
                 </p>
                 <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-center text-sky-100 shadow-inner">
-                  <p className="text-lg font-semibold tracking-wide text-white">Live mission: Cosmic Sprint</p>
-                  <p className="mt-2 text-sm text-slate-300">Beat three star checkpoints in under 90 seconds to earn the Aurora badge.</p>
+                  <p className="text-lg font-semibold tracking-wide text-white">Live mission: Harmony Surge</p>
+                  <p className="mt-2 text-sm text-slate-300">Convert three raider squads with a single pulse to unlock the Prism Mane skin.</p>
                 </div>
                 <Link
-                  href="/games/space-runner"
+                  href="/games/alien-unicorn-alliance"
                   className="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-rose-400 via-amber-400 to-yellow-400 px-6 py-3 text-sm font-semibold text-slate-900 shadow-lg transition hover:brightness-110"
                 >
-                  Start the launch countdown
+                  Launch the rescue flight
                 </Link>
               </div>
             </div>

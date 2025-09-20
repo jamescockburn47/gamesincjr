@@ -15,17 +15,17 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Games Inc Jr",
-  description: "Play amazing HTML5 games online. Space Runner and more exciting games available now!",
+  description: "Play amazing HTML5 games online. Alien Unicorn Alliance and more exciting games available now!",
   openGraph: {
     title: "Games Inc Jr",
-    description: "Play amazing HTML5 games online. Space Runner and more exciting games available now!",
+    description: "Play amazing HTML5 games online. Alien Unicorn Alliance and more exciting games available now!",
     type: "website",
     siteName: "Games Inc Jr",
   },
   twitter: {
     card: "summary_large_image",
     title: "Games Inc Jr",
-    description: "Play amazing HTML5 games online. Space Runner and more exciting games available now!",
+    description: "Play amazing HTML5 games online. Alien Unicorn Alliance and more exciting games available now!",
   },
 };
 

@@ -41,10 +41,10 @@ export default async function Header() {
               </Link>
             ))}
             <Link
-              href="/games/space-runner"
+              href="/games/alien-unicorn-alliance"
               className="ml-2 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 via-sky-400 to-cyan-400 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
             >
-              🎮 Play now
+              🦄 Play Alien Unicorn Alliance
             </Link>
             <LangSwitch />
             <Link
