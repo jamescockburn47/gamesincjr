@@ -1,5 +1,19 @@
 [
   {
+    "slug": "alien-unicorn-alliance",
+    "title": "Alien Unicorn Alliance",
+    "tags": ["action", "flight", "combo"],
+    "description": "Steer an aurora unicorn through alien raids, collecting harmony crystals and pulsing drones into stardust.",
+    "description_it": "Guida un unicorno aurorale tra incursioni aliene, raccogliendo cristalli armonici e trasformando i droni in polvere di stelle.",
+    "hero": "/games/alien-unicorn-alliance/hero.svg",
+    "screenshots": ["/games/alien-unicorn-alliance/s1.svg", "/games/alien-unicorn-alliance/s2.svg"],
+    "demoPath": "/demos/alien-unicorn-alliance/index.html",
+    "gameType": "html5",
+    "engine": "vanilla-js",
+    "version": "1.0.0",
+    "status": "released"
+  },
+  {
     "slug": "space-runner",
     "title": "Space Runner",
     "tags": ["arcade", "runner", "8+"],

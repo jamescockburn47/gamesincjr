@@ -1,0 +1,126 @@
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Alien Unicorn Alliance key art</title>
+  <desc id="desc">Illustration of a glowing unicorn flying beside an alien saucer over a nebula meadow.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0c0d2d" />
+      <stop offset="0.45" stop-color="#1f1550" />
+      <stop offset="1" stop-color="#2b0f39" />
+    </linearGradient>
+    <radialGradient id="nebulaA" cx="0.3" cy="0.3" r="0.55">
+      <stop offset="0" stop-color="#6f43ff" stop-opacity="0.9" />
+      <stop offset="0.55" stop-color="#b978ff" stop-opacity="0.5" />
+      <stop offset="1" stop-color="#2b0f39" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="nebulaB" cx="0.7" cy="0.45" r="0.6">
+      <stop offset="0" stop-color="#47e9ff" stop-opacity="0.85" />
+      <stop offset="0.6" stop-color="#91fff6" stop-opacity="0.35" />
+      <stop offset="1" stop-color="#2b0f39" stop-opacity="0" />
+    </radialGradient>
+    <radialGradient id="planet" cx="0.4" cy="0.35" r="0.6">
+      <stop offset="0" stop-color="#ffe6ff" />
+      <stop offset="1" stop-color="#ff8cf9" />
+    </radialGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#4f2f8c" stop-opacity="0" />
+      <stop offset="0.45" stop-color="#4f2f8c" stop-opacity="0.4" />
+      <stop offset="1" stop-color="#2b1252" stop-opacity="0.85" />
+    </linearGradient>
+    <linearGradient id="unicornBody" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#fff9ff" />
+      <stop offset="1" stop-color="#d8c4ff" />
+    </linearGradient>
+    <linearGradient id="unicornMane" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff8cf9" />
+      <stop offset="1" stop-color="#6cf6ff" />
+    </linearGradient>
+    <radialGradient id="aura" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#ffffff" stop-opacity="0.4" />
+      <stop offset="0.5" stop-color="#ff9dfb" stop-opacity="0.22" />
+      <stop offset="1" stop-color="#2b0f39" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="saucer" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#34d5ff" />
+      <stop offset="0.5" stop-color="#6d58ff" />
+      <stop offset="1" stop-color="#ff8af5" />
+    </linearGradient>
+    <radialGradient id="beam" cx="0.5" cy="0" r="1">
+      <stop offset="0" stop-color="#5ff5ff" stop-opacity="0.6" />
+      <stop offset="1" stop-color="#5ff5ff" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="crystal" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fff7c7" />
+      <stop offset="0.5" stop-color="#ffe1ff" />
+      <stop offset="1" stop-color="#6effff" />
+    </linearGradient>
+    <clipPath id="rounded">
+      <rect x="0" y="0" width="800" height="450" rx="32" ry="32" />
+    </clipPath>
+  </defs>
+  <g clip-path="url(#rounded)">
+    <rect width="800" height="450" fill="url(#bg)" />
+    <ellipse cx="240" cy="140" rx="320" ry="240" fill="url(#nebulaA)" />
+    <ellipse cx="610" cy="220" rx="340" ry="260" fill="url(#nebulaB)" />
+    <circle cx="640" cy="110" r="90" fill="url(#planet)" opacity="0.85" />
+    <path d="M0 320 C160 340 320 330 480 350 C620 370 720 360 800 340 L800 450 L0 450 Z" fill="url(#ground)" />
+
+    <g opacity="0.6" fill="#9cd2ff">
+      <circle cx="120" cy="60" r="1.8" />
+      <circle cx="200" cy="40" r="2.2" />
+      <circle cx="360" cy="70" r="1.5" />
+      <circle cx="520" cy="50" r="2.8" />
+      <circle cx="700" cy="80" r="1.7" />
+      <circle cx="740" cy="40" r="1.6" />
+      <circle cx="420" cy="20" r="1.2" />
+      <circle cx="280" cy="90" r="1.4" />
+      <circle cx="560" cy="140" r="2.1" />
+      <circle cx="640" cy="170" r="1.5" />
+    </g>
+
+    <g transform="translate(250 150)" opacity="0.8">
+      <circle cx="0" cy="0" r="120" fill="url(#aura)" />
+    </g>
+
+    <g transform="translate(260 190)">
+      <path d="M-80 40 C-130 10 -120 -20 -60 -10 C-120 -50 -110 -80 -40 -60 C-10 -95 40 -110 120 -80 C170 -50 160 30 110 60 C40 100 -40 100 -80 40" fill="url(#unicornMane)" opacity="0.75" />
+      <path d="M-60 20 C-20 60 70 70 130 30 C170 0 160 -50 110 -60 C60 -75 10 -60 -20 -30" fill="url(#unicornBody)" />
+      <ellipse cx="120" cy="-40" rx="32" ry="30" fill="#fff8ff" />
+      <path d="M145 -70 L160 -120 L130 -75 Z" fill="#ffd4ff" />
+      <ellipse cx="132" cy="-42" rx="6" ry="8" fill="#1b0d36" />
+      <circle cx="135" cy="-46" r="2" fill="#fff" />
+      <path d="M-40 50 C-10 90 30 110 40 70" stroke="#f7deff" stroke-width="12" stroke-linecap="round" fill="none" />
+      <path d="M-10 70 C10 110 40 120 45 90" stroke="#f7deff" stroke-width="10" stroke-linecap="round" fill="none" />
+      <path d="M35 -15 C70 -50 120 -30 130 10" stroke="#ffbdfc" stroke-width="18" stroke-linecap="round" opacity="0.6" />
+      <path d="M-70 10 C-110 20 -130 60 -80 80" stroke="#6ff6ff" stroke-width="18" stroke-linecap="round" opacity="0.6" />
+      <path d="M-100 0 C-160 30 -150 90 -90 110" stroke="#54e0ff" stroke-width="14" stroke-linecap="round" opacity="0.55" />
+    </g>
+
+    <g transform="translate(520 160)">
+      <ellipse cx="0" cy="0" rx="100" ry="36" fill="url(#beam)" />
+    </g>
+
+    <g transform="translate(520 150)">
+      <ellipse cx="0" cy="0" rx="110" ry="46" fill="url(#saucer)" />
+      <ellipse cx="0" cy="-18" rx="52" ry="26" fill="#bdefff" fill-opacity="0.8" />
+      <path d="M-60 18 C-80 50 -70 70 -40 58" stroke="#041028" stroke-width="6" stroke-linecap="round" opacity="0.4" />
+      <path d="M60 18 C80 50 70 70 40 58" stroke="#041028" stroke-width="6" stroke-linecap="round" opacity="0.4" />
+      <ellipse cx="0" cy="22" rx="70" ry="20" fill="#4df6ff" fill-opacity="0.55" />
+    </g>
+
+    <g transform="translate(400 260)">
+      <path d="M0 -40 L24 0 L0 40 L-24 0 Z" fill="url(#crystal)" stroke="rgba(255,255,255,0.5)" stroke-width="2" />
+      <circle cx="0" cy="-12" r="4" fill="rgba(255,255,255,0.7)" />
+    </g>
+    <g transform="translate(460 300) scale(1.2)">
+      <path d="M0 -34 L18 0 L0 34 L-18 0 Z" fill="url(#crystal)" stroke="rgba(255,255,255,0.5)" stroke-width="2" />
+      <circle cx="0" cy="-10" r="4" fill="rgba(255,255,255,0.7)" />
+    </g>
+    <g transform="translate(360 320) scale(0.9)">
+      <path d="M0 -34 L18 0 L0 34 L-18 0 Z" fill="url(#crystal)" stroke="rgba(255,255,255,0.5)" stroke-width="2" />
+      <circle cx="0" cy="-10" r="4" fill="rgba(255,255,255,0.7)" />
+    </g>
+
+    <text x="60" y="400" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="42" fill="#ffe6ff" font-weight="600" letter-spacing="4">Alien Unicorn Alliance</text>
+    <text x="64" y="430" font-family="'Poppins', 'Segoe UI', sans-serif" font-size="18" fill="#b9c9ff" letter-spacing="2">Harmony Crystals • Pulses • Cosmic Drones</text>
+  </g>
+</svg>

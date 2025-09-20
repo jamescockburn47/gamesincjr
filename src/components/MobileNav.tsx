@@ -80,11 +80,11 @@ export default function MobileNav() {
             About
           </Link>
           <Link
-            href="/games/space-runner"
+            href="/games/alien-unicorn-alliance"
             className="mt-2 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 via-sky-400 to-cyan-400 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:brightness-110"
             onClick={() => setOpen(false)}
           >
-            🎮 Play now
+            🦄 Play Alien Unicorn Alliance
           </Link>
         </nav>
       </div>

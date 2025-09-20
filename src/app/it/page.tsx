@@ -16,7 +16,7 @@ export default function HomeIt() {
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
               <Link href="/games" className="gaming-btn gaming-glow text-lg px-8 py-4">🎯 Sfoglia i giochi</Link>
-              <Link href="/games/space-runner" className="clean-btn text-lg px-8 py-4">🚀 Prova Space Runner</Link>
+              <Link href="/games/alien-unicorn-alliance" className="clean-btn text-lg px-8 py-4">🦄 Prova Alien Unicorn Alliance</Link>
             </div>
           </div>
         </div>
@@ -46,21 +46,21 @@ export default function HomeIt() {
           <div className="game-card p-10 max-w-6xl mx-auto">
             <div className="grid lg:grid-cols-2 gap-12 items-center">
               <div className="text-left">
-                <div className="flex items-center mb-6"><div className="text-4xl mr-4">🚀</div><h3 className="text-3xl font-bold text-gray-800">Space Runner</h3></div>
-                <p className="text-gray-600 mb-6 text-lg leading-relaxed">Evita gli asteroidi, sopravvivi e supera il tuo punteggio.</p>
+                <div className="flex items-center mb-6"><div className="text-4xl mr-4">🦄</div><h3 className="text-3xl font-bold text-gray-800">Alien Unicorn Alliance</h3></div>
+                <p className="text-gray-600 mb-6 text-lg leading-relaxed">Scivola tra le praterie al neon, raccogli cristalli armonici e usa l&apos;impulso stellare per trasformare i droni alieni in bonus scintillanti.</p>
                 <div className="flex flex-wrap gap-3 mb-8">
-                  <span className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-4 py-2 rounded-full text-sm font-bold">Arcade</span>
-                  <span className="bg-gradient-to-r from-green-500 to-emerald-400 text-white px-4 py-2 rounded-full text-sm font-bold">Runner</span>
-                  <span className="bg-gradient-to-r from-purple-500 to-pink-400 text-white px-4 py-2 rounded-full text-sm font-bold">8+</span>
+                  <span className="bg-gradient-to-r from-blue-500 to-cyan-400 text-white px-4 py-2 rounded-full text-sm font-bold">Azione</span>
+                  <span className="bg-gradient-to-r from-violet-500 to-purple-400 text-white px-4 py-2 rounded-full text-sm font-bold">Volo</span>
+                  <span className="bg-gradient-to-r from-rose-500 to-pink-400 text-white px-4 py-2 rounded-full text-sm font-bold">Combo</span>
                 </div>
                 <div className="flex flex-col sm:flex-row gap-4">
-                  <Link href="/games/space-runner" className="gaming-btn gaming-glow text-lg px-8 py-4">🎮 Gioca ora</Link>
-                  <Link href="/games/space-runner" className="bg-gradient-to-r from-gray-600 to-gray-700 text-white px-8 py-4 rounded-lg text-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">📖 Dettagli</Link>
+                  <Link href="/games/alien-unicorn-alliance" className="gaming-btn gaming-glow text-lg px-8 py-4">🎮 Gioca ora</Link>
+                  <Link href="/games/alien-unicorn-alliance" className="bg-gradient-to-r from-gray-600 to-gray-700 text-white px-8 py-4 rounded-lg text-lg font-bold shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200">📖 Dettagli</Link>
                 </div>
               </div>
               <div className="relative">
                 <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl h-80 flex items-center justify-center border-4 border-orange-200 shadow-2xl">
-                  <div className="text-center"><div className="text-6xl mb-4">🌌</div><div className="text-cyan-300 font-bold text-lg">Space Runner</div><div className="text-gray-400 text-sm">Anteprima</div></div>
+                  <div className="text-center"><div className="text-6xl mb-4">🌈</div><div className="text-cyan-300 font-bold text-lg">Alien Unicorn Alliance</div><div className="text-gray-400 text-sm">Anteprima</div></div>
                 </div>
               </div>
             </div>
