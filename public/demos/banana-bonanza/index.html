@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Banana Bonanza - Demo</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: 'Nunito', 'Segoe UI', Tahoma, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      background: radial-gradient(circle at top, #16324f 0%, #0d1723 55%, #05080e 100%);
+      color: #fdf6b2;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 24px 16px 64px;
+      gap: 16px;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.5rem, 4vw, 3.5rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      text-shadow: 0 4px 18px rgba(255, 241, 150, 0.4);
+    }
+
+    .hud {
+      display: flex;
+      gap: clamp(16px, 4vw, 32px);
+      font-size: clamp(1.1rem, 2vw, 1.6rem);
+      font-weight: 700;
+    }
+
+    .hud span {
+      color: #ffe082;
+    }
+
+    .status {
+      font-size: 1rem;
+      padding: 10px 18px;
+      border-radius: 999px;
+      background: rgba(9, 132, 227, 0.2);
+      border: 1px solid rgba(9, 132, 227, 0.4);
+      box-shadow: 0 0 12px rgba(9, 132, 227, 0.3);
+      transition: all 0.3s ease;
+      text-align: center;
+    }
+
+    .status.focused {
+      background: rgba(46, 204, 113, 0.25);
+      border-color: rgba(46, 204, 113, 0.5);
+      box-shadow: 0 0 18px rgba(39, 174, 96, 0.55);
+      color: #e8ffdc;
+    }
+
+    .status.paused {
+      background: rgba(255, 152, 0, 0.25);
+      border-color: rgba(255, 152, 0, 0.55);
+      color: #fff1d0;
+    }
+
+    .stage {
+      position: relative;
+      width: min(92vw, 900px);
+      aspect-ratio: 4 / 3;
+      border-radius: 24px;
+      overflow: hidden;
+      border: 3px solid rgba(255, 241, 150, 0.35);
+      box-shadow: 0 32px 80px rgba(5, 12, 24, 0.65);
+      background: rgba(0, 0, 0, 0.3);
+    }
+
+    canvas {
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(3, 10, 18, 0.84);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      z-index: 50;
+    }
+
+    .overlay.show {
+      display: flex;
+    }
+
+    .dialog {
+      width: min(92vw, 520px);
+      background: linear-gradient(180deg, rgba(15, 32, 53, 0.95), rgba(8, 18, 31, 0.95));
+      border: 1px solid rgba(255, 241, 150, 0.35);
+      border-radius: 24px;
+      box-shadow: 0 28px 80px rgba(3, 8, 14, 0.85);
+      padding: clamp(20px, 4vw, 36px);
+      color: #fdf6b2;
+      text-align: center;
+      backdrop-filter: blur(10px);
+    }
+
+    .dialog h2 {
+      margin: 0 0 12px;
+      font-size: clamp(2rem, 4vw, 2.6rem);
+      letter-spacing: 0.08em;
+    }
+
+    .dialog p {
+      margin: 8px 0;
+      line-height: 1.6;
+    }
+
+    .dialog ul {
+      text-align: left;
+      margin: 16px 0 20px;
+      padding-left: 20px;
+      line-height: 1.6;
+    }
+
+    .dialog button {
+      margin-top: 12px;
+      padding: 12px 24px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      background: linear-gradient(135deg, #fddb92 0%, #d1b34f 100%);
+      color: #1a1300;
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(253, 219, 146, 0.35);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .dialog button:focus-visible {
+      outline: 3px solid rgba(255, 235, 59, 0.75);
+      outline-offset: 2px;
+    }
+
+    .dialog button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 36px rgba(253, 219, 146, 0.45);
+    }
+
+    .dialog .stats {
+      margin: 16px 0 12px;
+      display: grid;
+      gap: 8px;
+    }
+
+    .dialog .stats span {
+      color: #ffe082;
+      font-weight: 700;
+    }
+
+    #countdown {
+      position: fixed;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(4rem, 10vw, 8rem);
+      font-weight: 800;
+      color: #fcd34d;
+      text-shadow: 0 0 30px rgba(252, 211, 77, 0.55);
+      background: rgba(8, 16, 24, 0.65);
+      z-index: 40;
+    }
+
+    #countdown.show {
+      display: flex;
+    }
+
+    .mobile-controls {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      display: none;
+      gap: 16px;
+      padding: 12px 18px;
+      background: rgba(6, 13, 20, 0.7);
+      border: 1px solid rgba(255, 241, 150, 0.25);
+      border-radius: 999px;
+      box-shadow: 0 18px 42px rgba(2, 6, 10, 0.65);
+      backdrop-filter: blur(12px);
+      z-index: 30;
+    }
+
+    .mobile-controls button {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      border: 1px solid rgba(255, 241, 150, 0.45);
+      background: rgba(255, 244, 128, 0.12);
+      color: #ffe082;
+      font-size: 1.4rem;
+      font-weight: 700;
+      cursor: pointer;
+      touch-action: manipulation;
+    }
+
+    .mobile-controls button:active {
+      background: rgba(255, 244, 128, 0.32);
+    }
+
+    @media (pointer: coarse) {
+      .mobile-controls { display: flex; }
+    }
+
+    .instructions {
+      max-width: min(92vw, 900px);
+      background: rgba(4, 11, 18, 0.65);
+      border: 1px solid rgba(255, 241, 150, 0.25);
+      border-radius: 24px;
+      padding: clamp(16px, 3vw, 28px);
+      line-height: 1.7;
+      box-shadow: 0 18px 48px rgba(3, 8, 12, 0.6);
+    }
+
+    .instructions h2 {
+      margin-top: 0;
+      font-size: clamp(1.6rem, 3vw, 2rem);
+      color: #ffe082;
+    }
+
+    .instructions ul {
+      margin: 12px 0 0;
+      padding-left: 22px;
+    }
+
+    .instructions strong {
+      color: #fff59d;
+    }
+  </style>
+</head>
+<body>
+  <h1>Banana Bonanza</h1>
+  <div class="hud" role="status" aria-live="polite">
+    <div>Score: <span id="score">0</span></div>
+    <div>Lives: <span id="lives">3</span></div>
+    <div>Level: <span id="level">1</span></div>
+  </div>
+  <div id="status" class="status" aria-live="polite">Press Start to begin the banana rush!</div>
+
+  <div id="overlay" class="overlay show" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
+    <div class="dialog">
+      <h2 id="overlayTitle">Banana Bonanza</h2>
+      <p id="overlaySubtitle">Catch the ripe bananas, dodge the rotten ones, and keep the crate moving!</p>
+      <div id="gameOverStats" class="stats" hidden>
+        <div>Final Score: <span id="finalScore">0</span></div>
+        <div>Level Reached: <span id="finalLevel">1</span></div>
+        <div>Bananas Caught: <span id="finalCaught">0</span></div>
+      </div>
+      <ul id="introInstructions">
+        <li><strong>Desktop:</strong> Use <kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd>/<kbd>D</kbd> to move.</li>
+        <li><strong>Touch:</strong> Tap the glowing buttons to slide the crate.</li>
+        <li>Catch radiant yellow bananas for points. Rotten fruit glows magenta — avoid it.</li>
+        <li>Missed ripe fruit also costs a life. Keep the combo alive!</li>
+        <li>The demo enters fullscreen when you launch it. Press <kbd>Esc</kbd> to exit.</li>
+      </ul>
+      <p>Tip: Click or tap the game area after starting to lock the controls.</p>
+      <button id="primaryAction" data-action="start">Start Game</button>
+    </div>
+  </div>
+
+  <div id="countdown">3</div>
+
+  <div class="stage">
+    <canvas id="gameCanvas" width="800" height="600" role="img" aria-label="Bananas falling toward a wooden crate"></canvas>
+  </div>
+
+  <div class="mobile-controls" aria-label="Touch controls">
+    <button type="button" data-dir="left" aria-label="Move left">⬅️</button>
+    <button type="button" data-dir="right" aria-label="Move right">➡️</button>
+  </div>
+
+  <section class="instructions" aria-labelledby="howToPlay">
+    <h2 id="howToPlay">How to Play</h2>
+    <ul>
+      <li>Bananas worth <strong>10 points</strong> drop faster as you level up.</li>
+      <li>Snagging several bananas in a row adds <strong>combo bonuses</strong>.</li>
+      <li>Rotten bananas are trouble — catch one and you lose a life.</li>
+      <li>Missing ripe bananas also costs a life, so stay nimble!</li>
+      <li>The game ends when you run out of lives, but you can always try again.</li>
+    </ul>
+  </section>
+
+  <script>
+    (function () {
+      'use strict';
+
+      const canvas = document.getElementById('gameCanvas');
+      const ctx = canvas.getContext('2d');
+      const scoreEl = document.getElementById('score');
+      const livesEl = document.getElementById('lives');
+      const levelEl = document.getElementById('level');
+      const statusEl = document.getElementById('status');
+      const overlay = document.getElementById('overlay');
+      const primaryAction = document.getElementById('primaryAction');
+      const overlaySubtitle = document.getElementById('overlaySubtitle');
+      const introInstructions = document.getElementById('introInstructions');
+      const statsPanel = document.getElementById('gameOverStats');
+      const finalScoreEl = document.getElementById('finalScore');
+      const finalLevelEl = document.getElementById('finalLevel');
+      const finalCaughtEl = document.getElementById('finalCaught');
+      const countdownEl = document.getElementById('countdown');
+      const mobileControls = document.querySelector('.mobile-controls');
+
+      /** @type {{left: boolean, right: boolean}} */
+      const inputState = { left: false, right: false };
+      let isFocused = false;
+      let gameState = 'intro'; // intro | countdown | playing | gameover
+      let countdownTimer = null;
+      let lastTimestamp = performance.now();
+      let spawnTimer = 0;
+      let spawnInterval = 1.05;
+      const bananas = [];
+      const particles = [];
+      const sparkles = createStarField(48);
+      const fireflies = createFireflies(16);
+      const canopyBands = createCanopyBands();
+      const parallaxHills = createParallaxHills();
+      const backgroundState = { time: 0, vineSwing: 0 };
+      const lifeCue = { timer: 0, message: '', color: '#ffe082' };
+      let guaranteedRipeDrops = 3;
+      const state = {
+        score: 0,
+        lives: 3,
+        level: 1,
+        caught: 0,
+        combo: 0,
+      };
+
+      const player = {
+        x: canvas.width / 2 - 55,
+        y: canvas.height - 90,
+        width: 110,
+        height: 46,
+        speed: 320,
+        wobble: 0,
+      };
+
+      /**
+       * Clamp a numeric value so it never exceeds the given range.
+       * @param {number} value - The candidate value.
+       * @param {number} min - Lower bound.
+       * @param {number} max - Upper bound.
+       * @returns {number} Constrained value.
+       */
+      function clamp(value, min, max) {
+        return Math.min(Math.max(value, min), max);
+      }
+
+      /**
+       * Update the HUD text nodes to match the latest score, lives, and level.
+       */
+      function syncHud() {
+        scoreEl.textContent = state.score.toString();
+        livesEl.textContent = state.lives.toString();
+        levelEl.textContent = state.level.toString();
+      }
+
+      /**
+       * Apply a friendly status message and optional visual mode.
+       * @param {string} message - Status string for players.
+       * @param {'focused' | 'paused' | 'default'} [mode='default']
+       */
+      function setStatus(message, mode = 'default') {
+        statusEl.textContent = message;
+        statusEl.classList.remove('focused', 'paused');
+        if (mode === 'focused') statusEl.classList.add('focused');
+        if (mode === 'paused') statusEl.classList.add('paused');
+      }
+
+      /**
+       * Reset all gameplay counters, arrays, and timers.
+       */
+      function resetGameState() {
+        state.score = 0;
+        state.lives = 3;
+        state.level = 1;
+        state.caught = 0;
+        state.combo = 0;
+        spawnTimer = 0;
+        spawnInterval = 1.05;
+        bananas.length = 0;
+        particles.length = 0;
+        guaranteedRipeDrops = 3;
+        lifeCue.timer = 0;
+        lifeCue.message = '';
+        lifeCue.color = '#ffe082';
+        backgroundState.time = 0;
+        backgroundState.vineSwing = 0;
+        resetAmbientScene();
+        player.x = canvas.width / 2 - player.width / 2;
+        player.wobble = 0;
+        syncHud();
+      }
+
+      /**
+       * Request fullscreen on the stage container so the game feels more immersive.
+       * Browsers may decline the request without throwing, so failures are silently ignored.
+       * @returns {Promise<void>} Resolves when the fullscreen attempt finishes.
+       */
+      async function ensureFullscreen() {
+        const fullscreenElement = document.fullscreenElement || document.webkitFullscreenElement;
+        if (fullscreenElement) return;
+        const stage = canvas.parentElement;
+        if (!stage) return;
+        const request =
+          stage.requestFullscreen ||
+          stage.webkitRequestFullscreen ||
+          stage.msRequestFullscreen ||
+          stage.mozRequestFullScreen;
+        if (typeof request === 'function') {
+          try {
+            await request.call(stage);
+          } catch (error) {
+            // Ignore; fullscreen is optional and may be blocked by the browser or user settings.
+          }
+        }
+      }
+
+      /**
+       * Prepare randomly placed stars for the parallax night sky.
+       * @param {number} count - Number of stars to seed.
+       * @returns {Array<{x:number,y:number,radius:number,phase:number,twinkleSpeed:number}>}
+       */
+      function createStarField(count) {
+        return Array.from({ length: count }, () => ({
+          x: Math.random() * canvas.width,
+          y: Math.random() * canvas.height * 0.55,
+          radius: Math.random() * 1.4 + 0.35,
+          phase: Math.random() * Math.PI * 2,
+          twinkleSpeed: Math.random() * 1.6 + 0.6,
+        }));
+      }
+
+      /**
+       * Seed a handful of fireflies fluttering near the jungle floor.
+       * @param {number} count - Number of fireflies to create.
+       * @returns {Array<{x:number,baseY:number,y:number,phase:number,speed:number,hue:number}>}
+       */
+      function createFireflies(count) {
+        return Array.from({ length: count }, () => {
+          const baseY = canvas.height - 150 - Math.random() * 100;
+          return {
+            x: Math.random() * canvas.width,
+            baseY,
+            y: baseY,
+            phase: Math.random() * Math.PI * 2,
+            speed: Math.random() * 1.1 + 0.7,
+            hue: 45 + Math.random() * 25,
+          };
+        });
+      }
+
+      /**
+       * Define stylized canopy bands for the top of the jungle scene.
+       * @returns {Array<{height:number,amplitude:number,color:string,alpha:number}>}
+       */
+      function createCanopyBands() {
+        return [
+          { height: 120, amplitude: 60, color: '#0c231d', alpha: 0.75 },
+          { height: 170, amplitude: 70, color: '#123024', alpha: 0.82 },
+          { height: 210, amplitude: 80, color: '#1a3d2d', alpha: 0.88 },
+        ];
+      }
+
+      /**
+       * Pre-compute rolling hill profiles for the parallax mid-ground.
+       * @returns {Array<{base:number,amplitude:number,speed:number,color:string}>}
+       */
+      function createParallaxHills() {
+        return [
+          { base: canvas.height - 230, amplitude: 60, speed: 0.18, color: '#0a1c26' },
+          { base: canvas.height - 170, amplitude: 70, speed: 0.32, color: '#12333a' },
+          { base: canvas.height - 110, amplitude: 55, speed: 0.48, color: '#19463a' },
+        ];
+      }
+
+      /**
+       * Re-randomise ambient elements when a new run begins.
+       */
+      function resetAmbientScene() {
+        sparkles.forEach((star) => {
+          star.x = Math.random() * canvas.width;
+          star.y = Math.random() * canvas.height * 0.55;
+          star.phase = Math.random() * Math.PI * 2;
+        });
+        fireflies.forEach((fly) => {
+          fly.x = Math.random() * canvas.width;
+          fly.baseY = canvas.height - 150 - Math.random() * 100;
+          fly.y = fly.baseY;
+          fly.phase = Math.random() * Math.PI * 2;
+        });
+      }
+
+      /**
+       * Start a three-second countdown before the action begins.
+       */
+      function beginCountdown() {
+        if (gameState === 'countdown') return;
+        clearCountdown();
+        resetGameState();
+        overlay.classList.remove('show');
+        ensureFullscreen();
+        gameState = 'countdown';
+        setStatus('Get ready…', 'paused');
+        let remaining = 3;
+        countdownEl.textContent = remaining.toString();
+        countdownEl.classList.add('show');
+        countdownTimer = setInterval(() => {
+          remaining -= 1;
+          if (remaining <= 0) {
+            clearCountdown();
+            countdownEl.classList.remove('show');
+            gameState = 'playing';
+            isFocused = true;
+            setStatus('Catch the bananas! Combos boost your score.', 'focused');
+          } else {
+            countdownEl.textContent = remaining.toString();
+          }
+        }, 1000);
+      }
+
+      /**
+       * Clear any active countdown interval.
+       */
+      function clearCountdown() {
+        if (countdownTimer) {
+          clearInterval(countdownTimer);
+          countdownTimer = null;
+        }
+      }
+
+      /**
+       * Spawn a new banana (ripe or rotten) with randomized speed and rotation.
+       */
+      function spawnBanana() {
+        const shouldForceRipe = guaranteedRipeDrops > 0;
+        const rottenChance = Math.min(0.28, 0.12 + state.level * 0.02);
+        const isRotten = shouldForceRipe ? false : Math.random() < rottenChance;
+        if (shouldForceRipe) guaranteedRipeDrops -= 1;
+        const size = isRotten ? 48 : 58;
+        const speed = 130 + Math.random() * 70 + state.level * 18;
+        const rotationSpeed = (Math.random() * 1.2 + 0.4) * (Math.random() < 0.5 ? -1 : 1);
+        bananas.push({
+          x: Math.random() * (canvas.width - size) + size / 2,
+          y: -size,
+          size,
+          speed,
+          rotation: Math.random() * Math.PI,
+          rotationSpeed,
+          type: isRotten ? 'rotten' : 'ripe',
+          wobbleOffset: Math.random() * Math.PI * 2,
+          glowPhase: Math.random() * Math.PI * 2,
+        });
+        const intervalFloor = Math.max(0.5, 1.12 - state.level * 0.06);
+        spawnInterval = intervalFloor + Math.random() * 0.3;
+      }
+
+      /**
+       * Create celebratory confetti when a banana is caught.
+       * @param {number} x - Horizontal position.
+       * @param {number} y - Vertical position.
+       * @param {string} color - Particle color.
+       */
+      function burstParticles(x, y, color) {
+        for (let i = 0; i < 12; i += 1) {
+          particles.push({
+            x,
+            y,
+            vx: (Math.random() - 0.5) * 180,
+            vy: Math.random() * -160 - 60,
+            life: 0.75,
+            color,
+          });
+        }
+      }
+
+      /**
+       * Deduct a life, reset the combo, and surface a brief overlay cue explaining why.
+       * @param {'rotten' | 'missed'} reason - What caused the life loss.
+       */
+      function loseLife(reason) {
+        if (state.lives <= 0) return;
+        state.lives = Math.max(0, state.lives - 1);
+        state.combo = 0;
+        lifeCue.timer = 1.4;
+        lifeCue.color = reason === 'rotten' ? '#ff6f61' : '#ffd95a';
+        lifeCue.message = reason === 'rotten' ? 'Rotten banana! −1 life' : 'Dropped fruit! −1 life';
+        syncHud();
+      }
+
+      /**
+       * Handle horizontal crate movement based on the current input state.
+       * @param {number} dt - Frame delta time in seconds.
+       */
+      function updatePlayer(dt) {
+        const direction = (inputState.left ? -1 : 0) + (inputState.right ? 1 : 0);
+        if (direction !== 0) {
+          player.x += player.speed * direction * dt;
+          isFocused = true;
+        }
+        player.x = clamp(player.x, 12, canvas.width - player.width - 12);
+        player.wobble = Math.sin(performance.now() / 160) * 4;
+      }
+
+      /**
+       * Update particle lifetimes and positions for subtle visual flair.
+       * @param {number} dt - Frame delta time in seconds.
+       */
+      function updateParticles(dt) {
+        for (let i = particles.length - 1; i >= 0; i -= 1) {
+          const p = particles[i];
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vy += 320 * dt;
+          p.life -= dt;
+          if (p.life <= 0) {
+            particles.splice(i, 1);
+          }
+        }
+      }
+
+      /**
+       * Update ambient background animations like the canopy sway and fireflies.
+       * @param {number} dt - Frame delta time in seconds.
+       */
+      function updateBackground(dt) {
+        backgroundState.time += dt;
+        backgroundState.vineSwing = Math.sin(backgroundState.time * 1.1) * 14;
+        sparkles.forEach((star) => {
+          star.phase += star.twinkleSpeed * dt;
+        });
+        fireflies.forEach((fly) => {
+          fly.phase += fly.speed * dt;
+          fly.x += Math.cos(fly.phase) * 12 * dt;
+          fly.y = fly.baseY + Math.sin(fly.phase * 1.4) * 14;
+          if (fly.x < -40) fly.x = canvas.width + 20;
+          if (fly.x > canvas.width + 40) fly.x = -20;
+        });
+      }
+
+      /**
+       * Fade the temporary on-canvas life loss cue.
+       * @param {number} dt - Frame delta time in seconds.
+       */
+      function updateLifeCue(dt) {
+        if (lifeCue.timer > 0) {
+          lifeCue.timer = Math.max(0, lifeCue.timer - dt);
+        }
+      }
+
+      /**
+       * Detect crate collisions with bananas and apply scoring or penalties.
+       * @param {number} dt - Frame delta time in seconds.
+       */
+      function updateBananas(dt) {
+        for (let i = bananas.length - 1; i >= 0; i -= 1) {
+          const banana = bananas[i];
+          banana.y += banana.speed * dt;
+          banana.rotation += banana.rotationSpeed * dt;
+          banana.x += Math.sin(performance.now() / 260 + banana.wobbleOffset) * 12 * dt;
+          banana.glowPhase += dt * 4;
+
+          const intersects =
+            banana.x + banana.size / 2 > player.x &&
+            banana.x - banana.size / 2 < player.x + player.width &&
+            banana.y + banana.size / 2 > player.y &&
+            banana.y - banana.size / 2 < player.y + player.height;
+
+          if (intersects) {
+            if (banana.type === 'ripe') {
+              const baseScore = 10 + state.level * 2;
+              state.combo = Math.min(state.combo + 1, 9);
+              const comboBonus = state.combo >= 3 ? state.combo * 2 : 0;
+              state.score += baseScore + comboBonus;
+              state.caught += 1;
+              burstParticles(banana.x, banana.y, '#ffe082');
+              setStatus(`Great catch! Combo x${state.combo || 1}.`, 'focused');
+            } else {
+              burstParticles(banana.x, banana.y, '#ff7edb');
+              loseLife('rotten');
+              setStatus('Rotten banana! The crate tossed it aside.', 'paused');
+            }
+            bananas.splice(i, 1);
+            if (banana.type === 'ripe') {
+              syncHud();
+            }
+            continue;
+          }
+
+          if (banana.y > canvas.height + banana.size) {
+            if (banana.type === 'ripe') {
+              loseLife('missed');
+              setStatus('A ripe banana splattered. Keep the crate moving!', 'paused');
+            }
+            bananas.splice(i, 1);
+          }
+        }
+      }
+
+      /**
+       * Promote the player to higher levels as their score climbs.
+       */
+      function updateLevel() {
+        const newLevel = Math.min(12, 1 + Math.floor(state.score / 160));
+        if (newLevel !== state.level) {
+          state.level = newLevel;
+          syncHud();
+          setStatus(`Level ${state.level}! Bananas are dropping quicker.`, 'focused');
+        }
+      }
+
+      /**
+       * End the run and surface the overlay with summary stats.
+       */
+      function finishGame() {
+        gameState = 'gameover';
+        isFocused = false;
+        setStatus('Game over! Tap Play Again to retry.', 'paused');
+        finalScoreEl.textContent = state.score.toString();
+        finalLevelEl.textContent = state.level.toString();
+        finalCaughtEl.textContent = state.caught.toString();
+        overlay.classList.add('show');
+        overlaySubtitle.textContent = 'Nice try! Ready for another bunch?';
+        introInstructions.hidden = true;
+        statsPanel.hidden = false;
+        primaryAction.textContent = 'Play Again';
+        primaryAction.dataset.action = 'restart';
+      }
+
+      /**
+       * Render the layered jungle scene, crate, fruit, and special effects.
+       */
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawSky();
+        drawCanopyLayers();
+        drawParallaxHillsLayers();
+        drawGroundCover();
+        drawCrate();
+        drawBananasFruit();
+        drawParticlesFx();
+        drawFirefliesFx();
+        drawLifeCueOverlay();
+      }
+
+      /**
+       * Paint the twilight sky, moon glow, and starfield.
+       */
+      function drawSky() {
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, '#020713');
+        gradient.addColorStop(0.35, '#0a1835');
+        gradient.addColorStop(0.7, '#12323a');
+        gradient.addColorStop(1, '#173c34');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.save();
+        ctx.translate(canvas.width - 140, 110);
+        ctx.fillStyle = '#ffe9b6';
+        ctx.beginPath();
+        ctx.arc(0, 0, 46, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.globalAlpha = 0.4;
+        ctx.fillStyle = '#ffe9b6';
+        ctx.beginPath();
+        ctx.arc(0, 0, 96 + Math.sin(backgroundState.time * 0.8) * 6, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+
+        ctx.save();
+        ctx.fillStyle = '#fef3c7';
+        sparkles.forEach((star) => {
+          const alpha = clamp(0.25 + Math.sin(star.phase) * 0.4, 0.08, 0.9);
+          ctx.globalAlpha = alpha;
+          ctx.beginPath();
+          ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+          ctx.fill();
+        });
+        ctx.restore();
+
+        ctx.save();
+        ctx.globalAlpha = 0.15;
+        ctx.fillStyle = '#7aa2ff';
+        ctx.beginPath();
+        ctx.ellipse(canvas.width * 0.25, 140 + Math.sin(backgroundState.time * 0.3) * 12, 120, 42, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.beginPath();
+        ctx.ellipse(canvas.width * 0.55, 170 + Math.cos(backgroundState.time * 0.28) * 10, 150, 48, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      /**
+       * Draw swaying canopy silhouettes and cascading jungle vines.
+       */
+      function drawCanopyLayers() {
+        canopyBands.forEach((band, index) => {
+          ctx.save();
+          ctx.globalAlpha = band.alpha;
+          ctx.fillStyle = band.color;
+          const segments = 6 + index * 2;
+          const step = canvas.width / segments;
+          ctx.beginPath();
+          ctx.moveTo(0, band.height);
+          for (let i = 0; i <= segments; i += 1) {
+            const x = i * step;
+            const wave = Math.sin(backgroundState.time * (0.45 + index * 0.22) + i * 0.85) * band.amplitude;
+            ctx.lineTo(x, band.height - wave - index * 10);
+          }
+          ctx.lineTo(canvas.width, 0);
+          ctx.lineTo(0, 0);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        });
+
+        ctx.save();
+        ctx.strokeStyle = 'rgba(42, 121, 89, 0.45)';
+        ctx.lineWidth = 6;
+        for (let i = 0; i < 3; i += 1) {
+          const anchor = (canvas.width / 4) * (i + 0.75);
+          const sway = Math.sin(backgroundState.time * 0.9 + i) * 30 + backgroundState.vineSwing;
+          ctx.beginPath();
+          ctx.moveTo(anchor, 0);
+          ctx.bezierCurveTo(anchor + sway * 0.2, 120, anchor - sway * 0.35, 210, anchor + Math.sin(backgroundState.time * 1.4 + i) * 16, 320);
+          ctx.stroke();
+        }
+        ctx.restore();
+      }
+
+      /**
+       * Render softly undulating hills behind the action for depth.
+       */
+      function drawParallaxHillsLayers() {
+        parallaxHills.forEach((hill, index) => {
+          ctx.save();
+          ctx.fillStyle = hill.color;
+          ctx.beginPath();
+          ctx.moveTo(0, hill.base);
+          const segments = 8;
+          const step = canvas.width / segments;
+          for (let i = 0; i <= segments; i += 1) {
+            const x = i * step;
+            const offset = Math.sin(backgroundState.time * hill.speed + i * 0.9 + index) * hill.amplitude;
+            ctx.lineTo(x, hill.base + offset);
+          }
+          ctx.lineTo(canvas.width, canvas.height);
+          ctx.lineTo(0, canvas.height);
+          ctx.closePath();
+          ctx.fill();
+          ctx.restore();
+        });
+      }
+
+      /**
+       * Paint lush foreground foliage and soft rim lighting on the ground.
+       */
+      function drawGroundCover() {
+        ctx.save();
+        const groundGradient = ctx.createLinearGradient(0, canvas.height - 160, 0, canvas.height);
+        groundGradient.addColorStop(0, '#1a5337');
+        groundGradient.addColorStop(1, '#0a1f14');
+        ctx.fillStyle = groundGradient;
+        ctx.beginPath();
+        ctx.moveTo(0, canvas.height - 120);
+        ctx.bezierCurveTo(canvas.width * 0.2, canvas.height - 190, canvas.width * 0.4, canvas.height - 60, canvas.width * 0.62, canvas.height - 110);
+        ctx.bezierCurveTo(canvas.width * 0.82, canvas.height - 150, canvas.width, canvas.height - 80, canvas.width, canvas.height - 88);
+        ctx.lineTo(canvas.width, canvas.height);
+        ctx.lineTo(0, canvas.height);
+        ctx.closePath();
+        ctx.fill();
+
+        ctx.globalAlpha = 0.22;
+        ctx.fillStyle = '#9be285';
+        const blades = 26;
+        for (let i = 0; i < blades; i += 1) {
+          const x = (canvas.width / blades) * i + Math.sin(backgroundState.time * 1.1 + i) * 10;
+          const sway = Math.sin(backgroundState.time * 1.6 + i * 0.8) * 6;
+          const bladeHeight = 28 + Math.sin(backgroundState.time * 1.9 + i * 0.9) * 12;
+          ctx.beginPath();
+          ctx.moveTo(x, canvas.height - 60);
+          ctx.lineTo(x + sway, canvas.height - 110 - bladeHeight);
+          ctx.lineTo(x + sway * 0.4 + 8, canvas.height - 60);
+          ctx.closePath();
+          ctx.fill();
+        }
+        ctx.restore();
+      }
+
+      /**
+       * Draw the player's crate with layered planks and metal hardware.
+       */
+      function drawCrate() {
+        player.wobble = Math.sin(backgroundState.time * 6) * 4;
+        ctx.save();
+        ctx.translate(player.x + player.width / 2, player.y + player.height / 2 + player.wobble);
+        const crateGradient = ctx.createLinearGradient(-player.width / 2, -player.height / 2, player.width / 2, player.height / 2);
+        crateGradient.addColorStop(0, '#4a2a16');
+        crateGradient.addColorStop(0.5, '#7a4b2a');
+        crateGradient.addColorStop(1, '#3c2316');
+        ctx.fillStyle = crateGradient;
+        ctx.strokeStyle = '#1d120b';
+        ctx.lineWidth = 6;
+        ctx.beginPath();
+        ctx.roundRect(-player.width / 2, -player.height / 2, player.width, player.height, 16);
+        ctx.fill();
+        ctx.stroke();
+
+        ctx.fillStyle = 'rgba(255, 224, 179, 0.16)';
+        for (let i = -1; i <= 1; i += 1) {
+          const y = -player.height / 2 + (player.height / 3) * (i + 1);
+          ctx.beginPath();
+          ctx.roundRect(-player.width / 2 + 12, y - player.height / 6, player.width - 24, player.height / 3.1, 8);
+          ctx.fill();
+        }
+
+        ctx.fillStyle = 'rgba(120, 150, 168, 0.82)';
+        const braceWidth = 22;
+        const braceHeight = player.height - 20;
+        [-1, 1].forEach((side) => {
+          const x = side === -1 ? -player.width / 2 + 6 : player.width / 2 - braceWidth - 6;
+          ctx.beginPath();
+          ctx.roundRect(x, -braceHeight / 2, braceWidth, braceHeight, 6);
+          ctx.fill();
+        });
+
+        ctx.fillStyle = '#d5dee6';
+        const boltOffsetX = player.width / 2 - 16;
+        const boltOffsetY = player.height / 2 - 14;
+        [-1, 1].forEach((xDir) => {
+          [-1, 1].forEach((yDir) => {
+            ctx.beginPath();
+            ctx.arc(xDir * boltOffsetX, yDir * boltOffsetY, 4, 0, Math.PI * 2);
+            ctx.fill();
+          });
+        });
+        ctx.restore();
+      }
+
+      /**
+       * Render ripe and rotten bananas with detailed shading and highlights.
+       */
+      function drawBananasFruit() {
+        bananas.forEach((banana) => {
+          ctx.save();
+          ctx.translate(banana.x, banana.y);
+          ctx.rotate(banana.rotation);
+          const isRotten = banana.type === 'rotten';
+          const gradient = ctx.createLinearGradient(-banana.size / 2, 0, banana.size / 2, 0);
+          if (isRotten) {
+            gradient.addColorStop(0, '#4a164f');
+            gradient.addColorStop(0.4, '#7c2f6b');
+            gradient.addColorStop(1, '#2f0c32');
+          } else {
+            gradient.addColorStop(0, '#fff59d');
+            gradient.addColorStop(0.5, '#fdd835');
+            gradient.addColorStop(1, '#f6b93b');
+          }
+          ctx.fillStyle = gradient;
+          ctx.strokeStyle = isRotten ? '#2b0d2c' : '#b6781d';
+          ctx.lineWidth = isRotten ? 5 : 4;
+          ctx.beginPath();
+          ctx.moveTo(-banana.size / 2, -banana.size / 3);
+          ctx.quadraticCurveTo(-banana.size * 0.95, banana.size / 2.2, banana.size / 2, banana.size / 2.6);
+          ctx.quadraticCurveTo(banana.size * 0.35, -banana.size / 3.2, banana.size / 2, -banana.size / 2.4);
+          ctx.quadraticCurveTo(0, -banana.size * 0.12, -banana.size / 2, -banana.size / 3);
+          ctx.fill();
+          ctx.stroke();
+
+          ctx.lineWidth = 2;
+          ctx.strokeStyle = isRotten ? 'rgba(255, 204, 235, 0.2)' : 'rgba(255, 255, 255, 0.5)';
+          ctx.beginPath();
+          ctx.moveTo(-banana.size / 4, -banana.size / 3.2);
+          ctx.quadraticCurveTo(0, -banana.size / 1.8, banana.size / 4, -banana.size / 3.4);
+          ctx.stroke();
+
+          ctx.fillStyle = isRotten ? '#4c1f52' : '#6d4c41';
+          ctx.beginPath();
+          ctx.roundRect(banana.size / 2.8, -banana.size / 2.5, banana.size / 5, banana.size / 4, 3);
+          ctx.fill();
+
+          if (isRotten) {
+            ctx.fillStyle = 'rgba(255, 160, 230, 0.35)';
+            for (let i = 0; i < 4; i += 1) {
+              const angle = (Math.PI * 2 * i) / 4 + banana.glowPhase;
+              const sx = Math.cos(angle) * banana.size * 0.2;
+              const sy = Math.sin(angle) * banana.size * 0.2;
+              ctx.beginPath();
+              ctx.ellipse(sx, sy, banana.size * 0.13, banana.size * 0.08, angle, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          } else {
+            const sparkle = clamp(0.55 + Math.sin(banana.glowPhase + backgroundState.time * 6) * 0.35, 0.2, 0.95);
+            ctx.globalAlpha = sparkle;
+            ctx.fillStyle = '#fff9db';
+            ctx.beginPath();
+            ctx.arc(banana.size * 0.1, -banana.size * 0.28, banana.size * 0.08, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.globalAlpha = 1;
+          }
+          ctx.restore();
+        });
+      }
+
+      /**
+       * Draw celebratory particle bursts that trail the action.
+       */
+      function drawParticlesFx() {
+        particles.forEach((p) => {
+          ctx.save();
+          ctx.globalAlpha = Math.max(0, p.life / 0.75);
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+      }
+
+      /**
+       * Render tiny fireflies drifting along the jungle floor.
+       */
+      function drawFirefliesFx() {
+        fireflies.forEach((fly) => {
+          const glow = clamp(0.4 + Math.sin(fly.phase * 2 + backgroundState.time * 5) * 0.4, 0.15, 0.85);
+          ctx.save();
+          ctx.globalAlpha = glow;
+          ctx.fillStyle = `hsl(${fly.hue}, 85%, 65%)`;
+          ctx.beginPath();
+          ctx.arc(fly.x, fly.y, 3.5, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+      }
+
+      /**
+       * Overlay a brief callout when the player loses a life to explain why.
+       */
+      function drawLifeCueOverlay() {
+        if (lifeCue.timer <= 0) return;
+        const alpha = clamp(lifeCue.timer / 1.4, 0, 1);
+        ctx.save();
+        ctx.globalAlpha = alpha * 0.7;
+        ctx.fillStyle = 'rgba(6, 12, 20, 0.6)';
+        ctx.beginPath();
+        ctx.roundRect(canvas.width / 2 - 150, canvas.height * 0.22 - 28, 300, 56, 18);
+        ctx.fill();
+        ctx.globalAlpha = alpha;
+        ctx.fillStyle = lifeCue.color;
+        ctx.font = '700 28px "Nunito", "Segoe UI", sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(lifeCue.message, canvas.width / 2, canvas.height * 0.22);
+        ctx.restore();
+      }
+
+      /**
+       * Main animation loop - coordinates updates and rendering.
+       * @param {number} timestamp - Current frame timestamp.
+       */
+      function loop(timestamp) {
+        const delta = Math.min((timestamp - lastTimestamp) / 1000, 0.1);
+        lastTimestamp = timestamp;
+
+        if (gameState === 'playing') {
+          spawnTimer += delta;
+          if (spawnTimer >= spawnInterval) {
+            spawnTimer = 0;
+            spawnBanana();
+          }
+          updatePlayer(delta);
+          updateBananas(delta);
+          updateLevel();
+
+          if (state.lives <= 0) {
+            finishGame();
+          }
+        }
+
+        updateParticles(delta);
+        updateBackground(delta);
+        updateLifeCue(delta);
+        render();
+        requestAnimationFrame(loop);
+      }
+
+      /**
+       * Translate keyboard events into movement flags.
+       * @param {KeyboardEvent} event - The keyboard event.
+       * @param {boolean} isPressed - Whether the key is pressed or released.
+       */
+      function handleKey(event, isPressed) {
+        const key = event.key.toLowerCase();
+        if (['arrowleft', 'arrowright', 'a', 'd'].includes(key)) {
+          event.preventDefault();
+        }
+        if (key === 'arrowleft' || key === 'a') inputState.left = isPressed;
+        if (key === 'arrowright' || key === 'd') inputState.right = isPressed;
+      }
+
+      /**
+       * Reset input when pointer buttons are released.
+       */
+      function resetTouchInput() {
+        inputState.left = false;
+        inputState.right = false;
+      }
+
+      document.addEventListener('keydown', (event) => handleKey(event, true));
+      document.addEventListener('keyup', (event) => handleKey(event, false));
+
+      canvas.addEventListener('pointerdown', () => {
+        if (gameState === 'playing') {
+          isFocused = true;
+          setStatus('Controls locked on the crate — keep catching!', 'focused');
+        }
+      });
+
+      document.addEventListener('pointerdown', (event) => {
+        if (!canvas.contains(event.target)) {
+          if (gameState === 'playing') {
+            isFocused = false;
+            setStatus('Controls paused — click the game area to resume.', 'paused');
+            resetTouchInput();
+          }
+        }
+      });
+
+      window.addEventListener('blur', () => {
+        if (gameState === 'playing') {
+          isFocused = false;
+          setStatus('Window unfocused — click the game to continue.', 'paused');
+          resetTouchInput();
+        }
+      });
+
+      primaryAction.addEventListener('click', () => {
+        if (primaryAction.dataset.action === 'start' || primaryAction.dataset.action === 'restart') {
+          introInstructions.hidden = false;
+          statsPanel.hidden = true;
+          overlaySubtitle.textContent = 'Catch the ripe bananas, dodge the rotten ones, and keep the crate moving!';
+          primaryAction.textContent = 'Loading…';
+          ensureFullscreen();
+          setTimeout(() => {
+            primaryAction.textContent = 'Start Game';
+            primaryAction.dataset.action = 'start';
+            beginCountdown();
+          }, 120);
+        }
+      });
+
+      if (mobileControls) {
+        mobileControls.addEventListener('pointerdown', (event) => {
+          const button = event.target.closest('button[data-dir]');
+          if (!button) return;
+          event.preventDefault();
+          if (button.dataset.dir === 'left') inputState.left = true;
+          if (button.dataset.dir === 'right') inputState.right = true;
+        });
+
+        ['pointerup', 'pointercancel', 'pointerleave'].forEach((type) => {
+          mobileControls.addEventListener(type, resetTouchInput);
+        });
+      }
+
+      syncHud();
+      requestAnimationFrame((ts) => {
+        lastTimestamp = ts;
+        loop(ts);
+      });
+    })();
+  </script>
+</body>
+</html>
