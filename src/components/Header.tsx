@@ -6,67 +6,56 @@ import MobileNav from './MobileNav';
 
 export default async function Header() {
   const user = await getUserFromCookies();
+  const navLinks = [
+    { href: '/', label: 'Home' },
+    { href: '/games', label: 'Games' },
+    { href: '/community', label: 'Community' },
+    { href: '/tutorials', label: 'Tutorials' },
+    { href: '/tech', label: 'How it works' },
+    { href: '/about', label: 'About' },
+  ];
+
   return (
-    <header className="gaming-bg border-b-2 border-orange-200 sticky top-0 z-50 shadow-lg">
-      <div className="container mx-auto px-4 py-2 sm:py-4">
-        <div className="flex items-center justify-between">
-          <Link href="/" className="flex items-center space-x-3 hover:scale-105 transition-transform duration-200">
-            <Logo size="md" className="controller-glow" />
-            <div className="hidden sm:block">
-              <div className="pixel-text text-yellow-400 text-sm">GAMES inc.</div>
-              <div className="heading-text text-orange-400 text-xl">Jr</div>
+    <header className="sticky top-0 z-50 border-b border-sky-100 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+      <div className="container mx-auto px-4">
+        <div className="flex items-center justify-between gap-3 py-3 sm:py-4">
+          <Link
+            href="/"
+            className="flex items-center gap-3 rounded-2xl bg-white/80 px-3 py-2 shadow-sm ring-1 ring-slate-100 transition hover:-translate-y-0.5 hover:shadow-md"
+          >
+            <Logo size="md" className="drop-shadow-sm" />
+            <div className="hidden sm:block leading-tight">
+              <span className="text-xs font-semibold uppercase tracking-widest text-sky-500">Games inc.</span>
+              <div className="text-xl font-bold text-slate-900">Jr</div>
             </div>
           </Link>
-          
-          <nav className="hidden sm:flex items-center space-x-4">
-            <Link 
-              href="/" 
-              className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
+
+          <nav className="hidden items-center gap-1 md:flex">
+            {navLinks.map((link) => (
+              <Link
+                key={link.href}
+                href={link.href}
+                className="rounded-xl px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-sky-50 hover:text-sky-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+              >
+                {link.label}
+              </Link>
+            ))}
+            <Link
+              href="/games/space-runner"
+              className="ml-2 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 via-sky-400 to-cyan-400 px-4 py-2 text-sm font-semibold text-white shadow-lg transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
             >
-              Home
-            </Link>
-            <Link 
-              href="/games" 
-              className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
-            >
-              Games
-            </Link>
-            <Link 
-              href="/community" 
-              className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
-            >
-              Community
-            </Link>
-            <Link 
-              href="/tutorials" 
-              className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
-            >
-              Tutorials
-            </Link>
-            <Link 
-              href="/tech" 
-              className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
-            >
-              How it works
-            </Link>
-            <Link 
-              href="/about" 
-              className="modern-text text-cyan-300 hover:text-yellow-400 transition-colors font-medium px-3 py-2 rounded-lg hover:bg-white/10"
-            >
-              About
-            </Link>
-            <Link 
-              href="/games/space-runner" 
-              className="gaming-btn gaming-glow"
-            >
-              🎮 Play Now
+              🎮 Play now
             </Link>
             <LangSwitch />
-            <Link href="/account" className="text-gray-300 hover:text-white transition-colors text-sm px-2 py-1 rounded hover:bg-white/10">
-              {user.email ? 'Account' : 'Sign In'}
+            <Link
+              href="/account"
+              className="rounded-xl px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:bg-sky-50 hover:text-sky-700"
+            >
+              {user.email ? 'Account' : 'Sign in'}
             </Link>
           </nav>
-          <div className="sm:hidden flex items-center gap-2">
+
+          <div className="flex items-center gap-2 md:hidden">
             <LangSwitch />
             <MobileNav />
           </div>

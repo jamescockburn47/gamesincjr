@@ -28,7 +28,7 @@ export default function MobileNav() {
     <div className="sm:hidden">
       <button
         onClick={() => setOpen(true)}
-        className="inline-flex items-center justify-center rounded-md border border-white/20 bg-white/10 px-3 py-2 text-white backdrop-blur hover:bg-white/20"
+        className="inline-flex items-center justify-center rounded-xl border border-sky-100 bg-white/80 p-2 text-slate-600 shadow-sm transition hover:bg-white"
         aria-label="Open menu"
         aria-expanded={open ? 'true' : 'false'}
       >
@@ -38,22 +38,20 @@ export default function MobileNav() {
       </button>
 
       {/* Overlay */}
-      {open && (
-        <div className="fixed inset-0 z-[60] bg-black/40" />
-      )}
+      {open && <div className="fixed inset-0 z-[60] bg-slate-900/20" />}
 
       {/* Drawer */}
       <div
         ref={panelRef}
-        className={`fixed right-0 top-0 z-[70] h-full w-72 translate-x-full bg-[#0f172a] text-white shadow-xl transition-transform duration-200 ${open ? '!translate-x-0' : ''}`}
+        className={`fixed right-0 top-0 z-[70] h-full w-72 translate-x-full bg-white text-slate-900 shadow-xl transition-transform duration-200 ${open ? '!translate-x-0' : ''}`}
         role="dialog"
         aria-modal="true"
       >
-        <div className="flex items-center justify-between border-b border-white/10 px-4 py-4">
-          <span className="font-semibold tracking-wide">Menu</span>
+        <div className="flex items-center justify-between border-b border-sky-100 px-4 py-4">
+          <span className="text-sm font-semibold uppercase tracking-wide text-slate-600">Menu</span>
           <button
             onClick={() => setOpen(false)}
-            className="rounded-md border border-white/20 bg-white/10 p-2 hover:bg-white/20"
+            className="rounded-xl border border-sky-100 bg-white/80 p-2 text-slate-500 transition hover:bg-white"
             aria-label="Close menu"
           >
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
@@ -63,16 +61,33 @@ export default function MobileNav() {
         </div>
 
         <nav className="flex flex-col gap-2 p-4">
-          <Link href="/" className="rounded-lg px-3 py-3 text-cyan-300 hover:bg-white/10 hover:text-yellow-400" onClick={() => setOpen(false)}>Home</Link>
-          <Link href="/games" className="rounded-lg px-3 py-3 text-cyan-300 hover:bg-white/10 hover:text-yellow-400" onClick={() => setOpen(false)}>Games</Link>
-          <Link href="/community" className="rounded-lg px-3 py-3 text-cyan-300 hover:bg-white/10 hover:text-yellow-400" onClick={() => setOpen(false)}>Community</Link>
-          <Link href="/tutorials" className="rounded-lg px-3 py-3 text-cyan-300 hover:bg-white/10 hover:text-yellow-400" onClick={() => setOpen(false)}>Tutorials</Link>
-          <Link href="/about" className="rounded-lg px-3 py-3 text-cyan-300 hover:bg-white/10 hover:text-yellow-400" onClick={() => setOpen(false)}>About</Link>
-          <Link href="/games/space-runner" className="gaming-btn gaming-glow mt-2 text-center" onClick={() => setOpen(false)}>🎮 Play Now</Link>
+          <Link href="/" className="rounded-xl px-3 py-3 text-slate-600 transition hover:bg-sky-50 hover:text-sky-600" onClick={() => setOpen(false)}>
+            Home
+          </Link>
+          <Link href="/games" className="rounded-xl px-3 py-3 text-slate-600 transition hover:bg-sky-50 hover:text-sky-600" onClick={() => setOpen(false)}>
+            Games
+          </Link>
+          <Link href="/community" className="rounded-xl px-3 py-3 text-slate-600 transition hover:bg-sky-50 hover:text-sky-600" onClick={() => setOpen(false)}>
+            Community
+          </Link>
+          <Link href="/tutorials" className="rounded-xl px-3 py-3 text-slate-600 transition hover:bg-sky-50 hover:text-sky-600" onClick={() => setOpen(false)}>
+            Tutorials
+          </Link>
+          <Link href="/tech" className="rounded-xl px-3 py-3 text-slate-600 transition hover:bg-sky-50 hover:text-sky-600" onClick={() => setOpen(false)}>
+            How it works
+          </Link>
+          <Link href="/about" className="rounded-xl px-3 py-3 text-slate-600 transition hover:bg-sky-50 hover:text-sky-600" onClick={() => setOpen(false)}>
+            About
+          </Link>
+          <Link
+            href="/games/space-runner"
+            className="mt-2 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 via-sky-400 to-cyan-400 px-4 py-3 text-sm font-semibold text-white shadow-lg transition hover:brightness-110"
+            onClick={() => setOpen(false)}
+          >
+            🎮 Play now
+          </Link>
         </nav>
       </div>
     </div>
   );
 }
-
-
