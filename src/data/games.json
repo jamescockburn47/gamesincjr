@@ -2,11 +2,18 @@
   {
     "slug": "alien-unicorn-alliance",
     "title": "Alien Unicorn Alliance",
-    "tags": ["action", "flight", "combo"],
+    "tags": [
+      "action",
+      "flight",
+      "combo"
+    ],
     "description": "Steer an aurora unicorn through alien raids, collecting harmony crystals and pulsing drones into stardust.",
     "description_it": "Guida un unicorno aurorale tra incursioni aliene, raccogliendo cristalli armonici e trasformando i droni in polvere di stelle.",
     "hero": "/games/alien-unicorn-alliance/hero.svg",
-    "screenshots": ["/games/alien-unicorn-alliance/s1.svg", "/games/alien-unicorn-alliance/s2.svg"],
+    "screenshots": [
+      "/games/alien-unicorn-alliance/s1.svg",
+      "/games/alien-unicorn-alliance/s2.svg"
+    ],
     "demoPath": "/demos/alien-unicorn-alliance/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
@@ -16,25 +23,37 @@
   {
     "slug": "space-runner",
     "title": "Space Runner",
-    "tags": ["arcade", "runner", "8+"],
+    "tags": [
+      "arcade",
+      "runner",
+      "8+"
+    ],
     "description": "Dodge asteroids and survive as long as you can.",
     "description_it": "Evita gli asteroidi e sopravvivi il più a lungo possibile.",
     "hero": "/games/space-runner/hero.svg",
-    "screenshots": ["/games/space-runner/s1.svg", "/games/space-runner/s2.svg"],
+    "screenshots": [
+      "/games/space-runner/s1.svg",
+      "/games/space-runner/s2.svg"
+    ],
     "demoPath": "/demos/space-runner/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
     "version": "0.1.0"
-  }
-  ,
+  },
   {
     "slug": "neon-invaders",
     "title": "Neon Invaders",
-    "tags": ["retro", "shooter", "score-attack"],
+    "tags": [
+      "retro",
+      "shooter",
+      "score-attack"
+    ],
     "description": "Retro shooter with waves of invaders and combo scoring.",
     "description_it": "Sparatutto retrò con ondate di invasori e punteggi combo.",
     "hero": "/games/neon-invaders/hero.svg",
-    "screenshots": ["/games/neon-invaders/s1.svg"],
+    "screenshots": [
+      "/games/neon-invaders/s1.svg"
+    ],
     "demoPath": "/demos/neon-invaders/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
@@ -44,11 +63,17 @@
   {
     "slug": "pixel-pac-run",
     "title": "Pixel Pac Run",
-    "tags": ["maze", "collect", "ghosts"],
+    "tags": [
+      "maze",
+      "collect",
+      "ghosts"
+    ],
     "description": "Dynamic mazes; power-orbs change the rules.",
     "description_it": "Labirinti dinamici; le power‑orb cambiano le regole.",
     "hero": "/games/pixel-pac-run/hero.svg",
-    "screenshots": ["/games/pixel-pac-run/s1.svg"],
+    "screenshots": [
+      "/games/pixel-pac-run/s1.svg"
+    ],
     "demoPath": "/demos/pixel-pac-run/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
@@ -58,11 +83,17 @@
   {
     "slug": "turbo-outracer",
     "title": "Turbo Outracer",
-    "tags": ["racing", "time-attack", "arcade"],
+    "tags": [
+      "racing",
+      "time-attack",
+      "arcade"
+    ],
     "description": "Arcade racing with drifting and rival slipstreams.",
     "description_it": "Corsa arcade con drift e scia dei rivali.",
     "hero": "/games/turbo-outracer/hero.svg",
-    "screenshots": ["/games/turbo-outracer/s1.svg"],
+    "screenshots": [
+      "/games/turbo-outracer/s1.svg"
+    ],
     "demoPath": "/demos/turbo-outracer/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
@@ -72,11 +103,17 @@
   {
     "slug": "brick-blitz-84",
     "title": "Brick Blitz ‘84",
-    "tags": ["breakout", "paddle", "powerups"],
+    "tags": [
+      "breakout",
+      "paddle",
+      "powerups"
+    ],
     "description": "Breakout with simple physics and increasingly challenging levels.",
     "description_it": "Breakout con fisica semplice e livelli a difficoltà crescente.",
     "hero": "/games/brick-blitz-84/hero.svg",
-    "screenshots": ["/games/brick-blitz-84/s1.svg"],
+    "screenshots": [
+      "/games/brick-blitz-84/s1.svg"
+    ],
     "demoPath": "/demos/brick-blitz-84/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
@@ -86,11 +123,17 @@
   {
     "slug": "rogue-dungeon-mini",
     "title": "Rogue Dungeon Mini",
-    "tags": ["roguelite", "dungeon", "permadeath"],
+    "tags": [
+      "roguelite",
+      "dungeon",
+      "permadeath"
+    ],
     "description": "Procedural rooms, one life, persistent scores.",
     "description_it": "Stanze procedurali, una sola vita, punteggi permanenti.",
     "hero": "/games/rogue-dungeon-mini/hero.svg",
-    "screenshots": ["/games/rogue-dungeon-mini/s1.svg"],
+    "screenshots": [
+      "/games/rogue-dungeon-mini/s1.svg"
+    ],
     "demoPath": "/demos/rogue-dungeon-mini/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
@@ -100,11 +143,17 @@
   {
     "slug": "gravity-lander",
     "title": "Gravity Lander",
-    "tags": ["physics", "lander", "precision"],
+    "tags": [
+      "physics",
+      "lander",
+      "precision"
+    ],
     "description": "Land with limited fuel and variable wind.",
     "description_it": "Atterra con poco carburante e vento variabile.",
     "hero": "/games/gravity-lander/hero.svg",
-    "screenshots": ["/games/gravity-lander/s1.svg"],
+    "screenshots": [
+      "/games/gravity-lander/s1.svg"
+    ],
     "demoPath": "/demos/gravity-lander/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
@@ -114,11 +163,17 @@
   {
     "slug": "vector-asteroids",
     "title": "Vector Asteroids",
-    "tags": ["vector", "shooter", "thrust"],
+    "tags": [
+      "vector",
+      "shooter",
+      "thrust"
+    ],
     "description": "Shoot asteroids while managing your ship's inertia.",
     "description_it": "Spara agli asteroidi gestendo l&apos;inerzia della nave.",
     "hero": "/games/vector-asteroids/hero.svg",
-    "screenshots": ["/games/vector-asteroids/s1.svg"],
+    "screenshots": [
+      "/games/vector-asteroids/s1.svg"
+    ],
     "demoPath": "/demos/vector-asteroids/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
@@ -128,11 +183,17 @@
   {
     "slug": "tower-frenzy-90",
     "title": "Tower Frenzy ‘90",
-    "tags": ["puzzle", "stacking", "timing"],
+    "tags": [
+      "puzzle",
+      "stacking",
+      "timing"
+    ],
     "description": "Build stable towers with perfect timing.",
     "description_it": "Costruisci torri stabili con tempi perfetti.",
     "hero": "/games/tower-frenzy-90/hero.svg",
-    "screenshots": ["/games/tower-frenzy-90/s1.svg"],
+    "screenshots": [
+      "/games/tower-frenzy-90/s1.svg"
+    ],
     "demoPath": "/demos/tower-frenzy-90/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
@@ -142,11 +203,17 @@
   {
     "slug": "frog-cross-dash",
     "title": "Frog Cross Dash",
-    "tags": ["timing", "lanes", "endless"],
+    "tags": [
+      "timing",
+      "lanes",
+      "endless"
+    ],
     "description": "Cross chaotic roads and rivers, run after run.",
     "description_it": "Attraversa strade e fiumi caotici, run dopo run.",
     "hero": "/games/frog-cross-dash/hero.svg",
-    "screenshots": ["/games/frog-cross-dash/s1.svg"],
+    "screenshots": [
+      "/games/frog-cross-dash/s1.svg"
+    ],
     "demoPath": "/demos/frog-cross-dash/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
@@ -156,11 +223,17 @@
   {
     "slug": "bubble-pop-arena",
     "title": "Bubble Pop Arena",
-    "tags": ["match", "chain", "arcade"],
+    "tags": [
+      "match",
+      "chain",
+      "arcade"
+    ],
     "description": "Shoot bubbles and create chains against the clock.",
     "description_it": "Spara bolle e crea catene a tempo.",
     "hero": "/games/bubble-pop-arena/hero.svg",
-    "screenshots": ["/games/bubble-pop-arena/s1.svg"],
+    "screenshots": [
+      "/games/bubble-pop-arena/s1.svg"
+    ],
     "demoPath": "/demos/bubble-pop-arena/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
@@ -170,15 +243,41 @@
   {
     "slug": "kung-fu-duels",
     "title": "Kung Fu Duels",
-    "tags": ["beat-em-up", "combo", "bosses"],
+    "tags": [
+      "beat-em-up",
+      "combo",
+      "bosses"
+    ],
     "description": "Side-scrolling beat 'em up with simple combos and bosses.",
     "description_it": "Picchiaduro a scorrimento con combo semplici e boss.",
     "hero": "/games/kung-fu-duels/hero.svg",
-    "screenshots": ["/games/kung-fu-duels/s1.svg"],
+    "screenshots": [
+      "/games/kung-fu-duels/s1.svg"
+    ],
     "demoPath": "/demos/kung-fu-duels/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
     "version": "0.1.0",
     "status": "coming-soon"
+  },
+  {
+    "slug": "banana-bonanza",
+    "title": "Banana Bonanza",
+    "tags": [
+      "arcade",
+      "reflex",
+      "fruit"
+    ],
+    "description": "Slide the crate, catch ripe bananas, dodge the rotten ones, and chase combos.",
+    "description_it": "Fai scorrere la cassa, afferra le banane mature, evita quelle marce e insegui le combo.",
+    "hero": "/games/banana-bonanza/hero.svg",
+    "screenshots": [
+      "/games/banana-bonanza/s1.svg"
+    ],
+    "demoPath": "/demos/banana-bonanza/index.html",
+    "gameType": "html5",
+    "engine": "vanilla-js",
+    "version": "0.1.0",
+    "status": "released"
   }
 ]

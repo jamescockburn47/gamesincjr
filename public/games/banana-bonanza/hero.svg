@@ -1,0 +1,65 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-labelledby="title desc">
+  <title id="title">Banana Bonanza hero art</title>
+  <desc id="desc">A cheerful monkey juggling bananas in a neon jungle.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#2f2963" />
+      <stop offset="50%" stop-color="#2a7b5f" />
+      <stop offset="100%" stop-color="#152f2b" />
+    </linearGradient>
+    <radialGradient id="sun" cx="0.5" cy="0.2" r="0.6">
+      <stop offset="0%" stop-color="#ffe775" />
+      <stop offset="80%" stop-color="#ffb347" />
+      <stop offset="100%" stop-color="rgba(255, 179, 71, 0)" />
+    </radialGradient>
+    <linearGradient id="banana" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#fff59d" />
+      <stop offset="50%" stop-color="#ffd54f" />
+      <stop offset="100%" stop-color="#f9a825" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#bg)" />
+  <circle cx="640" cy="80" r="160" fill="url(#sun)" opacity="0.85" />
+  <g fill="#1a453e" opacity="0.6">
+    <ellipse cx="120" cy="420" rx="160" ry="40" />
+    <ellipse cx="360" cy="430" rx="200" ry="50" />
+    <ellipse cx="680" cy="410" rx="180" ry="45" />
+  </g>
+  <g stroke="#0f2925" stroke-width="6" stroke-linecap="round" stroke-linejoin="round">
+    <path fill="#ffe082" d="M120 360c50-90 120-120 200-95s130 20 200-10 150-40 210 45l-10 30c-70-80-140-65-210-35s-120 15-200 0-140-5-200 85z" />
+    <path fill="#4caf50" d="M90 370c60-110 150-160 240-135s140 30 220-5 170-40 220 65l-12 25c-60-85-140-70-210-40s-140 15-220-5-150 5-220 95z" />
+  </g>
+  <g transform="translate(320 140)">
+    <ellipse cx="80" cy="180" rx="120" ry="30" fill="rgba(0,0,0,0.35)" />
+    <g>
+      <circle cx="80" cy="110" r="70" fill="#5d4037" />
+      <circle cx="60" cy="90" r="16" fill="#fafafa" />
+      <circle cx="60" cy="90" r="8" fill="#212121" />
+      <circle cx="100" cy="90" r="16" fill="#fafafa" />
+      <circle cx="100" cy="90" r="8" fill="#212121" />
+      <ellipse cx="80" cy="120" rx="26" ry="18" fill="#ffcc80" />
+      <path d="M60 140c12 18 28 18 40 0" stroke="#ffb74d" stroke-width="8" stroke-linecap="round" />
+      <path d="M25 120c-18-10-28-30-20-50 12-32 44-42 74-44 22-2 45 10 58 28" fill="none" stroke="#795548" stroke-width="12" stroke-linecap="round" />
+    </g>
+    <g fill="#6d4c41">
+      <path d="M35 200c-12 45-48 55-42 85 18 12 62-10 72-58" />
+      <path d="M125 200c12 45 48 55 42 85-18 12-62-10-72-58" />
+    </g>
+    <rect x="40" y="140" width="80" height="70" rx="34" fill="#8d6e63" />
+    <path d="M80 160c-12 0-22 10-22 22s10 20 22 20 22-8 22-20-10-22-22-22z" fill="#ffcc80" />
+    <path d="M0 170c-28-20-60-20-88-4 18 40 68 58 108 46" fill="#ffcc80" opacity="0.8" />
+    <path d="M160 170c28-20 60-20 88-4-18 40-68 58-108 46" fill="#ffcc80" opacity="0.8" />
+  </g>
+  <g fill="url(#banana)" stroke="#c48f00" stroke-width="5" stroke-linecap="round">
+    <path d="M200 120c40 50 120 70 170 40 22-14 30-32 18-50-36 30-110 30-188 10z" />
+    <path d="M540 120c-40 50-120 70-170 40-22-14-30-32-18-50 36 30 110 30 188 10z" />
+    <path d="M420 40c18 58 8 122-30 160-18 18-38 24-56 12 26-30 46-94 46-172z" />
+  </g>
+  <g fill="#2e7d32">
+    <circle cx="720" cy="360" r="12" opacity="0.9" />
+    <circle cx="680" cy="330" r="10" opacity="0.7" />
+    <circle cx="700" cy="310" r="8" opacity="0.6" />
+    <circle cx="120" cy="320" r="14" opacity="0.85" />
+    <circle cx="160" cy="300" r="10" opacity="0.7" />
+  </g>
+</svg>

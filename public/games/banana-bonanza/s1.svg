@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 450" role="img" aria-labelledby="title desc">
+  <title id="title">Banana Bonanza gameplay preview</title>
+  <desc id="desc">A wooden crate catching bananas while rotten fruit falls in a jungle clearing.</desc>
+  <defs>
+    <linearGradient id="night" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#143542" />
+      <stop offset="100%" stop-color="#0b1f24" />
+    </linearGradient>
+    <linearGradient id="ground" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#356859" />
+      <stop offset="100%" stop-color="#1b4332" />
+    </linearGradient>
+  </defs>
+  <rect width="800" height="450" fill="url(#night)" />
+  <g opacity="0.6">
+    <circle cx="110" cy="80" r="60" fill="#22577a" />
+    <circle cx="700" cy="110" r="80" fill="#22577a" />
+    <circle cx="500" cy="40" r="45" fill="#22577a" />
+  </g>
+  <rect x="0" y="300" width="800" height="150" fill="url(#ground)" />
+  <g stroke="#0f1c1a" stroke-width="6" stroke-linejoin="round">
+    <path fill="#4caf50" d="M40 310c80-130 220-140 340-110s210-10 320 100l-20 36c-90-92-192-80-320-52s-236 32-340 102z" opacity="0.8" />
+    <path fill="#7cb342" d="M90 320c60-90 160-120 260-92s190 10 280 90l-14 26c-70-70-170-66-260-46s-180 48-266 104z" opacity="0.7" />
+  </g>
+  <g>
+    <path d="M365 330h70c6 0 12 4 14 9l14 38c4 10-4 21-14 21h-98c-10 0-18-11-14-21l14-38c2-5 8-9 14-9z" fill="#8d6e63" stroke="#4e342e" stroke-width="6" />
+    <rect x="346" y="352" width="108" height="38" rx="8" fill="#a1887f" opacity="0.8" />
+  </g>
+  <g stroke="#c48f00" stroke-width="5" stroke-linecap="round">
+    <path fill="#fff59d" d="M220 200c40 45 112 60 155 30 18-12 24-28 12-42-34 26-96 24-167 12z" />
+    <path fill="#ffe082" d="M570 170c-32 48-100 70-142 42-16-10-24-26-14-40 34 24 90 22 156-2z" />
+    <path fill="#ffd54f" d="M450 110c18 50 8 110-26 142-16 14-32 18-46 8 22-26 36-78 38-150z" />
+  </g>
+  <g stroke="#4e342e" stroke-width="5" stroke-linecap="round">
+    <path fill="#6d4c41" d="M300 140c12 40 0 80-30 96-14 8-28 6-34-10 20-20 38-52 44-86z" />
+    <path fill="#6d4c41" d="M520 140c-12 40 0 80 30 96 14 8 28 6 34-10-20-20-38-52-44-86z" />
+  </g>
+  <g>
+    <text x="400" y="80" fill="#fdf6b2" font-size="42" font-weight="700" text-anchor="middle" font-family="'Fredoka', 'Arial Rounded MT Bold', Arial, sans-serif">BANANA BONUS!</text>
+    <text x="400" y="120" fill="#fefcbf" font-size="22" text-anchor="middle" font-family="'Nunito', Arial, sans-serif">Catch the ripe fruit • Dodge the rotten ones</text>
+  </g>
+</svg>
