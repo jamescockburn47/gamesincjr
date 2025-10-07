@@ -1,89 +1,8 @@
 import Link from 'next/link';
 
-// Compact data sets keep the JSX below easy to scan.
-const heroStats = [
-  {
-    value: '25+',
-    label: 'Arcade, puzzles & story games',
-    accent: 'text-sky-500',
-  },
-  {
-    value: '8-13',
-    label: 'Designed with players aged 8-13',
-    accent: 'text-rose-500',
-  },
-  {
-    value: '100%',
-    label: 'Browser based, no installs',
-    accent: 'text-amber-500',
-  },
-];
+import { homeContent } from '@/data/homeContent';
 
-const featureCards = [
-  {
-    icon: '🌈',
-    title: 'Kid-first design',
-    description:
-      'Rounded layouts, friendly animations and big tap targets make play comfortable on any screen.',
-    bullets: [
-      'Soft gradients keep focus on the action with playful colour pops.',
-      'Accessibility-first type sizes and contrast for emerging readers.',
-    ],
-  },
-  {
-    icon: '🧭',
-    title: 'Always know what to do next',
-    description:
-      'Guided mission cards and floating helpers turn every session into an easy-to-follow adventure.',
-    bullets: [
-      'Short quests with clear goals and celebratory feedback.',
-      'Optional hints that explain concepts instead of giving away answers.',
-    ],
-  },
-  {
-    icon: '🛡️',
-    title: 'Family friendly & safe',
-    description:
-      'We moderate experiences and keep everything in-browser so you can relax while they play.',
-    bullets: [
-      'No downloads, ads or surprise pop-ups—ever.',
-      'Parent dashboards highlight progress, favourites and play time.',
-    ],
-  },
-];
-
-const collapsibleSections = [
-  {
-    icon: '🧠',
-    title: 'Skill-building adventures',
-    summary: 'Mini missions sharpen logic, creativity and teamwork.',
-    details: [
-      'Challenge cards break bigger ideas into manageable steps with colourful visual cues.',
-      'Optional “level up” tasks appear once players feel ready for more complexity.',
-      'Every mission ends with a reflective prompt so kids can share what they discovered.',
-    ],
-  },
-  {
-    icon: '🎨',
-    title: 'Create, remix and show off',
-    summary: 'Shareable studios let players tweak levels, stories and characters.',
-    details: [
-      'Templates, stickers and sound packs make it easy to customise without needing code.',
-      'Collaborative rooms (with adult approval) encourage friends to co-create in real time.',
-      'Built-in exports turn creations into printable zines or quick highlight reels.',
-    ],
-  },
-  {
-    icon: '👪',
-    title: 'Made with families in mind',
-    summary: 'Clear controls for grown-ups keep things safe and stress free.',
-    details: [
-      'Parent view summarises achievements, favourite genres and recommended next steps.',
-      'Play-time reminders are gentle, customisable and pause the fun without fuss.',
-      'You choose which community events or tutorials your child can join.',
-    ],
-  },
-];
+const { heroStats, featureCards, collapsibleSections, hero, callToAction } = homeContent;
 
 export default function Home() {
   return (
@@ -100,27 +19,25 @@ export default function Home() {
         <section className="grid gap-12 lg:grid-cols-12 lg:items-center">
           <div className="lg:col-span-7">
             <span className="inline-flex items-center rounded-full bg-white/80 px-4 py-1 text-sm font-semibold text-sky-700 shadow-sm ring-1 ring-sky-100">
-              Built by kids, guided by educators
+              {hero.eyebrow}
             </span>
             <h1 className="mt-6 text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-              Ultra-clean play spaces crafted for curious minds
+              {hero.title}
             </h1>
-            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">
-              Games inc. Jr blends imaginative worlds with smart guardrails. Kids get bright, responsive interfaces and mission-based challenges designed to grow with them—no downloads, no complicated menus.
-            </p>
+            <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-600">{hero.description}</p>
 
             <div className="mt-8 flex flex-col gap-3 sm:flex-row sm:items-center">
               <Link
-                href="/games"
+                href={hero.primaryCta.href}
                 className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-sky-500 via-sky-400 to-cyan-400 px-8 py-4 text-base font-semibold text-white shadow-lg transition hover:brightness-110 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
               >
-                🎯 Browse all games
+                {hero.primaryCta.label}
               </Link>
               <Link
-                href="/games/alien-unicorn-alliance"
+                href={hero.secondaryCta.href}
                 className="inline-flex items-center justify-center rounded-xl bg-white/80 px-8 py-4 text-base font-semibold text-slate-800 shadow-md ring-1 ring-sky-100 transition hover:bg-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
               >
-                🦄 Enter Alien Unicorn Alliance
+                {hero.secondaryCta.label}
               </Link>
             </div>
 
@@ -143,22 +60,20 @@ export default function Home() {
                 <div className="flex items-center gap-4">
                   <span className="flex h-12 w-12 items-center justify-center rounded-full bg-sky-100 text-3xl">🦄</span>
                   <div>
-                    <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">Featured world</p>
-                    <p className="text-2xl font-bold text-slate-900">Alien Unicorn Alliance</p>
+                    <p className="text-sm font-semibold uppercase tracking-widest text-sky-600">{hero.featuredWorld.label}</p>
+                    <p className="text-2xl font-bold text-slate-900">{hero.featuredWorld.title}</p>
                   </div>
                 </div>
-                <p className="text-sm leading-6 text-slate-600">
-                  Glide through aurora meadows, rescue starlit foals and outsmart raider drones with a dazzling starlight pulse. The more harmony crystals you chain, the brighter the score climbs.
-                </p>
+                <p className="text-sm leading-6 text-slate-600">{hero.featuredWorld.description}</p>
                 <div className="rounded-2xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 text-center text-sky-100 shadow-inner">
-                  <p className="text-lg font-semibold tracking-wide text-white">Live mission: Harmony Surge</p>
-                  <p className="mt-2 text-sm text-slate-300">Convert three raider squads with a single pulse to unlock the Prism Mane skin.</p>
+                  <p className="text-lg font-semibold tracking-wide text-white">{hero.featuredWorld.liveMissionTitle}</p>
+                  <p className="mt-2 text-sm text-slate-300">{hero.featuredWorld.liveMissionDescription}</p>
                 </div>
                 <Link
-                  href="/games/alien-unicorn-alliance"
+                  href={hero.featuredWorld.ctaHref}
                   className="inline-flex w-full items-center justify-center rounded-xl bg-gradient-to-r from-rose-400 via-amber-400 to-yellow-400 px-6 py-3 text-sm font-semibold text-slate-900 shadow-lg transition hover:brightness-110"
                 >
-                  Launch the rescue flight
+                  {hero.featuredWorld.ctaLabel}
                 </Link>
               </div>
             </div>
@@ -168,10 +83,10 @@ export default function Home() {
         {/* Feature summary cards */}
         <section className="mt-24">
           <h2 className="text-center text-3xl font-bold text-slate-900 sm:text-4xl">
-            Clean, modern UI with joyful colour moments
+            Discover the worlds our young studios are shipping
           </h2>
           <p className="mt-4 text-center text-base text-slate-600">
-            Every screen favours clarity first—then adds sparkles of colour to celebrate wins and guide the eye.
+            Every release combines kid-led storytelling, educator oversight and AI copilots tuned for emerging players.
           </p>
 
           <div className="mt-12 grid gap-6 lg:grid-cols-3">
@@ -203,7 +118,7 @@ export default function Home() {
           <div className="mx-auto max-w-4xl text-center">
             <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">Dive deeper when you&apos;re ready</h2>
             <p className="mt-4 text-base text-slate-600">
-              Expand the sections below to explore how Games inc. Jr balances joyful exploration with thoughtful guardrails.
+              Explore how Games inc. Jr combines child-led creativity, thoughtful AI and safe community spaces.
             </p>
           </div>
 
@@ -241,45 +156,35 @@ export default function Home() {
         <section className="mt-24">
           <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
             <div className="rounded-3xl bg-white/90 p-8 shadow-lg ring-1 ring-slate-100">
-              <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">Ready for launch?</h2>
-              <p className="mt-4 text-base leading-7 text-slate-600">
-                Join a welcoming universe designed for curious kids and confident families. Explore solo, team up with friends or start designing your own mini worlds—the tools and tutorials are right inside your browser.
-              </p>
+              <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">{callToAction.title}</h2>
+              <p className="mt-4 text-base leading-7 text-slate-600">{callToAction.description}</p>
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
                 <Link
-                  href="/community"
+                  href={callToAction.primaryCta.href}
                   className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-violet-500 via-purple-400 to-pink-400 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:brightness-110"
                 >
-                  🌟 Meet the community
+                  {callToAction.primaryCta.label}
                 </Link>
                 <Link
-                  href="/tutorials"
+                  href={callToAction.secondaryCta.href}
                   className="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-base font-semibold text-slate-800 shadow-md ring-1 ring-slate-200 transition hover:bg-slate-50"
                 >
-                  📚 Explore tutorials
+                  {callToAction.secondaryCta.label}
                 </Link>
               </div>
             </div>
             <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-sky-200 via-cyan-100 to-rose-200 p-1 shadow-xl">
               <div className="rounded-[26px] bg-white/90 p-8">
-                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">Why kids come back</p>
+                <p className="text-sm font-semibold uppercase tracking-[0.2em] text-sky-600">{callToAction.reasonsTitle}</p>
                 <ul className="mt-6 space-y-4 text-base leading-7 text-slate-700">
-                  <li className="flex items-start gap-3">
-                    <span className="mt-1 text-lg">💬</span>
-                    <span>Friendly reminders and celebration screens cheer on progress without overwhelming the experience.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="mt-1 text-lg">🧩</span>
-                    <span>Levels are intentionally bite-sized so kids can play a full loop in five minutes or less.</span>
-                  </li>
-                  <li className="flex items-start gap-3">
-                    <span className="mt-1 text-lg">🎁</span>
-                    <span>Earnable badges unlock new colour themes and stickers to personalise dashboards and avatars.</span>
-                  </li>
+                  {callToAction.reasons.map((reason) => (
+                    <li key={reason.text} className="flex items-start gap-3">
+                      <span className="mt-1 text-lg">{reason.icon}</span>
+                      <span>{reason.text}</span>
+                    </li>
+                  ))}
                 </ul>
-                <p className="mt-6 text-sm text-slate-500">
-                  Pro tip: Use the parent dashboard to schedule weekend challenges or quiet creativity time.
-                </p>
+                <p className="mt-6 text-sm text-slate-500">{callToAction.tip}</p>
               </div>
             </div>
           </div>
