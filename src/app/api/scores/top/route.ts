@@ -40,7 +40,8 @@ export async function GET(req: NextRequest) {
       }
     }
     return NextResponse.json({ top });
-  } catch (e) {
+  } catch (error) {
+    console.error('Failed to load scores', error);
     return NextResponse.json({ top: [] });
   }
 }

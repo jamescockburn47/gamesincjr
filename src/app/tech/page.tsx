@@ -1,25 +1,38 @@
-export const metadata = { title: 'How the site works • Games Inc Jr' };
+import PageHeader from "@/components/PageHeader";
+import PageShell from "@/components/PageShell";
+
+const points = [
+  "Built with Next.js so most screens render on the server for instant loads.",
+  "Game metadata lives in a tiny JSON file and a helper reads it across the app.",
+  "Playable demos are static HTML/JS bundles inside /public, embedded with sandboxed iframes.",
+  "Community posts go through a simple API backed by Upstash Redis (with an in-memory fallback for local dev).",
+  "Demo login drops cookies for your selected tier today; long term we&apos;ll shift to email magic links and Stripe.",
+  "Security headers and iframe sandboxing keep previews contained.",
+  "Italian and English copy live side by side so localisation is easy to expand.",
+  "Deployments run on Vercel—push to main and the site updates automatically.",
+];
+
+export const metadata = { title: "How the site works • Games Inc Jr" };
 
 export default function TechOverview() {
   return (
-    <main className="min-h-screen gaming-bg pixel-pattern">
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl p-8 shadow">
-          <h1 className="pixel-text text-4xl text-gray-900 mb-4">How the site works (plain English)</h1>
-          <ol className="list-decimal pl-5 space-y-3 modern-text text-gray-700">
-            <li><strong>Pages</strong>: The site runs on Next.js. Most pages are simple server-rendered React components.</li>
-            <li><strong>Games data</strong>: A small JSON file in the repo lists games. We read it using a tiny TypeScript helper.</li>
-            <li><strong>Playable demos</strong>: Each demo is a normal HTML/JS file in the public folder, embedded with an iframe. No downloads.</li>
-            <li><strong>Community feed</strong>: A small API lets visitors post and read messages. We store them in Upstash (a hosted Redis). If not configured, it stores in memory for dev.</li>
-            <li><strong>Login & tiers</strong>: A minimal demo login sets a cookie for your selected tier. Later we’ll switch to email magic-links and Stripe.</li>
-            <li><strong>Security</strong>: We set basic headers and run demos in a sandboxed iframe.</li>
-            <li><strong>Internationalisation</strong>: English and Italian pages live under different paths. Copy can be translated per page or per game.</li>
-            <li><strong>Deploy</strong>: Pushing to GitHub triggers Vercel to deploy. Some pages bypass caching so new data shows immediately.</li>
+    <PageShell>
+      <div className="mx-auto flex max-w-4xl flex-col gap-12">
+        <PageHeader
+          align="left"
+          eyebrow="Behind the scenes"
+          title="How the site works (plain English)"
+          description="A quick tour of the architecture so families and collaborators know what keeps Games inc. Jr running smoothly."
+        />
+
+        <section className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-slate-100">
+          <ol className="list-decimal space-y-4 pl-5 text-base leading-7 text-slate-600">
+            {points.map((point) => (
+              <li key={point}>{point}</li>
+            ))}
           </ol>
-        </div>
+        </section>
       </div>
-    </main>
+    </PageShell>
   );
 }
-
-

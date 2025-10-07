@@ -1,11 +1,14 @@
-import { notFound } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { getGameBySlug } from '@/lib/games';
-import ComingSoon from '@/components/ComingSoon';
-import GamePlayer from '@/components/GamePlayer';
-import type { Metadata } from 'next';
-import { getUserFromCookies, hasAccessToGame } from '@/lib/user-session';
-import { Suspense } from 'react';
+import Image from "next/image";
+import { Suspense } from "react";
+import type { Metadata } from "next";
+import { notFound } from "next/navigation";
+import PageShell from "@/components/PageShell";
+import { Button, buttonVariants } from "@/components/ui/button";
+import ComingSoon from "@/components/ComingSoon";
+import GamePlayer from "@/components/GamePlayer";
+import { getGameBySlug } from "@/lib/games";
+import { cn } from "@/lib/utils";
+import { getUserFromCookies, hasAccessToGame } from "@/lib/user-session";
 
 interface GamePageProps {
   params: {
@@ -15,11 +18,11 @@ interface GamePageProps {
 
 export async function generateMetadata({ params }: GamePageProps): Promise<Metadata> {
   const game = getGameBySlug(params.slug);
-  
+
   if (!game) {
     return {
-      title: 'Game Not Found - Games Inc Jr',
-      description: 'The requested game could not be found.',
+      title: "Game Not Found - Games Inc Jr",
+      description: "The requested game could not be found.",
     };
   }
 
@@ -29,12 +32,12 @@ export async function generateMetadata({ params }: GamePageProps): Promise<Metad
     openGraph: {
       title: `${game.title} - Games Inc Jr`,
       description: game.description || `Play ${game.title} - an exciting HTML5 game available now!`,
-      type: 'website',
-      siteName: 'Games Inc Jr',
+      type: "website",
+      siteName: "Games Inc Jr",
       images: game.hero ? [{ url: game.hero }] : undefined,
     },
     twitter: {
-      card: 'summary_large_image',
+      card: "summary_large_image",
       title: `${game.title} - Games Inc Jr`,
       description: game.description || `Play ${game.title} - an exciting HTML5 game available now!`,
       images: game.hero ? [game.hero] : undefined,
@@ -50,114 +53,130 @@ export default async function GamePage({ params }: GamePageProps) {
     notFound();
   }
 
+  const description = game.description || "No description available";
+
   return (
-    <div className="container mx-auto px-4 py-8">
-      {/* Header Section */}
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold mb-4">{game.title}</h1>
-        <p className="text-lg text-gray-600">{game.description || 'No description available'}</p>
-      </div>
-
-      {/* Two Column Section */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-12">
-        {/* Left: Hero Image */}
-        <div className="aspect-video bg-gray-200 rounded-xl overflow-hidden">
-          <img
-            src={game.hero || '/placeholder-hero.jpg'}
-            alt={game.title}
-            className="w-full h-full object-cover"
-          />
-        </div>
-
-        {/* Right: Tags, Price, Buy Button */}
-        <div className="flex flex-col justify-center space-y-6">
-          <div className="flex flex-wrap gap-2">
-            {game.tags?.map((tag) => (
-              <span
-                key={tag}
-                className="px-3 py-1 bg-gray-100 text-sm rounded-full"
-              >
-                {tag}
+    <PageShell>
+      <div className="mx-auto flex max-w-6xl flex-col gap-14">
+        <section className="grid gap-10 lg:grid-cols-[1.1fr_0.9fr] lg:items-center">
+          <div className="space-y-6">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="inline-flex items-center rounded-full bg-sky-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-700">
+                {game.gameType?.toUpperCase() || "HTML5"}
               </span>
-            ))}
+              {game.status === "coming-soon" && (
+                <span className="inline-flex items-center rounded-full bg-amber-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-amber-700">
+                  Coming soon
+                </span>
+              )}
+            </div>
+            <div className="space-y-4">
+              <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">{game.title}</h1>
+              <p className="text-base leading-7 text-slate-600 sm:text-lg">{description}</p>
+            </div>
+            {game.tags && (
+              <div className="flex flex-wrap gap-2">
+                {game.tags.map((tag) => (
+                  <span
+                    key={tag}
+                    className="inline-flex items-center rounded-full bg-sky-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-sky-600 ring-1 ring-sky-100"
+                  >
+                    {tag}
+                  </span>
+                ))}
+              </div>
+            )}
+            <div className="flex flex-wrap items-center gap-3">
+              <Button asChild className="bg-sky-500 text-white hover:bg-sky-500/90">
+                <a href="#demo">Play the demo</a>
+              </Button>
+              <a
+                href="/about"
+                className={cn(buttonVariants({ variant: "outline" }), "bg-white/80 backdrop-blur")}
+              >
+                View membership tiers
+              </a>
+            </div>
           </div>
-          
-          {/* Pricing moved to subscriptions; no per-game price */}
-          
-          <Button size="lg" className="w-fit">
-            Buy
-          </Button>
-        </div>
-      </div>
-
-      {/* Game Player Section */}
-      <div className="mb-12" data-demo-section>
-        {/* Show a notice for non-subscribers, but ALWAYS render the demo */}
-        {!hasAccessToGame(user.tier, 0) && (
-          <div className="bg-yellow-50 border border-yellow-200 text-yellow-900 rounded-lg p-4 mb-4">
-            <p className="modern-text">
-              Preview mode: you can play level 1 here. To unlock all levels, please{' '}
-              <a className="underline" href="/about">choose a subscription tier</a> and then sign in on the{' '}
-              <a className="underline" href="/account">Account</a> page.
-            </p>
-          </div>
-        )}
-        <GamePlayer game={game} />
-        {/* Scoreboard */}
-        <Suspense>
-          <Scores slug={game.slug} />
-        </Suspense>
-      </div>
-
-      {/* Screenshots Grid */}
-      {game.screenshots && game.screenshots.length > 0 && (
-        <div>
-          <h2 className="text-2xl font-bold mb-6">Screenshots</h2>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {game.screenshots.map((screen, index) => (
-              <div key={index} className="aspect-video bg-gray-200 rounded-lg overflow-hidden">
-                <img
-                  src={screen}
-                  alt={`${game.title} screenshot ${index + 1}`}
-                  className="w-full h-full object-cover"
+          <div className="overflow-hidden rounded-3xl bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-1 shadow-2xl">
+            <div className="rounded-[26px] bg-slate-900/70 p-6">
+              <div className="relative h-72 w-full overflow-hidden rounded-2xl">
+                <Image
+                  src={game.hero || "/placeholder-hero.jpg"}
+                  alt={game.title}
+                  fill
+                  sizes="(min-width: 1280px) 480px, (min-width: 768px) 50vw, 100vw"
+                  className="object-cover"
                 />
               </div>
-            ))}
+              <div className="mt-5 space-y-2 rounded-2xl bg-slate-800/60 p-5 text-slate-100">
+                <p className="text-sm font-semibold uppercase tracking-wide text-slate-200">Included with membership</p>
+                <p className="text-sm text-slate-300">Try level one free, then sign in to unlock more worlds.</p>
+              </div>
+            </div>
           </div>
-        </div>
-      )}
+        </section>
 
-      {/* Coming Soon Section */}
-      <div className="mt-12">
-        <ComingSoon 
-          gameTitle={game.title} 
-          hasDemo={!!game.demoPath} 
-        />
+        <section id="demo" className="space-y-6 rounded-3xl bg-white/80 p-8 shadow-xl ring-1 ring-slate-100" data-demo-section>
+          {!hasAccessToGame(user.tier, 0) && (
+            <div className="rounded-2xl bg-amber-50 px-5 py-4 text-sm leading-6 text-amber-900 ring-1 ring-amber-200/70">
+              Preview mode: play level one here. To unlock all levels, choose a tier on the <a className="font-semibold text-amber-900 underline" href="/about">About</a> page and then sign in on the <a className="font-semibold text-amber-900 underline" href="/account">Account</a> page.
+            </div>
+          )}
+          <GamePlayer game={game} />
+          <Suspense>
+            <Scores slug={game.slug} />
+          </Suspense>
+        </section>
+
+        {game.screenshots?.length ? (
+          <section className="space-y-4">
+            <h2 className="text-2xl font-semibold text-slate-900">Screenshots</h2>
+            <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+              {game.screenshots.map((screen, index) => (
+                <figure key={screen} className="overflow-hidden rounded-2xl bg-slate-100">
+                  <Image
+                    src={screen}
+                    alt={`${game.title} screenshot ${index + 1}`}
+                    width={640}
+                    height={360}
+                    className="h-full w-full object-cover"
+                  />
+                </figure>
+              ))}
+            </div>
+          </section>
+        ) : null}
+
+        <section className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-slate-100">
+          <ComingSoon gameTitle={game.title} hasDemo={!!game.demoPath} />
+        </section>
       </div>
-    </div>
+    </PageShell>
   );
 }
 
 async function Scores({ slug }: { slug: string }) {
   try {
-    const res = await fetch(`${process.env.APP_URL || ''}/api/scores/top?slug=${encodeURIComponent(slug)}`, { cache: 'no-store' });
+    const res = await fetch(`${process.env.APP_URL || ""}/api/scores/top?slug=${encodeURIComponent(slug)}`, { cache: "no-store" });
     const data = await res.json();
     const top: Array<{ name: string; score: number }> = data?.top || [];
     if (!top.length) return null;
     return (
-      <div className="mt-6">
-        <h3 className="text-xl font-semibold mb-3">Top Scores</h3>
-        <ul className="divide-y divide-gray-200 rounded-lg border">
-          {top.map((row, i) => (
-            <li key={i} className="flex items-center justify-between px-4 py-2 bg-white">
-              <span className="font-medium text-gray-700">#{i + 1} {row.name}</span>
-              <span className="font-bold text-gray-900">{row.score}</span>
+      <div className="space-y-3">
+        <h3 className="text-lg font-semibold text-slate-900">Top scores</h3>
+        <ul className="divide-y divide-slate-200 overflow-hidden rounded-2xl ring-1 ring-slate-100">
+          {top.map((row, index) => (
+            <li key={row.name + row.score} className="flex items-center justify-between bg-white/70 px-4 py-3 text-sm text-slate-700">
+              <span className="font-semibold">#{index + 1} {row.name}</span>
+              <span className="font-bold text-slate-900">{row.score}</span>
             </li>
           ))}
         </ul>
       </div>
     );
-  } catch {
+  } catch (error) {
+    console.error(error);
     return null;
   }
 }
