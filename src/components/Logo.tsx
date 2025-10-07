@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import React from 'react';
 
 interface LogoProps {
@@ -16,14 +17,14 @@ export default function Logo({ className = '', size = 'md' }: LogoProps) {
 
   return (
     <div className={`${sizeClasses[size]} ${className} relative`}>
-      <img
+      <Image
         src="/images/logo.png"
         alt="Games Inc Jr Logo"
-        className="w-full h-full object-contain"
-        onError={(e) => {
-          // Fallback to placeholder if main logo fails to load
-          const target = e.target as HTMLImageElement;
-          target.src = '/images/logo-placeholder.svg';
+        fill
+        sizes="(min-width: 1024px) 8rem, (min-width: 640px) 6rem, 100vw"
+        className="object-contain"
+        onError={(event) => {
+          event.currentTarget.src = '/images/logo-placeholder.svg';
         }}
       />
     </div>

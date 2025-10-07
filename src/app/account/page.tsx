@@ -1,59 +1,93 @@
-import { getUserFromCookies, type Tier } from '@/lib/user-session';
+import PageHeader from "@/components/PageHeader";
+import PageShell from "@/components/PageShell";
+import { getUserFromCookies, type Tier } from "@/lib/user-session";
 
-export const metadata = { title: 'Account • Games Inc Jr' };
+export const metadata = { title: "Account • Games Inc Jr" };
 
 export default async function AccountPage() {
   const user = await getUserFromCookies();
-  return (
-    <main className="min-h-screen gaming-bg pixel-pattern">
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-xl mx-auto bg-white rounded-2xl p-8 shadow">
-          <h1 className="pixel-text text-3xl text-gray-900 mb-4">Account</h1>
-          <p className="modern-text text-gray-700 mb-6">Signed in as: {user.email || 'Guest'}</p>
 
+  return (
+    <PageShell>
+      <div className="mx-auto flex max-w-xl flex-col gap-10">
+        <PageHeader
+          align="left"
+          eyebrow="Manage access"
+          title="Account settings"
+          description={`Signed in as ${user.email || "a guest"}. Update your email and membership tier below.`}
+        />
+
+        <section className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-slate-100">
           <form
-            className="space-y-4"
+            className="space-y-5"
             action={async (formData: FormData) => {
-              'use server';
-              const email = String(formData.get('email') || '');
-              const tier = String(formData.get('tier') || 'free') as Tier;
-              await fetch('/api/auth/login', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+              "use server";
+              const email = String(formData.get("email") || "");
+              const tier = String(formData.get("tier") || "free") as Tier;
+              await fetch("/api/auth/login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ email, tier }),
               });
             }}
           >
-            <div>
-              <label className="block text-sm text-gray-700 mb-1">Email</label>
-              <input name="email" defaultValue={user.email} className="w-full border rounded px-3 py-2" />
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700" htmlFor="account-email">
+                Email
+              </label>
+              <input
+                id="account-email"
+                name="email"
+                defaultValue={user.email}
+                placeholder="you@example.com"
+                className="w-full rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-sm text-slate-700 shadow-inner focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
+              />
             </div>
-            <div>
-              <label className="block text-sm text-gray-700 mb-1">Tier</label>
-              <select name="tier" defaultValue={user.tier} className="w-full border rounded px-3 py-2">
-                <option value="free">Free (previews)</option>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700" htmlFor="account-tier">
+                Membership tier
+              </label>
+              <select
+                id="account-tier"
+                name="tier"
+                defaultValue={user.tier}
+                className="w-full rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-sm text-slate-700 shadow-inner focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
+              >
+                <option value="free">Free (previews only)</option>
                 <option value="starter">Starter (1 game)</option>
                 <option value="explorer">Explorer (3 games)</option>
                 <option value="champion">Champion (10 games)</option>
-                <option value="premium_ai">Premium AI (all + AI)</option>
+                <option value="premium_ai">Premium AI (all games + AI extras)</option>
               </select>
             </div>
-            <button className="gaming-btn" type="submit">Save</button>
+            <button
+              type="submit"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-sky-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-sky-500/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+            >
+              Save settings
+            </button>
           </form>
+        </section>
 
+        <section className="rounded-3xl bg-white/70 p-6 text-sm text-slate-600 shadow-inner ring-1 ring-slate-100">
           <form
-            className="mt-6"
             action={async () => {
-              'use server';
-              await fetch('/api/auth/logout', { method: 'POST' });
+              "use server";
+              await fetch("/api/auth/logout", { method: "POST" });
             }}
           >
-            <button className="clean-btn" type="submit">Sign Out</button>
+            <button
+              type="submit"
+              className="inline-flex items-center rounded-xl border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:bg-slate-50"
+            >
+              Sign out
+            </button>
           </form>
-        </div>
+          <p className="mt-4 leading-6">
+            We store your chosen tier in a cookie so game pages know which levels to unlock. Clearing browser data will sign you out.
+          </p>
+        </section>
       </div>
-    </main>
+    </PageShell>
   );
 }
-
-

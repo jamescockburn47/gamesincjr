@@ -1,43 +1,44 @@
-export const metadata = { title: 'Tutorials • Games Inc Jr' };
+import PageHeader from "@/components/PageHeader";
+import PageShell from "@/components/PageShell";
+
+export const metadata = { title: "Tutorials • Games Inc Jr" };
 
 export default function TutorialsPage() {
   return (
-    <main className="min-h-screen gaming-bg pixel-pattern">
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl p-8 shadow">
-          <h1 className="pixel-text text-4xl text-gray-900 mb-4">Coding Tutorials</h1>
-          <p className="modern-text text-gray-700 mb-6">
-            We offer 30‑minute remote sessions at <strong>£25 per student</strong> to show how kids (7+)
-            can get started with AI‑assisted, prompt‑based coding.
-          </p>
+    <PageShell>
+      <div className="mx-auto flex max-w-4xl flex-col gap-12">
+        <PageHeader
+          align="left"
+          eyebrow="30-minute sessions"
+          title="Coding tutorials for curious kids"
+          description="We run focused, remote sessions (£25 per student) that show 7+ learners how to bring ideas to life with AI-assisted, prompt-based workflows."
+        />
 
-          <h2 className="heading-text text-2xl text-gray-900 mb-2">Why now?</h2>
-          <p className="modern-text text-gray-700 mb-6">
-            The industry has changed dramatically with AI. “Vibe coding” — describing what you want in
-            clear language and iterating quickly — is now common at big tech companies and among
-            indie creators. You don’t need prior coding experience: bring a clear vision, communicate
-            well, pay attention to detail, and don’t be afraid of technology. Even kids can bring ideas
-            to life in minutes.
+        <section className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-slate-100">
+          <h2 className="text-xl font-semibold text-slate-900">Why now?</h2>
+          <p className="mt-4 text-base leading-7 text-slate-600">
+            The industry is shifting fast with AI. Vibe coding—describing what you want clearly and iterating quickly—is now standard. You don&apos;t need prior experience; bring a vision, communicate it, pay attention to detail and embrace the tech.
           </p>
+        </section>
 
-          <h2 className="heading-text text-2xl text-gray-900 mb-2">What we cover</h2>
-          <ul className="modern-text text-gray-700 list-disc pl-5 mb-6">
-            <li>Prompting fundamentals and safe practices</li>
-            <li>Building a tiny browser game with AI assistance</li>
-            <li>Iterating on visuals, controls, and difficulty</li>
-            <li>Publishing a playable preview</li>
+        <section className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-slate-100">
+          <h2 className="text-xl font-semibold text-slate-900">What we cover</h2>
+          <ul className="mt-4 list-disc space-y-3 pl-5 text-base leading-7 text-slate-600">
+            <li>Prompting fundamentals and how to stay safe.</li>
+            <li>Building a tiny browser game with AI assistance.</li>
+            <li>Iterating on visuals, controls and difficulty.</li>
+            <li>Publishing a playable preview you can share.</li>
           </ul>
+        </section>
 
-          <h2 className="heading-text text-2xl text-gray-900 mb-2">Book a session</h2>
-          <p className="modern-text text-gray-700 mb-2">
-            Email <a href="mailto:hello@gamesincjr.com" className="underline">hello@gamesincjr.com</a>
-            {' '}with preferred times. Parental consent required for under‑16s.
+        <section className="rounded-3xl bg-sky-50/70 p-8 shadow-lg ring-1 ring-sky-100">
+          <h2 className="text-xl font-semibold text-slate-900">Book a session</h2>
+          <p className="mt-4 text-base leading-7 text-slate-600">
+            Email <a className="font-semibold text-sky-600 underline" href="mailto:hello@gamesincjr.com">hello@gamesincjr.com</a> with preferred times. Parental consent is required for under-16s.
           </p>
-          <p className="modern-text text-gray-600 text-sm">One‑to‑one or small groups (up to 3) at the same price.</p>
-        </div>
+          <p className="mt-3 text-sm text-slate-500">One-to-one or small groups (up to three students) cost the same.</p>
+        </section>
       </div>
-    </main>
+    </PageShell>
   );
 }
-
-

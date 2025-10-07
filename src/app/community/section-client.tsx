@@ -1,68 +1,177 @@
 "use client";
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from "react";
 
 type Message = { id: string; name: string; text: string; ts: number };
 
-export default function CommunityClient() {
-  const [messages, setMessages] = useState<Message[]>([]);
-  const [name, setName] = useState('');
-  const [text, setText] = useState('');
+export interface CommunityCopy {
+  intro?: string;
+  displayNameLabel: string;
+  displayNamePlaceholder: string;
+  messageLabel: string;
+  messagePlaceholder: string;
+  emptyState: string;
+  postButton: string;
+  posting: string;
+  errorEmpty: string;
+  errorRefresh: string;
+  errorSubmit: string;
+  characterHint: string;
+}
 
-  async function refresh() {
-    const res = await fetch('/api/community/list', { cache: 'no-store' });
-    const data = await res.json();
-    setMessages(data.items || []);
-  }
+const defaultCopy: CommunityCopy = {
+  intro: "Share ideas, feedback and discuss upcoming games.",
+  displayNameLabel: "Display name (optional)",
+  displayNamePlaceholder: "e.g. SuperCoder",
+  messageLabel: "Message",
+  messagePlaceholder: "Share feedback, a bug report or a celebratory moment.",
+  emptyState: "No notes yet—why not start the conversation?",
+  postButton: "Post message",
+  posting: "Posting…",
+  errorEmpty: "Write a quick message before posting.",
+  errorRefresh: "We couldn’t refresh the feed. We’ll retry automatically.",
+  errorSubmit: "We couldn’t post your note. Please try again.",
+  characterHint: "We trim posts to 500 characters to keep the feed easy to skim.",
+};
+
+interface CommunityClientProps {
+  copy?: Partial<CommunityCopy>;
+}
+
+export default function CommunityClient({ copy }: CommunityClientProps = {}) {
+  const text = { ...defaultCopy, ...copy } satisfies CommunityCopy;
+  const [messages, setMessages] = useState<Message[]>([]);
+  const [name, setName] = useState("");
+  const [textValue, setTextValue] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+
+  const refresh = useCallback(async () => {
+    try {
+      const res = await fetch("/api/community/list", { cache: "no-store" });
+      if (!res.ok) {
+        throw new Error(`Failed to load messages: ${res.status}`);
+      }
+      const data = await res.json();
+      setMessages(Array.isArray(data.items) ? data.items : []);
+      setError(null);
+    } catch (err) {
+      console.error(err);
+      setError(text.errorRefresh);
+    }
+  }, [text.errorRefresh]);
 
   useEffect(() => {
     refresh();
-    const t = setInterval(refresh, 5000);
-    return () => clearInterval(t);
-  }, []);
+    const interval = setInterval(refresh, 5000);
+    return () => clearInterval(interval);
+  }, [refresh]);
 
-  async function submit(e: React.FormEvent) {
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (!text.trim()) return;
-    await fetch('/api/community/post', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ name, text }),
-    });
-    await refresh();
-    setText('');
+    const trimmed = textValue.trim();
+    if (!trimmed) {
+      setError(text.errorEmpty);
+      return;
+    }
+
+    setSubmitting(true);
+    try {
+      const res = await fetch("/api/community/post", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: name.trim().slice(0, 80), text: trimmed.slice(0, 500) }),
+      });
+      if (!res.ok) {
+        throw new Error(`Failed to post message: ${res.status}`);
+      }
+      setTextValue("");
+      setError(null);
+      await refresh();
+    } catch (err) {
+      console.error(err);
+      setError(text.errorSubmit);
+    } finally {
+      setSubmitting(false);
+    }
   }
 
   return (
-    <div className="max-w-4xl mx-auto bg-white rounded-2xl p-8 shadow">
-      <h1 className="pixel-text text-4xl text-gray-900 mb-4">Community</h1>
-      <p className="modern-text text-gray-700 mb-6">Share ideas, feedback and discuss upcoming games.</p>
-
-      <form onSubmit={submit} className="bg-gray-50 border border-gray-200 rounded-xl p-4 mb-6">
-        <div className="flex gap-3 mb-3">
-          <input className="flex-1 border rounded px-3 py-2" placeholder="Your name (optional)" value={name} onChange={e=>setName(e.target.value)} />
-        </div>
-        <textarea className="w-full border rounded px-3 py-2 mb-3" placeholder="Write a comment or suggestion…" value={text} onChange={e=>setText(e.target.value)} />
-        <button className="gaming-btn" type="submit">Post</button>
-      </form>
-
-      <h2 className="heading-text text-2xl text-gray-900 mb-3">Feedback & Discussions</h2>
-      <div className="space-y-3 max-h-[480px] overflow-y-auto pr-1">
-        {messages.length === 0 && (
-          <div className="text-gray-500 modern-text">No posts yet. Be the first!</div>
+    <div className="space-y-8">
+      <div className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-slate-100">
+        {text.intro && (
+          <p className="mb-6 text-sm leading-6 text-slate-600">{text.intro}</p>
         )}
-        {messages.slice().reverse().map(m => (
-          <div key={m.id} className="bg-gray-50 border border-gray-200 rounded-xl p-4">
-            <div className="flex items-center justify-between mb-2">
-              <div className="font-semibold text-gray-800">{m.name}</div>
-              <div className="text-xs text-gray-500">{new Date(m.ts).toLocaleString()}</div>
-            </div>
-            <p className="modern-text text-gray-700 whitespace-pre-line">{m.text}</p>
+        <form onSubmit={submit} className="space-y-5">
+          <div>
+            <label className="text-sm font-semibold text-slate-700" htmlFor="community-name">
+              {text.displayNameLabel}
+            </label>
+            <input
+              id="community-name"
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-sm text-slate-700 shadow-inner focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
+              placeholder={text.displayNamePlaceholder}
+              value={name}
+              maxLength={120}
+              onChange={(event) => setName(event.target.value)}
+              autoComplete="off"
+            />
           </div>
-        ))}
+          <div>
+            <label className="text-sm font-semibold text-slate-700" htmlFor="community-message">
+              {text.messageLabel}
+            </label>
+            <textarea
+              id="community-message"
+              className="mt-2 w-full rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-sm leading-6 text-slate-700 shadow-inner focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
+              placeholder={text.messagePlaceholder}
+              rows={4}
+              maxLength={800}
+              value={textValue}
+              onChange={(event) => setTextValue(event.target.value)}
+            />
+            <p className="mt-2 text-xs text-slate-500">{text.characterHint}</p>
+          </div>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            {error && <p className="text-sm font-medium text-rose-500">{error}</p>}
+            <button
+              type="submit"
+              className="inline-flex items-center rounded-xl bg-sky-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-sky-500/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 disabled:cursor-not-allowed disabled:opacity-60"
+              disabled={submitting}
+            >
+              {submitting ? text.posting : text.postButton}
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <div className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-slate-100">
+        <h2 className="text-xl font-semibold text-slate-900">Recent posts</h2>
+        <div className="mt-6 space-y-4">
+          {messages.length === 0 && !error && (
+            <p className="rounded-2xl bg-slate-50/80 px-4 py-6 text-sm text-slate-500">
+              {text.emptyState}
+            </p>
+          )}
+          {messages
+            .slice()
+            .reverse()
+            .map((message) => (
+              <article
+                key={message.id}
+                className="rounded-2xl bg-slate-50/80 p-5 shadow-inner ring-1 ring-slate-100"
+              >
+                <div className="flex flex-wrap items-center justify-between gap-3 text-sm">
+                  <span className="font-semibold text-slate-800">{message.name || "Anonymous"}</span>
+                  <time className="text-xs text-slate-500">
+                    {new Date(message.ts).toLocaleString()}
+                  </time>
+                </div>
+                <p className="mt-3 whitespace-pre-line text-sm leading-6 text-slate-700">{message.text}</p>
+              </article>
+            ))}
+        </div>
       </div>
     </div>
   );
 }
-
-

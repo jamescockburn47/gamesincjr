@@ -1,6 +1,5 @@
 @import "tailwindcss";
 @import "tw-animate-css";
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
 
 @custom-variant dark (&:is(.dark *));
 
@@ -122,66 +121,8 @@
   }
 }
 
-/* Gaming theme custom styles */
+/* Additional utility overrides */
 @layer utilities {
-  /* Gaming-themed animations */
-  @keyframes pixel-bounce {
-    0%, 100% { transform: translateY(0); }
-    50% { transform: translateY(-4px); }
-  }
-
-  @keyframes glow-pulse {
-    0%, 100% { box-shadow: 0 0 5px rgba(255, 195, 0, 0.3); }
-    50% { box-shadow: 0 0 20px rgba(255, 195, 0, 0.6); }
-  }
-
-  @keyframes controller-glow {
-    0%, 100% { filter: drop-shadow(0 0 5px rgba(255, 107, 53, 0.5)); }
-    50% { filter: drop-shadow(0 0 15px rgba(255, 107, 53, 0.8)); }
-  }
-
-  /* Custom utility classes */
-  .pixel-text {
-    font-family: 'Inter', sans-serif;
-    font-weight: 800;
-    letter-spacing: -0.02em;
-  }
-  
-  .modern-text {
-    font-family: 'Inter', sans-serif;
-    font-weight: 400;
-    line-height: 1.6;
-  }
-  
-  .heading-text {
-    font-family: 'Inter', sans-serif;
-    font-weight: 700;
-    letter-spacing: -0.01em;
-  }
-
-  .gaming-glow {
-    animation: glow-pulse 2s ease-in-out infinite;
-  }
-
-  .controller-glow {
-    animation: controller-glow 3s ease-in-out infinite;
-  }
-
-  .pixel-bounce {
-    animation: pixel-bounce 1s ease-in-out infinite;
-  }
-
-  /* Gaming button styles */
-  .gaming-btn {
-    @apply bg-gradient-to-r from-orange-500 to-yellow-400 text-white font-semibold py-3 px-6 rounded-lg shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-200;
-    font-family: 'Inter', sans-serif;
-  }
-
-  .gaming-btn:hover {
-    @apply from-orange-600 to-yellow-500;
-  }
-
-  /* Fullscreen tweaks for game container */
   .fullscreen-target:fullscreen {
     border-radius: 0 !important;
   }
@@ -189,34 +130,11 @@
     width: 100vw;
     height: 100vh;
   }
-  /* Safari/WebKit */
   .fullscreen-target:-webkit-full-screen {
     border-radius: 0 !important;
   }
   .fullscreen-target:-webkit-full-screen .game-viewport {
     width: 100vw;
     height: 100vh;
-  }
-  
-  /* Clean button styles */
-  .clean-btn {
-    @apply bg-white text-gray-800 font-medium py-3 px-6 rounded-lg shadow-md hover:shadow-lg transform hover:scale-105 transition-all duration-200 border border-gray-200;
-    font-family: 'Inter', sans-serif;
-  }
-
-  /* Card hover effects */
-  .game-card {
-    @apply bg-white rounded-xl shadow-lg hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border-2 border-transparent hover:border-orange-200;
-  }
-
-  /* Background patterns */
-  .gaming-bg {
-    background: linear-gradient(135deg, #1A2B4C 0%, #2E86AB 100%);
-  }
-
-  .pixel-pattern {
-    background-image: 
-      radial-gradient(circle at 25% 25%, rgba(255, 195, 0, 0.1) 0%, transparent 50%),
-      radial-gradient(circle at 75% 75%, rgba(255, 107, 53, 0.1) 0%, transparent 50%);
   }
 }

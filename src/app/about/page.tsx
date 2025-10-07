@@ -1,87 +1,119 @@
+import PageHeader from "@/components/PageHeader";
+import PageShell from "@/components/PageShell";
+
+const tiers = [
+  { name: "Starter", price: "£1 / year", access: "Play 1 full game" },
+  { name: "Explorer", price: "£2 / year", access: "Unlock 3 full games" },
+  { name: "Champion", price: "£3 / year", access: "Enjoy 10 full games" },
+];
+
+const categories = [
+  "Retro remixes for quick wins",
+  "Educational quests (math, words, logic)",
+  "Build & create sandboxes",
+  "AI-assisted experiments",
+];
+
+const safetyPoints = [
+  "No downloads – everything runs inside the browser sandbox.",
+  "Playable previews load inside an iframe with restricted permissions.",
+  "Security headers such as Referrer-Policy and Permissions-Policy are enabled by default.",
+  "Keeping your browser up to date gives the best protection.",
+];
+
 export const metadata = {
-  title: 'About • Games Inc Jr',
-  description: 'Our story, subscriptions, categories, previews, and how to suggest games.'
+  title: "About • Games Inc Jr",
+  description: "Our story, subscriptions, categories, previews, and how to suggest games.",
 };
 
 export default function AboutPage() {
   return (
-    <main className="min-h-screen gaming-bg pixel-pattern">
-      <div className="container mx-auto px-4 py-16">
-        <div className="max-w-4xl mx-auto bg-white rounded-2xl shadow-xl p-8 mb-8">
-          <h1 className="pixel-text text-5xl text-gray-900 mb-4">About Games inc. Jr</h1>
-          <p className="modern-text text-gray-700 text-lg">
-            Games inc. Jr is a playful game studio run by a talented 7-year-old who builds games using AI tools.
-            We release new games regularly, and any game you purchase will receive <span className="font-semibold">free new levels</span> over time.
-          </p>
-        </div>
+    <PageShell>
+      <div className="mx-auto flex max-w-5xl flex-col gap-16">
+        <PageHeader
+          align="left"
+          eyebrow="Inside the studio"
+          title="Games Inc Jr in a nutshell"
+          description="Games inc. Jr is a playful studio led by a very determined 7-year-old and guided by educators. We prototype with AI tools so ideas can ship quickly, and every released game keeps receiving free level updates."
+        />
 
-        {/* Suggest a Game - Callout */}
-        <section className="bg-white rounded-2xl border border-gray-200 p-6 mb-8 shadow">
-          <h2 className="heading-text text-2xl text-gray-900 mb-3">Suggest a Game</h2>
-          <p className="modern-text text-gray-700 mb-2">
-            Got an idea? <a className="underline" href="mailto:hello@gamesincjr.com">Contact us</a> with your dream game and we will try to build it. If we ship it, we&apos;ll add it to your subscription <span className="font-semibold">for free</span>.
-          </p>
-          <p className="modern-text text-gray-600 text-sm">We love building with the community.</p>
-        </section>
-
-        {/* Subscriptions */}
-        <section className="bg-white rounded-2xl border border-gray-200 p-6 mb-8 shadow">
-          <h2 className="heading-text text-2xl text-gray-900 mb-3">Subscriptions</h2>
-          <p className="modern-text text-gray-700 mb-4">Try level 1 of each game for free, then subscribe to unlock the remaining levels. Simple, affordable tiers:</p>
-          <ul className="modern-text text-gray-800 grid sm:grid-cols-3 gap-4">
-            <li className="bg-gray-50 rounded-xl p-4 border border-gray-200"><strong>Starter</strong> — £1/year • Access 1 game</li>
-            <li className="bg-gray-50 rounded-xl p-4 border border-gray-200"><strong>Explorer</strong> — £2/year • Access 3 games</li>
-            <li className="bg-gray-50 rounded-xl p-4 border border-gray-200"><strong>Champion</strong> — £3/year • Access 10 games</li>
-          </ul>
-          <div className="modern-text text-gray-700 mt-4">
-            <p className="mb-1"><strong>Premium AI Tier</strong> — For games with live AI features (e.g., smart NPCs or generative levels), a small recurring add‑on may apply to cover API costs.</p>
-            <p>We&apos;ll always keep prices as low as possible.</p>
+        <section className="grid gap-8 lg:grid-cols-[1.2fr_0.8fr]">
+          <div className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-slate-100">
+            <h2 className="text-2xl font-semibold text-slate-900">Suggest a game</h2>
+            <p className="mt-4 text-base leading-7 text-slate-600">
+              Got an idea? <a className="font-semibold text-sky-600 underline" href="mailto:hello@gamesincjr.com">Email us</a> with your dream game and we&apos;ll see if we can bring it to life. If we ship it, it&apos;s added to your subscription <strong>for free</strong>.
+            </p>
+            <p className="mt-3 text-sm text-slate-500">We love building with the community.</p>
           </div>
-          <p className="modern-text text-gray-700 mt-4">Own a game? You&apos;ll get <strong>free level updates</strong> forever.</p>
-          <p className="modern-text text-gray-600 mt-2 text-sm">Subscriptions do not auto‑renew. We&apos;ll ask you before the year ends if you want to re‑subscribe.</p>
-        </section>
-
-        {/* Categories */}
-        <section className="bg-white rounded-2xl border border-gray-200 p-6 mb-8 shadow">
-          <h2 className="heading-text text-2xl text-gray-900 mb-3">Categories</h2>
-          <div className="grid md:grid-cols-4 gap-4 modern-text">
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">🎮 Retro Classics (simple, fun remixes)</div>
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">📚 Educational (math, words, logic)</div>
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">🧱 Building & Creativity (sandboxes)</div>
-            <div className="bg-gray-50 rounded-xl p-4 border border-gray-200">🤖 AI-Integrated (smart NPCs, gen levels)</div>
+          <div className="rounded-3xl bg-sky-50/70 p-8 shadow-lg ring-1 ring-sky-100">
+            <h3 className="text-lg font-semibold text-slate-900">Quick facts</h3>
+            <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-600">
+              <li>✓ New games drop regularly with no extra charge for existing owners.</li>
+              <li>✓ Level one is always free so families can test before subscribing.</li>
+              <li>✓ Parent dashboards highlight play time, favourites and achievements.</li>
+            </ul>
           </div>
         </section>
 
-        {/* How Previews Work */}
-        <section className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 shadow">
-          <h2 className="heading-text text-2xl text-gray-900 mb-3">How Previews Work</h2>
-          <ol className="list-decimal pl-5 space-y-2 modern-text text-gray-700">
-            <li>Click or tap the game area to focus controls. On mobile, use the on-screen buttons.</li>
-            <li>You can play level 1 for a limited time to try the mechanics.</li>
-            <li>Subscribe to unlock all levels for the games in your tier.</li>
+        <section className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-slate-100">
+          <h2 className="text-2xl font-semibold text-slate-900">Subscriptions that stay simple</h2>
+          <p className="mt-4 text-base leading-7 text-slate-600">
+            Try the first level of every game for free. When you&apos;re ready for more, choose a tier that fits how much you want to explore.
+          </p>
+          <div className="mt-8 grid gap-4 sm:grid-cols-3">
+            {tiers.map((tier) => (
+              <div key={tier.name} className="rounded-2xl bg-slate-50/60 p-5 text-center shadow-inner ring-1 ring-slate-100">
+                <p className="text-sm font-semibold uppercase tracking-wide text-sky-600">{tier.name}</p>
+                <p className="mt-3 text-xl font-bold text-slate-900">{tier.price}</p>
+                <p className="mt-2 text-sm text-slate-600">{tier.access}</p>
+              </div>
+            ))}
+          </div>
+          <div className="mt-6 space-y-2 text-sm leading-6 text-slate-600">
+            <p>
+              <strong>Premium AI</strong> is an optional add-on tier. It keeps always-on AI features running smoothly by covering the API costs.
+            </p>
+            <p>Subscriptions do not auto-renew—we&apos;ll check in before the year ends.</p>
+            <p>If you purchase a game outright you keep receiving new levels at no extra cost.</p>
+          </div>
+        </section>
+
+        <section className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-slate-100">
+          <h2 className="text-2xl font-semibold text-slate-900">What we love to build</h2>
+          <div className="mt-6 grid gap-4 sm:grid-cols-2">
+            {categories.map((category) => (
+              <div key={category} className="rounded-2xl bg-slate-50/70 p-5 text-sm font-medium text-slate-700 ring-1 ring-slate-100">
+                {category}
+              </div>
+            ))}
+          </div>
+        </section>
+
+        <section className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-slate-100">
+          <h2 className="text-2xl font-semibold text-slate-900">Previewing games</h2>
+          <ol className="mt-4 list-decimal space-y-3 pl-5 text-base leading-7 text-slate-600">
+            <li>Click the game area to focus controls. On mobile, on-screen buttons help out.</li>
+            <li>Level one is available to try so you can feel the mechanics and pacing.</li>
+            <li>Sign in and upgrade your tier to unlock every level.</li>
           </ol>
         </section>
 
-        {/* Security & Safety */}
-        <section className="bg-white rounded-2xl border border-gray-200 p-6 mb-6 shadow">
-          <h2 className="heading-text text-2xl text-gray-900 mb-3">Security & Safety</h2>
-          <ul className="list-disc pl-5 modern-text text-gray-700 space-y-2">
-            <li>No downloads — everything runs in your web browser.</li>
-            <li>Games load in a browser sandbox (iframe) with restricted permissions.</li>
-            <li>We set security headers (e.g., Referrer-Policy, X-Frame-Options, Permissions-Policy) to reduce risk.</li>
-            <li>We never ask you to install executables to play a game.</li>
+        <section className="rounded-3xl bg-slate-900 p-8 text-slate-100 shadow-2xl ring-1 ring-slate-900/50">
+          <h2 className="text-2xl font-semibold text-white">Security &amp; safety</h2>
+          <ul className="mt-4 space-y-3 text-sm leading-6 text-slate-200">
+            {safetyPoints.map((point) => (
+              <li key={point} className="flex gap-3">
+                <span className="mt-0.5 text-lg text-amber-300">★</span>
+                <span>{point}</span>
+              </li>
+            ))}
           </ul>
-          <p className="modern-text text-gray-500 text-sm mt-3">While browser sandboxing greatly reduces malware risk, no system is 100% immune. Always keep your browser up to date.</p>
         </section>
 
-        {/* Footnote */}
-        <p className="modern-text text-gray-500 text-xs max-w-3xl">
-          Note: We welcome ideas and suggestions from our community. If your suggestion inspires a game we develop,
-          all intellectual property (IP) in the resulting game will be owned by Games inc. Jr.
+        <p className="text-xs leading-6 text-slate-500">
+          We welcome ideas and suggestions from our community. If your suggestion inspires a game we develop, all intellectual property (IP) in the resulting game belongs to Games inc. Jr.
         </p>
       </div>
-    </main>
+    </PageShell>
   );
 }
-
-
