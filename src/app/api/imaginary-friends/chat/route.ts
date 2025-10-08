@@ -8,7 +8,9 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const characterId = String(body.characterId || '').trim();
     const message = typeof body.message === 'string' ? body.message : '';
-    const history = Array.isArray(body.conversationHistory) ? body.conversationHistory : [];
+    const history: unknown[] = Array.isArray(body.conversationHistory)
+      ? body.conversationHistory
+      : [];
     const requestImage = Boolean(body.requestImage);
     const userId = typeof body.userId === 'string' && body.userId.trim() ? body.userId.trim() : 'default';
 
