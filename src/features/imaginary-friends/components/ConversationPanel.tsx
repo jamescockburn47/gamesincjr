@@ -1,0 +1,232 @@
+import { useEffect, useRef, useState } from 'react';
+import Image from 'next/image';
+import type { Character, ConversationMessage, SessionInfo, Topic } from '../types';
+import VoicePlayer from './VoicePlayer';
+
+interface ConversationPanelProps {
+  messages: ConversationMessage[];
+  character: Character;
+  topics: Topic[];
+  onSendMessage: (message: string, requestImage?: boolean) => void;
+  onSelectTopic: (topic: Topic) => void;
+  isLoading: boolean;
+  showImageButton?: boolean;
+  sessionInfo?: SessionInfo | null;
+}
+
+export default function ConversationPanel({
+  messages,
+  character,
+  topics,
+  onSendMessage,
+  onSelectTopic,
+  isLoading,
+  showImageButton = false,
+  sessionInfo,
+}: ConversationPanelProps) {
+  const [inputMessage, setInputMessage] = useState('');
+  const [showTopics, setShowTopics] = useState(false);
+  const [countdown, setCountdown] = useState<number>(0);
+  const messagesEndRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+  }, [messages]);
+
+  useEffect(() => {
+    if (!sessionInfo?.remainingTime) {
+      setCountdown(0);
+      return;
+    }
+    setCountdown(sessionInfo.remainingTime);
+    const timerId = window.setInterval(() => {
+      setCountdown((prev) => {
+        if (prev <= 1) {
+          window.clearInterval(timerId);
+          return 0;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+    return () => window.clearInterval(timerId);
+  }, [sessionInfo?.remainingTime]);
+
+  const handleSendMessage = () => {
+    if (inputMessage.trim() && !isLoading) {
+      onSendMessage(inputMessage.trim(), false);
+      setInputMessage('');
+    }
+  };
+
+  const handleRequestImage = () => {
+    if (!isLoading) {
+      onSendMessage('', true);
+    }
+  };
+
+  const handleKeyPress: React.KeyboardEventHandler<HTMLTextAreaElement> = (event) => {
+    if (event.key === 'Enter' && !event.shiftKey) {
+      event.preventDefault();
+      handleSendMessage();
+    }
+  };
+
+  const formatMessageTime = (timestamp: Date) =>
+    new Date(timestamp).toLocaleTimeString([], {
+      hour: '2-digit',
+      minute: '2-digit',
+    });
+
+  const resolveImageUrl = (url: string | null | undefined) => {
+    if (!url) return null;
+    if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('data:')) {
+      return url;
+    }
+    return url.startsWith('/') ? url : `/imaginary-friends/generated/${url}`;
+  };
+
+  const imagesLeft = sessionInfo
+    ? Math.min(
+        sessionInfo.imagesRemaining,
+        sessionInfo.imageAllowanceRemaining ?? sessionInfo.imagesRemaining,
+      )
+    : 0;
+
+  const messagesLeft = sessionInfo?.messageAllowanceRemaining;
+  const budgetLeft = sessionInfo?.budgetCentsRemaining;
+
+  return (
+    <div className="conversation-panel">
+      <div className="messages-container">
+        {messages.map((message) => (
+          <div
+            key={message.id}
+            className={`message ${message.speaker === 'player' ? 'player-message' : 'character-message'}`}
+          >
+            <div className="message-content">
+              <div className="message-text">{message.text}</div>
+              <div className="message-time">{formatMessageTime(message.timestamp)}</div>
+            </div>
+            {resolveImageUrl(message.imageUrl) && (
+              <div className="message-image">
+                <Image
+                  src={resolveImageUrl(message.imageUrl) ?? ''}
+                  alt="Generated"
+                  width={360}
+                  height={240}
+                  sizes="(min-width: 1024px) 360px, 80vw"
+                  style={{ width: '100%', height: 'auto' }}
+                  unoptimized
+                />
+              </div>
+            )}
+            {message.speaker === 'character' && (
+              <div className="voice-controls">
+                <VoicePlayer text={message.text} characterName={character.id} />
+              </div>
+            )}
+          </div>
+        ))}
+        {isLoading && (
+          <div className="message character-message typing-message">
+            <div className="message-content">
+              <div className="typing-indicator">
+                <span className="character-name">{character.name} is thinking</span>
+                <div className="typing-dots">
+                  <span />
+                  <span />
+                  <span />
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      <div className="input-section">
+        {countdown > 0 && (
+          <div className="countdown-timer">
+            <span className="timer-icon">⏰</span>
+            <span className="timer-text">
+              {`${Math.floor(countdown / 60)}:${String(countdown % 60).padStart(2, '0')}`} left today
+            </span>
+          </div>
+        )}
+
+        {messagesLeft !== undefined && (
+          <div className="session-hint">
+            <span>Chats remaining today: {messagesLeft}</span>
+          </div>
+        )}
+
+        {budgetLeft !== undefined && (
+          <div className="session-hint budget">
+            <span>Budget left today: {'$'}{(budgetLeft / 100).toFixed(2)}</span>
+          </div>
+        )}
+
+        {showImageButton && sessionInfo && imagesLeft > 0 && (
+          <div className="image-generation">
+            <button
+              type="button"
+              className="image-button"
+              onClick={handleRequestImage}
+              disabled={isLoading}
+              title={`Create an image based on our conversation (${sessionInfo.imagesRemaining} remaining)`}
+            >
+              🎨 Create Image
+            </button>
+            <span className="image-count">{imagesLeft} images left</span>
+          </div>
+        )}
+
+        {showTopics && (
+          <div className="topics-panel">
+            <h4>Conversation Topics</h4>
+            <div className="topics-grid">
+              {topics.slice(0, 6).map((topic) => (
+                <button
+                  type="button"
+                  key={topic.id}
+                  className="topic-button"
+                  onClick={() => {
+                    onSelectTopic(topic);
+                    setShowTopics(false);
+                  }}
+                >
+                  <span className="topic-name">{topic.name}</span>
+                  <span className="topic-description">{topic.description}</span>
+                </button>
+              ))}
+            </div>
+            <button type="button" className="topics-close" onClick={() => setShowTopics(false)}>
+              Close topics
+            </button>
+          </div>
+        )}
+
+        <div className="input-controls">
+          <textarea
+            className="message-input"
+            value={inputMessage}
+            onChange={(event) => setInputMessage(event.target.value)}
+            onKeyDown={handleKeyPress}
+            placeholder={`Talk with ${character.name}...`}
+            disabled={isLoading}
+            rows={3}
+          />
+          <div className="input-buttons">
+            <button type="button" className="topics-button" onClick={() => setShowTopics((prev) => !prev)}>
+              Topics
+            </button>
+            <button type="button" className="send-button" onClick={handleSendMessage} disabled={isLoading}>
+              Send
+            </button>
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
