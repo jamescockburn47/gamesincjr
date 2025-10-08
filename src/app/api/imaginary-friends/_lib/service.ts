@@ -22,9 +22,17 @@ type CharacterConfig = {
 };
 
 const PROJECT_ROOT = process.cwd();
-const DATA_DIR = path.join(PROJECT_ROOT, 'data', 'imaginary-friends');
+const IS_SERVERLESS = process.env.VERCEL === '1' || process.env.AWS_REGION || process.env.NEXT_RUNTIME === 'edge';
+const DATA_ROOT =
+  process.env.IMAGINARY_FRIENDS_DATA_DIR ||
+  (IS_SERVERLESS ? path.join('/tmp', 'imaginary-friends') : path.join(PROJECT_ROOT, 'data', 'imaginary-friends'));
+const DATA_DIR = path.join(DATA_ROOT, 'data');
 const CONVERSATIONS_DIR = path.join(DATA_DIR, 'conversations');
-const GENERATED_IMG_DIR = path.join(PROJECT_ROOT, 'public', 'imaginary-friends', 'generated');
+const GENERATED_IMG_DIR =
+  process.env.IMAGINARY_FRIENDS_IMAGE_DIR ||
+  (IS_SERVERLESS
+    ? path.join('/tmp', 'imaginary-friends', 'generated')
+    : path.join(PROJECT_ROOT, 'public', 'imaginary-friends', 'generated'));
 
 const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
@@ -34,6 +42,66 @@ const CHAT_MODEL = process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini';
 const IMAGE_MODEL = process.env.IMAGINARY_FRIENDS_IMAGE_MODEL || 'gpt-image-1';
 const MAX_IMAGE_PER_HOUR = Number(process.env.IMAGINARY_FRIENDS_IMAGE_HOURLY_LIMIT || 5);
 const SESSION_LENGTH_SECONDS = Number(process.env.IMAGINARY_FRIENDS_SESSION_SECONDS || 900);
+
+export class QuotaExceededError extends Error {
+  readonly status = 429;
+
+  constructor(message = 'OpenAI quota exceeded') {
+    super(message);
+    this.name = 'QuotaExceededError';
+  }
+}
+
+function extractStatusCode(error: unknown): number | undefined {
+  if (!error || typeof error !== 'object') return undefined;
+  const candidate = error as Record<string, unknown>;
+  const status = candidate.status ?? candidate.statusCode;
+  if (typeof status === 'number') {
+    return status;
+  }
+  if (candidate.response && typeof candidate.response === 'object') {
+    const response = candidate.response as Record<string, unknown>;
+    if (typeof response.status === 'number') {
+      return response.status;
+    }
+  }
+  if (candidate.cause && typeof candidate.cause === 'object') {
+    return extractStatusCode(candidate.cause);
+  }
+  return undefined;
+}
+
+function extractErrorCode(error: unknown): string | undefined {
+  if (!error || typeof error !== 'object') return undefined;
+  const candidate = error as Record<string, unknown>;
+  const code = candidate.code ?? (candidate.error && (candidate.error as Record<string, unknown>).code);
+  if (typeof code === 'string') {
+    return code;
+  }
+  if (candidate.cause && typeof candidate.cause === 'object') {
+    return extractErrorCode(candidate.cause);
+  }
+  return undefined;
+}
+
+function normaliseErrorMessage(error: unknown): string {
+  if (typeof error === 'string') return error;
+  if (error instanceof Error) return error.message;
+  try {
+    return JSON.stringify(error);
+  } catch {
+    return 'Unknown error';
+  }
+}
+
+function isQuotaError(error: unknown): boolean {
+  const status = extractStatusCode(error);
+  if (status === 429) return true;
+  const code = extractErrorCode(error);
+  if (code && code.toLowerCase().includes('quota')) return true;
+  const message = normaliseErrorMessage(error).toLowerCase();
+  return message.includes('quota') || message.includes('limit');
+}
 
 const characterMap: Record<CharacterId, CharacterConfig> = {
   luna: {
@@ -113,10 +181,32 @@ const characterMap: Record<CharacterId, CharacterConfig> = {
 const imageHistory = new Map<string, number[]>();
 const sessionTracker = new Map<string, number>();
 
-async function ensureDirectories() {
-  await fs.mkdir(DATA_DIR, { recursive: true });
-  await fs.mkdir(CONVERSATIONS_DIR, { recursive: true });
-  await fs.mkdir(GENERATED_IMG_DIR, { recursive: true });
+let storageAvailable: boolean | null = null;
+
+function isReadOnlyFsError(error: unknown): boolean {
+  if (!error || typeof error !== 'object') return false;
+  const err = error as NodeJS.ErrnoException;
+  const codes = new Set(['EROFS', 'EACCES', 'EPERM', 'ENOTSUP', 'ENOENT']);
+  return !!err.code && codes.has(err.code);
+}
+
+async function ensureDirectories(): Promise<boolean> {
+  if (storageAvailable === false) return false;
+  if (storageAvailable === true) return true;
+  try {
+    await fs.mkdir(DATA_DIR, { recursive: true });
+    await fs.mkdir(CONVERSATIONS_DIR, { recursive: true });
+    await fs.mkdir(GENERATED_IMG_DIR, { recursive: true });
+    storageAvailable = true;
+    return true;
+  } catch (error) {
+    if (isReadOnlyFsError(error)) {
+      console.warn('Imaginary Friends persistent storage unavailable; continuing without saving history.');
+      storageAvailable = false;
+      return false;
+    }
+    throw error;
+  }
 }
 
 function sanitiseText(input: string): string {
@@ -208,18 +298,25 @@ ${character.name}:`;
 }
 
 async function callOpenAI(prompt: string, maxTokens = 180): Promise<string> {
-  const completion = await openai.chat.completions.create({
-    model: CHAT_MODEL,
-    messages: [
-      {
-        role: 'system',
-        content: prompt,
-      },
-    ],
-    max_tokens: Math.min(512, maxTokens),
-    temperature: 0.6,
-  });
-  return completion.choices[0]?.message?.content?.trim() || "I'm having trouble answering right now.";
+  try {
+    const completion = await openai.chat.completions.create({
+      model: CHAT_MODEL,
+      messages: [
+        {
+          role: 'system',
+          content: prompt,
+        },
+      ],
+      max_tokens: Math.min(512, maxTokens),
+      temperature: 0.6,
+    });
+    return completion.choices[0]?.message?.content?.trim() || "I'm having trouble answering right now.";
+  } catch (error) {
+    if (isQuotaError(error)) {
+      throw new QuotaExceededError(normaliseErrorMessage(error));
+    }
+    throw error;
+  }
 }
 
 async function generateImagePrompt(character: CharacterConfig, conversation: ConversationTurn[]) {
@@ -234,7 +331,6 @@ async function generateImageFile(character: CharacterConfig, conversation: Conve
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is required for image generation');
   }
-  await ensureDirectories();
   const prompt = await generateImagePrompt(character, conversation);
   const result = await openai.images.generate({
     model: IMAGE_MODEL,
@@ -244,6 +340,12 @@ async function generateImageFile(character: CharacterConfig, conversation: Conve
   const data = result.data?.[0];
   if (!data?.b64_json) {
     throw new Error('No image payload returned from OpenAI');
+  }
+  if (IS_SERVERLESS) {
+    return `data:image/png;base64,${data.b64_json}`;
+  }
+  if (!(await ensureDirectories())) {
+    throw new Error('STORAGE_UNAVAILABLE');
   }
   const buffer = Buffer.from(data.b64_json, 'base64');
   const filename = `${character.id}-${Date.now()}-${Math.random().toString(16).slice(2)}.png`;
@@ -259,7 +361,9 @@ async function logConversation(payload: {
   imageUrl?: string | null;
 }) {
   try {
-    await ensureDirectories();
+    if (!(await ensureDirectories())) {
+      return;
+    }
     const entry = {
       ...payload,
       timestamp: new Date().toISOString(),
@@ -284,8 +388,16 @@ export async function characterIntro(characterId: string) {
   const prompt = `You are ${character.name}. Provide a single friendly sentence to greet a child. Stay in character, include one of your mannerisms (${character.mannerisms.join(
     ', ',
   )}) and mention something from your interests (${character.interests.join(', ')}).`;
-  const text = await callOpenAI(prompt, 120);
-  return sanitiseText(text);
+  try {
+    const text = await callOpenAI(prompt, 120);
+    return sanitiseText(text);
+  } catch (error) {
+    if (error instanceof QuotaExceededError) {
+      console.warn('OpenAI quota reached while generating introduction');
+      return `${character.name} is taking a creative rest right now. Let's try again soon!`;
+    }
+    throw error;
+  }
 }
 
 export async function chatWithCharacter(input: {
@@ -307,7 +419,21 @@ export async function chatWithCharacter(input: {
   }
 
   const prompt = buildPrompt(character, history, userMessage);
-  const response = await callOpenAI(prompt, requestImage ? 220 : 160);
+  let response: string;
+  try {
+    response = await callOpenAI(prompt, requestImage ? 220 : 160);
+  } catch (error) {
+    if (error instanceof QuotaExceededError) {
+      console.warn('OpenAI quota reached during chat request');
+      return {
+        response: `${character.name} whispers: I need a little rest before we can imagine more adventures. Let's try again soon!`,
+        imageUrl: null,
+        sessionInfo: getSessionInfo(userId),
+        timeLimitReached: true,
+      };
+    }
+    throw error;
+  }
   let imageUrl: string | null = null;
 
   if (requestImage) {
@@ -341,6 +467,7 @@ export async function chatWithCharacter(input: {
     response,
     imageUrl,
     sessionInfo: getSessionInfo(userId),
+    timeLimitReached: false,
   };
 }
 
@@ -352,7 +479,6 @@ export async function generateAvatar(input: {
   if (!process.env.OPENAI_API_KEY) {
     throw new Error('OPENAI_API_KEY is required for avatar generation');
   }
-  await ensureDirectories();
   const prompt = `Child-friendly portrait illustration of ${input.name}. Appearance: ${input.appearance}. Style: gentle, colourful, cozy, safe for young children.`;
   const result = await openai.images.generate({
     model: IMAGE_MODEL,
@@ -362,6 +488,12 @@ export async function generateAvatar(input: {
   const data = result.data?.[0];
   if (!data?.b64_json) {
     throw new Error('No image data returned');
+  }
+  if (IS_SERVERLESS) {
+    return `data:image/png;base64,${data.b64_json}`;
+  }
+  if (!(await ensureDirectories())) {
+    throw new Error('Persistent storage unavailable for avatar generation');
   }
   const buffer = Buffer.from(data.b64_json, 'base64');
   const filename = `avatar-${Date.now()}-${Math.random().toString(16).slice(2)}.png`;
@@ -385,4 +517,3 @@ export type SessionSnapshot = SessionInfo;
 export function getSessionInfoForUser(userId: string) {
   return getSessionInfo(userId);
 }
-

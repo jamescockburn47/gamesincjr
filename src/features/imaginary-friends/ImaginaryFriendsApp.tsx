@@ -352,8 +352,12 @@ useEffect(() => {
           setSessionInfo(data.sessionInfo);
           setShowImageButton(imagesAvailable(data.sessionInfo) > 0);
         }
+        if (data.timeLimitReached) {
+          setShowImageButton(false);
+        }
 
-        updateCharacterMood(selectedCharacter.id, analyseSentiment(data.response));
+        const mood = data.timeLimitReached ? 'thoughtful' : analyseSentiment(data.response);
+        updateCharacterMood(selectedCharacter.id, mood);
 
         const newMessage: ConversationMessage = {
           id: String(Date.now()) + '-' + Math.random().toString(16).slice(2),
@@ -1070,4 +1074,3 @@ useEffect(() => {
     </div>
   );
 }
-
