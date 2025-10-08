@@ -25,7 +25,7 @@ export async function POST(request: NextRequest) {
         if (record.speaker !== 'player' && record.speaker !== 'character') return false;
         return typeof record.text === 'string' && record.text.length > 0;
       })
-      .map((entry) => ({
+      .map((entry: { speaker: 'player' | 'character'; text: string }) => ({
         speaker: entry.speaker,
         text: entry.text,
       }));
@@ -47,4 +47,3 @@ export async function POST(request: NextRequest) {
     );
   }
 }
-
