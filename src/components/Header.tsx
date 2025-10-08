@@ -11,6 +11,7 @@ export default async function Header() {
     { href: '/games', label: 'Games' },
     { href: '/community', label: 'Community' },
     { href: '/tutorials', label: 'Tutorials' },
+    { href: '/imaginary-friends', label: 'Imaginary Friends' },
     { href: '/tech', label: 'How it works' },
     { href: '/about', label: 'About' },
   ];
