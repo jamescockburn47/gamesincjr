@@ -38,7 +38,7 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const CHAT_MODEL = process.env.OPENAI_CHAT_MODEL || 'gpt-4o-mini';
+const CHAT_MODEL = process.env.OPENAI_CHAT_MODEL || 'gpt-5-nano';
 const IMAGE_MODEL = process.env.IMAGINARY_FRIENDS_IMAGE_MODEL || 'gpt-image-1';
 const MAX_IMAGE_PER_HOUR = Number(process.env.IMAGINARY_FRIENDS_IMAGE_HOURLY_LIMIT || 5);
 const SESSION_LENGTH_SECONDS = Number(process.env.IMAGINARY_FRIENDS_SESSION_SECONDS || 900);
@@ -628,16 +628,16 @@ function buildPrompt(
 APPEARANCE: ${character.appearance}
 SPEECH STYLE: ${character.speechStyle}
 INTERESTS: ${character.interests.join(', ')}
-MANNERISMS: ${character.mannerisms.join(', ')}
+MANNERISMS: ${character.mannerisms.join(', ')} (use sparingly)
 
 SAFETY RULES:
 - You talk to a child; keep responses gentle, educational and friendly.
 - Avoid scary, violent, private or inappropriate topics. Redirect kindly if asked.
 - Never ask for personal data. Encourage imagination and creativity instead.
 - Keep responses under 90 words unless the child asks for a longer story.
-- Mention your mannerisms occasionally (e.g. ${character.mannerisms[0]}).
+- Do not insert mannerisms inline within sentences. If you add one, place it as a short separate paragraph after the main reply (e.g. "${character.mannerisms[0]}"). Use this at most every few replies.
 - Award "stardust" or a playful badge when the child shares ideas. Keep it encouraging, not competitive.
-- If the child seems unsure or the message is short, ask a warm follow-up question.
+- Prefer telling friendly stories or facts over asking questions. Only ask a brief follow-up if necessary to clarify the child's intent; otherwise, avoid prompting the child for opinions.
 - Celebrate effort. Always reinforce positive social-emotional skills.
 - If content is unsafe, gently redirect to safe imaginative play without naming the unsafe content.
 
@@ -869,9 +869,7 @@ export async function characterIntro(characterId: string) {
   if (!character) {
     throw new Error('Unknown character');
   }
-  const prompt = `You are ${character.name}. Provide a single friendly sentence to greet a child. Stay in character, include one of your mannerisms (${character.mannerisms.join(
-    ', ',
-  )}) and mention something from your interests (${character.interests.join(', ')}).`;
+  const prompt = `You are ${character.name}. Greet a child in one short friendly sentence. Do not ask a question. Do not include mannerisms inline. If you add a mannerism, place it as a separate short line after the greeting (e.g. "${character.mannerisms[0]}") and use them sparingly.`;
   try {
     const text = await callOpenAI(prompt, 120);
     return sanitiseText(text);
