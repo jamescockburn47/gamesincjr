@@ -4,7 +4,6 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { baseCharacters, conversationTopics } from './data';
 import type {
   Character,
-  ChatResponse,
   CharacterIntroResponse,
   ConversationMessage,
   FriendSentiment,
@@ -28,6 +27,12 @@ const STORAGE_KEYS = {
 };
 
 type Sentiment = 'happy' | 'sad' | 'excited' | 'thoughtful' | 'curious';
+
+type StreamEvent =
+  | { type: 'start'; sessionInfo?: SessionInfo }
+  | { type: 'delta'; text: string }
+  | { type: 'final'; response: string; imageUrl?: string | null; gameStatus?: GameStatus; sessionInfo?: SessionInfo }
+  | { type: 'error'; error: string };
 
 function analyseSentiment(text: string): Sentiment {
   const value = text.toLowerCase();
@@ -460,7 +465,7 @@ useEffect(() => {
               buffer = buffer.slice(idx + 1);
               if (!line.trim()) continue;
               try {
-                const evt = JSON.parse(line) as any;
+                const evt = JSON.parse(line) as StreamEvent;
                 if (evt.type === 'start' && evt.sessionInfo) {
                   setSessionInfo(evt.sessionInfo);
                 } else if (evt.type === 'delta') {
@@ -491,7 +496,7 @@ useEffect(() => {
                 } else if (evt.type === 'error') {
                   throw new Error(evt.error || 'stream error');
                 }
-              } catch (e) {
+              } catch {
                 // ignore malformed lines
               }
             }

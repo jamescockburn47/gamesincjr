@@ -38,7 +38,7 @@ export default function ConversationPanel({
     requestAnimationFrame(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     });
-  }, [messages.length]);
+  }, [messages]);
 
   useEffect(() => {
     if (!sessionInfo?.remainingTime) {
