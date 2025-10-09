@@ -56,7 +56,7 @@ export default async function AccountPage() {
                 const token = process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_BLOB_RW_TOKEN || '';
                 if (!token) return;
                 const { put } = await import("@vercel/blob");
-                await put(`auth/users/${u}.json`, JSON.stringify(record), { access: 'private', token, contentType: 'application/json' });
+                await put(`auth/users/${u}.json`, JSON.stringify(record), { access: 'public', token, contentType: 'application/json' });
               }
 
               function hashPassword(pw: string, salt?: string) {
