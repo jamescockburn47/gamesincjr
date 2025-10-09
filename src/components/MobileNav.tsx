@@ -74,7 +74,7 @@ export default function MobileNav() {
             Tutorials
           </Link>
           <Link href="/imaginary-friends" className="rounded-xl px-3 py-3 text-slate-600 transition hover:bg-sky-50 hover:text-sky-600" onClick={() => setOpen(false)}>
-            Imaginary Friends
+            Magic AI Friends
           </Link>
           <Link href="/tech" className="rounded-xl px-3 py-3 text-slate-600 transition hover:bg-sky-50 hover:text-sky-600" onClick={() => setOpen(false)}>
             How it works
