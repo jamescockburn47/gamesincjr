@@ -2,6 +2,7 @@ import fs from 'fs/promises';
 import path from 'path';
 import { randomUUID } from 'crypto';
 import OpenAI from 'openai';
+import { characterRolePrompts } from './prompts';
 
 type ConversationTurn = {
   speaker: 'player' | 'character';
