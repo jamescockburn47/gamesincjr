@@ -109,14 +109,27 @@ export default function ConversationPanel({
     <div className="conversation-panel">
       <div className="flex items-center justify-between px-4 py-3">
         <div />
-        <button
-          type="button"
-          onClick={() => setRenderedMessages([])}
-          className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
-          title="Clear chat (keeps history saved)"
-        >
-          Clear chat
-        </button>
+        <div className="flex gap-2">
+          <button
+            type="button"
+            onClick={() => setRenderedMessages([])}
+            className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+            title="Clear chat (keeps history saved)"
+          >
+            Clear chat
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              const ev = new CustomEvent('if:new-thread');
+              window.dispatchEvent(ev);
+            }}
+            className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+            title="Start a new thread (history retained, context cleared)"
+          >
+            New thread
+          </button>
+        </div>
       </div>
       {gameStatus && (
         <div className="friendship-status">

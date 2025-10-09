@@ -8,7 +8,9 @@ const MAX_AGE = 365 * 24 * 60 * 60; // 1 year
 
 export async function GET(request: NextRequest) {
   const cookies = request.cookies;
-  let userId = cookies.get(COOKIE)?.value;
+  // Prefer logged-in username if present
+  const loggedIn = cookies.get('gi_user')?.value;
+  let userId = loggedIn || cookies.get(COOKIE)?.value;
   if (!userId) {
     userId = 'u_' + randomUUID();
   }

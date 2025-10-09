@@ -79,6 +79,7 @@ export default function ImaginaryFriendsApp() {
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
 const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [userId, setUserId] = useState<string>('default');
+  const [username, setUsername] = useState<string>('');
   const messagesRef = useRef<ConversationMessage[]>([]);
 const [characters, setCharacters] = useState<Character[]>(baseCharacters);
 const [isLoading, setIsLoading] = useState(false);
@@ -158,7 +159,10 @@ const [showCreator, setShowCreator] = useState(false);
         const res = await fetch(`${API_BASE_URL}/session/identify`, { cache: 'no-store' });
         if (res.ok) {
           const data = (await res.json()) as { userId: string };
-          if (data?.userId) setUserId(data.userId);
+          if (data?.userId) {
+            setUserId(data.userId);
+            setUsername(data.userId);
+          }
         }
       } catch {
         // ignore
@@ -226,6 +230,17 @@ const [showCreator, setShowCreator] = useState(false);
       // ignore storage issues
     }
   }, [characters, createFallbackGameStatus]);
+
+  // Listen for new-thread requests from ConversationPanel
+  useEffect(() => {
+    function onNewThread() {
+      setMessages([]);
+      // Next outgoing request will include newThread: true by toggling once
+      // We can store a flag in a ref if needed; for simplicity, rely on empty history
+    }
+    window.addEventListener('if:new-thread', onNewThread);
+    return () => window.removeEventListener('if:new-thread', onNewThread);
+  }, []);
 
   // Optional: autostart via query (?autostart=luna)
   useEffect(() => {
@@ -411,7 +426,7 @@ useEffect(() => {
           {
             id: String(Date.now()),
             speaker: 'player',
-            text: messageText,
+            text: username ? `${messageText}` : messageText,
             timestamp: new Date(),
           },
         ]);
@@ -432,13 +447,14 @@ useEffect(() => {
       try {
         const payload = {
           characterId: selectedCharacter.id,
-          message: messageText,
+          message: username ? `${username}: ${messageText}` : messageText,
           requestImage,
           conversationHistory: history.map((entry) => ({
             speaker: entry.speaker,
             text: entry.text,
           })),
           userId,
+          newThread: false,
         };
         const response = await fetch(API_BASE_URL + '/chat', {
           method: 'POST',

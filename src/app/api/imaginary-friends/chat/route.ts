@@ -13,13 +13,15 @@ export async function POST(request: NextRequest) {
       ? body.conversationHistory
       : [];
     const requestImage = Boolean(body.requestImage);
+    const newThread = Boolean(body.newThread);
     const userId = typeof body.userId === 'string' && body.userId.trim() ? body.userId.trim() : 'default';
 
     if (!characterId) {
       return NextResponse.json({ error: 'Missing characterId' }, { status: 400 });
     }
 
-    const storedHistory = await loadRecentConversationTurns(characterId, userId, 20);
+    // Load last 20 Q&A pairs (40 turns) from persistent storage for context (skip if starting a new thread)
+    const storedHistory = newThread ? [] : await loadRecentConversationTurns(characterId, userId, 40);
     const normalisedHistory = [...storedHistory, ...history]
       .filter((entry: unknown): entry is { speaker: 'player' | 'character'; text: string } => {
         if (!entry || typeof entry !== 'object') return false;

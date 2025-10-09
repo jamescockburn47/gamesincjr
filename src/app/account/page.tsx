@@ -18,6 +18,39 @@ export default async function AccountPage() {
         />
 
         <section className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-slate-100">
+          <h2 className="mb-4 text-lg font-semibold text-slate-800">Sign in (username only)</h2>
+          <form
+            className="mb-8 space-y-5"
+            action={async (formData: FormData) => {
+              "use server";
+              const username = String(formData.get("username") || "").trim();
+              await fetch("/api/auth/simple-login", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ username }),
+              });
+            }}
+          >
+            <div className="space-y-2">
+              <label className="text-sm font-semibold text-slate-700" htmlFor="username">
+                Username
+              </label>
+              <input
+                id="username"
+                name="username"
+                defaultValue={user.email}
+                placeholder="e.g. LunaFan"
+                className="w-full rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-sm text-slate-700 shadow-inner focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
+              />
+            </div>
+            <button
+              type="submit"
+              className="inline-flex w-full items-center justify-center rounded-xl bg-sky-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-sky-500/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+            >
+              Sign in
+            </button>
+          </form>
+          <h3 className="mb-2 text-sm font-semibold text-slate-700">Access tier</h3>
           <form
             className="space-y-5"
             action={async (formData: FormData) => {
@@ -32,9 +65,7 @@ export default async function AccountPage() {
             }}
           >
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-slate-700" htmlFor="account-email">
-                Email
-              </label>
+              <label className="text-sm font-semibold text-slate-700" htmlFor="account-email">Email (optional)</label>
               <input
                 id="account-email"
                 name="email"
