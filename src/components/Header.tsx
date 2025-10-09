@@ -11,7 +11,7 @@ export default async function Header() {
     { href: '/games', label: 'Games' },
     { href: '/community', label: 'Community' },
     { href: '/tutorials', label: 'Tutorials' },
-    { href: '/imaginary-friends', label: 'Imaginary Friends' },
+    { href: '/imaginary-friends', label: 'Magic AI Friends' },
     { href: '/tech', label: 'How it works' },
     { href: '/about', label: 'About' },
   ];
@@ -52,7 +52,7 @@ export default async function Header() {
               href="/account"
               className="rounded-xl px-3 py-2 text-xs font-semibold uppercase tracking-wide text-slate-500 transition hover:bg-sky-50 hover:text-sky-700"
             >
-              {user.email ? 'Account' : 'Sign in'}
+              {user.email ? `Hi, ${user.email}` : 'Sign in'}
             </Link>
           </nav>
 
