@@ -38,7 +38,8 @@ const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
 });
 
-const CHAT_MODEL = process.env.OPENAI_CHAT_MODEL || 'gpt-5-nano';
+const DEFAULT_MODEL = 'gpt-4o-mini';
+const CHAT_MODEL = process.env.OPENAI_CHAT_MODEL || DEFAULT_MODEL;
 const IMAGE_MODEL = process.env.IMAGINARY_FRIENDS_IMAGE_MODEL || 'gpt-image-1';
 const MAX_IMAGE_PER_HOUR = Number(process.env.IMAGINARY_FRIENDS_IMAGE_HOURLY_LIMIT || 5);
 const SESSION_LENGTH_SECONDS = Number(process.env.IMAGINARY_FRIENDS_SESSION_SECONDS || 900);
@@ -677,6 +678,21 @@ async function callOpenAI(prompt: string, maxTokens = 180): Promise<string> {
     });
     return completion.choices[0]?.message?.content?.trim() || "I'm having trouble answering right now.";
   } catch (error) {
+    // Retry with a safe default if the requested model is unavailable
+    const code = extractErrorCode(error)?.toLowerCase();
+    const msg = normaliseErrorMessage(error).toLowerCase();
+    const modelMissing = code?.includes('model') || msg.includes('model') || msg.includes('not found');
+    if (modelMissing && CHAT_MODEL !== DEFAULT_MODEL) {
+      const completion = await openai.chat.completions.create({
+        model: DEFAULT_MODEL,
+        messages: [
+          { role: 'system', content: prompt },
+        ],
+        max_tokens: Math.min(512, maxTokens),
+        temperature: 0.6,
+      });
+      return completion.choices[0]?.message?.content?.trim() || "I'm having trouble answering right now.";
+    }
     if (isQuotaError(error)) {
       throw new QuotaExceededError(normaliseErrorMessage(error));
     }
