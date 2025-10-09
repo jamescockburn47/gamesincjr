@@ -107,6 +107,17 @@ export default function ConversationPanel({
 
   return (
     <div className="conversation-panel">
+      <div className="flex items-center justify-between px-4 py-3">
+        <div />
+        <button
+          type="button"
+          onClick={() => setRenderedMessages([])}
+          className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+          title="Clear chat (keeps history saved)"
+        >
+          Clear chat
+        </button>
+      </div>
       {gameStatus && (
         <div className="friendship-status">
           <div className="status-header">

@@ -78,6 +78,7 @@ function blockedMessage(lastCreated: number | null): string | undefined {
 export default function ImaginaryFriendsApp() {
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
 const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [userId, setUserId] = useState<string>('default');
   const messagesRef = useRef<ConversationMessage[]>([]);
 const [characters, setCharacters] = useState<Character[]>(baseCharacters);
 const [isLoading, setIsLoading] = useState(false);
@@ -149,6 +150,21 @@ const [showCreator, setShowCreator] = useState(false);
   useEffect(() => {
     loadSessionStatus();
   }, [loadSessionStatus]);
+
+  // Identify user and persist cookie-backed userId
+  useEffect(() => {
+    (async () => {
+      try {
+        const res = await fetch(`${API_BASE_URL}/session/identify`, { cache: 'no-store' });
+        if (res.ok) {
+          const data = (await res.json()) as { userId: string };
+          if (data?.userId) setUserId(data.userId);
+        }
+      } catch {
+        // ignore
+      }
+    })();
+  }, []);
 
   useEffect(() => {
     setShowImageButton(imagesAvailable(sessionInfo) > 0);
@@ -422,7 +438,7 @@ useEffect(() => {
             speaker: entry.speaker,
             text: entry.text,
           })),
-          userId: 'default',
+          userId,
         };
         const response = await fetch(API_BASE_URL + '/chat', {
           method: 'POST',
@@ -606,6 +622,7 @@ useEffect(() => {
                 onClick={() => {
                   setSelectedCharacter(null);
                   setGameStatus(null);
+                  setMessages([]);
                 }}
               >
                 Back to friends list

@@ -632,6 +632,7 @@ function buildPrompt(
 RULES:
 - Keep the main reply under 80–90 words.
 - Only add a second paragraph if the child explicitly asks for more, starting with "Story:" or "Fact:" (aim for 120–220 words with vivid, imaginative detail).
+ - Only add a second paragraph if the child explicitly asks for more, starting with "Story:" or "Fact:" (aim for 120–220 words with vivid, imaginative detail). Ensure the story ends on a complete sentence.
 - Do not include stage directions or mannerisms.
 - Prefer friendly stories or facts over questions.
 - If you include a question, phrase it as an offer ("Would you like to hear about <topic>?" or "Tell me what you'd like to hear about next?").
