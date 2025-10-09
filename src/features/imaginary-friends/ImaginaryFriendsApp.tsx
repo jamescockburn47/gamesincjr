@@ -201,6 +201,24 @@ const [showCreator, setShowCreator] = useState(false);
     }
   }, [characters, createFallbackGameStatus]);
 
+  // Optional: autostart via query (?autostart=luna)
+  useEffect(() => {
+    if (selectedCharacter) return;
+    try {
+      const params = new URLSearchParams(window.location.search);
+      const autostartId = params.get('autostart');
+      if (autostartId) {
+        const found = characters.find((c) => c.id === autostartId) ?? characters[0];
+        if (found) {
+          setSelectedCharacter(found);
+          setGameStatus(createFallbackGameStatus(found));
+        }
+      }
+    } catch {
+      // ignore
+    }
+  }, [selectedCharacter, characters, createFallbackGameStatus]);
+
   useEffect(() => {
     if (!avatarsLoaded) {
       const loadAvatars = async () => {
