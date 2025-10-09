@@ -1,5 +1,7 @@
 export type Mood = 'happy' | 'sad' | 'excited' | 'thoughtful' | 'curious';
 
+export type FriendSentiment = 'joyful' | 'curious' | 'thoughtful' | 'resilient' | 'encouraging';
+
 export interface Character {
   id: string;
   name: string;
@@ -39,6 +41,19 @@ export interface SessionInfo {
   budgetCentsRemaining?: number;
 }
 
+export interface GameStatus {
+  friendshipLevel: number;
+  experience: number;
+  nextLevelThreshold: number;
+  stardustEarned: number;
+  badgesUnlocked: string[];
+  sentiment: FriendSentiment;
+  keywords: string[];
+  suggestedActivity: string;
+  summary: string;
+  creativityScore: number;
+}
+
 
 export interface ChatResponse {
   response: string;
@@ -46,9 +61,11 @@ export interface ChatResponse {
   sessionInfo?: SessionInfo;
   timeLimitReached?: boolean;
   imageLimitReached?: boolean;
+  gameStatus?: GameStatus;
 }
 
 export interface CharacterIntroResponse {
   introduction: string;
   imageUrl?: string | null;
+  gameStatus?: GameStatus;
 }

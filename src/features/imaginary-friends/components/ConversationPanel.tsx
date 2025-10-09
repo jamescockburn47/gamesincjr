@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
-import type { Character, ConversationMessage, SessionInfo, Topic } from '../types';
+import type { Character, ConversationMessage, GameStatus, SessionInfo, Topic } from '../types';
 import VoicePlayer from './VoicePlayer';
 
 interface ConversationPanelProps {
@@ -12,6 +12,7 @@ interface ConversationPanelProps {
   isLoading: boolean;
   showImageButton?: boolean;
   sessionInfo?: SessionInfo | null;
+  gameStatus?: GameStatus | null;
 }
 
 export default function ConversationPanel({
@@ -23,6 +24,7 @@ export default function ConversationPanel({
   isLoading,
   showImageButton = false,
   sessionInfo,
+  gameStatus,
 }: ConversationPanelProps) {
   const [inputMessage, setInputMessage] = useState('');
   const [showTopics, setShowTopics] = useState(false);
@@ -94,9 +96,41 @@ export default function ConversationPanel({
 
   const messagesLeft = sessionInfo?.messageAllowanceRemaining;
   const budgetLeft = sessionInfo?.budgetCentsRemaining;
+  const progressPercent = gameStatus
+    ? Math.min(100, Math.round((gameStatus.experience / Math.max(1, gameStatus.nextLevelThreshold)) * 100))
+    : 0;
 
   return (
     <div className="conversation-panel">
+      {gameStatus && (
+        <div className="friendship-status">
+          <div className="status-header">
+            <span className="status-level">Lvl {gameStatus.friendshipLevel}</span>
+            <span className="status-xp">
+              {gameStatus.experience}/{gameStatus.nextLevelThreshold} XP
+            </span>
+          </div>
+          <div className="status-progress">
+            <div className="status-progress-bar" style={{ width: `${progressPercent}%` }} />
+          </div>
+          <div className="status-meta">
+            <span className="status-stardust">⭐ {gameStatus.stardustEarned} stardust</span>
+            <span className="status-sentiment">Mood: {gameStatus.sentiment}</span>
+          </div>
+          {gameStatus.badgesUnlocked.length > 0 && (
+            <div className="status-badges">
+              Badges: {gameStatus.badgesUnlocked.join(', ')}
+            </div>
+          )}
+          {gameStatus.keywords.length > 0 && (
+            <div className="status-keywords">
+              Adventure sparks: {gameStatus.keywords.slice(0, 4).join(', ')}
+            </div>
+          )}
+          <div className="status-summary">{gameStatus.summary}</div>
+          <div className="status-suggestion">{gameStatus.suggestedActivity}</div>
+        </div>
+      )}
       <div className="messages-container">
         {messages.map((message) => (
           <div
@@ -229,4 +263,3 @@ export default function ConversationPanel({
     </div>
   );
 }
-

@@ -43,6 +43,63 @@ const IMAGE_MODEL = process.env.IMAGINARY_FRIENDS_IMAGE_MODEL || 'gpt-image-1';
 const MAX_IMAGE_PER_HOUR = Number(process.env.IMAGINARY_FRIENDS_IMAGE_HOURLY_LIMIT || 5);
 const SESSION_LENGTH_SECONDS = Number(process.env.IMAGINARY_FRIENDS_SESSION_SECONDS || 900);
 
+const STORAGE_MODE = (process.env.IMAGINARY_FRIENDS_STORAGE || 'auto').toLowerCase();
+const BLOB_RW_TOKEN = process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_BLOB_RW_TOKEN || '';
+
+type StorageKind = 'filesystem' | 'blob' | 'none';
+
+const STORAGE_KIND: StorageKind = (() => {
+  if (STORAGE_MODE === 'blob') {
+    return BLOB_RW_TOKEN ? 'blob' : 'none';
+  }
+  if (STORAGE_MODE === 'filesystem') return 'filesystem';
+  if (STORAGE_MODE === 'none') return 'none';
+  if (IS_SERVERLESS) {
+    if (BLOB_RW_TOKEN) return 'blob';
+    return 'none';
+  }
+  return 'filesystem';
+})();
+
+type SentimentTag = 'joyful' | 'curious' | 'thoughtful' | 'resilient' | 'encouraging';
+
+type ConversationStats = {
+  totalTurns: number;
+  playerTurns: number;
+  characterTurns: number;
+  latestMood: SentimentTag;
+  keywords: string[];
+  creativityScore: number;
+  excitementScore: number;
+};
+
+type FriendshipProgress = {
+  level: number;
+  experienceInLevel: number;
+  nextLevelThreshold: number;
+  totalExperience: number;
+  stardustEarned: number;
+  badges: string[];
+  sentiment: SentimentTag;
+  keywords: string[];
+  creativityScore: number;
+};
+
+export type GameStatus = {
+  friendshipLevel: number;
+  experience: number;
+  nextLevelThreshold: number;
+  stardustEarned: number;
+  badgesUnlocked: string[];
+  sentiment: SentimentTag;
+  keywords: string[];
+  suggestedActivity: string;
+  summary: string;
+  creativityScore: number;
+};
+
+const KEYWORD_LIMIT = 6;
+
 export class QuotaExceededError extends Error {
   readonly status = 429;
 
@@ -101,6 +158,281 @@ function isQuotaError(error: unknown): boolean {
   if (code && code.toLowerCase().includes('quota')) return true;
   const message = normaliseErrorMessage(error).toLowerCase();
   return message.includes('quota') || message.includes('limit');
+}
+
+const STOP_WORDS = new Set([
+  'the',
+  'and',
+  'for',
+  'with',
+  'that',
+  'have',
+  'this',
+  'from',
+  'about',
+  'your',
+  'there',
+  'they',
+  'just',
+  'like',
+  'really',
+  'into',
+  'their',
+  'them',
+  'then',
+  'what',
+  'when',
+  'where',
+  'which',
+  'will',
+  'would',
+  'could',
+  'should',
+  'been',
+  'also',
+  'very',
+  'much',
+  'some',
+  'more',
+  'that',
+  'because',
+  'have',
+  'were',
+  'while',
+  'each',
+  'ever',
+  'even',
+  'little',
+  'around',
+  'again',
+]);
+
+function normaliseForAnalysis(text: string): string {
+  return text
+    .toLowerCase()
+    .replace(/[^a-z0-9\s]/g, ' ')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+export function extractStoryKeywords(text: string, limit = KEYWORD_LIMIT): string[] {
+  if (!text) return [];
+  const words = normaliseForAnalysis(text).split(' ').filter(Boolean);
+  const frequencies = new Map<string, number>();
+  for (const word of words) {
+    if (word.length <= 3 || STOP_WORDS.has(word)) continue;
+    frequencies.set(word, (frequencies.get(word) ?? 0) + 1);
+  }
+  return Array.from(frequencies.entries())
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, limit)
+    .map(([word]) => word);
+}
+
+function analysePlayerMood(text: string): SentimentTag {
+  const value = text.toLowerCase();
+  if (!value.trim()) return 'curious';
+  if (/(happy|yay|great|awesome|fun|love|excited|cool|amazing|brilliant|fantastic|sparkle)/.test(value)) {
+    return 'joyful';
+  }
+  if (/(wonder|curious|why|how|what|explore|discover|imagine|dream)/.test(value)) {
+    return 'curious';
+  }
+  if (/(worried|tired|not sure|maybe|hmm|quiet|calm|gentle|soft)/.test(value)) {
+    return 'thoughtful';
+  }
+  if (/(hard|difficult|sad|upset|trouble|scared|afraid)/.test(value)) {
+    return 'resilient';
+  }
+  return 'encouraging';
+}
+
+function estimateCreativityScore(conversation: ConversationTurn[]): number {
+  if (!conversation.length) return 10;
+  const combinedText = conversation.map((turn) => turn.text).join(' ');
+  const keywords = extractStoryKeywords(combinedText, KEYWORD_LIMIT * 2);
+  const adjectives = combinedText.match(/\b\w+(ful|ous|ive|ical|ing|y)\b/gi)?.length ?? 0;
+  const exclamations = combinedText.match(/[!?]/g)?.length ?? 0;
+  const baseScore = keywords.length * 8 + Math.min(adjectives, 12) * 3 + Math.min(exclamations, 6) * 2;
+  return Math.max(10, Math.min(100, Math.round(baseScore)));
+}
+
+function calculateExcitementScore(conversation: ConversationTurn[]): number {
+  if (!conversation.length) return 0;
+  const recent = conversation.slice(-4).map((turn) => turn.text).join(' ');
+  const exclamations = recent.match(/!/g)?.length ?? 0;
+  const questions = recent.match(/\?/g)?.length ?? 0;
+  return Math.min(100, exclamations * 12 + questions * 6);
+}
+
+export function compileConversationStats(
+  history: ConversationTurn[],
+  latestChildMessage?: string,
+  latestCharacterResponse?: string,
+): ConversationStats {
+  const combined: ConversationTurn[] = [...history];
+  if (latestChildMessage && latestChildMessage.trim()) {
+    combined.push({ speaker: 'player', text: latestChildMessage.trim() });
+  }
+  if (latestCharacterResponse && latestCharacterResponse.trim()) {
+    combined.push({ speaker: 'character', text: latestCharacterResponse.trim() });
+  }
+
+  const playerTurns = combined.filter((turn) => turn.speaker === 'player');
+  const characterTurns = combined.filter((turn) => turn.speaker === 'character');
+  const lastPlayerMessage =
+    latestChildMessage ??
+    playerTurns.length > 0
+      ? playerTurns[playerTurns.length - 1].text
+      : '';
+
+  const keywordSource = [
+    ...playerTurns.slice(-3).map((turn) => turn.text),
+    latestCharacterResponse ?? '',
+  ]
+    .join(' ')
+    .trim();
+
+  const keywords = extractStoryKeywords(keywordSource);
+  const creativityScore = estimateCreativityScore(combined);
+  const excitementScore = calculateExcitementScore(combined);
+
+  return {
+    totalTurns: combined.length,
+    playerTurns: playerTurns.length,
+    characterTurns: characterTurns.length,
+    latestMood: analysePlayerMood(lastPlayerMessage),
+    keywords,
+    creativityScore,
+    excitementScore,
+  };
+}
+
+export function calculateFriendshipProgress(stats: ConversationStats): FriendshipProgress {
+  const baseExperience = stats.playerTurns * 14 + stats.creativityScore;
+  const excitementBonus = Math.round(stats.excitementScore / 3);
+  const keywordBonus = stats.keywords.length * 5;
+  const totalExperience = baseExperience + excitementBonus + keywordBonus;
+
+  const level = Math.max(1, Math.floor(totalExperience / 160) + 1);
+  const levelBaseExperience = (level - 1) * 160;
+  const experienceInLevel = totalExperience - levelBaseExperience;
+  const nextLevelThreshold = 160;
+  const stardustEarned = Math.max(2, Math.min(50, Math.round(experienceInLevel / 4)));
+
+  const badges: string[] = [];
+  if (stats.creativityScore >= 70) badges.push('Creative Spark');
+  if (stats.playerTurns >= 6) badges.push('Chatty Companion');
+  if (stats.keywords.length >= 5) badges.push('Curiosity Collector');
+  if (stats.excitementScore >= 30) badges.push('Excitement Explorer');
+  if (stats.totalTurns >= 12) badges.push('Storyteller Badge');
+
+  return {
+    level,
+    experienceInLevel,
+    nextLevelThreshold,
+    totalExperience,
+    stardustEarned,
+    badges,
+    sentiment: stats.latestMood,
+    keywords: stats.keywords,
+    creativityScore: stats.creativityScore,
+  };
+}
+
+export function generateActivitySuggestion(
+  character: CharacterConfig,
+  stats: ConversationStats,
+  progress?: FriendshipProgress,
+): string {
+  const candidateKeywords = stats.keywords;
+  const matchingInterest =
+    candidateKeywords.find((keyword) => character.interests.some((interest) => interest.toLowerCase().includes(keyword))) ??
+    character.interests[progress ? progress.level % character.interests.length : 0] ??
+    'imagination';
+  const stardust = progress?.stardustEarned ?? Math.max(2, stats.playerTurns + 2);
+  return `Earn ${stardust} stardust by asking about ${matchingInterest} or sharing a mini adventure.`;
+}
+
+function summariseConversation(character: CharacterConfig, stats: ConversationStats): string {
+  if (!stats.totalTurns) {
+    return `${character.name} is ready to begin your first adventure together.`;
+  }
+  const keywordSummary =
+    stats.keywords.length > 0
+      ? `You mentioned ${stats.keywords.slice(0, 3).join(', ')}.`
+      : 'You are building new ideas together.';
+  const moodNote = (() => {
+    switch (stats.latestMood) {
+      case 'joyful':
+        return 'Your energy feels bright and adventurous.';
+      case 'curious':
+        return 'Your curiosity is opening new paths.';
+      case 'resilient':
+        return 'You kept going even when things were tricky.';
+      case 'thoughtful':
+        return 'You took a calm moment to imagine carefully.';
+      default:
+        return 'Your kindness is guiding the story.';
+    }
+  })();
+  return `${keywordSummary} ${moodNote}`;
+}
+
+function buildGameStatus(
+  character: CharacterConfig,
+  stats: ConversationStats,
+  progressOverride?: FriendshipProgress,
+): GameStatus {
+  const progress = progressOverride ?? calculateFriendshipProgress(stats);
+  const suggestedActivity = generateActivitySuggestion(character, stats, progress);
+  const summary = summariseConversation(character, stats);
+  return {
+    friendshipLevel: progress.level,
+    experience: progress.experienceInLevel,
+    nextLevelThreshold: progress.nextLevelThreshold,
+    stardustEarned: progress.stardustEarned,
+    badgesUnlocked: progress.badges,
+    sentiment: progress.sentiment,
+    keywords: progress.keywords,
+    suggestedActivity,
+    summary,
+    creativityScore: progress.creativityScore,
+  };
+}
+
+function craftFallbackResponse(character: CharacterConfig, userMessage: string, reason: 'quota' | 'error'): string {
+  const mannerism = character.mannerisms[0] ?? '';
+  const encouragement =
+    reason === 'quota'
+      ? 'I used a lot of starlight today and need a quick rest to recharge my imagination.'
+      : 'My magic whisper is fluttering slowly right now and needs a tiny moment.';
+  const keywords = extractStoryKeywords(userMessage ?? '');
+  const hint =
+    keywords.length > 0
+      ? `Maybe you can think about ${keywords[0]} or add another detail while we wait.`
+      : `Could you dream up one more detail for our story while we pause?`;
+  return `${character.name} ${mannerism} ${encouragement} ${hint} I will be ready to earn more stardust with you very soon!`;
+}
+
+export function getInitialGameStatus(characterId: string): GameStatus {
+  const character = characterMap[characterId as CharacterId];
+  if (!character) {
+    return {
+      friendshipLevel: 1,
+      experience: 0,
+      nextLevelThreshold: 160,
+      stardustEarned: 0,
+      badgesUnlocked: [],
+      sentiment: 'curious',
+      keywords: [],
+      suggestedActivity: 'Say hello and share something you love.',
+      summary: 'Your new friend is excited to meet you.',
+      creativityScore: 10,
+    };
+  }
+  const stats = compileConversationStats([]);
+  return buildGameStatus(character, stats);
 }
 
 const characterMap: Record<CharacterId, CharacterConfig> = {
@@ -182,6 +514,8 @@ const imageHistory = new Map<string, number[]>();
 const sessionTracker = new Map<string, number>();
 
 let storageAvailable: boolean | null = null;
+let warnedStorageDisabled = false;
+let warnedBlobAuthMissing = false;
 
 function isReadOnlyFsError(error: unknown): boolean {
   if (!error || typeof error !== 'object') return false;
@@ -269,11 +603,25 @@ type SessionInfo = {
   dailyUsageSeconds: number;
 };
 
-function buildPrompt(character: CharacterConfig, conversation: ConversationTurn[], userMessage: string) {
+function buildPrompt(
+  character: CharacterConfig,
+  conversation: ConversationTurn[],
+  userMessage: string,
+  stats?: ConversationStats,
+  progress?: FriendshipProgress,
+) {
   const history = conversation
     .slice(-8)
     .map((turn) => (turn.speaker === 'player' ? `Child: ${turn.text}` : `${character.name}: ${turn.text}`))
     .join('\n');
+  const progressNote = progress
+    ? `Friendship Level: ${progress.level} | XP in level: ${progress.experienceInLevel}/${progress.nextLevelThreshold} | Creativity: ${progress.creativityScore}/100`
+    : 'Friendship Level: 1 | Creativity: 10/100';
+  const moodNote = stats ? `Child mood is ${stats.latestMood}.` : '';
+  const keywordHint =
+    stats && stats.keywords.length
+      ? `Child mentioned keywords: ${stats.keywords.join(', ')}. Bring one into your reply.`
+      : 'No specific keywords yet; gently invite the child to describe details.';
 
   return `You are ${character.name}, ${character.personality}
 
@@ -288,6 +636,20 @@ SAFETY RULES:
 - Never ask for personal data. Encourage imagination and creativity instead.
 - Keep responses under 90 words unless the child asks for a longer story.
 - Mention your mannerisms occasionally (e.g. ${character.mannerisms[0]}).
+- Award "stardust" or a playful badge when the child shares ideas. Keep it encouraging, not competitive.
+- If the child seems unsure or the message is short, ask a warm follow-up question.
+- Celebrate effort. Always reinforce positive social-emotional skills.
+- If content is unsafe, gently redirect to safe imaginative play without naming the unsafe content.
+
+PROGRESS OVERVIEW:
+${progressNote}
+${moodNote}
+${keywordHint}
+
+GAMIFIED GUIDANCE:
+- Offer a small goal (e.g. "earn 5 stardust by telling me...").
+- Suggest one creative activity connected to the conversation or the character's interests.
+- Never promise real-world prizes. Keep rewards imaginary and supportive.
 
 Conversation so far:
 ${history || '(no previous messages)'}
@@ -354,29 +716,148 @@ async function generateImageFile(character: CharacterConfig, conversation: Conve
   return `/imaginary-friends/generated/${filename}`;
 }
 
-async function logConversation(payload: {
+type ConversationLogRecord = {
+  id: string;
+  timestamp: string;
+  userId: string;
   characterId: string;
   userMessage: string;
   response: string;
   imageUrl?: string | null;
-}) {
+  stats: ConversationStats;
+  gameStatus?: GameStatus;
+};
+
+async function persistConversationToFilesystem(entry: ConversationLogRecord) {
+  if (!(await ensureDirectories())) {
+    return;
+  }
+  const userDir = path.join(CONVERSATIONS_DIR, entry.userId);
+  const charFile = path.join(userDir, `${entry.characterId}.jsonl`);
+  await fs.mkdir(userDir, { recursive: true }).catch(() => undefined);
+  const line = JSON.stringify(entry) + '\n';
+  await fs.appendFile(charFile, line);
+}
+
+async function persistConversationToBlob(entry: ConversationLogRecord) {
+  if (!BLOB_RW_TOKEN) {
+    if (!warnedBlobAuthMissing) {
+      console.warn(
+        'Imaginary Friends storage set to blob but BLOB_READ_WRITE_TOKEN (or VERCEL_BLOB_RW_TOKEN) is missing.',
+      );
+      warnedBlobAuthMissing = true;
+    }
+    return;
+  }
   try {
-    if (!(await ensureDirectories())) {
+    const { put } = await import('@vercel/blob');
+    const key = `imaginary-friends/conversations/${entry.userId}/${entry.characterId}/${entry.timestamp}-${entry.id}.json`;
+    await put(key, JSON.stringify(entry), {
+      access: 'private',
+      token: BLOB_RW_TOKEN,
+      contentType: 'application/json',
+    });
+  } catch (error) {
+    console.warn('Failed to persist conversation to Vercel Blob', error);
+  }
+}
+
+async function persistConversation(entry: ConversationLogRecord) {
+  try {
+    if (STORAGE_KIND === 'blob') {
+      await persistConversationToBlob(entry);
       return;
     }
-    const entry = {
-      ...payload,
-      timestamp: new Date().toISOString(),
-      id: randomUUID(),
-    };
-    const today = new Date().toISOString().split('T')[0];
-    await fs.appendFile(path.join(CONVERSATIONS_DIR, `conversations_${today}.jsonl`), JSON.stringify(entry) + '\n');
-    await fs.appendFile(
-      path.join(CONVERSATIONS_DIR, `${payload.characterId}_conversations.jsonl`),
-      JSON.stringify(entry) + '\n',
-    );
+    if (STORAGE_KIND === 'filesystem') {
+      await persistConversationToFilesystem(entry);
+      return;
+    }
+    if (!warnedStorageDisabled) {
+      console.warn(
+        'Imaginary Friends persistent storage is disabled (set IMAGINARY_FRIENDS_STORAGE to "blob" or "filesystem").',
+      );
+      warnedStorageDisabled = true;
+    }
   } catch (error) {
     console.warn('Failed to save conversation', error);
+  }
+}
+
+async function logConversation(payload: {
+  characterId: string;
+  userId: string;
+  userMessage: string;
+  response: string;
+  stats: ConversationStats;
+  gameStatus?: GameStatus;
+  imageUrl?: string | null;
+}) {
+  const entry: ConversationLogRecord = {
+    id: randomUUID(),
+    timestamp: new Date().toISOString(),
+    ...payload,
+  };
+  await persistConversation(entry);
+}
+
+export async function loadRecentConversationTurns(
+  characterId: string,
+  userId: string,
+  limit = 20,
+): Promise<ConversationTurn[]> {
+  try {
+    if (STORAGE_KIND === 'filesystem') {
+      if (!(await ensureDirectories())) return [];
+      const userDir = path.join(CONVERSATIONS_DIR, userId);
+      const charFile = path.join(userDir, `${characterId}.jsonl`);
+      try {
+        const raw = await fs.readFile(charFile, 'utf8');
+        const lines = raw.split('\n').filter(Boolean).slice(-limit);
+        const turns: ConversationTurn[] = [];
+        for (const line of lines) {
+          try {
+            const rec = JSON.parse(line) as ConversationLogRecord;
+            if (rec.userId !== userId || rec.characterId !== characterId) continue;
+            if (rec.userMessage) turns.push({ speaker: 'player', text: rec.userMessage });
+            if (rec.response) turns.push({ speaker: 'character', text: rec.response });
+          } catch {
+            // skip bad lines
+          }
+        }
+        return turns.slice(-limit);
+      } catch {
+        return [];
+      }
+    }
+
+    if (STORAGE_KIND === 'blob') {
+      if (!BLOB_RW_TOKEN) return [];
+      const { list, get } = await import('@vercel/blob');
+      const prefix = `imaginary-friends/conversations/${userId}/${characterId}/`;
+      const { blobs } = await list({ prefix, token: BLOB_RW_TOKEN });
+      const sorted = blobs
+        .map((b) => b.pathname)
+        .sort((a, b) => (a > b ? -1 : 1))
+        .slice(0, limit);
+      const turns: ConversationTurn[] = [];
+      for (const pathname of sorted.reverse()) {
+        try {
+          const res = await get(pathname, { token: BLOB_RW_TOKEN });
+          const rec = (await res.json()) as ConversationLogRecord;
+          if (rec.userId !== userId || rec.characterId !== characterId) continue;
+          if (rec.userMessage) turns.push({ speaker: 'player', text: rec.userMessage });
+          if (rec.response) turns.push({ speaker: 'character', text: rec.response });
+        } catch {
+          // skip
+        }
+      }
+      return turns.slice(-limit);
+    }
+
+    return [];
+  } catch (error) {
+    console.warn('Failed to load recent conversation turns', error);
+    return [];
   }
 }
 
@@ -411,44 +892,115 @@ export async function chatWithCharacter(input: {
   const character = characterMap[characterId as CharacterId];
   if (!character) throw new Error('Unknown character');
   if (!isContentSafe(userMessage)) {
+    const safeStats = compileConversationStats(history, userMessage);
+    const safeGameStatus = buildGameStatus(character, safeStats);
+    await logConversation({
+      characterId,
+      userId,
+      userMessage,
+      response: "I'd rather talk about something positive. What would you like to imagine or create?",
+      imageUrl: null,
+      stats: safeStats,
+      gameStatus: safeGameStatus,
+    });
     return {
       response: "I'd rather talk about something positive. What would you like to imagine or create?",
       imageUrl: null,
       sessionInfo: getSessionInfo(userId),
+      timeLimitReached: false,
+      imageLimitReached: false,
+      gameStatus: safeGameStatus,
     };
   }
 
-  const prompt = buildPrompt(character, history, userMessage);
+  const preStats = compileConversationStats(history, userMessage);
+  const preProgress = calculateFriendshipProgress(preStats);
+  const prompt = buildPrompt(character, history, userMessage, preStats, preProgress);
   let response: string;
   try {
     response = await callOpenAI(prompt, requestImage ? 220 : 160);
   } catch (error) {
     if (error instanceof QuotaExceededError) {
       console.warn('OpenAI quota reached during chat request');
+      const fallback = craftFallbackResponse(character, userMessage, 'quota');
+      const fallbackStats = compileConversationStats(history, userMessage, fallback);
+      const fallbackGameStatus = buildGameStatus(character, fallbackStats);
+      await logConversation({
+        characterId,
+        userId,
+        userMessage,
+        response: fallback,
+        imageUrl: null,
+        stats: fallbackStats,
+        gameStatus: fallbackGameStatus,
+      });
       return {
-        response: `${character.name} whispers: I need a little rest before we can imagine more adventures. Let's try again soon!`,
+        response: fallback,
         imageUrl: null,
         sessionInfo: getSessionInfo(userId),
         timeLimitReached: true,
+        imageLimitReached: false,
+        gameStatus: fallbackGameStatus,
       };
     }
-    throw error;
+    console.warn('OpenAI chat failed, using fallback response', error);
+    const fallback = craftFallbackResponse(character, userMessage, 'error');
+    const fallbackStats = compileConversationStats(history, userMessage, fallback);
+    const fallbackGameStatus = buildGameStatus(character, fallbackStats);
+    await logConversation({
+      characterId,
+      userId,
+      userMessage,
+      response: fallback,
+      imageUrl: null,
+      stats: fallbackStats,
+      gameStatus: fallbackGameStatus,
+    });
+    return {
+      response: fallback,
+      imageUrl: null,
+      sessionInfo: getSessionInfo(userId),
+      timeLimitReached: false,
+      imageLimitReached: false,
+      gameStatus: fallbackGameStatus,
+    };
   }
   let imageUrl: string | null = null;
+  let finalResponse = response;
 
   if (requestImage) {
     if (remainingImages(userId) <= 0) {
       const sessionInfo = getSessionInfo(userId);
+      finalResponse =
+        response +
+        '\n\nI would love to draw more pictures, but I have reached the hourly limit. Let\'s try again soon!';
+      const limitedStats = compileConversationStats(history, userMessage, finalResponse);
+      const limitedGameStatus = buildGameStatus(character, limitedStats);
+      await logConversation({
+        characterId,
+        userId,
+        userMessage,
+        response: finalResponse,
+        imageUrl: null,
+        stats: limitedStats,
+        gameStatus: limitedGameStatus,
+      });
       return {
-        response:
-          response +
-          '\n\nI would love to draw more pictures, but I have reached the hourly limit. Let’s try again soon!',
+        response: finalResponse,
         imageUrl: null,
         sessionInfo,
+        timeLimitReached: false,
+        imageLimitReached: true,
+        gameStatus: limitedGameStatus,
       };
     }
     try {
-      imageUrl = await generateImageFile(character, history);
+      const augmentedForImage: ConversationTurn[] = [...history];
+      if (userMessage.trim()) {
+        augmentedForImage.push({ speaker: 'player', text: userMessage.trim() });
+      }
+      augmentedForImage.push({ speaker: 'character', text: response });
+      imageUrl = await generateImageFile(character, augmentedForImage);
       recordImageGeneration(userId);
     } catch (error) {
       console.warn('Image generation failed', error);
@@ -456,18 +1008,26 @@ export async function chatWithCharacter(input: {
     }
   }
 
+  const postStats = compileConversationStats(history, userMessage, finalResponse);
+  const gameStatus = buildGameStatus(character, postStats);
+
   await logConversation({
     characterId,
+    userId,
     userMessage,
-    response,
+    response: finalResponse,
     imageUrl,
+    stats: postStats,
+    gameStatus,
   });
 
   return {
-    response,
+    response: finalResponse,
     imageUrl,
     sessionInfo: getSessionInfo(userId),
     timeLimitReached: false,
+    imageLimitReached: false,
+    gameStatus,
   };
 }
 

@@ -5,7 +5,10 @@ import { baseCharacters, conversationTopics } from './data';
 import type {
   Character,
   ChatResponse,
+  CharacterIntroResponse,
   ConversationMessage,
+  FriendSentiment,
+  GameStatus,
   SessionInfo,
   Topic,
 } from './types';
@@ -35,6 +38,22 @@ function analyseSentiment(text: string): Sentiment {
   return 'thoughtful';
 }
 
+function mapFriendSentimentToMood(sentiment: FriendSentiment): Sentiment {
+  switch (sentiment) {
+    case 'joyful':
+      return 'happy';
+    case 'curious':
+      return 'curious';
+    case 'resilient':
+      return 'excited';
+    case 'encouraging':
+      return 'happy';
+    case 'thoughtful':
+    default:
+      return 'thoughtful';
+  }
+}
+
 function canCreateThisWeek(lastCreated: number | null): boolean {
   if (!lastCreated) return true;
   const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
@@ -53,12 +72,13 @@ function blockedMessage(lastCreated: number | null): string | undefined {
 
 export default function ImaginaryFriendsApp() {
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
-  const [messages, setMessages] = useState<ConversationMessage[]>([]);
-  const [characters, setCharacters] = useState<Character[]>(baseCharacters);
-  const [isLoading, setIsLoading] = useState(false);
-  const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
-  const [showImageButton, setShowImageButton] = useState(false);
-  const [showCreator, setShowCreator] = useState(false);
+const [messages, setMessages] = useState<ConversationMessage[]>([]);
+const [characters, setCharacters] = useState<Character[]>(baseCharacters);
+const [isLoading, setIsLoading] = useState(false);
+const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
+const [showImageButton, setShowImageButton] = useState(false);
+const [gameStatus, setGameStatus] = useState<GameStatus | null>(null);
+const [showCreator, setShowCreator] = useState(false);
   const [lastCreatedAt, setLastCreatedAt] = useState<number | null>(null);
   const [avatarsLoaded, setAvatarsLoaded] = useState(false);
   const imagesAvailable = (info: SessionInfo | null | undefined) => {
@@ -78,6 +98,22 @@ export default function ImaginaryFriendsApp() {
       },
     ]);
   };
+
+  const createFallbackGameStatus = useCallback(
+    (character: Character): GameStatus => ({
+      friendshipLevel: 1,
+      experience: 0,
+      nextLevelThreshold: 160,
+      stardustEarned: 0,
+      badgesUnlocked: [],
+      sentiment: 'curious',
+      keywords: [],
+      suggestedActivity: `Ask ${character.name} about ${character.favoriteTopics?.[0] ?? 'a new adventure'}.`,
+      summary: `${character.name} is excited to imagine with you.`,
+      creativityScore: 10,
+    }),
+    [],
+  );
 
 
   const topics = useMemo(() => conversationTopics, []);
@@ -132,7 +168,10 @@ export default function ImaginaryFriendsApp() {
 
       if (savedCharId) {
         const found = characters.find((character) => character.id === savedCharId);
-        if (found) setSelectedCharacter(found);
+        if (found) {
+          setSelectedCharacter(found);
+          setGameStatus(createFallbackGameStatus(found));
+        }
       }
 
       if (savedMessagesRaw) {
@@ -160,7 +199,7 @@ export default function ImaginaryFriendsApp() {
     } catch {
       // ignore storage issues
     }
-  }, [characters]);
+  }, [characters, createFallbackGameStatus]);
 
   useEffect(() => {
     if (!avatarsLoaded) {
@@ -216,7 +255,7 @@ export default function ImaginaryFriendsApp() {
           body: JSON.stringify({ characterId }),
         });
         if (!response.ok) throw new Error('Failed to fetch introduction');
-        const data = (await response.json()) as { introduction: string; imageUrl?: string | null };
+        const data = (await response.json()) as CharacterIntroResponse;
         setMessages([
           {
             id: String(Date.now()),
@@ -227,6 +266,12 @@ export default function ImaginaryFriendsApp() {
           },
         ]);
         updateCharacterMood(characterId, 'happy');
+        const character = characters.find((entry) => entry.id === characterId);
+        if (character) {
+          setGameStatus(data.gameStatus ?? createFallbackGameStatus(character));
+        } else {
+          setGameStatus(null);
+        }
       } catch (error) {
         console.warn('Failed to initialise conversation', error);
         setMessages([
@@ -237,9 +282,15 @@ export default function ImaginaryFriendsApp() {
             timestamp: new Date(),
           },
         ]);
+        const character = characters.find((entry) => entry.id === characterId);
+        if (character) {
+          setGameStatus(createFallbackGameStatus(character));
+        } else {
+          setGameStatus(null);
+        }
       }
     },
-    [updateCharacterMood],
+    [characters, createFallbackGameStatus, updateCharacterMood],
   );
 
 useEffect(() => {
@@ -355,8 +406,18 @@ useEffect(() => {
         if (data.timeLimitReached) {
           setShowImageButton(false);
         }
+        if (data.imageLimitReached) {
+          setShowImageButton(false);
+        }
+        if (selectedCharacter) {
+          setGameStatus(data.gameStatus ?? createFallbackGameStatus(selectedCharacter));
+        }
 
-        const mood = data.timeLimitReached ? 'thoughtful' : analyseSentiment(data.response);
+        const mood = data.gameStatus
+          ? mapFriendSentimentToMood(data.gameStatus.sentiment)
+          : data.timeLimitReached
+            ? 'thoughtful'
+            : analyseSentiment(data.response);
         updateCharacterMood(selectedCharacter.id, mood);
 
         const newMessage: ConversationMessage = {
@@ -377,11 +438,12 @@ useEffect(() => {
         console.error('Failed to send message', error);
         updateCharacterMood(selectedCharacter.id, 'thoughtful');
         pushSystemMessage("I'm having trouble connecting right now. Could you try again in a moment?");
+        setGameStatus((prev) => (selectedCharacter ? prev ?? createFallbackGameStatus(selectedCharacter) : prev));
       } finally {
         setIsLoading(false);
       }
     },
-    [messages, selectedCharacter, sessionInfo, updateCharacterMood],
+    [createFallbackGameStatus, messages, selectedCharacter, sessionInfo, updateCharacterMood],
   );
 
 
@@ -397,6 +459,7 @@ useEffect(() => {
       setCharacters((prev) => [...prev, character]);
       setShowCreator(false);
       setSelectedCharacter(character);
+      setGameStatus(createFallbackGameStatus(character));
       const now = Date.now();
       setLastCreatedAt(now);
       try {
@@ -406,7 +469,7 @@ useEffect(() => {
         // ignore
       }
     },
-    [characters],
+    [characters, createFallbackGameStatus],
   );
 
   const canCreate = canCreateThisWeek(lastCreatedAt);
@@ -441,6 +504,23 @@ useEffect(() => {
                   isSelected={false}
                   onClick={() => {
                     setMessages([]);
+                    // Seed from server history for context continuity
+                    fetch(`${API_BASE_URL}/history?characterId=${character.id}&userId=default`)
+                      .then(async (res) => (res.ok ? ((await res.json()) as { turns?: Array<{ speaker: 'player' | 'character'; text: string }> }) : { turns: [] }))
+                      .then((data) => {
+                        const turns = Array.isArray(data.turns) ? data.turns : [];
+                        if (turns.length) {
+                          const seeded: ConversationMessage[] = turns.map((t, idx) => ({
+                            id: `${Date.now()}-${idx}`,
+                            speaker: t.speaker,
+                            text: t.text,
+                            timestamp: new Date(),
+                          }));
+                          setMessages(seeded);
+                        }
+                      })
+                      .catch(() => undefined);
+                    setGameStatus(createFallbackGameStatus(character));
                     setSelectedCharacter(character);
                   }}
                 />
@@ -450,8 +530,15 @@ useEffect(() => {
         ) : (
           <section className="if-conversation">
             <aside className="if-sidebar">
-              <button type="button" className="if-back" onClick={() => setSelectedCharacter(null)}>
-                ← Choose a different friend
+              <button
+                type="button"
+                className="if-back"
+                onClick={() => {
+                  setSelectedCharacter(null);
+                  setGameStatus(null);
+                }}
+              >
+                Back to friends list
               </button>
               <div className="if-summary">
                 <div className="character-avatar large">{selectedCharacter.avatarUrl ?? '🙂'}</div>
@@ -491,6 +578,7 @@ useEffect(() => {
               isLoading={isLoading}
               showImageButton={showImageButton}
               sessionInfo={sessionInfo}
+              gameStatus={gameStatus}
             />
           </section>
         )}
@@ -696,6 +784,64 @@ useEffect(() => {
           display: flex;
           flex-direction: column;
           min-height: 60vh;
+        }
+        .friendship-status {
+          padding: 20px 24px 18px;
+          background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(56, 189, 248, 0.12));
+          border-bottom: 1px solid rgba(148, 163, 209, 0.25);
+          display: grid;
+          gap: 8px;
+        }
+        .status-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-weight: 600;
+          color: #1f2937;
+        }
+        .status-level {
+          font-size: 1.05rem;
+        }
+        .status-xp {
+          font-size: 0.85rem;
+          color: #475569;
+        }
+        .status-progress {
+          height: 8px;
+          border-radius: 999px;
+          background: rgba(148, 163, 209, 0.3);
+          overflow: hidden;
+        }
+        .status-progress-bar {
+          height: 100%;
+          border-radius: 999px;
+          background: linear-gradient(135deg, #22d3ee, #6366f1);
+          transition: width 0.4s ease;
+        }
+        .status-meta {
+          display: flex;
+          gap: 12px;
+          flex-wrap: wrap;
+          font-size: 0.85rem;
+          color: #475569;
+        }
+        .status-stardust {
+          font-weight: 600;
+          color: #1d4ed8;
+        }
+        .status-badges,
+        .status-keywords,
+        .status-summary,
+        .status-suggestion {
+          font-size: 0.85rem;
+          color: #475569;
+        }
+        .status-summary {
+          font-weight: 600;
+        }
+        .status-suggestion {
+          color: #1e40af;
+          font-weight: 600;
         }
         .messages-container {
           padding: 24px;

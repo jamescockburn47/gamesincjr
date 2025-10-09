@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { chatWithCharacter } from '../_lib/service';
+import { chatWithCharacter, loadRecentConversationTurns } from '../_lib/service';
 
 export const runtime = 'nodejs';
 
@@ -18,7 +18,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing characterId' }, { status: 400 });
     }
 
-    const normalisedHistory = history
+    const storedHistory = await loadRecentConversationTurns(characterId, userId, 20);
+    const normalisedHistory = [...storedHistory, ...history]
       .filter((entry: unknown): entry is { speaker: 'player' | 'character'; text: string } => {
         if (!entry || typeof entry !== 'object') return false;
         const record = entry as Record<string, unknown>;
