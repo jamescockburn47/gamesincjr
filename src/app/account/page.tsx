@@ -33,7 +33,9 @@ export default async function AccountPage() {
               const password = passwordRaw.trim();
               if (!username || !password) return;
 
-              async function readUser(u: string): Promise<any | null> {
+              type UserRecord = { username: string; passwordHash: string; salt: string; createdAt: string };
+
+              async function readUser(u: string): Promise<UserRecord | null> {
                 const token = process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_BLOB_RW_TOKEN || '';
                 try {
                   if (token) {
@@ -42,7 +44,7 @@ export default async function AccountPage() {
                     const { blobs } = await list({ prefix, token });
                     if (blobs.length) {
                       const res = await fetch(blobs[0].url, { cache: 'no-store' });
-                      if (res.ok) return await res.json();
+                      if (res.ok) return (await res.json()) as UserRecord;
                     }
                     return null;
                   }
@@ -50,7 +52,7 @@ export default async function AccountPage() {
                 return null;
               }
 
-              async function writeUser(u: string, record: any) {
+              async function writeUser(u: string, record: UserRecord) {
                 const token = process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_BLOB_RW_TOKEN || '';
                 if (!token) return;
                 const { put } = await import("@vercel/blob");

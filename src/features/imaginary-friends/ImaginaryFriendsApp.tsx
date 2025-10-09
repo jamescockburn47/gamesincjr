@@ -545,7 +545,7 @@ useEffect(() => {
         setIsLoading(false);
       }
     },
-    [createFallbackGameStatus, messages, selectedCharacter, sessionInfo, updateCharacterMood],
+    [createFallbackGameStatus, messages, selectedCharacter, sessionInfo, updateCharacterMood, userId, username],
   );
 
 
