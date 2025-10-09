@@ -33,8 +33,11 @@ export default function ConversationPanel({
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+    // Force a paint after messages change to avoid missed reflows
+    requestAnimationFrame(() => {
+      messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    });
+  }, [messages.length]);
 
   useEffect(() => {
     if (!sessionInfo?.remainingTime) {
@@ -135,7 +138,7 @@ export default function ConversationPanel({
       <div className="messages-container">
         {messages.map((message) => (
           <div
-            key={message.id}
+            key={`${message.id}-${messages.length}`}
             className={`message ${message.speaker === 'player' ? 'player-message' : 'character-message'}`}
           >
             <div className="message-content">

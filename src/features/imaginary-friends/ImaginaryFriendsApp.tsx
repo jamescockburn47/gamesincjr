@@ -604,6 +604,7 @@ useEffect(() => {
               </div>
             </aside>
             <ConversationPanel
+              key={`conv-${messages.length}`}
               messages={messages}
               character={selectedCharacter}
               topics={topics}
