@@ -832,17 +832,17 @@ export async function loadRecentConversationTurns(
 
     if (STORAGE_KIND === 'blob') {
       if (!BLOB_RW_TOKEN) return [];
-      const { list, get } = await import('@vercel/blob');
+      const { list } = await import('@vercel/blob');
       const prefix = `imaginary-friends/conversations/${userId}/${characterId}/`;
       const { blobs } = await list({ prefix, token: BLOB_RW_TOKEN });
-      const sorted = blobs
-        .map((b) => b.pathname)
-        .sort((a, b) => (a > b ? -1 : 1))
-        .slice(0, limit);
+      const selected = blobs
+        .sort((a, b) => (a.pathname > b.pathname ? -1 : 1))
+        .slice(0, limit)
+        .reverse();
       const turns: ConversationTurn[] = [];
-      for (const pathname of sorted.reverse()) {
+      for (const blob of selected) {
         try {
-          const res = await get(pathname, { token: BLOB_RW_TOKEN });
+          const res = await fetch(blob.url, { cache: 'no-store' });
           const rec = (await res.json()) as ConversationLogRecord;
           if (rec.userId !== userId || rec.characterId !== characterId) continue;
           if (rec.userMessage) turns.push({ speaker: 'player', text: rec.userMessage });
