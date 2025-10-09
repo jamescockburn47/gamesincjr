@@ -18,13 +18,14 @@ export default async function AccountPage() {
         />
 
         <section className="rounded-3xl bg-white/80 p-8 shadow-lg ring-1 ring-slate-100">
-          <h2 className="mb-4 text-lg font-semibold text-slate-800">Sign in (username only)</h2>
+          <h2 className="mb-4 text-lg font-semibold text-slate-800">Sign in / Sign up (username only)</h2>
           <form
             className="mb-8 space-y-5"
             action={async (formData: FormData) => {
               "use server";
               const username = String(formData.get("username") || "").trim();
-              await fetch("/api/auth/simple-login", {
+              const endpoint = String(formData.get("mode") || "login") === 'signup' ? '/api/auth/simple-signup' : '/api/auth/simple-login';
+              await fetch(endpoint, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ username }),
@@ -43,11 +44,18 @@ export default async function AccountPage() {
                 className="w-full rounded-xl border border-slate-200 bg-white/70 px-4 py-3 text-sm text-slate-700 shadow-inner focus:border-sky-300 focus:outline-none focus:ring-2 focus:ring-sky-200"
               />
             </div>
+            <div className="flex items-center gap-3">
+              <label className="text-xs font-semibold text-slate-600">Mode</label>
+              <select name="mode" className="rounded-md border border-slate-200 bg-white/70 px-3 py-2 text-xs">
+                <option value="login">Sign in</option>
+                <option value="signup">Sign up</option>
+              </select>
+            </div>
             <button
               type="submit"
               className="inline-flex w-full items-center justify-center rounded-xl bg-sky-500 px-6 py-3 text-sm font-semibold text-white shadow-lg transition hover:bg-sky-500/90 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
             >
-              Sign in
+              Continue
             </button>
           </form>
           <h3 className="mb-2 text-sm font-semibold text-slate-700">Access tier</h3>
