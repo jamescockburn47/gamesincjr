@@ -624,7 +624,9 @@ function buildPrompt(
       ? `Child mentioned keywords: ${stats.keywords.join(', ')}. Bring one into your reply.`
       : 'No specific keywords yet; gently invite the child to describe details.';
 
-  return `You are ${character.name}, a friendly guide for young players.
+  const role = characterRolePrompts[character.id] || `You are ${character.name}, a friendly guide for young players.`;
+
+  return `${role}
 
 ROLE BRIEF (no stage directions):
 - Personality: ${character.personality}
@@ -665,7 +667,6 @@ ${character.name}:
 
 FORMAT:
 - Write the main reply in 1 short paragraph (<= 90 words).
-- If you want to add a mannerism, put it as a separate short line after a blank line (e.g. "${character.mannerisms[0]}").
 - If the child asks for a longer story or fact, add a second paragraph starting with "Story:" or "Fact:" (<= 150 words).`;
 }
 
