@@ -501,44 +501,7 @@ useEffect(() => {
               }
             }
           }
-        }
-        if (data.sessionInfo) {
-          setSessionInfo(data.sessionInfo);
-          setShowImageButton(imagesAvailable(data.sessionInfo) > 0);
-        }
-        if (data.timeLimitReached) {
-          setShowImageButton(false);
-        }
-        if (data.imageLimitReached) {
-          setShowImageButton(false);
-        }
-        if (selectedCharacter) {
-          setGameStatus(data.gameStatus ?? createFallbackGameStatus(selectedCharacter));
-        }
-
-        const mood = data.gameStatus
-          ? mapFriendSentimentToMood(data.gameStatus.sentiment)
-          : data.timeLimitReached
-            ? 'thoughtful'
-            : analyseSentiment(data.response);
-        updateCharacterMood(selectedCharacter.id, mood);
-
-        const replyText = typeof data.response === 'string' && data.response.trim() ? data.response : '…';
-        const newMessage: ConversationMessage = {
-          id: String(Date.now()) + '-' + Math.random().toString(16).slice(2),
-          speaker: 'character',
-          text: replyText,
-          timestamp: new Date(),
-          imageUrl: data.imageUrl ?? null,
-        };
-
-        // Ensure immediate UI update even under React batching
-        // Optimistic append first for instant feel; if server returns different text we could reconcile later
-        setMessages((prev) => {
-          const next = requestImage && !messageText.trim() ? [...prev.slice(0, -1), newMessage] : [...prev, newMessage];
-          messagesRef.current = next;
-          return next;
-        });
+        // Non-stream fallback block removed in stream path
       } catch (error) {
         console.error('Failed to send message', error);
         updateCharacterMood(selectedCharacter.id, 'thoughtful');
