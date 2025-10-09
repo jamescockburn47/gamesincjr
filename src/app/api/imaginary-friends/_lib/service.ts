@@ -660,6 +660,9 @@ ${character.name}:`;
 }
 
 async function callOpenAI(prompt: string, maxTokens = 180): Promise<string> {
+  if (!process.env.OPENAI_API_KEY) {
+    throw new Error('OPENAI_API_KEY missing');
+  }
   try {
     const completion = await openai.chat.completions.create({
       model: CHAT_MODEL,
