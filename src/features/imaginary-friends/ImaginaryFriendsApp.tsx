@@ -452,7 +452,7 @@ useEffect(() => {
             : analyseSentiment(data.response);
         updateCharacterMood(selectedCharacter.id, mood);
 
-        const replyText = data.response && typeof data.response === 'string' ? data.response : '...';
+        const replyText = typeof data.response === 'string' && data.response.trim() ? data.response : '…';
         const newMessage: ConversationMessage = {
           id: String(Date.now()) + '-' + Math.random().toString(16).slice(2),
           speaker: 'character',
@@ -462,6 +462,7 @@ useEffect(() => {
         };
 
         // Ensure immediate UI update even under React batching
+        // Optimistic append first for instant feel; if server returns different text we could reconcile later
         setMessages((prev) => {
           const next = requestImage && !messageText.trim() ? [...prev.slice(0, -1), newMessage] : [...prev, newMessage];
           messagesRef.current = next;

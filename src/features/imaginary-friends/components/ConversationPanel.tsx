@@ -31,9 +31,10 @@ export default function ConversationPanel({
   const [showTopics, setShowTopics] = useState(false);
   const [countdown, setCountdown] = useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
+  const [renderedMessages, setRenderedMessages] = useState(messages);
 
   useEffect(() => {
-    // Force a paint after messages change to avoid missed reflows
+    setRenderedMessages(messages);
     requestAnimationFrame(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     });
@@ -136,7 +137,7 @@ export default function ConversationPanel({
         </div>
       )}
       <div className="messages-container">
-        {messages.map((message) => (
+        {renderedMessages.map((message) => (
           <div
             key={`${message.id}-${messages.length}`}
             className={`message ${message.speaker === 'player' ? 'player-message' : 'character-message'}`}
