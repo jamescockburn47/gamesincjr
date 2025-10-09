@@ -624,12 +624,14 @@ function buildPrompt(
       ? `Child mentioned keywords: ${stats.keywords.join(', ')}. Bring one into your reply.`
       : 'No specific keywords yet; gently invite the child to describe details.';
 
-  return `You are ${character.name}, ${character.personality}
+  return `You are ${character.name}, a friendly guide for young players.
 
-APPEARANCE: ${character.appearance}
-SPEECH STYLE: ${character.speechStyle}
-INTERESTS: ${character.interests.join(', ')}
-MANNERISMS: ${character.mannerisms.join(', ')} (use sparingly)
+ROLE BRIEF:
+- Personality: ${character.personality}
+- Appearance: ${character.appearance}
+- Speech Style: ${character.speechStyle}
+- Interests: ${character.interests.join(', ')}
+- Signature Mannerisms (use sparingly): ${character.mannerisms.join(', ')}
 
 SAFETY RULES:
 - You talk to a child; keep responses gentle, educational and friendly.
@@ -927,18 +929,34 @@ export function streamChatWithCharacter(input: {
         }
 
         let fullText = '';
-        const completion = await openai.chat.completions.create({
-          model: CHAT_MODEL,
-          messages: [
-            {
-              role: 'system',
-              content: prompt,
-            },
-          ],
-          temperature: 0.6,
-          max_tokens: Math.min(512, requestImage ? 220 : 160),
-          stream: true,
-        });
+        async function createStream(model: string) {
+          return openai.chat.completions.create({
+            model,
+            messages: [
+              {
+                role: 'system',
+                content: prompt,
+              },
+            ],
+            temperature: 0.6,
+            max_tokens: Math.min(512, requestImage ? 220 : 160),
+            stream: true,
+          });
+        }
+
+        let completion;
+        try {
+          completion = await createStream(CHAT_MODEL);
+        } catch (err) {
+          const code = extractErrorCode(err)?.toLowerCase();
+          const msg = normaliseErrorMessage(err).toLowerCase();
+          const modelMissing = code?.includes('model') || msg.includes('model') || msg.includes('not found');
+          if (modelMissing && CHAT_MODEL !== DEFAULT_MODEL) {
+            completion = await createStream(DEFAULT_MODEL);
+          } else {
+            throw err;
+          }
+        }
 
         for await (const part of completion) {
           const token = part.choices?.[0]?.delta?.content || '';
