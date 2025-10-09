@@ -423,14 +423,80 @@ useEffect(() => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           cache: 'no-store',
-          body: JSON.stringify(payload),
+          body: JSON.stringify({ ...payload, stream: true }),
         });
-        if (!response.ok) throw new Error('Chat request failed (' + response.status + ')');
-        const data = (await response.json()) as ChatResponse;
-        // Debug logging while stabilising production UI
-        console.log('IF/chat request', payload);
-        console.log('IF/chat response', data);
-        setLastApi({ req: payload, res: data });
+        if (!response.ok && response.headers.get('content-type')?.includes('application/json')) {
+          const err = await response.json();
+          throw new Error('Chat request failed: ' + (err?.error || response.status));
+        }
+
+        // Start reading NDJSON stream
+        const reader = response.body?.getReader();
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        // Seed an optimistic typing bubble
+        setMessages((prev) => {
+          const typing: ConversationMessage = {
+            id: 'typing-' + Date.now(),
+            speaker: 'character',
+            text: '…',
+            timestamp: new Date(),
+          };
+          messagesRef.current = [...prev, typing];
+          return messagesRef.current;
+        });
+
+        if (reader) {
+          // eslint-disable-next-line no-constant-condition
+          while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+            buffer += decoder.decode(value, { stream: true });
+            let idx;
+            // Process complete lines
+            while ((idx = buffer.indexOf('\n')) >= 0) {
+              const line = buffer.slice(0, idx);
+              buffer = buffer.slice(idx + 1);
+              if (!line.trim()) continue;
+              try {
+                const evt = JSON.parse(line) as any;
+                if (evt.type === 'start' && evt.sessionInfo) {
+                  setSessionInfo(evt.sessionInfo);
+                } else if (evt.type === 'delta') {
+                  // Append token to typing message
+                  setMessages((prev) => {
+                    const next = [...prev];
+                    const last = next[next.length - 1];
+                    if (last && last.id.startsWith('typing-')) {
+                      last.text = (last.text || '') + evt.text;
+                    }
+                    messagesRef.current = next;
+                    return next;
+                  });
+                } else if (evt.type === 'final') {
+                  // Replace typing with final message
+                  setMessages((prev) => {
+                    const next = [...prev];
+                    const last = next[next.length - 1];
+                    if (last && last.id.startsWith('typing-')) {
+                      last.text = evt.response || last.text;
+                      last.timestamp = new Date();
+                    }
+                    messagesRef.current = next;
+                    return next;
+                  });
+                  if (evt.sessionInfo) setSessionInfo(evt.sessionInfo);
+                  if (selectedCharacter) setGameStatus(evt.gameStatus ?? createFallbackGameStatus(selectedCharacter));
+                } else if (evt.type === 'error') {
+                  throw new Error(evt.error || 'stream error');
+                }
+              } catch (e) {
+                // ignore malformed lines
+              }
+            }
+          }
+        }
         if (data.sessionInfo) {
           setSessionInfo(data.sessionInfo);
           setShowImageButton(imagesAvailable(data.sessionInfo) > 0);

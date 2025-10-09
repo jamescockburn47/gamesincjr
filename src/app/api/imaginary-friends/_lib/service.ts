@@ -884,6 +884,87 @@ export async function characterIntro(characterId: string) {
   }
 }
 
+export function streamChatWithCharacter(input: {
+  characterId: string;
+  userMessage: string;
+  history: ConversationTurn[];
+  requestImage?: boolean;
+  userId: string;
+}): ReadableStream<Uint8Array> {
+  const { characterId, userMessage, history, requestImage = false, userId } = input;
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start: async (controller) => {
+      try {
+        const character = characterMap[characterId as CharacterId];
+        if (!character) throw new Error('Unknown character');
+
+        const preStats = compileConversationStats(history, userMessage);
+        const preProgress = calculateFriendshipProgress(preStats);
+        const prompt = buildPrompt(character, history, userMessage, preStats, preProgress);
+
+        // Send start chunk with session snapshot
+        controller.enqueue(
+          encoder.encode(JSON.stringify({ type: 'start', sessionInfo: getSessionInfo(userId) }) + "\n"),
+        );
+
+        if (!process.env.OPENAI_API_KEY) {
+          throw new Error('OPENAI_API_KEY missing');
+        }
+
+        let fullText = '';
+        const completion = await openai.chat.completions.create({
+          model: CHAT_MODEL,
+          messages: [
+            {
+              role: 'system',
+              content: prompt,
+            },
+          ],
+          temperature: 0.6,
+          max_tokens: Math.min(512, requestImage ? 220 : 160),
+          stream: true,
+        });
+
+        for await (const part of completion) {
+          const token = part.choices?.[0]?.delta?.content || '';
+          if (token) {
+            fullText += token;
+            controller.enqueue(encoder.encode(JSON.stringify({ type: 'delta', text: token }) + "\n"));
+          }
+        }
+
+        // Finalise stats and persistence
+        const postStats = compileConversationStats(history, userMessage, fullText);
+        const gameStatus = buildGameStatus(character, postStats);
+        await logConversation({
+          characterId,
+          userId,
+          userMessage,
+          response: fullText,
+          imageUrl: null,
+          stats: postStats,
+          gameStatus,
+        });
+
+        controller.enqueue(
+          encoder.encode(
+            JSON.stringify({ type: 'final', response: fullText, imageUrl: null, gameStatus, sessionInfo: getSessionInfo(userId) }) +
+              "\n",
+          ),
+        );
+        controller.close();
+      } catch (error) {
+        controller.enqueue(
+          encoder.encode(JSON.stringify({ type: 'error', error: normaliseErrorMessage(error) }) + "\n"),
+        );
+        controller.close();
+      }
+    },
+  });
+  return stream;
+}
+
 export async function chatWithCharacter(input: {
   characterId: string;
   userMessage: string;

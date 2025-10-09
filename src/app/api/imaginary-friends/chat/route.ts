@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { chatWithCharacter, loadRecentConversationTurns } from '../_lib/service';
+import { chatWithCharacter, loadRecentConversationTurns, streamChatWithCharacter } from '../_lib/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -31,6 +31,22 @@ export async function POST(request: NextRequest) {
         speaker: entry.speaker,
         text: entry.text,
       }));
+
+    if (Boolean(body.stream)) {
+      const stream = streamChatWithCharacter({
+        characterId,
+        userMessage: message,
+        history: normalisedHistory,
+        requestImage,
+        userId,
+      });
+      return new NextResponse(stream, {
+        headers: {
+          'Content-Type': 'application/x-ndjson; charset=utf-8',
+          'Cache-Control': 'no-store',
+        },
+      });
+    }
 
     const result = await chatWithCharacter({
       characterId,
