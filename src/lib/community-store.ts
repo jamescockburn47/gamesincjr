@@ -3,6 +3,8 @@ export type CommunityMessage = { id: string; name: string; text: string; ts: num
 const KV_URL = process.env.KV_REST_API_URL;
 const KV_TOKEN = process.env.KV_REST_API_TOKEN;
 const KEY = 'gi:feedback';
+const BLOB_TOKEN = process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_BLOB_RW_TOKEN || '';
+const BLOB_PREFIX = 'community/messages';
 
 let memory: CommunityMessage[] = [];
 
@@ -34,6 +36,22 @@ export async function getMessages(): Promise<CommunityMessage[]> {
       return memory;
     }
   }
+  // Blob fallback
+  if (BLOB_TOKEN) {
+    try {
+      const { list } = await import('@vercel/blob');
+      const { blobs } = await list({ prefix: `${BLOB_PREFIX}/`, token: BLOB_TOKEN });
+      const latest = blobs.sort((a, b) => (a.pathname > b.pathname ? -1 : 1)).slice(0, 100);
+      const items: CommunityMessage[] = [];
+      for (const b of latest) {
+        const res = await fetch(b.url, { cache: 'no-store' });
+        if (res.ok) items.push(await res.json() as CommunityMessage);
+      }
+      return items;
+    } catch (e) {
+      console.warn('Blob get failed, using memory', e);
+    }
+  }
   return memory;
 }
 
@@ -47,6 +65,16 @@ export async function addMessage(msg: CommunityMessage): Promise<void> {
       return;
     } catch (e) {
       console.warn('KV push failed, writing to memory', e);
+    }
+  }
+  if (BLOB_TOKEN) {
+    try {
+      const { put } = await import('@vercel/blob');
+      const key = `${BLOB_PREFIX}/${msg.ts}-${msg.id}.json`;
+      await put(key, JSON.stringify(msg), { access: 'public', token: BLOB_TOKEN, contentType: 'application/json' });
+      return;
+    } catch (e) {
+      console.warn('Blob push failed, writing to memory', e);
     }
   }
   memory.push(msg);

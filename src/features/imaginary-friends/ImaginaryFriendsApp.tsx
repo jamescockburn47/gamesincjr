@@ -219,8 +219,16 @@ const [showCreator, setShowCreator] = useState(false);
       // Next outgoing request will include newThread: true by toggling once
       // We can store a flag in a ref if needed; for simplicity, rely on empty history
     }
+    function onClearChat() {
+      setMessages([]);
+      try { sessionStorage.removeItem(STORAGE_KEYS.messages); } catch {}
+    }
     window.addEventListener('if:new-thread', onNewThread);
-    return () => window.removeEventListener('if:new-thread', onNewThread);
+    window.addEventListener('if:clear-chat', onClearChat);
+    return () => {
+      window.removeEventListener('if:new-thread', onNewThread);
+      window.removeEventListener('if:clear-chat', onClearChat);
+    };
   }, []);
 
   // Optional: autostart via query (?autostart=luna)
