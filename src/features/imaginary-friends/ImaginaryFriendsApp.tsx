@@ -580,7 +580,7 @@ useEffect(() => {
   return (
     <div className="if-app">
       <header className="if-hero">
-        <h1>✨ Imaginary Friends ✨</h1>
+        <h1>✨ Magic AI Friends ✨</h1>
         <p>Chat with magical companions tuned for young storytellers.</p>
       </header>
 
