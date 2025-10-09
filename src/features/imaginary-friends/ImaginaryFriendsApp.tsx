@@ -501,6 +501,7 @@ useEffect(() => {
               }
             }
           }
+        }
         // Non-stream fallback block removed in stream path
       } catch (error) {
         console.error('Failed to send message', error);
