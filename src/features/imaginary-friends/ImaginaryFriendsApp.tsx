@@ -1,6 +1,6 @@
 'use client';
 
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { baseCharacters, conversationTopics } from './data';
 import type {
   Character,
@@ -73,6 +73,7 @@ function blockedMessage(lastCreated: number | null): string | undefined {
 export default function ImaginaryFriendsApp() {
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
 const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const messagesRef = useRef<ConversationMessage[]>([]);
 const [characters, setCharacters] = useState<Character[]>(baseCharacters);
 const [isLoading, setIsLoading] = useState(false);
 const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
@@ -82,6 +83,9 @@ const [showCreator, setShowCreator] = useState(false);
   const [lastApi, setLastApi] = useState<{ req?: unknown; res?: unknown; error?: string } | null>(null);
   const [lastCreatedAt, setLastCreatedAt] = useState<number | null>(null);
   const [avatarsLoaded, setAvatarsLoaded] = useState(false);
+  useEffect(() => {
+    messagesRef.current = messages;
+  }, [messages]);
   const imagesAvailable = (info: SessionInfo | null | undefined) => {
     if (!info) return 0;
     const allowance = info.imageAllowanceRemaining ?? info.imagesRemaining;
@@ -275,15 +279,18 @@ const [showCreator, setShowCreator] = useState(false);
         });
         if (!response.ok) throw new Error('Failed to fetch introduction');
         const data = (await response.json()) as CharacterIntroResponse;
-        setMessages([
-          {
-            id: String(Date.now()),
-            speaker: 'character',
-            text: data.introduction,
-            timestamp: new Date(),
-            imageUrl: data.imageUrl ?? null,
-          },
-        ]);
+        // Only seed intro if no messages have arrived in the meantime
+        if (messagesRef.current.length === 0) {
+          setMessages([
+            {
+              id: String(Date.now()),
+              speaker: 'character',
+              text: data.introduction,
+              timestamp: new Date(),
+              imageUrl: data.imageUrl ?? null,
+            },
+          ]);
+        }
         updateCharacterMood(characterId, 'happy');
         const character = characters.find((entry) => entry.id === characterId);
         if (character) {
@@ -454,11 +461,11 @@ useEffect(() => {
           imageUrl: data.imageUrl ?? null,
         };
 
+        // Ensure immediate UI update even under React batching
         setMessages((prev) => {
-          if (requestImage && !messageText.trim()) {
-            return [...prev.slice(0, -1), newMessage];
-          }
-          return [...prev, newMessage];
+          const next = requestImage && !messageText.trim() ? [...prev.slice(0, -1), newMessage] : [...prev, newMessage];
+          messagesRef.current = next;
+          return next;
         });
       } catch (error) {
         console.error('Failed to send message', error);
