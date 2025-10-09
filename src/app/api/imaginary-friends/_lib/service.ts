@@ -753,7 +753,7 @@ async function persistConversationToBlob(entry: ConversationLogRecord) {
     const { put } = await import('@vercel/blob');
     const key = `imaginary-friends/conversations/${entry.userId}/${entry.characterId}/${entry.timestamp}-${entry.id}.json`;
     await put(key, JSON.stringify(entry), {
-      access: 'private',
+      access: 'public',
       token: BLOB_RW_TOKEN,
       contentType: 'application/json',
     });
