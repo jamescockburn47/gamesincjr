@@ -79,6 +79,7 @@ const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
 const [showImageButton, setShowImageButton] = useState(false);
 const [gameStatus, setGameStatus] = useState<GameStatus | null>(null);
 const [showCreator, setShowCreator] = useState(false);
+  const [lastApi, setLastApi] = useState<{ req?: unknown; res?: unknown; error?: string } | null>(null);
   const [lastCreatedAt, setLastCreatedAt] = useState<number | null>(null);
   const [avatarsLoaded, setAvatarsLoaded] = useState(false);
   const imagesAvailable = (info: SessionInfo | null | undefined) => {
@@ -422,6 +423,7 @@ useEffect(() => {
         // Debug logging while stabilising production UI
         console.log('IF/chat request', payload);
         console.log('IF/chat response', data);
+        setLastApi({ req: payload, res: data });
         if (data.sessionInfo) {
           setSessionInfo(data.sessionInfo);
           setShowImageButton(imagesAvailable(data.sessionInfo) > 0);
@@ -463,6 +465,7 @@ useEffect(() => {
         updateCharacterMood(selectedCharacter.id, 'thoughtful');
         pushSystemMessage("I'm having trouble connecting right now. Could you try again in a moment?");
         setGameStatus((prev) => (selectedCharacter ? prev ?? createFallbackGameStatus(selectedCharacter) : prev));
+        setLastApi((prev) => ({ ...(prev ?? {}), error: String(error) }));
       } finally {
         setIsLoading(false);
       }
@@ -528,7 +531,7 @@ useEffect(() => {
                   isSelected={false}
                   onClick={() => {
                     setMessages([]);
-                    // Seed from server history for context continuity
+                    // Seed from server history for context continuity (guard so we don't overwrite live chat)
                     fetch(`${API_BASE_URL}/history?characterId=${character.id}&userId=default`)
                       .then(async (res) => (res.ok ? ((await res.json()) as { turns?: Array<{ speaker: 'player' | 'character'; text: string }> }) : { turns: [] }))
                       .then((data) => {
@@ -540,7 +543,7 @@ useEffect(() => {
                             text: t.text,
                             timestamp: new Date(),
                           }));
-                          setMessages(seeded);
+                          setMessages((prev) => (prev.length ? prev : seeded));
                         }
                       })
                       .catch(() => undefined);
@@ -1241,6 +1244,13 @@ useEffect(() => {
           }
         }
       `}</style>
+
+      {/* Debug panel toggled via ?debug=1 */}
+      {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') && (
+        <pre style={{ position: 'fixed', bottom: 8, left: 8, right: 8, maxHeight: 200, overflow: 'auto', background: '#0f172a', color: '#e2e8f0', padding: 8, borderRadius: 8, fontSize: 12 }}>
+{JSON.stringify(lastApi, null, 2)}
+        </pre>
+      )}
     </div>
   );
 }
