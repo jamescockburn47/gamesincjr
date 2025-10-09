@@ -3,6 +3,8 @@ import Logo from './Logo';
 import { getUserFromCookies } from '@/lib/user-session';
 import LangSwitch from './LangSwitch';
 import MobileNav from './MobileNav';
+import ProgressWidget from './ProgressWidget';
+import NotificationCenter from './NotificationCenter';
 
 export default async function Header() {
   const user = await getUserFromCookies();
@@ -14,10 +16,11 @@ export default async function Header() {
     { href: '/imaginary-friends', label: 'Magic AI Friends' },
     { href: '/tech', label: 'How it works' },
     { href: '/about', label: 'About' },
+    { href: '/account/parent', label: 'Parent Dashboard' },
   ];
 
   return (
-    <header className="sticky top-0 z-50 border-b border-sky-100 bg-white/80 backdrop-blur supports-[backdrop-filter]:bg-white/70">
+    <header className="sticky top-0 z-50 border-b border-white/60 bg-white/70 backdrop-blur supports-[backdrop-filter]:bg-white/65">
       <div className="container mx-auto px-4">
         <div className="flex items-center justify-between gap-3 py-3 sm:py-4">
           <Link
@@ -31,7 +34,7 @@ export default async function Header() {
             </div>
           </Link>
 
-          <nav className="hidden items-center gap-1 md:flex">
+          <nav className="hidden items-center gap-2 md:flex">
             {navLinks.map((link) => (
               <Link
                 key={link.href}
@@ -47,6 +50,8 @@ export default async function Header() {
             >
               🦄 Play Alien Unicorn Alliance
             </Link>
+            <ProgressWidget />
+            <NotificationCenter />
             <LangSwitch />
             <Link
               href="/account"
@@ -58,6 +63,7 @@ export default async function Header() {
 
           <div className="flex items-center gap-2 md:hidden">
             <LangSwitch />
+            <NotificationCenter />
             <MobileNav />
           </div>
         </div>

@@ -1,8 +1,9 @@
 import Link from 'next/link';
 
 import { homeContent } from '@/data/homeContent';
+import { activityHighlights } from '@/data/activityHighlights';
 
-const { heroStats, featureCards, collapsibleSections, hero, callToAction } = homeContent;
+const { heroStats, hero, callToAction } = homeContent;
 
 export default function Home() {
   return (
@@ -80,96 +81,77 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Feature summary cards */}
-        <section className="mt-24">
-          <h2 className="text-center text-3xl font-bold text-slate-900 sm:text-4xl">
-            Discover the worlds our young studios are shipping
-          </h2>
-          <p className="mt-4 text-center text-base text-slate-600">
-            Every release combines kid-led storytelling, educator oversight and AI copilots tuned for emerging players.
-          </p>
-
-          <div className="mt-12 grid gap-6 lg:grid-cols-3">
-            {featureCards.map((card) => (
-              <article
-                key={card.title}
-                className="group flex h-full flex-col rounded-3xl bg-white/90 p-8 shadow-lg ring-1 ring-slate-100 transition hover:-translate-y-1 hover:shadow-xl"
-              >
-                <div className="flex h-14 w-14 items-center justify-center rounded-2xl bg-sky-100 text-3xl transition group-hover:scale-110">
-                  {card.icon}
+        {/* Live activity & progress */}
+        <section className="mt-16">
+          <div className="grid gap-6 lg:grid-cols-12 lg:items-start">
+            <div className="lg:col-span-8">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <h2 className="text-2xl font-bold text-slate-900 sm:text-3xl">Today&apos;s adventure board</h2>
+                  <p className="mt-2 text-sm text-slate-600">
+                    Track live events, studio playtests, and parent reminders&mdash;all in one kid-friendly stream.
+                  </p>
                 </div>
-                <h3 className="mt-6 text-2xl font-semibold text-slate-900">{card.title}</h3>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{card.description}</p>
-                <ul className="mt-5 space-y-3 text-sm text-slate-600">
-                  {card.bullets.map((bullet) => (
-                    <li key={bullet} className="flex items-start gap-2">
-                      <span className="mt-1 text-lg text-amber-400">★</span>
-                      <span>{bullet}</span>
-                    </li>
-                  ))}
-                </ul>
-              </article>
-            ))}
-          </div>
-        </section>
-
-        {/* Collapsible info panels keep details handy without overwhelming the page. */}
-        <section className="mt-24">
-          <div className="mx-auto max-w-4xl text-center">
-            <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">Dive deeper when you&apos;re ready</h2>
-            <p className="mt-4 text-base text-slate-600">
-              Explore how Games inc. Jr combines child-led creativity, thoughtful AI and safe community spaces.
-            </p>
-          </div>
-
-          <div className="mt-12 space-y-4">
-            {collapsibleSections.map((section) => (
-              <details
-                key={section.title}
-                className="group rounded-3xl border border-sky-100 bg-white/90 p-6 shadow-sm transition hover:border-sky-200"
-              >
-                <summary className="flex cursor-pointer list-none items-center justify-between gap-6">
-                  <div className="flex items-center gap-4">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-sky-50 text-2xl">
-                      {section.icon}
-                    </span>
-                    <div>
-                      <h3 className="text-xl font-semibold text-slate-900">{section.title}</h3>
-                      <p className="text-sm text-slate-600">{section.summary}</p>
+                <Link
+                  href="/account/parent"
+                  className="inline-flex items-center justify-center rounded-full bg-white/90 px-4 py-2 text-xs font-semibold uppercase tracking-wider text-slate-600 shadow-sm ring-1 ring-slate-100 transition hover:bg-white"
+                >
+                  Parent dashboard
+                </Link>
+              </div>
+              <div className="mt-6 grid gap-4 sm:grid-cols-2">
+                {activityHighlights.map((highlight) => (
+                  <div
+                    key={highlight.id}
+                    className="group relative overflow-hidden rounded-3xl border border-sky-100 bg-white/90 p-5 shadow-sm transition hover:-translate-y-0.5 hover:shadow-lg"
+                  >
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-50 text-xl">
+                          {highlight.icon}
+                        </span>
+                        <div>
+                          <p className="text-xs font-semibold uppercase tracking-[0.2em] text-sky-500">
+                            {highlight.tag}
+                          </p>
+                          <h3 className="text-base font-semibold text-slate-900">{highlight.title}</h3>
+                        </div>
+                      </div>
+                      <span className="text-xs font-semibold text-slate-400">{Math.round(highlight.progress * 100)}%</span>
+                    </div>
+                    <p className="mt-3 text-sm leading-6 text-slate-600">{highlight.description}</p>
+                    <div className="mt-4 h-2 overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-sky-400 via-indigo-400 to-purple-400 transition-all"
+                        style={{ width: `${Math.round(highlight.progress * 100)}%` }}
+                      />
                     </div>
                   </div>
-                  <span className="flex h-10 w-10 items-center justify-center rounded-full bg-sky-100 text-lg text-sky-600 transition group-open:rotate-45">
-                    +
-                  </span>
-                </summary>
-                <div className="mt-4 space-y-3 border-t border-slate-100 pt-4 text-sm leading-6 text-slate-600">
-                  {section.details.map((detail) => (
-                    <p key={detail}>{detail}</p>
-                  ))}
-                </div>
-              </details>
-            ))}
-          </div>
-        </section>
-
-        {/* Closing call to action */}
-        <section className="mt-24">
-          <div className="grid gap-10 lg:grid-cols-2 lg:items-center">
-            <div className="rounded-3xl bg-white/90 p-8 shadow-lg ring-1 ring-slate-100">
-              <h2 className="text-3xl font-bold text-slate-900 sm:text-4xl">{callToAction.title}</h2>
-              <p className="mt-4 text-base leading-7 text-slate-600">{callToAction.description}</p>
-              <div className="mt-6 flex flex-col gap-3 sm:flex-row">
+                ))}
+              </div>
+            </div>
+            <div className="lg:col-span-4">
+              <div className="rounded-3xl bg-white/90 p-6 shadow-lg ring-1 ring-slate-100">
+                <p className="text-[11px] font-semibold uppercase tracking-[0.3em] text-slate-500">Quick wins</p>
+                <ul className="mt-4 space-y-3 text-sm text-slate-600">
+                  <li className="flex items-start gap-3">
+                    <span className="mt-0.5 text-lg">✨</span>
+                    Brainstorm a new world with an AI friend to earn extra stardust.
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-0.5 text-lg">🎯</span>
+                    Try the calming breathing break before bedtime&mdash;available in the parent dashboard.
+                  </li>
+                  <li className="flex items-start gap-3">
+                    <span className="mt-0.5 text-lg">🎯</span>
+                    Complete today&apos;s studio challenge to boost your streak multiplier.
+                  </li>
+                </ul>
                 <Link
-                  href={callToAction.primaryCta.href}
-                  className="inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-violet-500 via-purple-400 to-pink-400 px-6 py-3 text-base font-semibold text-white shadow-lg transition hover:brightness-110"
+                  href="/community"
+                  className="mt-6 inline-flex items-center justify-center rounded-xl bg-gradient-to-r from-emerald-400 via-sky-400 to-indigo-400 px-4 py-2 text-sm font-semibold text-white shadow-md transition hover:brightness-110"
                 >
-                  {callToAction.primaryCta.label}
-                </Link>
-                <Link
-                  href={callToAction.secondaryCta.href}
-                  className="inline-flex items-center justify-center rounded-xl bg-white px-6 py-3 text-base font-semibold text-slate-800 shadow-md ring-1 ring-slate-200 transition hover:bg-slate-50"
-                >
-                  {callToAction.secondaryCta.label}
+                  View all challenges
                 </Link>
               </div>
             </div>
@@ -193,3 +175,11 @@ export default function Home() {
     </main>
   );
 }
+
+
+
+
+
+
+
+

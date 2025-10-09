@@ -634,6 +634,7 @@ RULES:
 - Only add a second paragraph if the child explicitly asks for more, starting with "Story:" or "Fact:" (aim for 120–220 words with vivid, imaginative detail).
  - Only add a second paragraph if the child explicitly asks for more, starting with "Story:" or "Fact:" (aim for 120–220 words with vivid, imaginative detail). Ensure the story ends on a complete sentence.
  - Only add a second paragraph if the child explicitly asks for more, starting with "Story:" or "Fact:" (aim for 150–250 words with vivid, imaginative detail). Ensure the story is structured (beginning, middle, end) and ends on a complete sentence. It is okay to include gentle, child‑friendly jeopardy (a problem to overcome) and a satisfying resolution.
+ - When writing a Story:, include 2 concrete sensory details, 1 specific place/object name, and a tiny twist to avoid generic patterns. End firmly (no trailing ellipses).
 - Do not include stage directions or mannerisms.
 - Prefer friendly stories or facts over questions.
 - If you include a question, phrase it as an offer ("Would you like to hear about <topic>?" or "Tell me what you'd like to hear about next?").
@@ -909,6 +910,10 @@ export function streamChatWithCharacter(input: {
         const preProgress = calculateFriendshipProgress(preStats);
         const prompt = buildPrompt(character, history, userMessage, preStats, preProgress);
 
+        const wantsStory = /\bstory\b|tell\s*(me)?\s*(a|another)?\s*story|long(er)?\b|adventure\b|bedtime\b/i.test(
+          userMessage,
+        );
+
         // Send start chunk with session snapshot
         controller.enqueue(
           encoder.encode(JSON.stringify({ type: 'start', sessionInfo: getSessionInfo(userId) }) + "\n"),
@@ -929,7 +934,7 @@ export function streamChatWithCharacter(input: {
               },
             ],
             temperature: 0.6,
-            max_tokens: Math.min(512, requestImage ? 220 : 160),
+            max_tokens: wantsStory ? 700 : Math.min(512, requestImage ? 220 : 200),
             stream: true,
           });
         }

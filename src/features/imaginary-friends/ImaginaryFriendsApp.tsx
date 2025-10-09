@@ -6,7 +6,6 @@ import type {
   Character,
   CharacterIntroResponse,
   ConversationMessage,
-  FriendSentiment,
   GameStatus,
   SessionInfo,
   Topic,
@@ -41,25 +40,7 @@ function analyseSentiment(text: string): Sentiment {
   if (/sad|sorry|upset|disappointed|worried|trouble|difficult/.test(value)) return 'sad';
   if (/what|how|why|tell me|explain|curious|wonder|interesting/.test(value)) return 'curious';
   return 'thoughtful';
-}
-
-function mapFriendSentimentToMood(sentiment: FriendSentiment): Sentiment {
-  switch (sentiment) {
-    case 'joyful':
-      return 'happy';
-    case 'curious':
-      return 'curious';
-    case 'resilient':
-      return 'excited';
-    case 'encouraging':
-      return 'happy';
-    case 'thoughtful':
-    default:
-      return 'thoughtful';
-  }
-}
-
-function canCreateThisWeek(lastCreated: number | null): boolean {
+}function canCreateThisWeek(lastCreated: number | null): boolean {
   if (!lastCreated) return true;
   const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
   return Date.now() - lastCreated >= oneWeekMs;
@@ -485,7 +466,6 @@ useEffect(() => {
         });
 
         if (reader) {
-          // eslint-disable-next-line no-constant-condition
           while (true) {
             const { done, value } = await reader.read();
             if (done) break;
@@ -1331,3 +1311,11 @@ useEffect(() => {
     </div>
   );
 }
+
+
+
+
+
+
+
+
