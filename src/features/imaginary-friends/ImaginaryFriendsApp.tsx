@@ -401,22 +401,27 @@ useEffect(() => {
       setIsLoading(true);
 
       try {
+        const payload = {
+          characterId: selectedCharacter.id,
+          message: messageText,
+          requestImage,
+          conversationHistory: history.map((entry) => ({
+            speaker: entry.speaker,
+            text: entry.text,
+          })),
+          userId: 'default',
+        };
         const response = await fetch(API_BASE_URL + '/chat', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            characterId: selectedCharacter.id,
-            message: messageText,
-            requestImage,
-            conversationHistory: history.map((entry) => ({
-              speaker: entry.speaker,
-              text: entry.text,
-            })),
-            userId: 'default',
-          }),
+          cache: 'no-store',
+          body: JSON.stringify(payload),
         });
         if (!response.ok) throw new Error('Chat request failed (' + response.status + ')');
         const data = (await response.json()) as ChatResponse;
+        // Debug logging while stabilising production UI
+        console.log('IF/chat request', payload);
+        console.log('IF/chat response', data);
         if (data.sessionInfo) {
           setSessionInfo(data.sessionInfo);
           setShowImageButton(imagesAvailable(data.sessionInfo) > 0);
@@ -438,10 +443,11 @@ useEffect(() => {
             : analyseSentiment(data.response);
         updateCharacterMood(selectedCharacter.id, mood);
 
+        const replyText = data.response && typeof data.response === 'string' ? data.response : '...';
         const newMessage: ConversationMessage = {
           id: String(Date.now()) + '-' + Math.random().toString(16).slice(2),
           speaker: 'character',
-          text: data.response,
+          text: replyText,
           timestamp: new Date(),
           imageUrl: data.imageUrl ?? null,
         };

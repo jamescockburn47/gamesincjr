@@ -175,6 +175,14 @@ export default function ConversationPanel({
             </div>
           </div>
         )}
+        {!isLoading && messages.length === 0 && (
+          <div className="message character-message">
+            <div className="message-content">
+              <div className="message-text">Say hi to start the conversation!</div>
+              <div className="message-time">&nbsp;</div>
+            </div>
+          </div>
+        )}
         <div ref={messagesEndRef} />
       </div>
 
