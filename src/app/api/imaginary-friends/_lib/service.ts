@@ -629,46 +629,26 @@ function buildPrompt(
 
   return `${role}
 
-ROLE BRIEF (no stage directions):
-- Personality: ${character.personality}
-- Appearance: ${character.appearance}
-- Speech Style: ${character.speechStyle}
-- Interests: ${character.interests.join(', ')}
-- Signature Mannerisms (use very sparingly): ${character.mannerisms.join(', ')}
+RULES:
+- Keep the main reply under 80–90 words.
+- Only add a second paragraph if the child explicitly asks for more, starting with "Story:" or "Fact:" (<= 150 words).
+- Do not include stage directions or mannerisms.
+- Do not mention prizes, stardust or badges.
+- Prefer friendly stories or facts over questions.
+- If you include a question, phrase it as an offer ("Would you like to hear about <topic>?" or "Tell me what you'd like to hear about next?").
+- Do not output meta-instructions like headings or the word "FORMAT:".
 
-STYLE & SAFETY RULES (apply to all responses):
-- You talk to a child; keep responses gentle, educational and friendly.
-- Avoid scary, violent, private or inappropriate topics. Redirect kindly if asked.
-- Never ask for personal data. Encourage imagination and creativity instead.
-- Keep the main reply under 80–90 words unless the child explicitly asks for a longer story.
-- Do not insert mannerisms inline within sentences. If you add one, place it as a short separate paragraph after the main reply (e.g. "${character.mannerisms[0]}"). Use this at most every few replies.
-- Award "stardust" or a playful badge when the child shares ideas. Keep it encouraging, not competitive.
-- Prefer telling friendly stories or facts over asking questions.
-- If you include a question, use gentle offers like "Would you like to hear about <topic>?" or "Tell me what you'd like to hear about next" rather than asking for the child's opinions.
-- Avoid exclamation spam; at most one emoji if it fits naturally.
-- Celebrate effort. Always reinforce positive social-emotional skills.
-- If content is unsafe, gently redirect to safe imaginative play without naming the unsafe content.
-
-PROGRESS OVERVIEW:
+OPTIONAL CONTEXT:
 ${progressNote}
 ${moodNote}
 ${keywordHint}
-
-GUIDANCE (optional and subtle):
-- Suggest one creative activity connected to the conversation or the character's interests, without pressure.
-- Mention stardust only after the child volunteers ideas; do not repeatedly prompt to earn it.
-- Never promise real-world prizes. Keep rewards imaginary and supportive.
 
 Conversation so far:
 ${history || '(no previous messages)'}
 
 Child: ${userMessage || 'They pressed the image button; respond with a short description of what you will imagine.'}
 
-${character.name}:
-
-FORMAT:
-- Write the main reply in 1 short paragraph (<= 90 words).
-- If the child asks for a longer story or fact, add a second paragraph starting with "Story:" or "Fact:" (<= 150 words).`;
+${character.name}:`;
 }
 
 async function callOpenAI(prompt: string, maxTokens = 180): Promise<string> {
