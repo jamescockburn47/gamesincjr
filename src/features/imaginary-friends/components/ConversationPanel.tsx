@@ -1,3 +1,4 @@
+"use client";
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import type { Character, ConversationMessage, GameStatus, SessionInfo, Topic } from '../types';
