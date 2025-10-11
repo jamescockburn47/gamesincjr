@@ -11,6 +11,7 @@ export default async function Header() {
   const navLinks = [
     { href: '/', label: 'Home' },
     { href: '/games', label: 'Games' },
+    { href: '/tables', label: 'Tables' },
     { href: '/community', label: 'Community' },
     { href: '/tutorials', label: 'Tutorials' },
     { href: '/imaginary-friends', label: 'Magic AI Friends' },
