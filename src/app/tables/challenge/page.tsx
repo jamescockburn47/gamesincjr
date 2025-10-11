@@ -63,6 +63,6 @@ export default function ChallengePage() {
   );
 }
 
-export { default } from "../../(app)/challenge/page";
+ 
 
 

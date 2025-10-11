@@ -48,6 +48,6 @@ export default function BossPage() {
   );
 }
 
-export { default } from "../../(app)/boss/page";
+ 
 
 

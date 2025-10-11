@@ -16,6 +16,6 @@ export default async function DashboardPage() {
   );
 }
 
-export { default } from "../../(app)/dashboard/page";
+ 
 
 
