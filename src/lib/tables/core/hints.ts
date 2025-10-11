@@ -77,8 +77,6 @@ export function deterministicHint(a: number, b: number): string {
     return `${multiplier}×${other}: use tens. ${other}×10=${other * 10}, then halve because it’s ×5 → ${result}.`;
   }
 
-  const doubled = x * 2;
-  const halved = Math.round(y / 2);
   if (y % 2 === 0) {
     return `Split and double: ${x}×${y} = ${x}×( ${y / 2}×2 ) → ${x}×${y / 2} doubled.`;
   }
