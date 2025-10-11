@@ -1,0 +1,11 @@
+{
+  "name": "GamesIncJR Tables",
+  "short_name": "Tables",
+  "start_url": "/tables",
+  "display": "standalone",
+  "background_color": "#ffffff",
+  "theme_color": "#111111",
+  "icons": []
+}
+
+
