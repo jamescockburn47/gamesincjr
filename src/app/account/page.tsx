@@ -80,7 +80,14 @@ export default async function AccountPage() {
               }
 
               const jar = await serverCookies();
-              jar.set("gi_user", username, { httpOnly: false, secure: true, sameSite: "lax", path: "/", maxAge: 60 * 60 * 24 * 365 });
+              const isProduction = process.env.NODE_ENV === "production";
+              jar.set("gi_user", username, {
+                httpOnly: false,
+                secure: isProduction,
+                sameSite: "lax",
+                path: "/",
+                maxAge: 60 * 60 * 24 * 365,
+              });
               redirect("/imaginary-friends");
             }}
           >
