@@ -6,7 +6,7 @@ import { getHint } from '@/lib/tables/ai/coach';
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
-  const { a, b, op, lastWrong, theme } = await req.json();
+  const { a, b, lastWrong, theme } = await req.json() as { a: number; b: number; lastWrong?: number; theme?: string };
   const ai = await isAIEnabled(undefined);
   if (!ai) {
     return NextResponse.json({ hint: deterministicHint(Number(a), Number(b)) });

@@ -17,8 +17,9 @@ export async function GET() {
     };
     uf = onAttemptUpdateUF(uf, true);
     results.push({ name: 'scheduler:correct_increments', ok: uf.streak === 1 && uf.masteryLevel === 1 });
-  } catch (e: any) {
-    results.push({ name: 'scheduler:correct_increments', ok: false, info: String(e?.message || e) });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    results.push({ name: 'scheduler:correct_increments', ok: false, info: msg });
   }
 
   // Scheduler wrong path
@@ -28,24 +29,27 @@ export async function GET() {
     };
     uf = onAttemptUpdateUF(uf, false);
     results.push({ name: 'scheduler:wrong_resets', ok: uf.streak === 0 && uf.masteryLevel === 1 });
-  } catch (e: any) {
-    results.push({ name: 'scheduler:wrong_resets', ok: false, info: String(e?.message || e) });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    results.push({ name: 'scheduler:wrong_resets', ok: false, info: msg });
   }
 
   // Hints
   try {
     const h = deterministicHint(7, 8);
     results.push({ name: 'hints:7x8_rhyme', ok: /five\-six|five\s*six|56/i.test(h) });
-  } catch (e: any) {
-    results.push({ name: 'hints:7x8_rhyme', ok: false, info: String(e?.message || e) });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    results.push({ name: 'hints:7x8_rhyme', ok: false, info: msg });
   }
 
   // Problems
   try {
     const p = generateDeterministicProblem(3, 4, 'animals');
     results.push({ name: 'problems:structure', ok: !!p && p.op === '*' && Array.isArray(p.operands) && p.problem.length > 0 });
-  } catch (e: any) {
-    results.push({ name: 'problems:structure', ok: false, info: String(e?.message || e) });
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    results.push({ name: 'problems:structure', ok: false, info: msg });
   }
 
   const ok = results.every(r => r.ok);
