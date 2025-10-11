@@ -2,6 +2,7 @@
 // We avoid importing Prisma types at build-time to keep Next/Turbopack happy.
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-ignore
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 import('@prisma/client').then(async (mod: any) => {
   const { PrismaClient, Role } = mod;
   const prisma = new PrismaClient();
@@ -36,14 +37,46 @@ import('@prisma/client').then(async (mod: any) => {
     });
   }
 
+  const MAX_OFFSET_MINUTES = 6 * 60;
+
+  function seededOffsetMinutes(userId: string, factId: string): number {
+    const key = `${userId}:${factId}`;
+    let hash = 0;
+    for (let index = 0; index < key.length; index += 1) {
+      hash = (hash * 31 + key.charCodeAt(index)) >>> 0;
+    }
+    return hash % MAX_OFFSET_MINUTES;
+  }
+
+  function initialIntervalDays(offsetMinutes: number): number {
+    return Math.max(0, offsetMinutes / (60 * 24));
+  }
+
+  function initialDueAt(offsetMinutes: number): Date {
+    return new Date(Date.now() - offsetMinutes * 60 * 1000);
+  }
+
   async function seedUserFacts(userId: string) {
     const facts = await prisma.fact.findMany({ select: { id: true } });
     const existing = await prisma.userFact.findMany({ where: { userId }, select: { factId: true } });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const existingSet = new Set(existing.map((e: any) => e.factId));
     const missing = facts
-      .map((f: any) => f.id)
+       // eslint-disable-next-line @typescript-eslint/no-explicit-any
+       .map((f: any) => f.id)
       .filter((id: string) => !existingSet.has(id))
-      .map((factId: string) => ({ userId, factId, masteryLevel: 0, streak: 0, easiness: 2.5, intervalDays: 0, dueAt: new Date() }));
+      .map((factId: string) => {
+        const offsetMinutes = seededOffsetMinutes(userId, factId);
+        return {
+          userId,
+          factId,
+          masteryLevel: 0,
+          streak: 0,
+          easiness: 2.5,
+          intervalDays: initialIntervalDays(offsetMinutes),
+          dueAt: initialDueAt(offsetMinutes),
+        };
+      });
     if (missing.length) await prisma.userFact.createMany({ data: missing });
   }
 

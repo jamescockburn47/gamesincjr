@@ -3,6 +3,24 @@ import { selectNextBatch, type UserFact as SchedulerUserFact } from '../core/sch
 
 const FACT_COUNT = 12;
 const DEFAULT_EASINESS = 2.5;
+const MAX_OFFSET_MINUTES = 6 * 60; // stagger initial due dates within the last 6 hours
+
+function seededOffsetMinutes(userId: string, factId: string): number {
+  const key = `${userId}:${factId}`;
+  let hash = 0;
+  for (let index = 0; index < key.length; index += 1) {
+    hash = (hash * 31 + key.charCodeAt(index)) >>> 0;
+  }
+  return hash % MAX_OFFSET_MINUTES;
+}
+
+function initialDueAt(offsetMinutes: number): Date {
+  return new Date(Date.now() - offsetMinutes * 60 * 1000);
+}
+
+function initialIntervalDays(offsetMinutes: number): number {
+  return Math.max(0, offsetMinutes / (60 * 24));
+}
 
 export type NextFact = {
   id: string;
@@ -77,15 +95,18 @@ export async function ensureUserFacts(prisma: PrismaClient, userId: string): Pro
   const missing = factIds
     .map((fact) => fact.id)
     .filter((id) => !existingIds.has(id))
-    .map((factId) => ({
-      userId,
-      factId,
-      masteryLevel: 0,
-      streak: 0,
-      easiness: DEFAULT_EASINESS,
-      intervalDays: 0,
-      dueAt: new Date(),
-    }));
+    .map((factId) => {
+      const offsetMinutes = seededOffsetMinutes(userId, factId);
+      return {
+        userId,
+        factId,
+        masteryLevel: 0,
+        streak: 0,
+        easiness: DEFAULT_EASINESS,
+        intervalDays: initialIntervalDays(offsetMinutes),
+        dueAt: initialDueAt(offsetMinutes),
+      };
+    });
 
   if (missing.length) {
     await prisma.userFact.createMany({ data: missing });

@@ -36,10 +36,20 @@ export function onAttemptUpdateUF(uf: UserFact, correct: boolean): UserFact {
 // Reserved for future use
 // type Fact = { id: string; a: number; b: number; op: "*" | "÷" };
 
+function hashFactId(id: string): number {
+  let hash = 0;
+  for (let index = 0; index < id.length; index += 1) {
+    hash = (hash * 31 + id.charCodeAt(index)) >>> 0;
+  }
+  return hash;
+}
+
 function byWeakness(a: UserFact, b: UserFact): number {
   // Lower mastery first; earlier dueAt first
   if (a.masteryLevel !== b.masteryLevel) return a.masteryLevel - b.masteryLevel;
-  return a.dueAt.getTime() - b.dueAt.getTime();
+  const dueDiff = a.dueAt.getTime() - b.dueAt.getTime();
+  if (dueDiff !== 0) return dueDiff;
+  return hashFactId(a.factId) - hashFactId(b.factId);
 }
 
 function respectsMinSpacing(): boolean {
