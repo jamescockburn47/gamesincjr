@@ -79,8 +79,8 @@ export function PracticeClient({ sessionId, userId, initialTargets }: Props) {
         return;
       }
 
-      if (typeof data.awarded === "number") {
-        setCoins((prev) => prev + data.awarded);
+      if (typeof (data as AttemptResponse).awarded === "number") {
+        setCoins((prev) => prev + (data as AttemptResponse).awarded);
       }
 
       const total = targets.length;
@@ -89,7 +89,9 @@ export function PracticeClient({ sessionId, userId, initialTargets }: Props) {
       setInput("");
       setIndex(nextIndex);
 
-      let message = data.correct ? "Correct! Nice work." : `Nearly. ${factLabel} = ${data.expected}.`;
+      const wasCorrect = (data as AttemptResponse).correct === true;
+      const expected = (data as AttemptResponse).expected;
+      let message = wasCorrect ? "Correct! Nice work." : `Nearly. ${factLabel} = ${expected}.`;
 
       if (nextIndex >= total) {
         const nextBatch = await refreshBatch();
