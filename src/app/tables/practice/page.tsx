@@ -1,64 +1,26 @@
-"use client";
-import { useEffect, useState } from "react";
+import { createSessionWithTargets } from "@/lib/tables/service";
+import { PracticeClient } from "./PracticeClient";
 
-type Target = { id: string; a: number; b: number; op: "*" };
+export const runtime = "nodejs";
 
-export default function PracticePage() {
-  const [targets, setTargets] = useState<Target[]>([]);
-  const [current, setCurrent] = useState<Target | null>(null);
-  const [input, setInput] = useState<string>("");
-  const [sessionId, setSessionId] = useState<string>("");
-  const [feedback, setFeedback] = useState<string>("");
-
-  useEffect(() => {
-    (async () => {
-      const res = await fetch("/api/tables/session", { method: "POST", body: JSON.stringify({ mode: "PRACTICE" }) });
-      const data = await res.json();
-      setSessionId(data.sessionId);
-      setTargets(data.targets);
-      setCurrent(data.targets[0] || null);
-    })();
-  }, []);
-
-  async function submit() {
-    if (!current) return;
-    const answer = Number(input);
-    const res = await fetch("/api/tables/attempt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, factId: current.id, a: current.a, b: current.b, answer, latencyMs: 0, hintUsed: false }) });
-    const data = await res.json();
-    setFeedback(data.correct ? "Correct!" : "Try again.");
-    const idx = targets.findIndex(t => t.id === current.id);
-    const next = targets[idx + 1] || null;
-    setCurrent(next);
-    setInput("");
-  }
-
-  async function hint() {
-    if (!current) return;
-    const res = await fetch("/api/tables/coach/hint", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ a: current.a, b: current.b, op: "*" }) });
-    const data = await res.json();
-    setFeedback(data.hint || "");
-  }
+export default async function PracticePage() {
+  const { session, userId, targets } = await createSessionWithTargets({
+    mode: "PRACTICE",
+    batchSize: 10,
+  });
 
   return (
-    <div className="mx-auto max-w-md px-4 py-8">
-      <h1 className="text-xl font-semibold">Practice</h1>
-      {current ? (
-        <div className="mt-6">
-          <div className="text-3xl font-bold">{current.a} × {current.b} = ?</div>
-          <div className="mt-4 flex gap-2">
-            <input className="w-32 rounded border px-3 py-2" value={input} onChange={e => setInput(e.target.value)} inputMode="numeric" aria-label="Answer" />
-            <button className="rounded bg-black px-3 py-2 text-white" onClick={submit}>Submit</button>
-            <button className="rounded border px-3 py-2" onClick={hint}>Hint</button>
-          </div>
-          {feedback && <p className="mt-3 text-sm text-muted-foreground">{feedback}</p>}
-        </div>
-      ) : (
-        <p className="mt-6 text-sm">All done for now!</p>
-      )}
+    <div className="mx-auto max-w-2xl px-4 py-10">
+      <header className="flex flex-col gap-1">
+        <p className="text-sm uppercase tracking-[0.2em] text-muted-foreground">Practice mode</p>
+        <h1 className="text-3xl font-semibold">Warm up your multiplication muscles</h1>
+        <p className="text-sm text-muted-foreground">
+          Answer each fact at your own pace. Hints stay privacy-first and offline safe.
+        </p>
+      </header>
+      <div className="mt-8">
+        <PracticeClient sessionId={session.id} userId={userId} initialTargets={targets} />
+      </div>
     </div>
   );
 }
-
- 
-
-

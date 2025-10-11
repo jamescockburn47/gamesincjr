@@ -30,7 +30,6 @@ export default function MobileNav() {
         onClick={() => setOpen(true)}
         className="inline-flex items-center justify-center rounded-xl border border-sky-100 bg-white/80 p-2 text-slate-600 shadow-sm transition hover:bg-white"
         aria-label="Open menu"
-        aria-expanded={open}
       >
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="h-5 w-5">
           <path fillRule="evenodd" d="M3.75 6.75A.75.75 0 014.5 6h15a.75.75 0 010 1.5h-15a.75.75 0 01-.75-.75zm0 5.25a.75.75 0 01.75-.75h15a.75.75 0 010 1.5h-15a.75.75 0 01-.75-.75zm.75 4.5a.75.75 0 000 1.5h15a.75.75 0 000-1.5h-15z" clipRule="evenodd" />
@@ -68,7 +67,7 @@ export default function MobileNav() {
             Games
           </Link>
           <Link href="/tables" className="rounded-xl px-3 py-3 text-slate-600 transition hover:bg-sky-50 hover:text-sky-600" onClick={() => setOpen(false)}>
-            Tables
+            Times Tables Super Stars
           </Link>
           <Link href="/community" className="rounded-xl px-3 py-3 text-slate-600 transition hover:bg-sky-50 hover:text-sky-600" onClick={() => setOpen(false)}>
             Community

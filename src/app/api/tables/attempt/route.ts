@@ -1,29 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { onAttemptUpdateUF, type UserFact } from '@/lib/tables/core/scheduler';
+import { recordAttempt } from '@/lib/tables/service';
+import { DEFAULT_USER_ID } from '@/lib/tables/constants';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
-const memoryUF: Record<string, UserFact> = {};
+type AttemptRequest = {
+  sessionId?: string;
+  factId: string;
+  answer: number;
+  latencyMs?: number;
+  hintUsed?: boolean;
+  userId?: string;
+};
 
 export async function POST(req: NextRequest) {
-  const { factId, a, b, answer, latencyMs } = await req.json() as { factId: string; a: number; b: number; answer: number; latencyMs?: number };
-  const correct = Number(answer) === Number(a) * Number(b);
-  const key = `uf:${factId}`;
-  let uf = memoryUF[key] || {
-    id: key,
-    userId: 'anon',
-    factId: String(factId),
-    masteryLevel: 0,
-    streak: 0,
-    easiness: 2.5,
-    intervalDays: 0,
-    dueAt: new Date(),
-  } as UserFact;
-  uf.lastLatencyMs = Number(latencyMs) || 0;
-  uf.lastAccuracy = correct ? 1 : 0;
-  uf = onAttemptUpdateUF(uf, !!correct);
-  memoryUF[key] = uf;
-  return NextResponse.json({ correct, uf, awarded: correct ? (uf.masteryLevel === 1 ? 200 : 10) : 0 });
-}
+  const body = (await req.json()) as AttemptRequest;
+  if (!body.factId) {
+    return NextResponse.json({ error: 'Missing factId' }, { status: 400 });
+  }
 
+  try {
+    const result = await recordAttempt({
+      userId: body.userId ?? DEFAULT_USER_ID,
+      sessionId: body.sessionId,
+      factId: body.factId,
+      answer: Number(body.answer),
+      latencyMs: body.latencyMs,
+      hintUsed: body.hintUsed,
+    });
+    return NextResponse.json(result);
+  } catch (error) {
+    return NextResponse.json({ error: (error as Error).message }, { status: 500 });
+  }
+}
 

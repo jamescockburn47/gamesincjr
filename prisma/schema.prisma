@@ -1,0 +1,96 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id          String    @id @default(cuid())
+  role        Role      @default(STUDENT)
+  displayName String?
+  orgId       String?
+  aiAllowed   Boolean   @default(false)
+  settings    Json?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  userFacts UserFact[]
+  sessions  Session[]
+  badges    Badge[]
+}
+
+model Fact {
+  id           String @id @default(cuid())
+  a            Int
+  b            Int
+  op           String
+  commutesWith String?
+
+  userFacts UserFact[]
+  attempts  Attempt[]
+}
+
+model UserFact {
+  id            String   @id @default(cuid())
+  userId        String
+  factId        String
+  masteryLevel  Int      @default(0)
+  streak        Int      @default(0)
+  easiness      Float    @default(2.5)
+  intervalDays  Float    @default(0)
+  dueAt         DateTime @default(now())
+  lastLatencyMs Int?
+  lastAccuracy  Float?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fact Fact @relation(fields: [factId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, factId])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  userId    String
+  mode      String   @default("PRACTICE")
+  startedAt DateTime @default(now())
+  endedAt   DateTime?
+  accuracy  Float?
+  score     Int?
+
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  attempts Attempt[]
+}
+
+model Attempt {
+  id        String   @id @default(cuid())
+  sessionId String
+  factId    String
+  correct   Boolean
+  latencyMs Int
+  hintUsed  Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  session Session @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  fact    Fact    @relation(fields: [factId], references: [id], onDelete: Cascade)
+}
+
+model Badge {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  awardedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+enum Role {
+  STUDENT
+  TEACHER
+  PARENT
+  ADMIN
+}
