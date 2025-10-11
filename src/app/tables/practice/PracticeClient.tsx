@@ -14,6 +14,30 @@ type AttemptResponse = {
   dueAt: string;
 };
 
+type AttemptError = {
+  error?: string;
+};
+
+/**
+ * Type guard ensuring the attempt API returned a full AttemptResponse payload.
+ */
+function isAttemptResponse(data: unknown): data is AttemptResponse {
+  if (!data || typeof data !== "object") {
+    return false;
+  }
+
+  const candidate = data as Partial<AttemptResponse>;
+
+  return (
+    typeof candidate.correct === "boolean" &&
+    typeof candidate.expected === "number" &&
+    typeof candidate.awarded === "number" &&
+    typeof candidate.masteryLevel === "number" &&
+    typeof candidate.streak === "number" &&
+    typeof candidate.dueAt === "string"
+  );
+}
+
 type Props = {
   sessionId: string;
   userId: string;
@@ -73,15 +97,18 @@ export function PracticeClient({ sessionId, userId, initialTargets }: Props) {
         return;
       }
 
-      const data = (await res.json()) as AttemptResponse | { error?: string };
-      if ("error" in data) {
-        setFeedback(data.error ?? "Something went wrong.");
+      const data = (await res.json()) as unknown;
+
+      if (!isAttemptResponse(data)) {
+        if (data && typeof data === "object" && "error" in data) {
+          setFeedback((data as AttemptError).error ?? "Something went wrong.");
+        } else {
+          setFeedback("Something went wrong.");
+        }
         return;
       }
 
-      if (typeof data.awarded === "number") {
-        setCoins((prev) => prev + data.awarded);
-      }
+      setCoins((prev) => prev + data.awarded);
 
       const total = targets.length;
       const nextIndex = index + 1;
