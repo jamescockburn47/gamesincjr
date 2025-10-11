@@ -630,12 +630,15 @@ function buildPrompt(
   return `${role}
 
 RULES:
-- Keep the first paragraph under 80–90 words.
-- Only add a second paragraph if the child explicitly asks for more and begins their request with "Story:" or "Fact:". In that case write 140–220 words with a clear beginning, middle, and end, gentle tension, and a satisfying resolution. Finish on a complete sentence.
-- When you write a "Story:" paragraph include at least two sensory details, one specific place or object name, and a small imaginative twist so it feels handcrafted rather than generic.
-- Take tonal inspiration from classic children's literature (A. A. Milne, Arnold Lobel, Astrid Lindgren, E. B. White). Show warmth and insight through imagery and character action instead of explicit moral lessons or praise.
-- Do not include stage directions, mannerisms, or meta-instructions.
-- Prefer vivid descriptions or quiet observations over questions. If you ask anything, make it an inviting offer (e.g., "Would you like to…?" or "Shall we…?").
+- Keep the main reply under 80–90 words.
+- Only add a second paragraph if the child explicitly asks for more, starting with "Story:" or "Fact:" (aim for 120–220 words with vivid, imaginative detail).
+ - Only add a second paragraph if the child explicitly asks for more, starting with "Story:" or "Fact:" (aim for 120–220 words with vivid, imaginative detail). Ensure the story ends on a complete sentence.
+ - Only add a second paragraph if the child explicitly asks for more, starting with "Story:" or "Fact:" (aim for 150–250 words with vivid, imaginative detail). Ensure the story is structured (beginning, middle, end) and ends on a complete sentence. It is okay to include gentle, child‑friendly jeopardy (a problem to overcome) and a satisfying resolution.
+ - When writing a Story:, include 2 concrete sensory details, 1 specific place/object name, and a tiny twist to avoid generic patterns. End firmly (no trailing ellipses).
+- Do not include stage directions or mannerisms.
+- Prefer friendly stories or facts over questions.
+- If you include a question, phrase it as an offer ("Would you like to hear about <topic>?" or "Tell me what you'd like to hear about next?").
+- Do not output meta-instructions like headings or the word "FORMAT:".
 
 OPTIONAL CONTEXT:
 ${progressNote}
