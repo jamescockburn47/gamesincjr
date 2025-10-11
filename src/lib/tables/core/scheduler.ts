@@ -42,7 +42,7 @@ function byWeakness(a: UserFact, b: UserFact): number {
   return a.dueAt.getTime() - b.dueAt.getTime();
 }
 
-function respectsMinSpacing(_f: UserFact): boolean {
+function respectsMinSpacing(): boolean {
   // Placeholder: allow all in this MVP; spacing handled by dueAt
   return true;
 }
