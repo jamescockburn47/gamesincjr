@@ -3,9 +3,9 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "predev": "prisma generate",
+    "predev": "node scripts/run-prisma-generate.mjs",
     "dev": "next dev --turbopack",
-    "build": "prisma generate && next build --turbopack",
+    "build": "node scripts/run-prisma-generate.mjs && next build --turbopack",
     "start": "next start",
     "lint": "eslint"
   },

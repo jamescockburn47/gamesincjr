@@ -36,10 +36,25 @@ export function onAttemptUpdateUF(uf: UserFact, correct: boolean): UserFact {
 // Reserved for future use
 // type Fact = { id: string; a: number; b: number; op: "*" | "÷" };
 
+/**
+ * Produce a deterministic 32-bit hash for stable-yet-varied ordering.
+ */
+function hashString(value: string): number {
+  let hash = 2166136261;
+  for (let i = 0; i < value.length; i += 1) {
+    hash ^= value.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return hash >>> 0;
+}
+
 function byWeakness(a: UserFact, b: UserFact): number {
-  // Lower mastery first; earlier dueAt first
+  // Lower mastery first; earlier dueAt first. Break ties with a deterministic hash so
+  // that new users do not see times tables in sequential order.
   if (a.masteryLevel !== b.masteryLevel) return a.masteryLevel - b.masteryLevel;
-  return a.dueAt.getTime() - b.dueAt.getTime();
+  const dueDelta = a.dueAt.getTime() - b.dueAt.getTime();
+  if (dueDelta !== 0) return dueDelta;
+  return hashString(a.factId) - hashString(b.factId);
 }
 
 function respectsMinSpacing(): boolean {
