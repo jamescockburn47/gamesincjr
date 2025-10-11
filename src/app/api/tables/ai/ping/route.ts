@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { isAIEnabled } from '@/src/lib/tables/ai/featureFlags';
+import { isAIEnabled } from '@/lib/tables/ai/featureFlags';
 import { cookies } from 'next/headers';
 
 export const runtime = 'nodejs';

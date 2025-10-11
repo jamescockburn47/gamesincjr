@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAIEnabled } from '@/src/lib/tables/ai/featureFlags';
-import { deterministicHint } from '@/src/lib/tables/core/hints';
-import { getHint } from '@/src/lib/tables/ai/coach';
+import { isAIEnabled } from '@/lib/tables/ai/featureFlags';
+import { deterministicHint } from '@/lib/tables/core/hints';
+import { getHint } from '@/lib/tables/ai/coach';
 
 export const runtime = 'nodejs';
 
