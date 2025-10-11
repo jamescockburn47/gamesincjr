@@ -873,6 +873,43 @@ export async function loadRecentConversationTurns(
   }
 }
 
+export async function clearConversationHistory(characterId: string, userId: string) {
+  try {
+    if (STORAGE_KIND === 'filesystem') {
+      if (!(await ensureDirectories())) return;
+      const userDir = path.join(CONVERSATIONS_DIR, userId);
+      const charFile = path.join(userDir, `${characterId}.jsonl`);
+      await fs.rm(charFile, { force: true }).catch(() => undefined);
+      try {
+        const remaining = await fs.readdir(userDir);
+        if (!remaining.length) {
+          await fs.rm(userDir, { force: true, recursive: true }).catch(() => undefined);
+        }
+      } catch {
+        // ignore dir read issues
+      }
+      return;
+    }
+
+    if (STORAGE_KIND === 'blob') {
+      if (!BLOB_RW_TOKEN) return;
+      const prefix = `imaginary-friends/conversations/${userId}/${characterId}/`;
+      const { list, del } = await import('@vercel/blob');
+      const { blobs } = await list({ prefix, token: BLOB_RW_TOKEN });
+      await Promise.all(
+        blobs.map((blob) =>
+          del(blob.pathname, {
+            token: BLOB_RW_TOKEN,
+          }).catch(() => undefined),
+        ),
+      );
+      return;
+    }
+  } catch (error) {
+    console.warn('Failed to clear conversation history', error);
+  }
+}
+
 export async function characterIntro(characterId: string) {
   const character = characterMap[characterId as CharacterId];
   if (!character) {
