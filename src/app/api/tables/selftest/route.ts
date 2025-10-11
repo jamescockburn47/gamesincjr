@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import { onAttemptUpdateUF, type UserFact } from '@/src/lib/tables/core/scheduler';
-import { deterministicHint } from '@/src/lib/tables/core/hints';
-import { generateDeterministicProblem } from '@/src/lib/tables/core/problems';
+import { onAttemptUpdateUF, type UserFact } from '@/lib/tables/core/scheduler';
+import { deterministicHint } from '@/lib/tables/core/hints';
+import { generateDeterministicProblem } from '@/lib/tables/core/problems';
 
 export const runtime = 'nodejs';
 

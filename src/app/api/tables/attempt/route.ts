@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { onAttemptUpdateUF, type UserFact } from '@/src/lib/tables/core/scheduler';
+import { onAttemptUpdateUF, type UserFact } from '@/lib/tables/core/scheduler';
 
 export const runtime = 'edge';
 

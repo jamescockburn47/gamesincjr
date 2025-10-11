@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { coinsFor } from '@/src/lib/tables/core/rewards';
+import { coinsFor } from '@/lib/tables/core/rewards';
 
 export const runtime = 'edge';
 

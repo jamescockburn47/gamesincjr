@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAIEnabled } from '@/src/lib/tables/ai/featureFlags';
-import { explainError } from '@/src/lib/tables/ai/coach';
+import { isAIEnabled } from '@/lib/tables/ai/featureFlags';
+import { explainError } from '@/lib/tables/ai/coach';
 
 export const runtime = 'nodejs';
 

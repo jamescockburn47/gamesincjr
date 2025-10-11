@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { isAIEnabled } from '@/src/lib/tables/ai/featureFlags';
-import { kvGet, kvSet } from '@/src/lib/tables/ai/kvCache';
-import { generateDeterministicProblem } from '@/src/lib/tables/core/problems';
+import { isAIEnabled } from '@/lib/tables/ai/featureFlags';
+import { kvGet, kvSet } from '@/lib/tables/ai/kvCache';
+import { generateDeterministicProblem } from '@/lib/tables/core/problems';
 
 export const runtime = 'nodejs';
 
