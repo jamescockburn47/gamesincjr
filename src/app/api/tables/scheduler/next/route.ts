@@ -1,19 +1,22 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { getPrisma } from '@/lib/tables/db/prisma';
+import { getNextFactsForUser } from '@/lib/tables/db/ensure';
+import { DEFAULT_USER_ID } from '@/lib/tables/constants';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
 
-export async function GET() {
-  // Cycle through full 1..12 x 1..12 facts deterministically
-  const facts: { id: string; a: number; b: number; op: '*' }[] = [];
-  for (let a = 1; a <= 12; a++) {
-    for (let b = 1; b <= 12; b++) {
-      facts.push({ id: `f_${a}x${b}`, a, b, op: '*' });
-    }
-  }
-  // Pick 10 focusing on lower mastery first (placeholder: simple slice with offset)
-  const offset = 0;
-  const targets = facts.slice(offset, offset + 10);
-  return NextResponse.json({ targets });
+export async function GET(req: NextRequest) {
+  const prisma = getPrisma();
+  const userId = req.nextUrl.searchParams.get('userId')?.trim() || DEFAULT_USER_ID;
+  const targets = await getNextFactsForUser(prisma, userId, 10);
+  return NextResponse.json({
+    targets: targets.map((target) => ({
+      id: target.id,
+      a: target.a,
+      b: target.b,
+      op: target.op,
+    })),
+  });
 }
 
 

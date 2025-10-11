@@ -1,16 +1,42 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { createSessionWithTargets, endSession, SessionMode } from '@/lib/tables/service';
+import { DEFAULT_USER_ID } from '@/lib/tables/constants';
 
-export const runtime = 'edge';
+export const runtime = 'nodejs';
+
+type SessionRequest = {
+  userId?: string;
+  mode?: SessionMode | string;
+  end?: boolean;
+  sessionId?: string;
+};
 
 export async function POST(req: NextRequest) {
-  const { mode, end, sessionId } = await req.json();
-  if (end && sessionId) {
-    return NextResponse.json({ ok: true, sessionId, endedAt: Date.now() });
+  const body = (await req.json()) as SessionRequest;
+
+  const userId = body.userId?.trim() || DEFAULT_USER_ID;
+
+  if (body.end && body.sessionId) {
+    const session = await endSession(body.sessionId);
+    return NextResponse.json({
+      ok: Boolean(session),
+      sessionId: body.sessionId,
+      endedAt: session?.endedAt ?? new Date(),
+    });
   }
-  const id = `s_${Math.random().toString(36).slice(2)}`;
-  // For MVP return a stub next targets list (facts)
-  const targets = Array.from({ length: 10 }).map((_, i) => ({ id: `f_${i}`, a: 1 + (i % 12), b: 1 + ((i * 2) % 12), op: '*' }));
-  return NextResponse.json({ sessionId: id, mode: mode || 'PRACTICE', targets });
+
+  const { session, targets } = await createSessionWithTargets({
+    userId,
+    mode: body.mode ?? 'PRACTICE',
+    batchSize: 10,
+  });
+
+  return NextResponse.json({
+    sessionId: session.id,
+    mode: session.mode,
+    userId,
+    targets,
+  });
 }
 
 
