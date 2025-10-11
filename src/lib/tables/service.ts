@@ -1,8 +1,7 @@
-import { PrismaClient } from '@prisma/client';
 import { getPrisma } from './db/prisma';
 import { ensureFacts, ensureUser, ensureUserFacts, getNextFactsForUser, mapUserFactRecord } from './db/ensure';
 import { DEFAULT_USER_ID } from './constants';
-import { onAttemptUpdateUF } from '../core/scheduler';
+import { onAttemptUpdateUF } from './core/scheduler';
 
 export type SessionMode = 'PRACTICE' | 'CHALLENGE' | 'BOSS';
 

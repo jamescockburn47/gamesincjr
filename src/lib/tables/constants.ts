@@ -1,1 +1,1 @@
-export const DEFAULT_USER_ID = 'anon-default-student';\n
+export const DEFAULT_USER_ID = "anon-default-student";
