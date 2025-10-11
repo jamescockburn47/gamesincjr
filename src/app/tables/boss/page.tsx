@@ -8,6 +8,7 @@ export default function BossPage() {
   const [current, setCurrent] = useState<Target | null>(null);
   const [input, setInput] = useState<string>("");
   const [hp, setHp] = useState<number>(10);
+  const [coins, setCoins] = useState<number>(0);
 
   useEffect(() => {
     (async () => {
@@ -22,7 +23,10 @@ export default function BossPage() {
     if (!current || hp <= 0) return;
     const answer = Number(input);
     const correct = answer === current.a * current.b;
-    if (correct) setHp((h) => Math.max(0, h - 1));
+    if (correct) {
+      setHp((h) => Math.max(0, h - 1));
+      setCoins((c) => c + 10);
+    }
     const idx = targets.findIndex(t => t.id === current.id);
     const next = targets[idx + 1] || null;
     setCurrent(next);
@@ -32,7 +36,7 @@ export default function BossPage() {
   return (
     <div className="mx-auto max-w-md px-4 py-8">
       <h1 className="text-xl font-semibold">Boss Battle</h1>
-      <div className="mt-2 text-sm text-muted-foreground">Boss HP: {hp}</div>
+      <div className="mt-2 text-sm text-muted-foreground">Boss HP: {hp} — Coins: <span className="font-semibold">{coins}</span></div>
       {hp > 0 && current ? (
         <div className="mt-6">
           <div className="text-3xl font-bold">{current.a} × {current.b} = ?</div>

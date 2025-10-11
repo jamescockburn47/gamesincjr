@@ -9,6 +9,7 @@ export default function PracticePage() {
   const [input, setInput] = useState<string>("");
   const [sessionId, setSessionId] = useState<string>("");
   const [feedback, setFeedback] = useState<string>("");
+  const [coins, setCoins] = useState<number>(0);
 
   useEffect(() => {
     (async () => {
@@ -25,6 +26,7 @@ export default function PracticePage() {
     const answer = Number(input);
     const res = await fetch("/api/tables/attempt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, factId: current.id, a: current.a, b: current.b, answer, latencyMs: 0, hintUsed: false }) });
     const data = await res.json();
+    if (typeof data.awarded === 'number') setCoins((c) => c + data.awarded);
     setFeedback(data.correct ? "Correct!" : "Try again.");
     const idx = targets.findIndex(t => t.id === current.id);
     const next = targets[idx + 1] || null;
@@ -41,7 +43,10 @@ export default function PracticePage() {
 
   return (
     <div className="mx-auto max-w-md px-4 py-8">
-      <h1 className="text-xl font-semibold">Practice</h1>
+      <div className="flex items-baseline justify-between">
+        <h1 className="text-xl font-semibold">Practice</h1>
+        <div className="text-sm">Coins: <span className="font-semibold">{coins}</span></div>
+      </div>
       {current ? (
         <div className="mt-6">
           <div className="text-3xl font-bold">{current.a} × {current.b} = ?</div>

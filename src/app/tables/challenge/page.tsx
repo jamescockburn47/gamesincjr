@@ -10,6 +10,7 @@ export default function ChallengePage() {
   const [sessionId, setSessionId] = useState<string>("");
   const [remaining, setRemaining] = useState<number>(60);
   const [correctCount, setCorrectCount] = useState<number>(0);
+  const [coins, setCoins] = useState<number>(0);
   const [total, setTotal] = useState<number>(0);
 
   useEffect(() => {
@@ -32,6 +33,7 @@ export default function ChallengePage() {
     const answer = Number(input);
     const res = await fetch("/api/tables/attempt", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ sessionId, factId: current.id, a: current.a, b: current.b, answer, latencyMs: 0, hintUsed: false }) });
     const data = await res.json();
+    if (typeof data.awarded === 'number') setCoins((c) => c + data.awarded);
     setTotal((t) => t + 1);
     if (data.correct) setCorrectCount((c) => c + 1);
     const idx = targets.findIndex(t => t.id === current.id);
@@ -45,7 +47,7 @@ export default function ChallengePage() {
   return (
     <div className="mx-auto max-w-md px-4 py-8">
       <h1 className="text-xl font-semibold">Challenge</h1>
-      <div className="mt-2 text-sm text-muted-foreground">Time left: {remaining}s — Accuracy: {accuracy}%</div>
+      <div className="mt-2 text-sm text-muted-foreground">Time left: {remaining}s — Accuracy: {accuracy}% — Coins: <span className="font-semibold">{coins}</span></div>
       {remaining > 0 && current ? (
         <div className="mt-6">
           <div className="text-3xl font-bold">{current.a} × {current.b} = ?</div>
