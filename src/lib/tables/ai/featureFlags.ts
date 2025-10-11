@@ -16,7 +16,7 @@ async function kvGetBoolean(key: string): Promise<boolean | null> {
   });
   if (!res.ok) return null;
   const data = await res.json();
-  const result = data?.result?.[0]?.result;
+  const result = (data as { result?: Array<{ result?: unknown }> })?.result?.[0]?.result;
   if (result == null) return null;
   return String(result) !== 'false';
 }
@@ -30,7 +30,8 @@ export async function isAIEnabled(user?: UserLike): Promise<boolean> {
   const userAllows = user?.aiAllowed !== false;
 
   const requireConsent = process.env.REQUIRE_PARENT_CONSENT_FOR_AI === 'true';
-  if (requireConsent && (user as any)?.role === 'STUDENT') {
+  const isStudent = !!user && user.role === 'STUDENT';
+  if (requireConsent && isStudent) {
     return global && orgAllows && userAllows;
   }
   return global && orgAllows && userAllows;

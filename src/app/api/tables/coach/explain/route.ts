@@ -5,7 +5,7 @@ import { explainError } from '@/lib/tables/ai/coach';
 export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
-  const { a, b, op, typed } = await req.json();
+  const { a, b, typed } = await req.json() as { a: number; b: number; typed?: string };
   const ai = await isAIEnabled(undefined);
   if (!ai) {
     return NextResponse.json({ message: 'Try splitting into tens and ones, then recombine.', pattern: 'unknown' });

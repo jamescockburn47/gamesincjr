@@ -33,7 +33,8 @@ export function onAttemptUpdateUF(uf: UserFact, correct: boolean): UserFact {
   return uf;
 }
 
-type Fact = { id: string; a: number; b: number; op: "*" | "÷" };
+// Reserved for future use
+// type Fact = { id: string; a: number; b: number; op: "*" | "÷" };
 
 function byWeakness(a: UserFact, b: UserFact): number {
   // Lower mastery first; earlier dueAt first

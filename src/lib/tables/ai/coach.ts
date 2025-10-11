@@ -5,7 +5,7 @@ import { validateHint, validateExplain, type Hint, type Explain } from "./schema
 type HintInput = { a: number; b: number; op: "*"; lastWrong?: number; theme?: string };
 type ExplainInput = { a: number; b: number; op: "*"; typed: string };
 
-export async function getHint(input: HintInput, callModel?: (prompt: string) => Promise<any>): Promise<Hint> {
+export async function getHint(input: HintInput, callModel?: (prompt: string) => Promise<unknown>): Promise<Hint> {
   const { a, b } = sanitizeOperands(input.a, input.b);
   if (!callModel) return { hint: deterministicHint(a, b) };
   const sys = "You are a maths coach for 6–10 year-olds. Be concise, kind, concrete. Give one hint. No personal data.";
@@ -17,7 +17,7 @@ export async function getHint(input: HintInput, callModel?: (prompt: string) => 
   return { hint: deterministicHint(a, b) };
 }
 
-export async function explainError(input: ExplainInput, callModel?: (prompt: string) => Promise<any>): Promise<Explain> {
+export async function explainError(input: ExplainInput, callModel?: (prompt: string) => Promise<unknown>): Promise<Explain> {
   const { a, b } = sanitizeOperands(input.a, input.b);
   if (!callModel) return { message: "Check your steps and try a strategy like splitting into tens.", pattern: "unknown" };
   const sys = "Explain the likely mistake in one sentence. Encourage strategy, not speed.";

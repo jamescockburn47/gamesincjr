@@ -6,7 +6,7 @@ export const runtime = 'edge';
 const memoryUF: Record<string, UserFact> = {};
 
 export async function POST(req: NextRequest) {
-  const { sessionId, factId, a, b, answer, latencyMs, hintUsed } = await req.json();
+  const { factId, a, b, answer, latencyMs } = await req.json() as { factId: string; a: number; b: number; answer: number; latencyMs?: number };
   const correct = Number(answer) === Number(a) * Number(b);
   const key = `uf:${factId}`;
   let uf = memoryUF[key] || {

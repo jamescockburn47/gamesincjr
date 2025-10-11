@@ -10,10 +10,10 @@ function hashKey(a: number, b: number, theme?: string, age?: string) {
 }
 
 export async function POST(req: NextRequest) {
-  const { a, b, theme, ageBand } = await req.json();
+  const { a, b, theme, ageBand } = await req.json() as { a: number; b: number; theme?: string; ageBand?: string };
   const aa = Number(a); const bb = Number(b);
   const key = hashKey(aa, bb, theme, ageBand);
-  const cached = await kvGet<any>(key);
+  const cached = await kvGet<ReturnType<typeof generateDeterministicProblem>>(key);
   if (cached) return NextResponse.json(cached);
 
   const ai = await isAIEnabled(undefined);
