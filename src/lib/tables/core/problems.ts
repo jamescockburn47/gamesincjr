@@ -6,8 +6,14 @@ function pick<T>(arr: T[]): T {
   return arr[Math.floor(Math.random() * arr.length) % arr.length];
 }
 
-export function generateDeterministicProblem(a: number, b: number, theme?: Theme): { problem: string; operands: [number, number]; op: "*" } {
-  const t = theme || "animals";
+function coerceTheme(theme?: string): Theme | undefined {
+  if (!theme) return undefined;
+  const allowed: Theme[] = ["space", "animals", "pirates", "sports"];
+  return (allowed as readonly string[]).includes(theme) ? (theme as Theme) : undefined;
+}
+
+export function generateDeterministicProblem(a: number, b: number, theme?: string): { problem: string; operands: [number, number]; op: "*" } {
+  const t: Theme = coerceTheme(theme) || "animals";
   const name = pick(NAMES);
   const templates: Record<Theme, (a: number, b: number, name: string) => string> = {
     animals: (x, y, n) => `${n} sees ${x} rows of ${y} birds. How many birds in total?`,
