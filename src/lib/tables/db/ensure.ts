@@ -1,4 +1,5 @@
-import { Prisma, PrismaClient, Role, UserFact as PrismaUserFact } from '@prisma/client';
+import { PrismaClient, Role } from '@prisma/client';
+import type { Prisma, UserFact as PrismaUserFact } from '@prisma/client';
 import { selectNextBatch, type UserFact as SchedulerUserFact } from '../core/scheduler';
 
 const FACT_COUNT = 12;
