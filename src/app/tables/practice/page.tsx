@@ -59,6 +59,6 @@ export default function PracticePage() {
   );
 }
 
-export { default } from "../../(app)/practice/page";
+ 
 
 

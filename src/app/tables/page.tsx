@@ -14,6 +14,6 @@ export default function TablesHome() {
   );
 }
 
-export { default } from "../(public)/tables/page";
+ 
 
 

@@ -10,6 +10,6 @@ export default function TeacherPage() {
   );
 }
 
-export { default } from "../../(app)/teacher/page";
+ 
 
 

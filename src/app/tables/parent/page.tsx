@@ -9,6 +9,6 @@ export default function ParentPage() {
   );
 }
 
-export { default } from "../../(app)/parent/page";
+ 
 
 
