@@ -17,6 +17,9 @@ pnpm start
 ### Prisma Client Preparation
 - `pnpm install` automatically runs `prisma generate` thanks to the `pnpm.onlyBuiltDependencies` allow-list. No extra steps are
   needed in CI or Vercel.
+- The repository includes a placeholder connection string in `prisma/.env` so builds succeed even when secrets have not been
+  injected yet. Replace it locally with a real connection string or configure the appropriate environment variables before
+  running the application.
 - When working locally, ensure the Prisma client has been generated before starting the app:
   ```bash
   pnpm prisma generate
@@ -37,6 +40,11 @@ pnpm start
 ```bash
 # Admin access
 ADMIN_PASSWORD=your_secure_admin_password
+
+# Database (choose one of the following)
+DATABASE_URL=postgresql://user:password@host:5432/dbname
+# or, when using Vercel Postgres integration:
+POSTGRES_PRISMA_URL=postgres://user:password@host:5432/dbname
 
 # Optional: Payment processing (for future use)
 STRIPE_PUBLIC_KEY=pk_test_...

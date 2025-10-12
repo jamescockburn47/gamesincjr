@@ -11,10 +11,47 @@ type GlobalWithPrisma = typeof globalThis & {
 
 const globalForPrisma = globalThis as GlobalWithPrisma;
 const prismaClientEntry = join(process.cwd(), 'node_modules/.prisma/client/index.js');
+const PLACEHOLDER_DATABASE_URL = 'postgresql://placeholder:placeholder@localhost:5432/placeholder';
 // Opt-in flag so tests can still exercise the non-database code paths without a
 // generated Prisma client. Production builds should keep this disabled so we
 // fail fast when the client has not been generated.
 const allowStub = process.env.PRISMA_ALLOW_STUB === '1' || process.env.PRISMA_ALLOW_STUB === 'true';
+
+/**
+ * Determine whether the provided connection string is the placeholder shipping
+ * with the repository.
+ */
+function isPlaceholderDatabaseUrl(url: string | undefined): boolean {
+  if (!url) return true;
+  return url === PLACEHOLDER_DATABASE_URL || /placeholder/i.test(url);
+}
+
+/**
+ * Resolve the database connection string from the available environment
+ * variables. Vercel’s Postgres integration exposes `POSTGRES_PRISMA_URL`, while
+ * local setups often rely on `DATABASE_URL`. The resolved URL is written back to
+ * `process.env.DATABASE_URL` so Prisma’s runtime always receives a concrete
+ * value.
+ */
+function resolveDatabaseUrl(): string | undefined {
+  const candidates = [
+    process.env.DATABASE_URL,
+    process.env.POSTGRES_PRISMA_URL,
+    process.env.POSTGRES_URL,
+    process.env.POSTGRES_URL_NON_POOLING,
+  ];
+
+  for (const candidate of candidates) {
+    if (!isPlaceholderDatabaseUrl(candidate)) {
+      if (isPlaceholderDatabaseUrl(process.env.DATABASE_URL)) {
+        process.env.DATABASE_URL = candidate;
+      }
+      return candidate;
+    }
+  }
+
+  return undefined;
+}
 
 /**
  * Determine whether a generated Prisma client is available on disk.
@@ -79,6 +116,20 @@ function createClient(): PrismaClientLike {
   const missingClientMessage =
     'Prisma client could not be located. The generated client is expected at node_modules/.prisma/client/index.js. ' +
     'Run `pnpm prisma generate` before starting the app or building for production.';
+
+  const databaseUrl = resolveDatabaseUrl();
+
+  if (!databaseUrl) {
+    const message =
+      'No database connection string detected. Set DATABASE_URL (or POSTGRES_PRISMA_URL when using Vercel Postgres) before starting the app.';
+
+    if (allowStub) {
+      console.warn(`${message} Falling back to stub because PRISMA_ALLOW_STUB is enabled.`);
+      return createStubPrismaClient(message);
+    }
+
+    throw new Error(message);
+  }
 
   if (!hasGeneratedPrismaClient()) {
     if (allowStub) {
