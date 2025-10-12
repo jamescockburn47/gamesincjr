@@ -10,31 +10,41 @@ interface ConversationPanelProps {
   topics: Topic[];
   onSendMessage: (message: string, requestImage?: boolean) => void;
   onSelectTopic: (topic: Topic) => void;
+  onClearChat?: () => void;
+  onNewThread?: () => void;
+  onDeleteHistory?: () => void;
   isLoading: boolean;
   showImageButton?: boolean;
   sessionInfo?: SessionInfo | null;
   gameStatus?: GameStatus | null;
+  isDeletingHistory?: boolean;
 }
 
+/**
+ * Renders the active conversation view for a selected imaginary friend.
+ * The component receives a filtered list of messages to display so that
+ * callers can hide previous history while keeping it available for context.
+ */
 export default function ConversationPanel({
   messages,
   character,
   topics,
   onSendMessage,
   onSelectTopic,
+  onClearChat,
+  onNewThread,
+  onDeleteHistory,
   isLoading,
   showImageButton = false,
   sessionInfo,
   gameStatus,
+  isDeletingHistory = false,
 }: ConversationPanelProps) {
   const [inputMessage, setInputMessage] = useState('');
   const [showTopics, setShowTopics] = useState(false);
   const [countdown, setCountdown] = useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const [renderedMessages, setRenderedMessages] = useState(messages);
-
   useEffect(() => {
-    setRenderedMessages(messages);
     requestAnimationFrame(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     });
@@ -112,26 +122,30 @@ export default function ConversationPanel({
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => {
-              setRenderedMessages([]);
-              const ev = new CustomEvent('if:clear-chat');
-              window.dispatchEvent(ev);
-            }}
-            className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+            onClick={() => onClearChat?.()}
+            className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-50"
             title="Clear chat (keeps history saved)"
+            disabled={isLoading}
           >
             Clear chat
           </button>
           <button
             type="button"
-            onClick={() => {
-              const ev = new CustomEvent('if:new-thread');
-              window.dispatchEvent(ev);
-            }}
-            className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50"
+            onClick={() => onNewThread?.()}
+            className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-50"
             title="Start a new thread (history retained, context cleared)"
+            disabled={isLoading}
           >
             New thread
+          </button>
+          <button
+            type="button"
+            onClick={() => onDeleteHistory?.()}
+            className="rounded-md border border-rose-200 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
+            title="Delete all saved history for this friend"
+            disabled={isLoading || isDeletingHistory}
+          >
+            {isDeletingHistory ? 'Deleting…' : 'Delete history'}
           </button>
         </div>
       </div>
@@ -165,7 +179,7 @@ export default function ConversationPanel({
         </div>
       )}
       <div className="messages-container">
-        {renderedMessages.map((message) => (
+        {messages.map((message) => (
           <div
             key={`${message.id}-${messages.length}`}
             className={`message ${message.speaker === 'player' ? 'player-message' : 'character-message'}`}
