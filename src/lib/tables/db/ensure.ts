@@ -1,10 +1,14 @@
-import { Prisma, PrismaClient, Role, UserFact as PrismaUserFact } from '@prisma/client';
 import { selectNextBatch, type UserFact as SchedulerUserFact } from '../core/scheduler';
+import type { DbUserFactRecord, DbUserFactWithFact, PrismaClientLike } from './types';
 
 const FACT_COUNT = 12;
 const DEFAULT_EASINESS = 2.5;
 const MAX_OFFSET_MINUTES = 6 * 60; // stagger initial due dates within the last 6 hours
 
+/**
+ * Generate a deterministic pseudo-random offset used to stagger due dates for a
+ * user's multiplication facts so that initial schedules are distributed.
+ */
 function seededOffsetMinutes(userId: string, factId: string): number {
   const key = `${userId}:${factId}`;
   let hash = 0;
@@ -14,10 +18,17 @@ function seededOffsetMinutes(userId: string, factId: string): number {
   return hash % MAX_OFFSET_MINUTES;
 }
 
+/**
+ * Convert an offset in minutes to a concrete due date relative to the current
+ * time.
+ */
 function initialDueAt(offsetMinutes: number): Date {
   return new Date(Date.now() - offsetMinutes * 60 * 1000);
 }
 
+/**
+ * Translate a minute offset into an initial spaced-repetition interval in days.
+ */
 function initialIntervalDays(offsetMinutes: number): number {
   return Math.max(0, offsetMinutes / (60 * 24));
 }
@@ -32,9 +43,10 @@ export type NextFact = {
   dueAt: Date;
 };
 
-type UserFactWithFact = Prisma.UserFactGetPayload<{ include: { fact: true } }>;
-
-function toSchedulerUserFact(record: PrismaUserFact): SchedulerUserFact {
+/**
+ * Map a database user fact record into the scheduler-friendly structure.
+ */
+function toSchedulerUserFact(record: DbUserFactRecord): SchedulerUserFact {
   return {
     id: record.id,
     userId: record.userId,
@@ -49,11 +61,18 @@ function toSchedulerUserFact(record: PrismaUserFact): SchedulerUserFact {
   };
 }
 
+/**
+ * Build a lookup map keyed by the `id` property from the provided records.
+ */
 function byId<T extends { id: string }>(records: T[]): Map<string, T> {
   return new Map(records.map((record) => [record.id, record]));
 }
 
-export async function ensureFacts(prisma: PrismaClient): Promise<void> {
+/**
+ * Seed the multiplication facts table with FACT_COUNT × FACT_COUNT entries when
+ * the database has not been initialized yet.
+ */
+export async function ensureFacts(prisma: PrismaClientLike): Promise<void> {
   const count = await prisma.fact.count();
   if (count >= FACT_COUNT * FACT_COUNT) return;
 
@@ -70,26 +89,34 @@ export async function ensureFacts(prisma: PrismaClient): Promise<void> {
   });
 }
 
-export async function ensureUser(prisma: PrismaClient, userId: string): Promise<void> {
+/**
+ * Ensure a user exists with the default student role so practice sessions can
+ * be tracked.
+ */
+export async function ensureUser(prisma: PrismaClientLike, userId: string): Promise<void> {
   await prisma.user.upsert({
     where: { id: userId },
     update: {},
     create: {
       id: userId,
-      role: Role.STUDENT,
+      role: 'STUDENT',
       aiAllowed: false,
     },
   });
 }
 
-export async function ensureUserFacts(prisma: PrismaClient, userId: string): Promise<void> {
+/**
+ * Create missing `userFact` rows so every multiplication fact has a tracking
+ * record for the given user.
+ */
+export async function ensureUserFacts(prisma: PrismaClientLike, userId: string): Promise<void> {
   const factIds = await prisma.fact.findMany({ select: { id: true } });
   if (!factIds.length) return;
 
-  const existing = await prisma.userFact.findMany({
+  const existing = (await prisma.userFact.findMany({
     where: { userId },
     select: { factId: true },
-  });
+  })) as Array<{ factId: string }>;
   const existingIds = new Set(existing.map((entry) => entry.factId));
 
   const missing = factIds
@@ -113,8 +140,13 @@ export async function ensureUserFacts(prisma: PrismaClient, userId: string): Pro
   }
 }
 
+/**
+ * Retrieve the next batch of multiplication facts for the user, seeding any
+ * required data and falling back to simple ordering when the scheduler has no
+ * due records available.
+ */
 export async function getNextFactsForUser(
-  prisma: PrismaClient,
+  prisma: PrismaClientLike,
   userId: string,
   batchSize = 10,
 ): Promise<NextFact[]> {
@@ -124,17 +156,17 @@ export async function getNextFactsForUser(
 
   const now = new Date();
 
-  const dueRecords = await prisma.userFact.findMany({
+  const dueRecords = (await prisma.userFact.findMany({
     where: { userId, dueAt: { lte: now } },
     include: { fact: true },
     orderBy: [{ dueAt: 'asc' }],
-  });
+  })) as DbUserFactWithFact[];
 
-  const backlogRecords = await prisma.userFact.findMany({
+  const backlogRecords = (await prisma.userFact.findMany({
     where: { userId, dueAt: { gt: now } },
     include: { fact: true },
     orderBy: [{ dueAt: 'asc' }],
-  });
+  })) as DbUserFactWithFact[];
 
   const duePairs = dueRecords.map((record) => ({
     record,
@@ -151,22 +183,22 @@ export async function getNextFactsForUser(
     batchSize,
   );
 
-  const lookup = new Map<string, UserFactWithFact>();
+  const lookup = new Map<string, DbUserFactWithFact>();
   duePairs.forEach((pair) => lookup.set(pair.scheduler.id, pair.record));
   backlogPairs.forEach((pair) => lookup.set(pair.scheduler.id, pair.record));
 
   const selectedRecords = selectedScheduler
     .map((entry) => lookup.get(entry.id))
-    .filter((value): value is UserFactWithFact => Boolean(value));
+    .filter((value): value is DbUserFactWithFact => Boolean(value));
 
   if (!selectedRecords.length) {
     const fallbackFacts = await prisma.fact.findMany({
       orderBy: [{ a: 'asc' }, { b: 'asc' }],
       take: batchSize,
     });
-    const userFacts = await prisma.userFact.findMany({
+    const userFacts = (await prisma.userFact.findMany({
       where: { userId, factId: { in: fallbackFacts.map((fact) => fact.id) } },
-    });
+    })) as DbUserFactRecord[];
     const userFactMap = byId(userFacts);
     return fallbackFacts.map((fact) => {
       const uf = userFactMap.get(fact.id);
@@ -193,6 +225,10 @@ export async function getNextFactsForUser(
   }));
 }
 
-export function mapUserFactRecord(record: PrismaUserFact): SchedulerUserFact {
+/**
+ * Convenience mapper that exposes the scheduler transformation for external
+ * callers such as tests.
+ */
+export function mapUserFactRecord(record: DbUserFactRecord): SchedulerUserFact {
   return toSchedulerUserFact(record);
 }

@@ -22,6 +22,14 @@ export async function createSessionWithTargets(options?: {
   const mode = (options?.mode as SessionMode) || 'PRACTICE';
   const batchSize = options?.batchSize ?? 10;
 
+  if (prisma.__isStub) {
+    return {
+      session: { id: 'stub-session', userId, mode, endedAt: null },
+      userId,
+      targets: [],
+    };
+  }
+
   await ensureFacts(prisma);
   await ensureUser(prisma, userId);
   await ensureUserFacts(prisma, userId);
@@ -80,6 +88,10 @@ export async function recordAttempt(params: {
     : 0;
   const hintUsed = Boolean(params.hintUsed);
   const userId = params.userId?.trim() || DEFAULT_USER_ID;
+
+  if (prisma.__isStub) {
+    throw new Error('Database client unavailable. Run `pnpm prisma generate` to enable attempts.');
+  }
 
   await ensureFacts(prisma);
   await ensureUser(prisma, userId);

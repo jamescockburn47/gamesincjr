@@ -14,6 +14,33 @@ type AttemptResponse = {
   dueAt: string;
 };
 
+type AttemptErrorResponse = {
+  error?: string;
+};
+
+type AttemptResult = AttemptResponse | AttemptErrorResponse;
+
+/**
+ * Type guard ensuring the API payload matches the expected attempt response.
+ * Guards against malformed responses before we access shape-specific fields.
+ */
+function isAttemptResponse(data: AttemptResult): data is AttemptResponse {
+  if (typeof data !== "object" || data === null) {
+    return false;
+  }
+
+  const candidate = data as Record<string, unknown>;
+
+  return (
+    typeof candidate.correct === "boolean" &&
+    typeof candidate.expected === "number" &&
+    typeof candidate.awarded === "number" &&
+    typeof candidate.masteryLevel === "number" &&
+    typeof candidate.streak === "number" &&
+    typeof candidate.dueAt === "string"
+  );
+}
+
 type Props = {
   sessionId: string;
   userId: string;
@@ -73,15 +100,18 @@ export function PracticeClient({ sessionId, userId, initialTargets }: Props) {
         return;
       }
 
-      const data = (await res.json()) as AttemptResponse | { error?: string };
-      if ("error" in data) {
-        setFeedback(data.error ?? "Something went wrong.");
+      const data = (await res.json()) as AttemptResult;
+      if ("error" in data && data.error) {
+        setFeedback(data.error);
         return;
       }
 
-      if (typeof (data as AttemptResponse).awarded === "number") {
-        setCoins((prev) => prev + (data as AttemptResponse).awarded);
+      if (!isAttemptResponse(data)) {
+        setFeedback("We could not understand the server response. Please try again.");
+        return;
       }
+
+      setCoins((prev) => prev + data.awarded);
 
       const total = targets.length;
       const nextIndex = index + 1;
@@ -89,8 +119,8 @@ export function PracticeClient({ sessionId, userId, initialTargets }: Props) {
       setInput("");
       setIndex(nextIndex);
 
-      const wasCorrect = (data as AttemptResponse).correct === true;
-      const expected = (data as AttemptResponse).expected;
+      const wasCorrect = data.correct === true;
+      const expected = data.expected;
       let message = wasCorrect ? "Correct! Nice work." : `Nearly. ${factLabel} = ${expected}.`;
 
       if (nextIndex >= total) {
@@ -99,7 +129,7 @@ export function PracticeClient({ sessionId, userId, initialTargets }: Props) {
           message = "Progress saved, but we could not load a new batch. Try again in a moment.";
         } else if (nextBatch.length === 0) {
           message = "Everything due is complete right now. Great job staying on top of your facts!";
-        } else if (data.correct) {
+        } else if (wasCorrect) {
           message = "Batch cleared! A fresh set of practice facts is ready.";
         }
       }
