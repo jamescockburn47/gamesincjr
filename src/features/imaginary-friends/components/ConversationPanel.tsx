@@ -10,14 +10,13 @@ interface ConversationPanelProps {
   topics: Topic[];
   onSendMessage: (message: string, requestImage?: boolean) => void;
   onSelectTopic: (topic: Topic) => void;
-  onClearChat?: () => void;
+  onClearChat?: () => Promise<void> | void;
   onNewThread?: () => void;
-  onDeleteHistory?: () => void;
   isLoading: boolean;
   showImageButton?: boolean;
   sessionInfo?: SessionInfo | null;
   gameStatus?: GameStatus | null;
-  isDeletingHistory?: boolean;
+  isClearingChat?: boolean;
 }
 
 /**
@@ -33,12 +32,11 @@ export default function ConversationPanel({
   onSelectTopic,
   onClearChat,
   onNewThread,
-  onDeleteHistory,
   isLoading,
   showImageButton = false,
   sessionInfo,
   gameStatus,
-  isDeletingHistory = false,
+  isClearingChat = false,
 }: ConversationPanelProps) {
   const [inputMessage, setInputMessage] = useState('');
   const [showTopics, setShowTopics] = useState(false);
@@ -122,30 +120,28 @@ export default function ConversationPanel({
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => onClearChat?.()}
+            onClick={() => void onClearChat?.()}
             className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-50"
-            title="Clear chat (keeps history saved)"
-            disabled={isLoading}
+            title="Clear & delete chat history"
+            disabled={isLoading || isClearingChat}
           >
-            Clear chat
+            {isClearingChat ? (
+              <span className="flex items-center gap-2" aria-live="polite">
+                <span className="h-3 w-3 animate-spin rounded-full border border-slate-400 border-t-transparent" aria-hidden />
+                Clearing…
+              </span>
+            ) : (
+              'Clear & delete history'
+            )}
           </button>
           <button
             type="button"
             onClick={() => onNewThread?.()}
             className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-50"
             title="Start a new thread (history retained, context cleared)"
-            disabled={isLoading}
+            disabled={isLoading || isClearingChat}
           >
             New thread
-          </button>
-          <button
-            type="button"
-            onClick={() => onDeleteHistory?.()}
-            className="rounded-md border border-rose-200 px-3 py-1.5 text-xs text-rose-600 hover:bg-rose-50 disabled:opacity-50"
-            title="Delete all saved history for this friend"
-            disabled={isLoading || isDeletingHistory}
-          >
-            {isDeletingHistory ? 'Deleting…' : 'Delete history'}
           </button>
         </div>
       </div>
