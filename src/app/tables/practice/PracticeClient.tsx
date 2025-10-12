@@ -99,7 +99,7 @@ export function PracticeClient({ sessionId, userId, initialTargets }: Props) {
           message = "Progress saved, but we could not load a new batch. Try again in a moment.";
         } else if (nextBatch.length === 0) {
           message = "Everything due is complete right now. Great job staying on top of your facts!";
-        } else if (data.correct) {
+        } else if (wasCorrect) {
           message = "Batch cleared! A fresh set of practice facts is ready.";
         }
       }

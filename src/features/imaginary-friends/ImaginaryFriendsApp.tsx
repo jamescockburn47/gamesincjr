@@ -25,7 +25,25 @@ const STORAGE_KEYS = {
   lastAvatarRefreshAt: 'if_lastAvatarRefreshAt',
 };
 
+const conversationStorageKey = (userId: string, characterId: string) =>
+  `${STORAGE_KEYS.messages}:${userId}:${characterId}`;
+
 type Sentiment = 'happy' | 'sad' | 'excited' | 'thoughtful' | 'curious';
+
+type SavedMessageEntry = {
+  id: string;
+  speaker: 'player' | 'character';
+  text: string;
+  timestamp: string;
+  imageUrl?: string | null;
+};
+
+type SavedMessagesPayload =
+  | SavedMessageEntry[]
+  | {
+      entries?: SavedMessageEntry[];
+      hiddenBefore?: number;
+    };
 
 type StreamEvent =
   | { type: 'start'; sessionInfo?: SessionInfo }
@@ -40,7 +58,9 @@ function analyseSentiment(text: string): Sentiment {
   if (/sad|sorry|upset|disappointed|worried|trouble|difficult/.test(value)) return 'sad';
   if (/what|how|why|tell me|explain|curious|wonder|interesting/.test(value)) return 'curious';
   return 'thoughtful';
-}function canCreateThisWeek(lastCreated: number | null): boolean {
+}
+
+function canCreateThisWeek(lastCreated: number | null): boolean {
   if (!lastCreated) return true;
   const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
   return Date.now() - lastCreated >= oneWeekMs;
@@ -58,29 +78,34 @@ function blockedMessage(lastCreated: number | null): string | undefined {
 
 export default function ImaginaryFriendsApp() {
   const [selectedCharacter, setSelectedCharacter] = useState<Character | null>(null);
-const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [hiddenBefore, setHiddenBefore] = useState<number>(0);
   const [userId, setUserId] = useState<string>('default');
   const [username, setUsername] = useState<string>('');
   const messagesRef = useRef<ConversationMessage[]>([]);
-const [characters, setCharacters] = useState<Character[]>(baseCharacters);
-const [isLoading, setIsLoading] = useState(false);
-const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
-const [showImageButton, setShowImageButton] = useState(false);
-const [gameStatus, setGameStatus] = useState<GameStatus | null>(null);
-const [showCreator, setShowCreator] = useState(false);
+  const [characters, setCharacters] = useState<Character[]>(baseCharacters);
+  const [isLoading, setIsLoading] = useState(false);
+  const [sessionInfo, setSessionInfo] = useState<SessionInfo | null>(null);
+  const [showImageButton, setShowImageButton] = useState(false);
+  const [gameStatus, setGameStatus] = useState<GameStatus | null>(null);
+  const [showCreator, setShowCreator] = useState(false);
+  const [isDeletingHistory, setIsDeletingHistory] = useState(false);
   const [lastApi, setLastApi] = useState<{ req?: unknown; res?: unknown; error?: string } | null>(null);
   const [lastCreatedAt, setLastCreatedAt] = useState<number | null>(null);
   const [avatarsLoaded, setAvatarsLoaded] = useState(false);
+  const effectiveUserId = useMemo(() => userId.trim() || 'default', [userId]);
+  const selectedCharacterId = selectedCharacter?.id ?? null;
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
-  const imagesAvailable = (info: SessionInfo | null | undefined) => {
+  const skipNextPersistenceRef = useRef(false);
+  const imagesAvailable = useCallback((info: SessionInfo | null | undefined) => {
     if (!info) return 0;
     const allowance = info.imageAllowanceRemaining ?? info.imagesRemaining;
     return Math.max(0, Math.min(info.imagesRemaining, allowance));
-  };
+  }, []);
 
-  const pushSystemMessage = (message: string) => {
+  const pushSystemMessage = useCallback((message: string) => {
     setMessages((prev) => [
       ...prev,
       {
@@ -90,7 +115,7 @@ const [showCreator, setShowCreator] = useState(false);
         timestamp: new Date(),
       },
     ]);
-  };
+  }, []);
 
   const createFallbackGameStatus = useCallback(
     (character: Character): GameStatus => ({
@@ -127,7 +152,7 @@ const [showCreator, setShowCreator] = useState(false);
     } catch (error) {
       console.warn('Failed to load session info', error);
     }
-  }, []);
+  }, [imagesAvailable]);
 
   useEffect(() => {
     loadSessionStatus();
@@ -153,12 +178,11 @@ const [showCreator, setShowCreator] = useState(false);
 
   useEffect(() => {
     setShowImageButton(imagesAvailable(sessionInfo) > 0);
-  }, [sessionInfo]);
+  }, [imagesAvailable, sessionInfo]);
 
   useEffect(() => {
     try {
       const savedCharId = localStorage.getItem(STORAGE_KEYS.selectedCharacter);
-      const savedMessagesRaw = sessionStorage.getItem(STORAGE_KEYS.messages);
       const savedCustomRaw = localStorage.getItem(STORAGE_KEYS.customCharacters);
       const savedCreatedAt = localStorage.getItem(STORAGE_KEYS.lastCreatedAt);
 
@@ -185,25 +209,6 @@ const [showCreator, setShowCreator] = useState(false);
         }
       }
 
-      if (savedMessagesRaw) {
-        try {
-          const parsed = JSON.parse(savedMessagesRaw) as Array<{
-            id: string;
-            speaker: 'player' | 'character';
-            text: string;
-            timestamp: string;
-            imageUrl?: string | null;
-          }>;
-          const restored = parsed.map<ConversationMessage>((message) => ({
-            ...message,
-            timestamp: new Date(message.timestamp),
-          }));
-          if (restored.length) setMessages(restored);
-        } catch {
-          // ignore invalid session data
-        }
-      }
-
       if (savedCreatedAt) {
         setLastCreatedAt(Number(savedCreatedAt));
       }
@@ -211,26 +216,6 @@ const [showCreator, setShowCreator] = useState(false);
       // ignore storage issues
     }
   }, [characters, createFallbackGameStatus]);
-
-  // Listen for new-thread requests from ConversationPanel
-  useEffect(() => {
-    function onNewThread() {
-      setMessages([]);
-      // Next outgoing request will include newThread: true by toggling once
-      // We can store a flag in a ref if needed; for simplicity, rely on empty history
-    }
-    function onClearChat() {
-      setMessages([]);
-      try { sessionStorage.removeItem(STORAGE_KEYS.messages); } catch {}
-    }
-    window.addEventListener('if:new-thread', onNewThread);
-    window.addEventListener('if:clear-chat', onClearChat);
-    return () => {
-      window.removeEventListener('if:new-thread', onNewThread);
-      window.removeEventListener('if:clear-chat', onClearChat);
-    };
-  }, []);
-
   // Optional: autostart via query (?autostart=luna)
   useEffect(() => {
     if (selectedCharacter) return;
@@ -306,6 +291,7 @@ const [showCreator, setShowCreator] = useState(false);
         const data = (await response.json()) as CharacterIntroResponse;
         // Only seed intro if no messages have arrived in the meantime
         if (messagesRef.current.length === 0) {
+          setHiddenBefore(0);
           setMessages([
             {
               id: String(Date.now()),
@@ -325,6 +311,7 @@ const [showCreator, setShowCreator] = useState(false);
         }
       } catch (error) {
         console.warn('Failed to initialise conversation', error);
+        setHiddenBefore(0);
         setMessages([
           {
             id: String(Date.now()),
@@ -344,7 +331,7 @@ const [showCreator, setShowCreator] = useState(false);
     [characters, createFallbackGameStatus, updateCharacterMood],
   );
 
-useEffect(() => {
+  useEffect(() => {
     if (selectedCharacter) {
       localStorage.setItem(STORAGE_KEYS.selectedCharacter, selectedCharacter.id);
       if (!messages.length) {
@@ -354,20 +341,179 @@ useEffect(() => {
   }, [selectedCharacter, messages.length, initialiseConversation]);
 
   useEffect(() => {
+    if (!selectedCharacterId) {
+      return;
+    }
+    if (messagesRef.current.length > 0) {
+      return;
+    }
+    const storageKey = conversationStorageKey(effectiveUserId, selectedCharacterId);
     try {
-      const serialised = JSON.stringify(
-        messages.map((message) => ({
+      const savedMessagesRaw = sessionStorage.getItem(storageKey);
+      if (!savedMessagesRaw) {
+        messagesRef.current = [];
+        setHiddenBefore(0);
+        setMessages([]);
+        return;
+      }
+      const parsed = JSON.parse(savedMessagesRaw) as SavedMessagesPayload;
+      const entries = Array.isArray(parsed)
+        ? parsed
+        : Array.isArray(parsed?.entries)
+          ? parsed.entries
+          : [];
+      const restored = entries.map<ConversationMessage>((message) => ({
+        ...message,
+        timestamp: new Date(message.timestamp),
+      }));
+      messagesRef.current = restored;
+      setMessages(restored);
+      const storedHiddenBefore = Array.isArray(parsed)
+        ? 0
+        : typeof parsed?.hiddenBefore === 'number'
+          ? parsed.hiddenBefore
+          : 0;
+      setHiddenBefore(storedHiddenBefore);
+    } catch {
+      // ignore invalid session data
+    }
+  }, [effectiveUserId, selectedCharacterId]);
+
+  useEffect(() => {
+    if (!selectedCharacterId) {
+      return;
+    }
+    if (skipNextPersistenceRef.current) {
+      skipNextPersistenceRef.current = false;
+      return;
+    }
+    const storageKey = conversationStorageKey(effectiveUserId, selectedCharacterId);
+    try {
+      if (!messages.length && hiddenBefore <= 0) {
+        sessionStorage.removeItem(storageKey);
+        return;
+      }
+      const serialised = JSON.stringify({
+        entries: messages.map((message) => ({
           ...message,
           timestamp: message.timestamp.toISOString(),
         })),
-      );
-      sessionStorage.setItem(STORAGE_KEYS.messages, serialised);
+        hiddenBefore,
+      });
+      sessionStorage.setItem(storageKey, serialised);
     } catch {
       // ignore storage issues
     }
-  }, [messages]);
+  }, [effectiveUserId, hiddenBefore, messages, selectedCharacterId]);
 
-  
+  /**
+   * Reset the in-memory chat state and purge the persisted session cache.
+   * Used when starting a fresh thread or after permanently deleting history.
+   */
+  const clearStoredMessages = useCallback(
+    (characterId?: string | null) => {
+      const activeCharacterId = characterId ?? selectedCharacterId;
+      skipNextPersistenceRef.current = true;
+      messagesRef.current = [];
+      setMessages([]);
+      setHiddenBefore(0);
+      if (!activeCharacterId) {
+        return;
+      }
+      try {
+        const storageKey = conversationStorageKey(effectiveUserId, activeCharacterId);
+        sessionStorage.removeItem(storageKey);
+      } catch {
+        // ignore storage issues
+      }
+    },
+    [effectiveUserId, selectedCharacterId],
+  );
+
+  const handleClearChat = useCallback(() => {
+    setHiddenBefore(Date.now() + 1);
+  }, []);
+
+  const handleNewThread = useCallback(() => {
+    clearStoredMessages();
+  }, [clearStoredMessages]);
+
+  /**
+   * Load the last stored turns for a character/user pair so the UI can
+   * surface them immediately while still allowing the server to use them
+   * for context. We only hydrate when the current chat is empty to avoid
+   * clobbering in-progress conversations.
+   */
+  const restoreConversationHistory = useCallback(
+    async (characterId: string, targetUserId: string) => {
+      try {
+        const params = new URLSearchParams({
+          characterId,
+          userId: targetUserId,
+        });
+        const res = await fetch(`${API_BASE_URL}/history?${params.toString()}`, { cache: 'no-store' });
+        if (!res.ok) {
+          return;
+        }
+        const data = (await res.json()) as {
+          turns?: Array<{ speaker: 'player' | 'character'; text: string }>;
+        };
+        const turns = Array.isArray(data.turns) ? data.turns : [];
+        if (!turns.length || messagesRef.current.length > 0) {
+          return;
+        }
+        const seeded: ConversationMessage[] = turns.map((turn, index) => ({
+          id: `${Date.now()}-${index}`,
+          speaker: turn.speaker,
+          text: turn.text,
+          timestamp: new Date(),
+        }));
+        messagesRef.current = seeded;
+        setMessages(seeded);
+      } catch (error) {
+        console.warn('Failed to restore conversation history', error);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!selectedCharacterId) {
+      return;
+    }
+    const resolvedUserId = effectiveUserId;
+    if (!resolvedUserId || messagesRef.current.length > 0) {
+      return;
+    }
+    void restoreConversationHistory(selectedCharacterId, resolvedUserId);
+  }, [effectiveUserId, restoreConversationHistory, selectedCharacterId]);
+
+  const handleDeleteHistory = useCallback(async () => {
+    if (!selectedCharacter || isDeletingHistory) {
+      return;
+    }
+    setIsDeletingHistory(true);
+    try {
+      const params = new URLSearchParams({
+        characterId: selectedCharacter.id,
+        userId: effectiveUserId,
+      });
+      const response = await fetch(`${API_BASE_URL}/history?${params.toString()}`, {
+        method: 'DELETE',
+        cache: 'no-store',
+      });
+      if (!response.ok && response.status !== 204) {
+        throw new Error(`Failed to delete history (${response.status})`);
+      }
+      clearStoredMessages(selectedCharacter.id);
+    } catch (error) {
+      console.error('Failed to delete conversation history', error);
+      pushSystemMessage("I couldn't clear our saved chats right now. Let's try again in a moment!");
+    } finally {
+      setIsDeletingHistory(false);
+    }
+  }, [clearStoredMessages, effectiveUserId, isDeletingHistory, pushSystemMessage, selectedCharacter]);
+
   const handleSendMessage = useCallback(
     async (messageText: string, requestImage = false) => {
       if (!selectedCharacter) return;
@@ -442,7 +588,7 @@ useEffect(() => {
             speaker: entry.speaker,
             text: entry.text,
           })),
-          userId,
+          userId: effectiveUserId,
           newThread: false,
         };
         const response = await fetch(API_BASE_URL + '/chat', {
@@ -533,7 +679,17 @@ useEffect(() => {
         setIsLoading(false);
       }
     },
-    [createFallbackGameStatus, messages, selectedCharacter, sessionInfo, updateCharacterMood, userId, username],
+    [
+      createFallbackGameStatus,
+      imagesAvailable,
+      messages,
+      pushSystemMessage,
+      selectedCharacter,
+      sessionInfo,
+      updateCharacterMood,
+      effectiveUserId,
+      username,
+    ],
   );
 
 
@@ -565,6 +721,17 @@ useEffect(() => {
   const canCreate = canCreateThisWeek(lastCreatedAt);
   const blockedReason = blockedMessage(lastCreatedAt);
 
+  const visibleMessages = useMemo(() => {
+    if (hiddenBefore <= 0) {
+      return messages;
+    }
+    return messages.filter((message) => {
+      const timeValue =
+        message.timestamp instanceof Date ? message.timestamp.getTime() : new Date(message.timestamp).getTime();
+      return Number.isFinite(timeValue) && timeValue >= hiddenBefore;
+    });
+  }, [hiddenBefore, messages]);
+
   return (
     <div className="if-app">
       <header className="if-hero">
@@ -593,23 +760,13 @@ useEffect(() => {
                   character={character}
                   isSelected={false}
                   onClick={() => {
+                    const resolvedUserId = effectiveUserId;
+                    skipNextPersistenceRef.current = true;
+                    messagesRef.current = [];
+                    setHiddenBefore(0);
                     setMessages([]);
                     // Seed from server history for context continuity (guard so we don't overwrite live chat)
-                    fetch(`${API_BASE_URL}/history?characterId=${character.id}&userId=default`)
-                      .then(async (res) => (res.ok ? ((await res.json()) as { turns?: Array<{ speaker: 'player' | 'character'; text: string }> }) : { turns: [] }))
-                      .then((data) => {
-                        const turns = Array.isArray(data.turns) ? data.turns : [];
-                        if (turns.length) {
-                          const seeded: ConversationMessage[] = turns.map((t, idx) => ({
-                            id: `${Date.now()}-${idx}`,
-                            speaker: t.speaker,
-                            text: t.text,
-                            timestamp: new Date(),
-                          }));
-                          setMessages((prev) => (prev.length ? prev : seeded));
-                        }
-                      })
-                      .catch(() => undefined);
+                    void restoreConversationHistory(character.id, resolvedUserId);
                     setGameStatus(createFallbackGameStatus(character));
                     setSelectedCharacter(character);
                   }}
@@ -624,9 +781,12 @@ useEffect(() => {
                 type="button"
                 className="if-back"
                 onClick={() => {
+                  skipNextPersistenceRef.current = true;
+                  messagesRef.current = [];
                   setSelectedCharacter(null);
                   setGameStatus(null);
                   setMessages([]);
+                  setHiddenBefore(0);
                 }}
               >
                 Back to friends list
@@ -661,16 +821,20 @@ useEffect(() => {
               </div>
             </aside>
             <ConversationPanel
-              key={`conv-${messages.length}`}
-              messages={messages}
+              key={`conv-${selectedCharacter?.id ?? 'none'}-${hiddenBefore}-${visibleMessages.length}`}
+              messages={visibleMessages}
               character={selectedCharacter}
               topics={topics}
               onSendMessage={handleSendMessage}
               onSelectTopic={handleTopicSelected}
+              onClearChat={handleClearChat}
+              onNewThread={handleNewThread}
+              onDeleteHistory={handleDeleteHistory}
               isLoading={isLoading}
               showImageButton={showImageButton}
               sessionInfo={sessionInfo}
               gameStatus={gameStatus}
+              isDeletingHistory={isDeletingHistory}
             />
           </section>
         )}
