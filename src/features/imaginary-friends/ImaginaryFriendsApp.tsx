@@ -75,6 +75,7 @@ export default function ImaginaryFriendsApp() {
   const [lastApi, setLastApi] = useState<{ req?: unknown; res?: unknown; error?: string } | null>(null);
   const [lastCreatedAt, setLastCreatedAt] = useState<number | null>(null);
   const [avatarsLoaded, setAvatarsLoaded] = useState(false);
+  const effectiveUserId = useMemo(() => userId.trim() || 'default', [userId]);
   useEffect(() => {
     messagesRef.current = messages;
   }, [messages]);
@@ -355,7 +356,7 @@ export default function ImaginaryFriendsApp() {
     [characters, createFallbackGameStatus, updateCharacterMood],
   );
 
-useEffect(() => {
+  useEffect(() => {
     if (selectedCharacter) {
       localStorage.setItem(STORAGE_KEYS.selectedCharacter, selectedCharacter.id);
       if (!messages.length) {
@@ -388,6 +389,7 @@ useEffect(() => {
   }, []);
 
   const handleNewThread = useCallback(() => {
+    messagesRef.current = [];
     setMessages([]);
     setHiddenBefore(0);
     try {
@@ -397,6 +399,57 @@ useEffect(() => {
     }
   }, []);
 
+  /**
+   * Load the last stored turns for a character/user pair so the UI can
+   * surface them immediately while still allowing the server to use them
+   * for context. We only hydrate when the current chat is empty to avoid
+   * clobbering in-progress conversations.
+   */
+  const restoreConversationHistory = useCallback(
+    async (characterId: string, targetUserId: string) => {
+      try {
+        const params = new URLSearchParams({
+          characterId,
+          userId: targetUserId,
+        });
+        const res = await fetch(`${API_BASE_URL}/history?${params.toString()}`, { cache: 'no-store' });
+        if (!res.ok) {
+          return;
+        }
+        const data = (await res.json()) as {
+          turns?: Array<{ speaker: 'player' | 'character'; text: string }>;
+        };
+        const turns = Array.isArray(data.turns) ? data.turns : [];
+        if (!turns.length || messagesRef.current.length > 0) {
+          return;
+        }
+        const seeded: ConversationMessage[] = turns.map((turn, index) => ({
+          id: `${Date.now()}-${index}`,
+          speaker: turn.speaker,
+          text: turn.text,
+          timestamp: new Date(),
+        }));
+        setHiddenBefore(0);
+        messagesRef.current = seeded;
+        setMessages(seeded);
+      } catch (error) {
+        console.warn('Failed to restore conversation history', error);
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    if (!selectedCharacter) {
+      return;
+    }
+    const resolvedUserId = effectiveUserId;
+    if (!resolvedUserId || messagesRef.current.length > 0) {
+      return;
+    }
+    void restoreConversationHistory(selectedCharacter.id, resolvedUserId);
+  }, [effectiveUserId, restoreConversationHistory, selectedCharacter]);
+
   const handleDeleteHistory = useCallback(async () => {
     if (!selectedCharacter || isDeletingHistory) {
       return;
@@ -405,7 +458,7 @@ useEffect(() => {
     try {
       const params = new URLSearchParams({
         characterId: selectedCharacter.id,
-        userId,
+        userId: effectiveUserId,
       });
       const response = await fetch(`${API_BASE_URL}/history?${params.toString()}`, {
         method: 'DELETE',
@@ -414,6 +467,7 @@ useEffect(() => {
       if (!response.ok && response.status !== 204) {
         throw new Error(`Failed to delete history (${response.status})`);
       }
+      messagesRef.current = [];
       setMessages([]);
       setHiddenBefore(0);
       try {
@@ -427,7 +481,7 @@ useEffect(() => {
     } finally {
       setIsDeletingHistory(false);
     }
-  }, [isDeletingHistory, pushSystemMessage, selectedCharacter, userId]);
+  }, [effectiveUserId, isDeletingHistory, pushSystemMessage, selectedCharacter]);
 
   const handleSendMessage = useCallback(
     async (messageText: string, requestImage = false) => {
@@ -503,7 +557,7 @@ useEffect(() => {
             speaker: entry.speaker,
             text: entry.text,
           })),
-          userId,
+          userId: effectiveUserId,
           newThread: false,
         };
         const response = await fetch(API_BASE_URL + '/chat', {
@@ -602,7 +656,7 @@ useEffect(() => {
       selectedCharacter,
       sessionInfo,
       updateCharacterMood,
-      userId,
+      effectiveUserId,
       username,
     ],
   );
@@ -675,25 +729,12 @@ useEffect(() => {
                   character={character}
                   isSelected={false}
                   onClick={() => {
+                    const resolvedUserId = effectiveUserId;
+                    messagesRef.current = [];
                     setHiddenBefore(0);
                     setMessages([]);
                     // Seed from server history for context continuity (guard so we don't overwrite live chat)
-                    fetch(`${API_BASE_URL}/history?characterId=${character.id}&userId=default`)
-                      .then(async (res) => (res.ok ? ((await res.json()) as { turns?: Array<{ speaker: 'player' | 'character'; text: string }> }) : { turns: [] }))
-                      .then((data) => {
-                        const turns = Array.isArray(data.turns) ? data.turns : [];
-                        if (turns.length && messagesRef.current.length === 0) {
-                          const seeded: ConversationMessage[] = turns.map((t, idx) => ({
-                            id: `${Date.now()}-${idx}`,
-                            speaker: t.speaker,
-                            text: t.text,
-                            timestamp: new Date(),
-                          }));
-                          setHiddenBefore(0);
-                          setMessages(seeded);
-                        }
-                      })
-                      .catch(() => undefined);
+                    void restoreConversationHistory(character.id, resolvedUserId);
                     setGameStatus(createFallbackGameStatus(character));
                     setSelectedCharacter(character);
                   }}
