@@ -23,6 +23,7 @@ const STORAGE_KEYS = {
   customCharacters: 'if_customCharacters',
   lastCreatedAt: 'if_lastCustomCreatedAt',
   lastAvatarRefreshAt: 'if_lastAvatarRefreshAt',
+  clearedMarkers: 'if_clearedConversations',
 };
 
 type Sentiment = 'happy' | 'sad' | 'excited' | 'thoughtful' | 'curious';
@@ -47,6 +48,8 @@ type StreamEvent =
   | { type: 'delta'; text: string }
   | { type: 'final'; response: string; imageUrl?: string | null; gameStatus?: GameStatus; sessionInfo?: SessionInfo }
   | { type: 'error'; error: string };
+
+const conversationMarkerKey = (characterId: string, userId: string) => `${userId}::${characterId}`;
 
 function analyseSentiment(text: string): Sentiment {
   const value = text.toLowerCase();
@@ -86,7 +89,7 @@ export default function ImaginaryFriendsApp() {
   const [showImageButton, setShowImageButton] = useState(false);
   const [gameStatus, setGameStatus] = useState<GameStatus | null>(null);
   const [showCreator, setShowCreator] = useState(false);
-  const [isDeletingHistory, setIsDeletingHistory] = useState(false);
+  const [isClearingHistory, setIsClearingHistory] = useState(false);
   const [lastApi, setLastApi] = useState<{ req?: unknown; res?: unknown; error?: string } | null>(null);
   const [lastCreatedAt, setLastCreatedAt] = useState<number | null>(null);
   const [avatarsLoaded, setAvatarsLoaded] = useState(false);
@@ -135,6 +138,68 @@ export default function ImaginaryFriendsApp() {
     setCharacters((prev) =>
       prev.map((character) => (character.id === characterId ? { ...character, currentMood: mood } : character)),
     );
+  }, []);
+
+  const markConversationCleared = useCallback((characterId: string, targetUserId: string) => {
+    if (!characterId || !targetUserId) return;
+    try {
+      const key = conversationMarkerKey(characterId, targetUserId);
+      const raw = sessionStorage.getItem(STORAGE_KEYS.clearedMarkers);
+      const parsed = raw ? (JSON.parse(raw) as Record<string, unknown>) : {};
+      const markers: Record<string, number> = {};
+      if (parsed && typeof parsed === 'object') {
+        Object.entries(parsed).forEach(([entryKey, value]) => {
+          if (typeof value === 'number') {
+            markers[entryKey] = value;
+          }
+        });
+      }
+      markers[key] = Date.now();
+      sessionStorage.setItem(STORAGE_KEYS.clearedMarkers, JSON.stringify(markers));
+    } catch {
+      // ignore storage issues
+    }
+  }, []);
+
+  const clearConversationClearedMarker = useCallback((characterId: string, targetUserId: string) => {
+    if (!characterId || !targetUserId) return;
+    try {
+      const key = conversationMarkerKey(characterId, targetUserId);
+      const raw = sessionStorage.getItem(STORAGE_KEYS.clearedMarkers);
+      if (!raw) return;
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      if (!parsed || typeof parsed !== 'object') {
+        sessionStorage.removeItem(STORAGE_KEYS.clearedMarkers);
+        return;
+      }
+      const markers: Record<string, number> = {};
+      Object.entries(parsed).forEach(([entryKey, value]) => {
+        if (entryKey !== key && typeof value === 'number') {
+          markers[entryKey] = value;
+        }
+      });
+      if (Object.keys(markers).length === 0) {
+        sessionStorage.removeItem(STORAGE_KEYS.clearedMarkers);
+      } else {
+        sessionStorage.setItem(STORAGE_KEYS.clearedMarkers, JSON.stringify(markers));
+      }
+    } catch {
+      // ignore storage issues
+    }
+  }, []);
+
+  const wasConversationClearedThisSession = useCallback((characterId: string, targetUserId: string) => {
+    if (!characterId || !targetUserId) return false;
+    try {
+      const key = conversationMarkerKey(characterId, targetUserId);
+      const raw = sessionStorage.getItem(STORAGE_KEYS.clearedMarkers);
+      if (!raw) return false;
+      const parsed = JSON.parse(raw) as Record<string, unknown>;
+      if (!parsed || typeof parsed !== 'object') return false;
+      return typeof parsed[key] === 'number';
+    } catch {
+      return false;
+    }
   }, []);
 
   const loadSessionStatus = useCallback(async () => {
@@ -387,6 +452,7 @@ export default function ImaginaryFriendsApp() {
    * Used when starting a fresh thread or after permanently deleting history.
    */
   const clearStoredMessages = useCallback(() => {
+    messagesRef.current = [];
     setMessages([]);
     setHiddenBefore(0);
     try {
@@ -396,12 +462,35 @@ export default function ImaginaryFriendsApp() {
     }
   }, []);
 
-  const handleClearChat = useCallback(() => {
-    setHiddenBefore(Date.now() + 1);
-  }, []);
+  const handleClearChat = useCallback(async () => {
+    if (!selectedCharacter || isClearingHistory) {
+      return;
+    }
+    setIsClearingHistory(true);
+    try {
+      const params = new URLSearchParams({
+        characterId: selectedCharacter.id,
+        userId: effectiveUserId,
+      });
+      const response = await fetch(`${API_BASE_URL}/history?${params.toString()}`, {
+        method: 'DELETE',
+        cache: 'no-store',
+      });
+      if (!response.ok && response.status !== 204) {
+        throw new Error(`Failed to delete history (${response.status})`);
+      }
+      clearStoredMessages();
+      markConversationCleared(selectedCharacter.id, effectiveUserId);
+      setGameStatus(null);
+    } catch (error) {
+      console.error('Failed to clear conversation history', error);
+      pushSystemMessage("I couldn't clear our saved chats right now. Let's try again in a moment!");
+    } finally {
+      setIsClearingHistory(false);
+    }
+  }, [clearStoredMessages, effectiveUserId, isClearingHistory, markConversationCleared, pushSystemMessage, selectedCharacter]);
 
   const handleNewThread = useCallback(() => {
-    messagesRef.current = [];
     clearStoredMessages();
   }, [clearStoredMessages]);
 
@@ -413,11 +502,15 @@ export default function ImaginaryFriendsApp() {
    */
   const restoreConversationHistory = useCallback(
     async (characterId: string, targetUserId: string) => {
+      if (wasConversationClearedThisSession(characterId, targetUserId)) {
+        return;
+      }
       try {
         const params = new URLSearchParams({
           characterId,
           userId: targetUserId,
         });
+        params.set('skipCache', '1');
         const res = await fetch(`${API_BASE_URL}/history?${params.toString()}`, { cache: 'no-store' });
         if (!res.ok) {
           return;
@@ -442,7 +535,7 @@ export default function ImaginaryFriendsApp() {
         console.warn('Failed to restore conversation history', error);
       }
     },
-    [],
+    [wasConversationClearedThisSession],
   );
 
   useEffect(() => {
@@ -456,36 +549,11 @@ export default function ImaginaryFriendsApp() {
     void restoreConversationHistory(selectedCharacter.id, resolvedUserId);
   }, [effectiveUserId, restoreConversationHistory, selectedCharacter]);
 
-  const handleDeleteHistory = useCallback(async () => {
-    if (!selectedCharacter || isDeletingHistory) {
-      return;
-    }
-    setIsDeletingHistory(true);
-    try {
-      const params = new URLSearchParams({
-        characterId: selectedCharacter.id,
-        userId: effectiveUserId,
-      });
-      const response = await fetch(`${API_BASE_URL}/history?${params.toString()}`, {
-        method: 'DELETE',
-        cache: 'no-store',
-      });
-      if (!response.ok && response.status !== 204) {
-        throw new Error(`Failed to delete history (${response.status})`);
-      }
-      messagesRef.current = [];
-      clearStoredMessages();
-    } catch (error) {
-      console.error('Failed to delete conversation history', error);
-      pushSystemMessage("I couldn't clear our saved chats right now. Let's try again in a moment!");
-    } finally {
-      setIsDeletingHistory(false);
-    }
-  }, [clearStoredMessages, effectiveUserId, isDeletingHistory, pushSystemMessage, selectedCharacter]);
-
   const handleSendMessage = useCallback(
     async (messageText: string, requestImage = false) => {
       if (!selectedCharacter) return;
+
+      clearConversationClearedMarker(selectedCharacter.id, effectiveUserId);
 
       if (sessionInfo && sessionInfo.remainingTime <= 0) {
         pushSystemMessage("I've had a wonderful time today, but I need to rest. Let's talk again tomorrow!");
@@ -649,6 +717,7 @@ export default function ImaginaryFriendsApp() {
       }
     },
     [
+      clearConversationClearedMarker,
       createFallbackGameStatus,
       imagesAvailable,
       messages,
@@ -795,12 +864,11 @@ export default function ImaginaryFriendsApp() {
               onSelectTopic={handleTopicSelected}
               onClearChat={handleClearChat}
               onNewThread={handleNewThread}
-              onDeleteHistory={handleDeleteHistory}
               isLoading={isLoading}
               showImageButton={showImageButton}
               sessionInfo={sessionInfo}
               gameStatus={gameStatus}
-              isDeletingHistory={isDeletingHistory}
+              isClearingChat={isClearingHistory}
             />
           </section>
         )}
