@@ -27,6 +27,21 @@ const STORAGE_KEYS = {
 
 type Sentiment = 'happy' | 'sad' | 'excited' | 'thoughtful' | 'curious';
 
+type SavedMessageEntry = {
+  id: string;
+  speaker: 'player' | 'character';
+  text: string;
+  timestamp: string;
+  imageUrl?: string | null;
+};
+
+type SavedMessagesPayload =
+  | SavedMessageEntry[]
+  | {
+      entries?: SavedMessageEntry[];
+      hiddenBefore?: number;
+    };
+
 type StreamEvent =
   | { type: 'start'; sessionInfo?: SessionInfo }
   | { type: 'delta'; text: string }
@@ -192,24 +207,7 @@ export default function ImaginaryFriendsApp() {
 
       if (savedMessagesRaw) {
         try {
-          const parsed = JSON.parse(savedMessagesRaw) as
-            | Array<{
-                id: string;
-                speaker: 'player' | 'character';
-                text: string;
-                timestamp: string;
-                imageUrl?: string | null;
-              }>
-            | {
-                entries?: Array<{
-                  id: string;
-                  speaker: 'player' | 'character';
-                  text: string;
-                  timestamp: string;
-                  imageUrl?: string | null;
-                }>;
-                hiddenBefore?: number;
-              };
+          const parsed = JSON.parse(savedMessagesRaw) as SavedMessagesPayload;
 
           const entries = Array.isArray(parsed)
             ? parsed
@@ -384,12 +382,11 @@ export default function ImaginaryFriendsApp() {
     }
   }, [messages, hiddenBefore]);
 
-  const handleClearChat = useCallback(() => {
-    setHiddenBefore(Date.now() + 1);
-  }, []);
-
-  const handleNewThread = useCallback(() => {
-    messagesRef.current = [];
+  /**
+   * Reset the in-memory chat state and purge the persisted session cache.
+   * Used when starting a fresh thread or after permanently deleting history.
+   */
+  const clearStoredMessages = useCallback(() => {
     setMessages([]);
     setHiddenBefore(0);
     try {
@@ -398,6 +395,15 @@ export default function ImaginaryFriendsApp() {
       // ignore storage issues
     }
   }, []);
+
+  const handleClearChat = useCallback(() => {
+    setHiddenBefore(Date.now() + 1);
+  }, []);
+
+  const handleNewThread = useCallback(() => {
+    messagesRef.current = [];
+    clearStoredMessages();
+  }, [clearStoredMessages]);
 
   /**
    * Load the last stored turns for a character/user pair so the UI can
@@ -468,20 +474,14 @@ export default function ImaginaryFriendsApp() {
         throw new Error(`Failed to delete history (${response.status})`);
       }
       messagesRef.current = [];
-      setMessages([]);
-      setHiddenBefore(0);
-      try {
-        sessionStorage.removeItem(STORAGE_KEYS.messages);
-      } catch {
-        // ignore storage issues
-      }
+      clearStoredMessages();
     } catch (error) {
       console.error('Failed to delete conversation history', error);
       pushSystemMessage("I couldn't clear our saved chats right now. Let's try again in a moment!");
     } finally {
       setIsDeletingHistory(false);
     }
-  }, [effectiveUserId, isDeletingHistory, pushSystemMessage, selectedCharacter]);
+  }, [clearStoredMessages, effectiveUserId, isDeletingHistory, pushSystemMessage, selectedCharacter]);
 
   const handleSendMessage = useCallback(
     async (messageText: string, requestImage = false) => {

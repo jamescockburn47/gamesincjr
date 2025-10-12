@@ -44,10 +44,7 @@ export default function ConversationPanel({
   const [showTopics, setShowTopics] = useState(false);
   const [countdown, setCountdown] = useState<number>(0);
   const messagesEndRef = useRef<HTMLDivElement | null>(null);
-  const [renderedMessages, setRenderedMessages] = useState(messages);
-
   useEffect(() => {
-    setRenderedMessages(messages);
     requestAnimationFrame(() => {
       messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     });
@@ -125,10 +122,7 @@ export default function ConversationPanel({
         <div className="flex gap-2">
           <button
             type="button"
-            onClick={() => {
-              setRenderedMessages([]);
-              onClearChat?.();
-            }}
+            onClick={() => onClearChat?.()}
             className="rounded-md border border-slate-200 px-3 py-1.5 text-xs text-slate-600 hover:bg-slate-50 disabled:opacity-50"
             title="Clear chat (keeps history saved)"
             disabled={isLoading}
@@ -185,7 +179,7 @@ export default function ConversationPanel({
         </div>
       )}
       <div className="messages-container">
-        {renderedMessages.map((message) => (
+        {messages.map((message) => (
           <div
             key={`${message.id}-${messages.length}`}
             className={`message ${message.speaker === 'player' ? 'player-message' : 'character-message'}`}
