@@ -23,6 +23,9 @@ export async function createSessionWithTargets(options?: {
   const batchSize = options?.batchSize ?? 10;
 
   if (prisma.__isStub) {
+    // Stub responses are only returned when PRISMA_ALLOW_STUB is explicitly set
+    // for local smoke tests. Real deployments should always have a generated
+    // Prisma client so the branch below executes instead.
     return {
       session: { id: 'stub-session', userId, mode, endedAt: null },
       userId,
@@ -90,7 +93,9 @@ export async function recordAttempt(params: {
   const userId = params.userId?.trim() || DEFAULT_USER_ID;
 
   if (prisma.__isStub) {
-    throw new Error('Database client unavailable. Run `pnpm prisma generate` to enable attempts.');
+    throw new Error(
+      'Database client unavailable. Run `pnpm prisma generate` and ensure PRISMA_ALLOW_STUB is not set to enable attempts.',
+    );
   }
 
   await ensureFacts(prisma);

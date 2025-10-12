@@ -14,6 +14,16 @@ pnpm build
 pnpm start
 ```
 
+### Prisma Client Preparation
+- `pnpm install` automatically runs `prisma generate` thanks to the `pnpm.onlyBuiltDependencies` allow-list. No extra steps are
+  needed in CI or Vercel.
+- When working locally, ensure the Prisma client has been generated before starting the app:
+  ```bash
+  pnpm prisma generate
+  ```
+- If you absolutely must build without a database (for example in an offline environment), set `PRISMA_ALLOW_STUB=1` while
+  running the build. This should only be used for smoke tests because all table features will be disabled in that mode.
+
 ## Vercel Deployment
 
 ### Project Setup

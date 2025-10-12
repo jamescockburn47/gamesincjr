@@ -11,6 +11,10 @@ type GlobalWithPrisma = typeof globalThis & {
 
 const globalForPrisma = globalThis as GlobalWithPrisma;
 const prismaClientEntry = join(process.cwd(), 'node_modules/.prisma/client/index.js');
+// Opt-in flag so tests can still exercise the non-database code paths without a
+// generated Prisma client. Production builds should keep this disabled so we
+// fail fast when the client has not been generated.
+const allowStub = process.env.PRISMA_ALLOW_STUB === '1' || process.env.PRISMA_ALLOW_STUB === 'true';
 
 /**
  * Determine whether a generated Prisma client is available on disk.
@@ -22,11 +26,14 @@ function hasGeneratedPrismaClient(): boolean {
 /**
  * Create a stub Prisma client that throws helpful errors in environments where
  * the real client cannot be loaded (for example in CI without `prisma generate`).
+ * The stub is only constructed when `PRISMA_ALLOW_STUB` is explicitly enabled.
  */
-function createStubPrismaClient(): PrismaClientLike {
+function createStubPrismaClient(reason: string, cause?: unknown): PrismaClientLike {
   const buildError = () =>
     new Error(
-      'Prisma client is unavailable in this environment. Run `pnpm prisma generate` locally to enable database features.',
+      `${reason}\n` +
+        'Run `pnpm prisma generate` locally (or ensure your deploy runs Prisma generate) to enable database features.',
+      { cause },
     );
 
   const reject = async () => {
@@ -69,15 +76,35 @@ function createStubPrismaClient(): PrismaClientLike {
  * in sandboxed CI environments).
  */
 function createClient(): PrismaClientLike {
+  const missingClientMessage =
+    'Prisma client could not be located. The generated client is expected at node_modules/.prisma/client/index.js. ' +
+    'Run `pnpm prisma generate` before starting the app or building for production.';
+
   if (!hasGeneratedPrismaClient()) {
-    console.warn('Prisma client not generated; using stub fallback.');
-    return createStubPrismaClient();
+    if (allowStub) {
+      console.warn(`${missingClientMessage} Falling back to stub because PRISMA_ALLOW_STUB is enabled.`);
+      return createStubPrismaClient(missingClientMessage);
+    }
+
+    throw new Error(missingClientMessage);
   }
 
-  const { PrismaClient } = require('@prisma/client') as { PrismaClient: PrismaClientConstructor };
-  return new PrismaClient({
-    log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
-  });
+  try {
+    const { PrismaClient } = require('@prisma/client') as { PrismaClient: PrismaClientConstructor };
+    return new PrismaClient({
+      log: process.env.NODE_ENV === 'development' ? ['warn', 'error'] : ['error'],
+    });
+  } catch (error) {
+    if (allowStub) {
+      console.error('Failed to load Prisma client; using stub fallback.', error);
+      return createStubPrismaClient('Failed to load Prisma client due to a runtime error.', error);
+    }
+
+    throw new Error(
+      'Failed to load Prisma client. See inner error for details and verify `pnpm prisma generate` completes successfully.',
+      { cause: error },
+    );
+  }
 }
 
 export const prisma = globalForPrisma.__prisma__ || createClient();
