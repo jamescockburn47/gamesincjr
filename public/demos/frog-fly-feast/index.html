@@ -251,10 +251,11 @@
       });
     });
 
+    // Route overlay button clicks based on the current flow state so pauses resume and everything else restarts.
     startButton.addEventListener('click', () => {
-      if (!state.running) {
+      if (state.phase === 'ready' || state.phase === 'gameover') {
         startGame();
-      } else {
+      } else if (state.phase === 'paused') {
         resumeGame();
       }
     });
@@ -283,9 +284,13 @@
       return result;
     }
 
+    /**
+     * Build a fresh baseline for the game state so we can reuse the same shape between runs.
+     */
     function createInitialState() {
       return {
         running: false,
+        phase: 'ready',
         score: 0,
         flies: 0,
         lives: 3,
@@ -314,16 +319,11 @@
       };
     }
 
+    // Reset the existing state object so any references stay valid between restarts.
     function resetGame() {
-      state.running = false;
-      state.lastTime = 0;
-      state.score = 0;
-      state.flies = 0;
-      state.streak = 0;
-      state.lives = 3;
-      state.snakes.length = 0;
+      const freshState = createInitialState();
+      Object.assign(state, freshState);
       setupSnakes(state.snakes);
-      state.frog = createFrog();
       spawnFly();
       updateHud();
       setOverlayContent(DEFAULT_OVERLAY.title, DEFAULT_OVERLAY.main, DEFAULT_OVERLAY.detail);
@@ -337,9 +337,10 @@
     }
 
     function startGame() {
-      overlay.classList.add('hidden');
       resetGame();
+      overlay.classList.add('hidden');
       startButton.textContent = 'Resume';
+      state.phase = 'running';
       state.running = true;
       state.lastTime = performance.now();
       requestAnimationFrame(loop);
@@ -347,6 +348,7 @@
 
     function resumeGame() {
       overlay.classList.add('hidden');
+      state.phase = 'running';
       state.running = true;
       state.lastTime = performance.now();
       requestAnimationFrame(loop);
@@ -355,6 +357,7 @@
     function pauseGame() {
       if (!state.running) return;
       state.running = false;
+      state.phase = 'paused';
       overlay.classList.remove('hidden');
       setOverlayContent('Paused', 'Snakes are circling. Tap Resume when you are ready to leap again!', 'Tip: watch the gaps in each lane.');
       startButton.textContent = 'Resume';
@@ -362,6 +365,7 @@
 
     function endGame() {
       state.running = false;
+      state.phase = 'gameover';
       overlay.classList.remove('hidden');
       setOverlayContent('Game Over', `You caught ${state.flies} flies. Dodge the snakes and try again!`, 'Press Play again to restart the pond.');
       startButton.textContent = 'Play again';
