@@ -227,10 +227,6 @@
       detail: 'Catch five flies in a row to earn a bonus streak!',
     };
 
-    const MOVE_COOLDOWN = 0.22; // seconds
-    const INVINCIBLE_TIME = 1.2; // seconds of safety after getting hit
-    const FLY_LIFETIME = [4, 6]; // seconds
-
     const pads = createPads();
     const lanes = [150, 300, 450];
 
@@ -246,6 +242,10 @@
       flyTimer: 0,
       frog: createFrog(),
     };
+
+    const MOVE_COOLDOWN = 0.22; // seconds
+    const INVINCIBLE_TIME = 1.2; // seconds of safety after getting hit
+    const FLY_LIFETIME = [4, 6]; // seconds
 
     setupSnakes(state.snakes);
     spawnFly();
