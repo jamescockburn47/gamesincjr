@@ -35,9 +35,18 @@ const GENERATED_IMG_DIR =
     ? path.join('/tmp', 'imaginary-friends', 'generated')
     : path.join(PROJECT_ROOT, 'public', 'imaginary-friends', 'generated'));
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let cachedOpenAI: OpenAI | null = null;
+
+function ensureOpenAIClient(): OpenAI {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY missing');
+  }
+  if (!cachedOpenAI) {
+    cachedOpenAI = new OpenAI({ apiKey });
+  }
+  return cachedOpenAI;
+}
 
 const DEFAULT_MODEL = 'gpt-4o-mini';
 const CHAT_MODEL = process.env.OPENAI_CHAT_MODEL || DEFAULT_MODEL;
@@ -654,11 +663,9 @@ ${character.name}:`;
 }
 
 async function callOpenAI(prompt: string, maxTokens = 180): Promise<string> {
-  if (!process.env.OPENAI_API_KEY) {
-    throw new Error('OPENAI_API_KEY missing');
-  }
+  const client = ensureOpenAIClient();
   try {
-    const completion = await openai.chat.completions.create({
+    const completion = await client.chat.completions.create({
       model: CHAT_MODEL,
       messages: [
         {
@@ -676,7 +683,7 @@ async function callOpenAI(prompt: string, maxTokens = 180): Promise<string> {
     const msg = normaliseErrorMessage(error).toLowerCase();
     const modelMissing = code?.includes('model') || msg.includes('model') || msg.includes('not found');
     if (modelMissing && CHAT_MODEL !== DEFAULT_MODEL) {
-      const completion = await openai.chat.completions.create({
+      const completion = await client.chat.completions.create({
         model: DEFAULT_MODEL,
         messages: [
           { role: 'system', content: prompt },
@@ -706,7 +713,8 @@ async function generateImageFile(character: CharacterConfig, conversation: Conve
     throw new Error('OPENAI_API_KEY is required for image generation');
   }
   const prompt = await generateImagePrompt(character, conversation);
-  const result = await openai.images.generate({
+  const client = ensureOpenAIClient();
+  const result = await client.images.generate({
     model: IMAGE_MODEL,
     prompt,
     size: '1024x1024',
@@ -956,13 +964,10 @@ export function streamChatWithCharacter(input: {
           encoder.encode(JSON.stringify({ type: 'start', sessionInfo: getSessionInfo(userId) }) + "\n"),
         );
 
-        if (!process.env.OPENAI_API_KEY) {
-          throw new Error('OPENAI_API_KEY missing');
-        }
-
         let fullText = '';
+        const client = ensureOpenAIClient();
         async function createStream(model: string) {
-          return openai.chat.completions.create({
+          return client.chat.completions.create({
             model,
             messages: [
               {
@@ -1188,7 +1193,8 @@ export async function generateAvatar(input: {
     throw new Error('OPENAI_API_KEY is required for avatar generation');
   }
   const prompt = `Child-friendly portrait illustration of ${input.name}. Appearance: ${input.appearance}. Style: gentle, colourful, cozy, safe for young children.`;
-  const result = await openai.images.generate({
+  const client = ensureOpenAIClient();
+  const result = await client.images.generate({
     model: IMAGE_MODEL,
     prompt,
     size: '512x512',

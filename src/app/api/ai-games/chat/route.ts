@@ -120,9 +120,19 @@ Limit to about 180 words.
 const STORY_REGEX =
   /\b(story|tell me a story|bedtime|once upon|adventure tale|make it longer|continue the story)\b/i;
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+let cachedClient: OpenAI | null = null;
+
+function getOpenAIClient(): OpenAI | null {
+  const apiKey = process.env.OPENAI_API_KEY;
+  if (!apiKey) {
+    cachedClient = null;
+    return null;
+  }
+  if (!cachedClient) {
+    cachedClient = new OpenAI({ apiKey });
+  }
+  return cachedClient;
+}
 
 function pickCharacter(id: string | undefined | null): CharacterConfig {
   if (!id) return characters.luna;
@@ -153,7 +163,15 @@ export async function POST(req: NextRequest) {
     const wantsStory = messageWantsStory(userMessage) || body.mode === 'story';
     const systemPrompt = wantsStory ? character.storyPrompt : character.systemPrompt;
 
-    const response = await openai.chat.completions.create({
+    const client = getOpenAIClient();
+    if (!client) {
+      return NextResponse.json(
+        { error: 'OpenAI key not configured' },
+        { status: 500 },
+      );
+    }
+
+    const response = await client.chat.completions.create({
       model: process.env.OPENAI_MODEL || 'gpt-4o-mini',
       messages: [
         { role: 'system', content: systemPrompt },
