@@ -1,5 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
+import type { KeyboardEvent } from "react";
 
 type Target = { id: string; a: number; b: number; op: "*" };
 
@@ -44,6 +45,14 @@ export default function ChallengePage() {
 
   const accuracy = total ? Math.round((correctCount / total) * 100) : 0;
 
+  const handleKeyDown = (event: KeyboardEvent<HTMLInputElement>) => {
+    // Mirror the submit button for Enter key presses to speed up play.
+    if (event.key === "Enter") {
+      event.preventDefault();
+      void submit();
+    }
+  };
+
   return (
     <div className="mx-auto max-w-md px-4 py-8">
       <h1 className="text-xl font-semibold">Challenge</h1>
@@ -52,7 +61,7 @@ export default function ChallengePage() {
         <div className="mt-6">
           <div className="text-3xl font-bold">{current.a} × {current.b} = ?</div>
           <div className="mt-4 flex gap-2">
-            <input className="w-32 rounded border px-3 py-2" value={input} onChange={e => setInput(e.target.value)} inputMode="numeric" aria-label="Answer" />
+            <input className="w-32 rounded border px-3 py-2" value={input} onChange={e => setInput(e.target.value)} onKeyDown={handleKeyDown} inputMode="numeric" aria-label="Answer" />
             <button className="rounded bg-black px-3 py-2 text-white" onClick={submit}>Submit</button>
           </div>
         </div>

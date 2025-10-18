@@ -67,7 +67,7 @@ export default function MobileNav() {
             Games
           </Link>
           <Link href="/tables" className="rounded-xl px-3 py-3 text-slate-600 transition hover:bg-sky-50 hover:text-sky-600" onClick={() => setOpen(false)}>
-            Times Tables Super Stars
+            Times Tables Mega Stars
           </Link>
           <Link href="/community" className="rounded-xl px-3 py-3 text-slate-600 transition hover:bg-sky-50 hover:text-sky-600" onClick={() => setOpen(false)}>
             Community

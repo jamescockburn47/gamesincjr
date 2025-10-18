@@ -1,6 +1,7 @@
 "use client";
 
 import { useCallback, useMemo, useState, useTransition } from "react";
+import type { KeyboardEvent } from "react";
 import { deterministicHint } from "@/lib/tables/core/hints";
 
 type Target = { id: string; a: number; b: number; op: "*" };
@@ -129,6 +130,19 @@ export function PracticeClient({ sessionId, userId, initialTargets }: Props) {
     });
   }, [current, userId]);
 
+  const handleKeyDown = useCallback(
+    (event: KeyboardEvent<HTMLInputElement>) => {
+      // Allow Enter key presses to submit answers without clicking the button.
+      if (event.key === "Enter") {
+        event.preventDefault();
+        if (!isPending) {
+          submit();
+        }
+      }
+    },
+    [isPending, submit]
+  );
+
   if (!current) {
     return (
       <div className="rounded-2xl border border-dashed border-muted-foreground/40 px-6 py-12 text-center">
@@ -155,6 +169,7 @@ export function PracticeClient({ sessionId, userId, initialTargets }: Props) {
         <input
           value={input}
           onChange={(event) => setInput(event.target.value)}
+          onKeyDown={handleKeyDown}
           className="w-32 rounded-xl border border-border bg-background px-4 py-3 text-lg shadow-inner focus:border-primary focus:outline-none"
           inputMode="numeric"
           disabled={isPending}
