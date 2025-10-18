@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState, useTransition } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from "react";
 import type { KeyboardEvent } from "react";
 import { deterministicHint } from "@/lib/tables/core/hints";
 
@@ -28,10 +28,16 @@ export function PracticeClient({ sessionId, userId, initialTargets }: Props) {
   const [input, setInput] = useState("");
   const [feedback, setFeedback] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const inputRef = useRef<HTMLInputElement>(null);
 
   const current = useMemo(() => targets[index] ?? null, [targets, index]);
   const totalInBatch = targets.length;
   const progress = totalInBatch > 0 ? Math.min(index + 1, totalInBatch) : 0;
+
+  useEffect(() => {
+    // Keep the answer field focused as new questions load so kids can type right away.
+    inputRef.current?.focus();
+  }, [current?.id]);
 
   const refreshBatch = useCallback(async (): Promise<Target[] | null> => {
     try {
@@ -167,6 +173,7 @@ export function PracticeClient({ sessionId, userId, initialTargets }: Props) {
       </div>
       <div className="mt-6 flex flex-wrap items-center gap-3">
         <input
+          ref={inputRef}
           value={input}
           onChange={(event) => setInput(event.target.value)}
           onKeyDown={handleKeyDown}
