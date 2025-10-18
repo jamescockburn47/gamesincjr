@@ -279,5 +279,25 @@
     "engine": "vanilla-js",
     "version": "0.1.0",
     "status": "released"
+  },
+  {
+    "slug": "frog-fly-feast",
+    "title": "Frog Fly Feast",
+    "tags": [
+      "timing",
+      "dodge",
+      "reflex"
+    ],
+    "description": "Hop across the pond, dodge weaving snakes, and time leaps to snap up glowing flies.",
+    "description_it": "Salta tra le ninfee, schiva i serpenti ondulanti e cronometra i balzi per catturare le lucciole.",
+    "hero": "/games/frog-fly-feast/hero.svg",
+    "screenshots": [
+      "/games/frog-fly-feast/s1.svg"
+    ],
+    "demoPath": "/demos/frog-fly-feast/index.html",
+    "gameType": "html5",
+    "engine": "vanilla-js",
+    "version": "0.1.0",
+    "status": "released"
   }
 ]

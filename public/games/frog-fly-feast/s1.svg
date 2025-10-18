@@ -1,0 +1,57 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 720" role="img" aria-labelledby="title desc">
+  <title id="title">Frog Fly Feast gameplay snapshot</title>
+  <desc id="desc">Gameplay mockup with frog on a lily pad, snakes gliding across lanes, and flies glowing above.</desc>
+  <defs>
+    <linearGradient id="water" x1="0" x2="0" y1="0" y2="1">
+      <stop offset="0%" stop-color="#0d3b4a" />
+      <stop offset="100%" stop-color="#051f28" />
+    </linearGradient>
+    <radialGradient id="pad" cx="0.5" cy="0.5" r="0.6">
+      <stop offset="0%" stop-color="#42c786" />
+      <stop offset="100%" stop-color="#1d7a4a" />
+    </radialGradient>
+    <linearGradient id="snake" x1="0" x2="1" y1="0" y2="0">
+      <stop offset="0%" stop-color="#60c46b" />
+      <stop offset="100%" stop-color="#2f8140" />
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="720" fill="url(#water)" />
+  <g opacity="0.8" fill="#05232c">
+    <ellipse cx="600" cy="640" rx="380" ry="70" />
+    <ellipse cx="320" cy="520" rx="180" ry="50" />
+    <ellipse cx="900" cy="560" rx="200" ry="54" />
+  </g>
+  <g transform="translate(0,80)" opacity="0.3">
+    <text x="240" y="72" font-family="'Nunito', sans-serif" font-size="28" fill="#a5f3fc">Combo x2!</text>
+  </g>
+  <g stroke="#0f172a" stroke-width="6" stroke-linecap="round">
+    <path d="M120 260 Q300 220 520 260" fill="none" stroke="url(#snake)" />
+    <path d="M680 360 Q900 400 1080 360" fill="none" stroke="url(#snake)" />
+  </g>
+  <g fill="#fde047" opacity="0.9">
+    <circle cx="240" cy="220" r="14" />
+    <circle cx="840" cy="180" r="11" />
+    <circle cx="960" cy="260" r="16" />
+  </g>
+  <g transform="translate(600 420)">
+    <ellipse cx="0" cy="72" rx="120" ry="38" fill="#082c34" opacity="0.6" />
+    <ellipse cx="0" cy="0" rx="90" ry="62" fill="url(#pad)" />
+    <g transform="translate(0,-10)">
+      <ellipse cx="-30" cy="-8" rx="22" ry="18" fill="#fef3c7" />
+      <ellipse cx="30" cy="-8" rx="22" ry="18" fill="#fef3c7" />
+      <circle cx="-30" cy="-8" r="7" fill="#0f172a" />
+      <circle cx="30" cy="-8" r="7" fill="#0f172a" />
+      <path d="M-36 18 Q0 48 36 18" fill="#f97316" />
+      <path d="M-60 -20 Q0 -78 64 -20" fill="#22c55e" />
+    </g>
+  </g>
+  <g font-family="'Nunito', sans-serif" font-weight="700" fill="#e0f2fe">
+    <text x="80" y="92" font-size="52">Frog Fly Feast</text>
+    <text x="80" y="142" font-size="28" fill="#bae6fd">Leap between lily pads, dodge snakes, and grab glowing flies.</text>
+  </g>
+  <g font-family="'Roboto Mono', monospace" font-size="28" fill="#bef264">
+    <text x="80" y="200">Score  01250</text>
+    <text x="80" y="240" fill="#fca5a5">Snakes dodged  07</text>
+    <text x="80" y="280" fill="#fef08a">Flies caught  05</text>
+  </g>
+</svg>
