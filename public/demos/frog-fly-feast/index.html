@@ -209,507 +209,550 @@
   </div>
 
   <script type="module">
-    const canvas = document.getElementById('game');
-    const ctx = canvas.getContext('2d');
-    const overlay = document.getElementById('overlay');
-    const startButton = document.getElementById('start');
-    const scoreEl = document.getElementById('score');
-    const fliesEl = document.getElementById('flies');
-    const livesEl = document.getElementById('lives');
-    const controlButtons = document.querySelectorAll('[data-move]');
-    const overlayTitle = overlay.querySelector('h2');
-    const overlayMain = overlay.querySelector('[data-overlay-main]');
-    const overlayDetail = overlay.querySelector('[data-overlay-detail]');
-
-    const DEFAULT_OVERLAY = {
-      title: 'Ready to Hop?',
-      main: 'Use the arrow keys (or the green controls) to hop to neighbouring lily pads. Wait for the gap, dodge the snakes, and reach flies before they blink out.',
-      detail: 'Catch five flies in a row to earn a bonus streak!',
-    };
-
-    const pads = createPads();
-    const lanes = [150, 300, 450];
-
-    const state = {
-      running: false,
-      score: 0,
-      flies: 0,
-      lives: 3,
-      streak: 0,
-      lastTime: 0,
-      snakes: [],
-      fly: null,
-      flyTimer: 0,
-      frog: createFrog(),
-    };
-
-    const MOVE_COOLDOWN = 0.22; // seconds
-    const INVINCIBLE_TIME = 1.2; // seconds of safety after getting hit
-    const FLY_LIFETIME = [4, 6]; // seconds
-
-    setupSnakes(state.snakes);
-    spawnFly();
-
-    window.addEventListener('keydown', handleKey);
-    window.addEventListener('blur', pauseGame);
-    document.addEventListener('visibilitychange', () => {
-      if (document.hidden) {
-        pauseGame();
+    /**
+     * Initializes the Frog Fly Feast demo once the DOM is ready. The game relies on
+     * several DOM nodes, so we validate them up-front to avoid runtime crashes that
+     * were previously triggered when markup changed during conflicted merges.
+     */
+    (() => {
+      const canvas = document.getElementById('game');
+      if (!(canvas instanceof HTMLCanvasElement)) {
+        console.error('Frog Fly Feast: expected a <canvas id="game"> element.');
+        return;
       }
-    });
 
-    controlButtons.forEach(button => {
-      button.addEventListener('pointerdown', event => {
-        event.preventDefault();
-        queueMove(button.dataset.move);
-      });
-    });
-
-    startButton.addEventListener('click', () => {
-      if (!state.running) {
-        startGame();
-      } else {
-        resumeGame();
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        console.error('Frog Fly Feast: unable to acquire 2D canvas context.');
+        return;
       }
-    });
 
-    function setOverlayContent(title, main, detail) {
-      overlayTitle.textContent = title;
-      overlayMain.textContent = main;
-      overlayDetail.textContent = detail;
-    }
-
-    function createPads() {
-      const result = [];
-      const cols = 3;
-      const rows = 3;
-      const colPositions = [200, 400, 600];
-      const rowPositions = [150, 300, 450];
-      for (let r = 0; r < rows; r += 1) {
-        for (let c = 0; c < cols; c += 1) {
-          result.push({
-            x: colPositions[c],
-            y: rowPositions[r],
-            radius: 48,
-          });
-        }
+      const overlay = document.getElementById('overlay');
+      if (!(overlay instanceof HTMLElement)) {
+        console.error('Frog Fly Feast: expected an overlay container with id "overlay".');
+        return;
       }
-      return result;
-    }
 
-    function createFrog() {
-      const startPadIndex = 7; // bottom centre pad
-      const pad = pads[startPadIndex];
-      return {
-        currentPad: startPadIndex,
-        x: pad.x,
-        y: pad.y,
-        startX: pad.x,
-        startY: pad.y,
-        targetPad: startPadIndex,
-        moveTimer: 0,
-        moveDuration: MOVE_COOLDOWN,
-        invincible: 0,
+      const startButton = document.getElementById('start');
+      if (!(startButton instanceof HTMLButtonElement)) {
+        console.error('Frog Fly Feast: start button is missing or not a <button>.');
+        return;
+      }
+
+      const scoreEl = document.getElementById('score');
+      const fliesEl = document.getElementById('flies');
+      const livesEl = document.getElementById('lives');
+      if (!(scoreEl && fliesEl && livesEl)) {
+        console.error('Frog Fly Feast: HUD counters are missing from the page.');
+        return;
+      }
+
+      const controlButtons = document.querySelectorAll('[data-move]');
+      const overlayTitle = overlay.querySelector('h2');
+      const overlayMain = overlay.querySelector('[data-overlay-main]');
+      const overlayDetail = overlay.querySelector('[data-overlay-detail]');
+
+      if (!(overlayTitle instanceof HTMLElement && overlayMain instanceof HTMLElement && overlayDetail instanceof HTMLElement)) {
+        console.error('Frog Fly Feast: overlay content elements are missing.');
+        return;
+      }
+
+      const DEFAULT_OVERLAY = {
+        title: 'Ready to Hop?',
+        main: 'Use the arrow keys (or the green controls) to hop to neighbouring lily pads. Wait for the gap, dodge the snakes, and reach flies before they blink out.',
+        detail: 'Catch five flies in a row to earn a bonus streak!',
       };
-    }
 
-    function resetGame() {
-      state.score = 0;
-      state.flies = 0;
-      state.streak = 0;
-      state.lives = 3;
-      state.snakes.length = 0;
+      const pads = createPads();
+      const lanes = [150, 300, 450];
+
+      const state = {
+        running: false,
+        score: 0,
+        flies: 0,
+        lives: 3,
+        streak: 0,
+        lastTime: 0,
+        snakes: [],
+        fly: null,
+        flyTimer: 0,
+        frog: createFrog(),
+      };
+
+      const MOVE_COOLDOWN = 0.22; // seconds
+      const INVINCIBLE_TIME = 1.2; // seconds of safety after getting hit
+      const FLY_LIFETIME = [4, 6]; // seconds
+
       setupSnakes(state.snakes);
-      state.frog = createFrog();
       spawnFly();
-      updateHud();
-      setOverlayContent(DEFAULT_OVERLAY.title, DEFAULT_OVERLAY.main, DEFAULT_OVERLAY.detail);
-    }
 
-    function startGame() {
-      overlay.classList.add('hidden');
-      resetGame();
-      startButton.textContent = 'Resume';
-      state.running = true;
-      state.lastTime = performance.now();
-      requestAnimationFrame(loop);
-    }
+      window.addEventListener('keydown', handleKey);
+      window.addEventListener('blur', pauseGame);
+      document.addEventListener('visibilitychange', () => {
+        if (document.hidden) {
+          pauseGame();
+        }
+      });
 
-    function resumeGame() {
-      overlay.classList.add('hidden');
-      state.running = true;
-      state.lastTime = performance.now();
-      requestAnimationFrame(loop);
-    }
+      controlButtons.forEach(button => {
+        button.addEventListener('pointerdown', event => {
+          event.preventDefault();
+          queueMove(button.dataset.move);
+        });
+      });
 
-    function pauseGame() {
-      if (!state.running) return;
-      state.running = false;
-      overlay.classList.remove('hidden');
-      setOverlayContent('Paused', 'Snakes are circling. Tap Resume when you are ready to leap again!', 'Tip: watch the gaps in each lane.');
-      startButton.textContent = 'Resume';
-    }
+      startButton.addEventListener('click', () => {
+        if (!state.running) {
+          startGame();
+        } else {
+          resumeGame();
+        }
+      });
 
-    function endGame() {
-      state.running = false;
-      overlay.classList.remove('hidden');
-      setOverlayContent('Game Over', `You caught ${state.flies} flies. Dodge the snakes and try again!`, 'Press Play again to restart the pond.');
-      startButton.textContent = 'Play again';
-    }
-
-    function handleKey(event) {
-      if (event.key === 'ArrowUp' || event.key === 'w') {
-        queueMove('up');
-      } else if (event.key === 'ArrowDown' || event.key === 's') {
-        queueMove('down');
-      } else if (event.key === 'ArrowLeft' || event.key === 'a') {
-        queueMove('left');
-      } else if (event.key === 'ArrowRight' || event.key === 'd') {
-        queueMove('right');
-      } else if (event.key === 'Enter' && !state.running) {
-        startButton.click();
+      function setOverlayContent(title, main, detail) {
+        overlayTitle.textContent = title;
+        overlayMain.textContent = main;
+        overlayDetail.textContent = detail;
       }
-    }
 
-    function queueMove(direction) {
-      if (!state.running) return;
-      const frog = state.frog;
-      if (frog.moveTimer > 0) {
-        return;
+      function createPads() {
+        const result = [];
+        const cols = 3;
+        const rows = 3;
+        const colPositions = [200, 400, 600];
+        const rowPositions = [150, 300, 450];
+        for (let r = 0; r < rows; r += 1) {
+          for (let c = 0; c < cols; c += 1) {
+            result.push({
+              x: colPositions[c],
+              y: rowPositions[r],
+              radius: 48,
+            });
+          }
+        }
+        return result;
       }
-      const { row, col } = indexToRowCol(frog.currentPad);
-      let targetRow = row;
-      let targetCol = col;
-      switch (direction) {
-        case 'up':
-          targetRow = Math.max(0, row - 1);
-          break;
-        case 'down':
-          targetRow = Math.min(2, row + 1);
-          break;
-        case 'left':
-          targetCol = Math.max(0, col - 1);
-          break;
-        case 'right':
-          targetCol = Math.min(2, col + 1);
-          break;
-        default:
+
+      function createFrog() {
+        const startPadIndex = 7; // bottom centre pad
+        const pad = pads[startPadIndex];
+        return {
+          currentPad: startPadIndex,
+          x: pad.x,
+          y: pad.y,
+          startX: pad.x,
+          startY: pad.y,
+          targetPad: startPadIndex,
+          moveTimer: 0,
+          moveDuration: MOVE_COOLDOWN,
+          invincible: 0,
+        };
+      }
+
+      function resetGame() {
+        state.score = 0;
+        state.flies = 0;
+        state.streak = 0;
+        state.lives = 3;
+        state.snakes.length = 0;
+        setupSnakes(state.snakes);
+        state.frog = createFrog();
+        spawnFly();
+        updateHud();
+        setOverlayContent(DEFAULT_OVERLAY.title, DEFAULT_OVERLAY.main, DEFAULT_OVERLAY.detail);
+      }
+
+      function startGame() {
+        overlay.classList.add('hidden');
+        resetGame();
+        startButton.textContent = 'Resume';
+        state.running = true;
+        state.lastTime = performance.now();
+        requestAnimationFrame(loop);
+      }
+
+      function resumeGame() {
+        overlay.classList.add('hidden');
+        state.running = true;
+        state.lastTime = performance.now();
+        requestAnimationFrame(loop);
+      }
+
+      function pauseGame() {
+        if (!state.running) return;
+        state.running = false;
+        overlay.classList.remove('hidden');
+        setOverlayContent('Paused', 'Snakes are circling. Tap Resume when you are ready to leap again!', 'Tip: watch the gaps in each lane.');
+        startButton.textContent = 'Resume';
+      }
+
+      function endGame() {
+        state.running = false;
+        overlay.classList.remove('hidden');
+        setOverlayContent('Game Over', `You caught ${state.flies} flies. Dodge the snakes and try again!`, 'Press Play again to restart the pond.');
+        startButton.textContent = 'Play again';
+      }
+
+      function handleKey(event) {
+        if (event.key === 'ArrowUp' || event.key === 'w') {
+          queueMove('up');
+        } else if (event.key === 'ArrowDown' || event.key === 's') {
+          queueMove('down');
+        } else if (event.key === 'ArrowLeft' || event.key === 'a') {
+          queueMove('left');
+        } else if (event.key === 'ArrowRight' || event.key === 'd') {
+          queueMove('right');
+        } else if (event.key === 'Enter' && !state.running) {
+          startButton.click();
+        }
+      }
+
+      function queueMove(direction) {
+        if (!state.running) return;
+        const frog = state.frog;
+        if (frog.moveTimer > 0) {
           return;
+        }
+        const { row, col } = indexToRowCol(frog.currentPad);
+        let targetRow = row;
+        let targetCol = col;
+        switch (direction) {
+          case 'up':
+            targetRow = Math.max(0, row - 1);
+            break;
+          case 'down':
+            targetRow = Math.min(2, row + 1);
+            break;
+          case 'left':
+            targetCol = Math.max(0, col - 1);
+            break;
+          case 'right':
+            targetCol = Math.min(2, col + 1);
+            break;
+          default:
+            return;
+        }
+        const targetIndex = rowColToIndex(targetRow, targetCol);
+        if (targetIndex === frog.currentPad) {
+          return;
+        }
+        frog.targetPad = targetIndex;
+        frog.startX = frog.x;
+        frog.startY = frog.y;
+        frog.moveTimer = frog.moveDuration;
       }
-      const targetIndex = rowColToIndex(targetRow, targetCol);
-      if (targetIndex === frog.currentPad) {
-        return;
+
+      function indexToRowCol(index) {
+        return {
+          row: Math.floor(index / 3),
+          col: index % 3,
+        };
       }
-      frog.targetPad = targetIndex;
-      frog.startX = frog.x;
-      frog.startY = frog.y;
-      frog.moveTimer = frog.moveDuration;
-    }
 
-    function indexToRowCol(index) {
-      return {
-        row: Math.floor(index / 3),
-        col: index % 3,
-      };
-    }
-
-    function rowColToIndex(row, col) {
-      return row * 3 + col;
-    }
-
-    function setupSnakes(snakes) {
-      const laneCount = lanes.length;
-      for (let i = 0; i < laneCount; i += 1) {
-        const direction = i % 2 === 0 ? 1 : -1;
-        snakes.push(createSnake(i, direction));
-        snakes.push(createSnake(i, -direction));
+      function rowColToIndex(row, col) {
+        return row * 3 + col;
       }
-    }
 
-    function createSnake(laneIndex, direction) {
-      const laneY = lanes[laneIndex];
-      const length = randomRange(120, 180);
-      const speed = randomRange(70, 130);
-      const startX = direction > 0 ? -length : canvas.width + length;
-      return {
-        laneIndex,
-        x: startX,
-        y: laneY,
-        length,
-        direction,
-        speed,
-        thickness: 26,
-        cooldown: randomRange(0.3, 0.8),
-      };
-    }
-
-    function spawnFly() {
-      const targetPads = pads.filter(pad => pad.y <= 300);
-      const pad = targetPads[Math.floor(Math.random() * targetPads.length)];
-      state.fly = {
-        x: pad.x,
-        y: pad.y - 28,
-        padIndex: pads.indexOf(pad),
-      };
-      state.flyTimer = randomRange(...FLY_LIFETIME);
-    }
-
-    function updateHud() {
-      scoreEl.textContent = state.score.toString().padStart(4, '0');
-      fliesEl.textContent = state.flies.toString().padStart(2, '0');
-      livesEl.textContent = state.lives.toString();
-    }
-
-    function loop(timestamp) {
-      if (!state.running) {
-        return;
-      }
-      const delta = Math.min((timestamp - state.lastTime) / 1000, 0.05);
-      state.lastTime = timestamp;
-
-      update(delta);
-      render();
-
-      requestAnimationFrame(loop);
-    }
-
-    function update(delta) {
-      const frog = state.frog;
-      if (frog.moveTimer > 0) {
-        frog.moveTimer -= delta;
-        const progress = 1 - Math.max(0, frog.moveTimer) / frog.moveDuration;
-        const eased = easeOutBack(progress);
-        const targetPad = pads[frog.targetPad];
-        frog.x = frog.startX + (targetPad.x - frog.startX) * eased;
-        frog.y = frog.startY + (targetPad.y - frog.startY) * eased;
-        if (frog.moveTimer <= 0) {
-          frog.currentPad = frog.targetPad;
-          frog.x = targetPad.x;
-          frog.y = targetPad.y;
+      function setupSnakes(snakes) {
+        const laneCount = lanes.length;
+        for (let i = 0; i < laneCount; i += 1) {
+          const direction = i % 2 === 0 ? 1 : -1;
+          snakes.push(createSnake(i, direction));
+          snakes.push(createSnake(i, -direction));
         }
       }
 
-      frog.invincible = Math.max(0, frog.invincible - delta);
+      function createSnake(laneIndex, direction) {
+        const laneY = lanes[laneIndex];
+        const length = randomRange(120, 180);
+        const speed = randomRange(70, 130);
+        const startX = direction > 0 ? -length : canvas.width + length;
+        return {
+          laneIndex,
+          x: startX,
+          y: laneY,
+          length,
+          direction,
+          speed,
+          thickness: 26,
+          cooldown: randomRange(0.3, 0.8),
+        };
+      }
 
-      updateSnakes(delta);
-      updateFly(delta);
-      detectCollisions();
-    }
-
-    function updateSnakes(delta) {
-      for (const snake of state.snakes) {
-        if (snake.cooldown > 0) {
-          snake.cooldown -= delta;
-          continue;
+      function spawnFly() {
+        const targetPads = pads.filter(pad => pad.y <= 300);
+        if (targetPads.length === 0) {
+          console.warn('Frog Fly Feast: no valid pads available for fly spawn.');
+          state.fly = null;
+          state.flyTimer = randomRange(1.2, 1.8);
+          return;
         }
-        snake.x += snake.speed * snake.direction * delta;
-        const offscreen = snake.direction > 0 ? snake.x - snake.length > canvas.width + 60 : snake.x + snake.length < -60;
-        if (offscreen) {
-          snake.direction *= -1;
-          snake.speed = randomRange(80, 150);
-          snake.length = randomRange(110, 170);
-          snake.cooldown = randomRange(0.5, 1.5);
-          snake.x = snake.direction > 0 ? -snake.length : canvas.width + snake.length;
+        const pad = targetPads[Math.floor(Math.random() * targetPads.length)];
+        state.fly = {
+          x: pad.x,
+          y: pad.y - 28,
+          padIndex: pads.indexOf(pad),
+        };
+        state.flyTimer = randomRange(...FLY_LIFETIME);
+      }
+
+      function updateHud() {
+        scoreEl.textContent = state.score.toString().padStart(4, '0');
+        fliesEl.textContent = state.flies.toString().padStart(2, '0');
+        livesEl.textContent = state.lives.toString();
+      }
+
+      function loop(timestamp) {
+        if (!state.running) {
+          return;
+        }
+        const delta = Math.min((timestamp - state.lastTime) / 1000, 0.05);
+        state.lastTime = timestamp;
+
+        update(delta);
+        render();
+
+        requestAnimationFrame(loop);
+      }
+
+      function update(delta) {
+        const frog = state.frog;
+        if (frog.moveTimer > 0) {
+          frog.moveTimer -= delta;
+          const progress = 1 - Math.max(0, frog.moveTimer) / frog.moveDuration;
+          const eased = easeOutBack(progress);
+          const targetPad = pads[frog.targetPad];
+          frog.x = frog.startX + (targetPad.x - frog.startX) * eased;
+          frog.y = frog.startY + (targetPad.y - frog.startY) * eased;
+          if (frog.moveTimer <= 0) {
+            frog.currentPad = frog.targetPad;
+            frog.x = targetPad.x;
+            frog.y = targetPad.y;
+          }
+        }
+
+        frog.invincible = Math.max(0, frog.invincible - delta);
+
+        updateSnakes(delta);
+        updateFly(delta);
+        detectCollisions();
+      }
+
+      function updateSnakes(delta) {
+        for (const snake of state.snakes) {
+          if (snake.cooldown > 0) {
+            snake.cooldown -= delta;
+            continue;
+          }
+          snake.x += snake.speed * snake.direction * delta;
+          const offscreen = snake.direction > 0 ? snake.x - snake.length > canvas.width + 60 : snake.x + snake.length < -60;
+          if (offscreen) {
+            snake.direction *= -1;
+            snake.speed = randomRange(80, 150);
+            snake.length = randomRange(110, 170);
+            snake.cooldown = randomRange(0.5, 1.5);
+            snake.x = snake.direction > 0 ? -snake.length : canvas.width + snake.length;
+          }
         }
       }
-    }
 
-    function updateFly(delta) {
-      if (!state.fly) {
+      function updateFly(delta) {
+        if (!state.fly) {
+          state.flyTimer -= delta;
+          if (state.flyTimer <= 0) {
+            spawnFly();
+          }
+          return;
+        }
         state.flyTimer -= delta;
         if (state.flyTimer <= 0) {
-          spawnFly();
-        }
-        return;
-      }
-      state.flyTimer -= delta;
-      if (state.flyTimer <= 0) {
-        state.streak = 0;
-        state.fly = null;
-        state.flyTimer = randomRange(0.8, 1.5);
-      }
-    }
-
-    function detectCollisions() {
-      const frog = state.frog;
-      if (state.fly && frog.currentPad === state.fly.padIndex && frog.moveTimer <= 0) {
-        state.flies += 1;
-        state.streak += 1;
-        const baseScore = 100;
-        const streakBonus = Math.max(0, state.streak - 1) * 25;
-        state.score += baseScore + streakBonus;
-        state.fly = null;
-        state.flyTimer = randomRange(0.8, 1.4);
-        pulseText(fliesEl);
-        pulseText(scoreEl);
-        updateHud();
-      }
-
-      if (frog.invincible > 0) {
-        return;
-      }
-
-      for (const snake of state.snakes) {
-        const halfLength = snake.length / 2;
-        const snakeRect = {
-          x1: snake.x - halfLength,
-          x2: snake.x + halfLength,
-          y1: snake.y - snake.thickness / 2,
-          y2: snake.y + snake.thickness / 2,
-        };
-        if (frog.x > snakeRect.x1 - 28 && frog.x < snakeRect.x2 + 28 && frog.y > snakeRect.y1 - 28 && frog.y < snakeRect.y2 + 28) {
-          state.lives -= 1;
           state.streak = 0;
-          updateHud();
-          pulseText(livesEl);
-          frog.invincible = INVINCIBLE_TIME;
-          frog.currentPad = 7;
-          frog.targetPad = 7;
-          frog.x = pads[7].x;
-          frog.y = pads[7].y;
-          frog.moveTimer = 0;
-          if (state.lives <= 0) {
-            endGame();
-          }
-          break;
+          state.fly = null;
+          state.flyTimer = randomRange(0.8, 1.5);
         }
       }
-    }
 
-    function render() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
-      drawBackground();
-      drawPads();
-      drawFly();
-      drawSnakes();
-      drawFrog();
-    }
+      function detectCollisions() {
+        const frog = state.frog;
+        if (state.fly && frog.currentPad === state.fly.padIndex && frog.moveTimer <= 0) {
+          state.flies += 1;
+          state.streak += 1;
+          const baseScore = 100;
+          const streakBonus = Math.max(0, state.streak - 1) * 25;
+          state.score += baseScore + streakBonus;
+          state.fly = null;
+          state.flyTimer = randomRange(0.8, 1.4);
+          pulseText(fliesEl);
+          pulseText(scoreEl);
+          updateHud();
+        }
 
-    function drawBackground() {
-      const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-      gradient.addColorStop(0, '#10253f');
-      gradient.addColorStop(1, '#04121a');
-      ctx.fillStyle = gradient;
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
+        if (frog.invincible > 0) {
+          return;
+        }
 
-      ctx.fillStyle = 'rgba(15, 118, 110, 0.25)';
-      ctx.beginPath();
-      ctx.ellipse(canvas.width / 2, canvas.height * 0.78, 340, 110, 0, 0, Math.PI * 2);
-      ctx.fill();
-    }
+        for (const snake of state.snakes) {
+          const halfLength = snake.length / 2;
+          const snakeRect = {
+            x1: snake.x - halfLength,
+            x2: snake.x + halfLength,
+            y1: snake.y - snake.thickness / 2,
+            y2: snake.y + snake.thickness / 2,
+          };
+          if (frog.x > snakeRect.x1 - 28 && frog.x < snakeRect.x2 + 28 && frog.y > snakeRect.y1 - 28 && frog.y < snakeRect.y2 + 28) {
+            state.lives -= 1;
+            state.streak = 0;
+            updateHud();
+            pulseText(livesEl);
+            frog.invincible = INVINCIBLE_TIME;
+            frog.currentPad = 7;
+            frog.targetPad = 7;
+            frog.x = pads[7].x;
+            frog.y = pads[7].y;
+            frog.moveTimer = 0;
+            if (state.lives <= 0) {
+              endGame();
+            }
+            break;
+          }
+        }
+      }
 
-    function drawPads() {
-      for (const pad of pads) {
-        const radial = ctx.createRadialGradient(pad.x - 12, pad.y - 12, 12, pad.x, pad.y, pad.radius);
-        radial.addColorStop(0, '#4ade80');
-        radial.addColorStop(1, '#166534');
-        ctx.fillStyle = radial;
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        drawBackground();
+        drawPads();
+        drawFly();
+        drawSnakes();
+        drawFrog();
+      }
+
+      function drawBackground() {
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, '#10253f');
+        gradient.addColorStop(1, '#04121a');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.fillStyle = 'rgba(15, 118, 110, 0.25)';
         ctx.beginPath();
-        ctx.ellipse(pad.x, pad.y, pad.radius + 4, pad.radius, 0, 0, Math.PI * 2);
+        ctx.ellipse(canvas.width / 2, canvas.height * 0.78, 340, 110, 0, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      function drawPads() {
+        for (const pad of pads) {
+          const radial = ctx.createRadialGradient(pad.x - 12, pad.y - 12, 12, pad.x, pad.y, pad.radius);
+          radial.addColorStop(0, '#4ade80');
+          radial.addColorStop(1, '#166534');
+          ctx.fillStyle = radial;
+          ctx.beginPath();
+          ctx.ellipse(pad.x, pad.y, pad.radius + 4, pad.radius, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          ctx.strokeStyle = 'rgba(15, 118, 110, 0.45)';
+          ctx.lineWidth = 3;
+          ctx.beginPath();
+          ctx.ellipse(pad.x, pad.y, pad.radius + 6, pad.radius + 3, 0, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      function drawSnakes() {
+        for (const snake of state.snakes) {
+          if (snake.cooldown > 0) continue;
+          const halfLength = snake.length / 2;
+          ctx.lineWidth = snake.thickness;
+          const gradient = ctx.createLinearGradient(snake.x - halfLength, snake.y, snake.x + halfLength, snake.y);
+          gradient.addColorStop(0, '#65a30d');
+          gradient.addColorStop(1, '#166534');
+          ctx.strokeStyle = gradient;
+          ctx.lineCap = 'round';
+          ctx.beginPath();
+          ctx.moveTo(snake.x - halfLength, snake.y);
+          ctx.lineTo(snake.x + halfLength, snake.y);
+          ctx.stroke();
+
+          ctx.fillStyle = '#f97316';
+          const headX = snake.direction > 0 ? snake.x + halfLength : snake.x - halfLength;
+          ctx.beginPath();
+          ctx.moveTo(headX, snake.y);
+          ctx.lineTo(headX + 18 * snake.direction, snake.y - 6);
+          ctx.lineTo(headX + 18 * snake.direction, snake.y + 6);
+          ctx.closePath();
+          ctx.fill();
+        }
+      }
+
+      function drawFly() {
+        if (!state.fly) return;
+        const flicker = 0.6 + Math.sin(performance.now() / 120) * 0.2;
+        ctx.save();
+        ctx.translate(state.fly.x, state.fly.y);
+        ctx.fillStyle = `rgba(254, 240, 138, ${0.7 + flicker * 0.3})`;
+        ctx.beginPath();
+        ctx.arc(0, 0, 12 + flicker * 4, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.fillStyle = `rgba(250, 204, 21, ${0.9})`;
+        ctx.beginPath();
+        ctx.arc(0, 0, 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.restore();
+      }
+
+      function drawFrog() {
+        const frog = state.frog;
+        ctx.save();
+        ctx.translate(frog.x, frog.y);
+        ctx.fillStyle = frog.invincible > 0 ? 'rgba(190, 242, 100, 0.85)' : '#34d399';
+        ctx.beginPath();
+        ctx.ellipse(0, 0, 34, 28, 0, 0, Math.PI * 2);
         ctx.fill();
 
-        ctx.strokeStyle = 'rgba(15, 118, 110, 0.45)';
+        ctx.fillStyle = '#bbf7d0';
+        ctx.beginPath();
+        ctx.ellipse(-16, -10, 12, 14, 0, 0, Math.PI * 2);
+        ctx.ellipse(16, -10, 12, 14, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.fillStyle = '#1f2937';
+        ctx.beginPath();
+        ctx.arc(-16, -10, 6, 0, Math.PI * 2);
+        ctx.arc(16, -10, 6, 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.strokeStyle = '#0f172a';
         ctx.lineWidth = 3;
         ctx.beginPath();
-        ctx.ellipse(pad.x, pad.y, pad.radius + 6, pad.radius + 3, 0, 0, Math.PI * 2);
+        ctx.arc(0, 10, 12, 0, Math.PI);
         ctx.stroke();
+        ctx.restore();
       }
-    }
 
-    function drawSnakes() {
-      for (const snake of state.snakes) {
-        if (snake.cooldown > 0) continue;
-        const halfLength = snake.length / 2;
-        ctx.lineWidth = snake.thickness;
-        const gradient = ctx.createLinearGradient(snake.x - halfLength, snake.y, snake.x + halfLength, snake.y);
-        gradient.addColorStop(0, '#65a30d');
-        gradient.addColorStop(1, '#166534');
-        ctx.strokeStyle = gradient;
-        ctx.lineCap = 'round';
-        ctx.beginPath();
-        ctx.moveTo(snake.x - halfLength, snake.y);
-        ctx.lineTo(snake.x + halfLength, snake.y);
-        ctx.stroke();
-
-        ctx.fillStyle = '#f97316';
-        const headX = snake.direction > 0 ? snake.x + halfLength : snake.x - halfLength;
-        ctx.beginPath();
-        ctx.moveTo(headX, snake.y);
-        ctx.lineTo(headX + 18 * snake.direction, snake.y - 6);
-        ctx.lineTo(headX + 18 * snake.direction, snake.y + 6);
-        ctx.closePath();
-        ctx.fill();
+      function pulseText(element) {
+        element.animate([
+          { transform: 'scale(1)', color: '#fef08a' },
+          { transform: 'scale(1.2)', color: '#bef264' },
+          { transform: 'scale(1)', color: '#fef08a' },
+        ], {
+          duration: 360,
+          easing: 'ease-out',
+        });
       }
-    }
 
-    function drawFly() {
-      if (!state.fly) return;
-      const flicker = 0.6 + Math.sin(performance.now() / 120) * 0.2;
-      ctx.save();
-      ctx.translate(state.fly.x, state.fly.y);
-      ctx.fillStyle = `rgba(254, 240, 138, ${0.7 + flicker * 0.3})`;
-      ctx.beginPath();
-      ctx.arc(0, 0, 12 + flicker * 4, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.fillStyle = `rgba(250, 204, 21, ${0.9})`;
-      ctx.beginPath();
-      ctx.arc(0, 0, 8, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.restore();
-    }
+      function randomRange(min, max) {
+        return Math.random() * (max - min) + min;
+      }
 
-    function drawFrog() {
-      const frog = state.frog;
-      ctx.save();
-      ctx.translate(frog.x, frog.y);
-      ctx.fillStyle = frog.invincible > 0 ? 'rgba(190, 242, 100, 0.85)' : '#34d399';
-      ctx.beginPath();
-      ctx.ellipse(0, 0, 34, 28, 0, 0, Math.PI * 2);
-      ctx.fill();
+      function easeOutBack(t) {
+        const c1 = 1.70158;
+        const c3 = c1 + 1;
+        return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
+      }
 
-      ctx.fillStyle = '#bbf7d0';
-      ctx.beginPath();
-      ctx.ellipse(-16, -10, 12, 14, 0, 0, Math.PI * 2);
-      ctx.ellipse(16, -10, 12, 14, 0, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.fillStyle = '#1f2937';
-      ctx.beginPath();
-      ctx.arc(-16, -10, 6, 0, Math.PI * 2);
-      ctx.arc(16, -10, 6, 0, Math.PI * 2);
-      ctx.fill();
-
-      ctx.strokeStyle = '#0f172a';
-      ctx.lineWidth = 3;
-      ctx.beginPath();
-      ctx.arc(0, 10, 12, 0, Math.PI);
-      ctx.stroke();
-      ctx.restore();
-    }
-
-    function pulseText(element) {
-      element.animate([
-        { transform: 'scale(1)', color: '#fef08a' },
-        { transform: 'scale(1.2)', color: '#bef264' },
-        { transform: 'scale(1)', color: '#fef08a' },
-      ], {
-        duration: 360,
-        easing: 'ease-out',
-      });
-    }
-
-    function randomRange(min, max) {
-      return Math.random() * (max - min) + min;
-    }
-
-    function easeOutBack(t) {
-      const c1 = 1.70158;
-      const c3 = c1 + 1;
-      return 1 + c3 * Math.pow(t - 1, 3) + c1 * Math.pow(t - 1, 2);
-    }
-
-    render();
-    updateHud();
+      render();
+      updateHud();
+    })();
   </script>
 </body>
 </html>
