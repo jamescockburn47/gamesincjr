@@ -21,6 +21,27 @@
     "status": "released"
   },
   {
+    "slug": "arctic-bear-survival",
+    "title": "Arctic Bear Survival",
+    "tags": [
+      "survival",
+      "strategy",
+      "winter"
+    ],
+    "description": "Survive polar nights by gathering resources, building shelter, and outsmarting roaming bears.",
+    "description_it": "Sopravvivi alle notti polari raccogliendo risorse, costruendo rifugi e ingannando gli orsi in pattuglia.",
+    "hero": "/games/arctic-bear-survival/hero.svg",
+    "screenshots": [
+      "/games/arctic-bear-survival/s1.svg",
+      "/games/arctic-bear-survival/s2.svg"
+    ],
+    "demoPath": "/demos/arctic-bear-survival/index.html",
+    "gameType": "html5",
+    "engine": "vanilla-js",
+    "version": "1.0.0",
+    "status": "released"
+  },
+  {
     "slug": "space-runner",
     "title": "Space Runner",
     "tags": [
