@@ -1,0 +1,38 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 640 360" role="img" aria-labelledby="title desc">
+  <title id="title">Arctic Bear Survival hero artwork</title>
+  <desc id="desc">Stylised polar landscape with aurora colors and a silhouetted survivor facing a bear.</desc>
+  <defs>
+    <linearGradient id="sky" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#051229" />
+      <stop offset="40%" stop-color="#173b59" />
+      <stop offset="100%" stop-color="#0b1a2d" />
+    </linearGradient>
+    <linearGradient id="aurora" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#00f6ff" />
+      <stop offset="50%" stop-color="#5df4c9" />
+      <stop offset="100%" stop-color="#a0b8ff" />
+    </linearGradient>
+  </defs>
+  <rect width="640" height="360" fill="url(#sky)" />
+  <path d="M0 220 Q 140 180 320 230 T 640 220 L 640 360 L 0 360 Z" fill="#0f2438" opacity="0.9" />
+  <path d="M0 260 Q 150 230 320 270 T 640 250 L 640 360 L 0 360 Z" fill="#13344c" opacity="0.85" />
+  <path d="M-10 110 C 120 160 220 40 360 120 C 460 180 560 80 650 130" stroke="url(#aurora)" stroke-width="24" stroke-linecap="round" fill="none" opacity="0.6" />
+  <g fill="#e6f7ff" opacity="0.85">
+    <circle cx="160" cy="90" r="3" />
+    <circle cx="210" cy="60" r="2" />
+    <circle cx="420" cy="70" r="2.5" />
+    <circle cx="500" cy="110" r="2" />
+    <circle cx="580" cy="80" r="3" />
+  </g>
+  <g fill="#0a111f" opacity="0.8">
+    <path d="M120 250 l30 -60 h20 l-15 60 z" />
+    <circle cx="140" cy="180" r="16" />
+  </g>
+  <g fill="#061017" opacity="0.75">
+    <ellipse cx="450" cy="250" rx="70" ry="30" />
+    <path d="M410 210 q40 -60 110 0 q-10 70 -110 40 z" />
+  </g>
+  <text x="320" y="330" font-family="'Trebuchet MS', Arial, sans-serif" font-size="56" text-anchor="middle" fill="#d6faff" font-weight="700" letter-spacing="4">
+    ARCTIC BEAR SURVIVAL
+  </text>
+</svg>
