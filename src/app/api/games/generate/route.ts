@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 import { z } from 'zod';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient, Prisma } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
@@ -321,7 +321,7 @@ async function checkRateLimit(email: string): Promise<boolean> {
   return count < 3; // Max 3 per day
 }
 
-async function updateSubmission(id: string, updates: Partial<{ status: string; generatedCode?: string; heroSvg?: string; screenshotsSvg?: unknown[]; reviewNotes?: string }>): Promise<void> {
+async function updateSubmission(id: string, updates: Prisma.GameSubmissionUpdateInput): Promise<void> {
   await prisma.gameSubmission.update({
     where: { id },
     data: updates
