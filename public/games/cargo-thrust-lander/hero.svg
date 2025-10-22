@@ -1,0 +1,130 @@
+<svg width="800" height="450" viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">Cargo Thrust Lander key art</title>
+  <desc id="desc">Illustration of cargo crates descending with side thrusters onto a glowing landing pad.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0a0515" />
+      <stop offset="1" stop-color="#1a1530" />
+    </linearGradient>
+    <linearGradient id="crateGradient" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#8B4513" />
+      <stop offset="0.5" stop-color="#D2691E" />
+      <stop offset="1" stop-color="#8B4513" />
+    </linearGradient>
+    <linearGradient id="padGradient" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#00a8cc" />
+      <stop offset="0.5" stop-color="#00d4ff" />
+      <stop offset="1" stop-color="#00a8cc" />
+    </linearGradient>
+    <radialGradient id="padGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#00d4ff" stop-opacity="0.8" />
+      <stop offset="1" stop-color="#00d4ff" stop-opacity="0" />
+    </radialGradient>
+    <linearGradient id="thrustFlame" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ff4400" />
+      <stop offset="0.5" stop-color="#ff8800" />
+      <stop offset="1" stop-color="#ffcc00" />
+    </linearGradient>
+    <clipPath id="rounded">
+      <rect x="0" y="0" width="800" height="450" rx="32" ry="32" />
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#rounded)">
+    <!-- Background -->
+    <rect width="800" height="450" fill="url(#bg)" />
+
+    <!-- Stars -->
+    <g opacity="0.8" fill="#ffffff">
+      <circle cx="80" cy="50" r="1.5" />
+      <circle cx="150" cy="80" r="2" />
+      <circle cx="220" cy="45" r="1.2" />
+      <circle cx="320" cy="70" r="1.8" />
+      <circle cx="420" cy="40" r="1.5" />
+      <circle cx="520" cy="90" r="2.2" />
+      <circle cx="650" cy="60" r="1.3" />
+      <circle cx="720" cy="100" r="1.7" />
+      <circle cx="180" cy="120" r="1.4" />
+      <circle cx="380" cy="110" r="1.6" />
+      <circle cx="580" cy="130" r="1.9" />
+      <circle cx="680" cy="140" r="1.4" />
+    </g>
+
+    <!-- Landing pad glow -->
+    <ellipse cx="400" cy="400" rx="180" ry="60" fill="url(#padGlow)" />
+
+    <!-- Landing pad -->
+    <rect x="280" y="390" width="240" height="20" fill="url(#padGradient)" rx="4" />
+    <rect x="380" y="390" width="40" height="20" fill="#00ff88" rx="4" />
+
+    <!-- Support pillars -->
+    <rect x="290" y="410" width="8" height="30" fill="#005577" />
+    <rect x="502" y="410" width="8" height="30" fill="#005577" />
+
+    <!-- Main cargo crate (center, falling) -->
+    <g transform="translate(400, 220)">
+      <!-- Thrust particles left -->
+      <ellipse cx="30" cy="0" rx="18" ry="8" fill="url(#thrustFlame)" opacity="0.7" />
+      <ellipse cx="45" cy="-2" rx="12" ry="6" fill="#ffff00" opacity="0.5" />
+
+      <!-- Crate body -->
+      <rect x="-30" y="-30" width="60" height="60" fill="url(#crateGradient)" stroke="#654321" stroke-width="2" />
+
+      <!-- Crate details -->
+      <line x1="-30" y1="0" x2="30" y2="0" stroke="#654321" stroke-width="2" />
+      <line x1="0" y1="-30" x2="0" y2="30" stroke="#654321" stroke-width="2" />
+
+      <!-- Warning labels -->
+      <text x="0" y="-8" font-family="Arial, sans-serif" font-size="9" fill="#FFD700" text-anchor="middle" font-weight="bold">CARGO</text>
+      <text x="0" y="8" font-family="Arial, sans-serif" font-size="8" fill="#ff4444" text-anchor="middle" font-weight="bold">FRAGILE</text>
+
+      <!-- Thrust particles right -->
+      <ellipse cx="-30" cy="0" rx="18" ry="8" fill="url(#thrustFlame)" opacity="0.7" />
+      <ellipse cx="-45" cy="-2" rx="12" ry="6" fill="#ffff00" opacity="0.5" />
+    </g>
+
+    <!-- Background crate (top left, smaller) -->
+    <g transform="translate(200, 100) scale(0.6)" opacity="0.7">
+      <rect x="-30" y="-30" width="60" height="60" fill="url(#crateGradient)" stroke="#654321" stroke-width="2" />
+      <line x1="-30" y1="0" x2="30" y2="0" stroke="#654321" stroke-width="2" />
+      <line x1="0" y1="-30" x2="0" y2="30" stroke="#654321" stroke-width="2" />
+      <text x="0" y="-5" font-family="Arial, sans-serif" font-size="12" fill="#FFD700" text-anchor="middle" font-weight="bold">CARGO</text>
+    </g>
+
+    <!-- Background crate (top right, smaller) -->
+    <g transform="translate(600, 140) scale(0.5)" opacity="0.6">
+      <rect x="-30" y="-30" width="60" height="60" fill="url(#crateGradient)" stroke="#654321" stroke-width="2" />
+      <line x1="-30" y1="0" x2="30" y2="0" stroke="#654321" stroke-width="2" />
+      <line x1="0" y1="-30" x2="0" y2="30" stroke="#654321" stroke-width="2" />
+    </g>
+
+    <!-- Fuel gauge indicator -->
+    <g transform="translate(650, 250)">
+      <rect x="0" y="0" width="80" height="24" fill="rgba(0,0,0,0.6)" stroke="#00d4ff" stroke-width="2" rx="4" />
+      <rect x="4" y="4" width="50" height="16" fill="linear-gradient(90deg, #ff4444 0%, #ffaa00 50%, #44ff44 100%)" rx="2" />
+      <text x="60" y="17" font-family="Arial, sans-serif" font-size="12" fill="#00d4ff" font-weight="bold">FUEL</text>
+    </g>
+
+    <!-- Score indicator -->
+    <g transform="translate(70, 250)">
+      <rect x="0" y="0" width="100" height="28" fill="rgba(0,0,0,0.6)" stroke="#FFD700" stroke-width="2" rx="4" />
+      <text x="50" y="19" font-family="Arial, sans-serif" font-size="16" fill="#FFD700" text-anchor="middle" font-weight="bold">+250</text>
+    </g>
+
+    <!-- Particle effects -->
+    <g opacity="0.6" fill="#00d4ff">
+      <circle cx="400" cy="340" r="3" />
+      <circle cx="420" cy="350" r="2" />
+      <circle cx="380" cy="350" r="2.5" />
+      <circle cx="410" cy="365" r="2" />
+      <circle cx="390" cy="365" r="2" />
+    </g>
+
+    <!-- Title -->
+    <text x="400" y="50" font-family="'Arial Black', Arial, sans-serif" font-size="48" fill="#00d4ff" text-anchor="middle" font-weight="bold" letter-spacing="2">CARGO THRUST</text>
+    <text x="400" y="85" font-family="'Arial Black', Arial, sans-serif" font-size="48" fill="#00d4ff" text-anchor="middle" font-weight="bold" letter-spacing="2">LANDER</text>
+
+    <!-- Subtitle -->
+    <text x="400" y="110" font-family="Arial, sans-serif" font-size="16" fill="#88ccff" text-anchor="middle" letter-spacing="1">Precision Drop • Side Thrusters • Perfect Landing</text>
+  </g>
+</svg>

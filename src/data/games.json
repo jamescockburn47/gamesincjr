@@ -191,6 +191,11 @@
     ],
     "description": "Drop cargo crates onto moving pads using side thrusters only. Score based on accuracy and fuel saved.",
     "description_it": "Lascia cadere casse cargo su piattaforme mobili usando solo i propulsori laterali. Punteggio basato su precisione e carburante risparmiato.",
+    "hero": "/games/cargo-thrust-lander/hero.svg",
+    "screenshots": [
+      "/games/cargo-thrust-lander/s1.svg",
+      "/games/cargo-thrust-lander/s2.svg"
+    ],
     "demoPath": "/demos/cargo-thrust-lander/index.html",
     "gameType": "html5",
     "engine": "vanilla-js",
