@@ -5,9 +5,10 @@ const prisma = new PrismaClient();
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   try {
+    const params = await context.params;
     const submission = await prisma.gameSubmission.findUnique({
       where: { id: params.id },
       select: {
