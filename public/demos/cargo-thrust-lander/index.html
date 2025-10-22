@@ -202,7 +202,7 @@
         <div class="modal">
             <h2>Cargo Thrust Lander</h2>
             <p>Drop 10 cargo crates onto the moving landing pad!</p>
-            <p>Use side thrusters to guide each crate safely down.</p>
+            <p>Use thrusters to guide each crate safely down.</p>
             <button id="tryBtn">Try Now</button>
         </div>
     </div>
@@ -211,9 +211,9 @@
         <div class="modal">
             <h2>How to Play</h2>
             <p><strong>Goal:</strong> Land all 10 crates on the moving pad</p>
-            <p><strong>Controls:</strong> LEFT/RIGHT arrows = side thrusters (no rotation!)</p>
+            <p><strong>Controls:</strong> UP/SPACE = slow down | LEFT/RIGHT = side thrusters</p>
             <p><strong>Scoring:</strong> More points for accuracy + fuel saved</p>
-            <p><strong>Tip:</strong> Watch your fuel! Small adjustments work best.</p>
+            <p><strong>Tip:</strong> Slow your descent early! Land gently on the green zone.</p>
             <button id="startBtn">Start Mission</button>
         </div>
     </div>
@@ -242,6 +242,7 @@
     <!-- Mobile Controls -->
     <div class="mobile-controls">
         <button id="btnLeft">◀</button>
+        <button id="btnUp">▲</button>
         <button id="btnRight">▶</button>
     </div>
 
@@ -254,8 +255,9 @@
         const ctx = canvas.getContext('2d');
 
         // Game constants (calibrated for age 10)
-        const GRAVITY = 0.15;
-        const THRUST_POWER = 0.3;
+        const GRAVITY = 0.08;
+        const THRUST_POWER = 0.25;
+        const VERTICAL_THRUST_POWER = 0.12;
         const MAX_FUEL = 100;
         const PAD_WIDTH = 120;
         const PAD_HEIGHT = 20;
@@ -287,7 +289,8 @@
 
         const input = {
             left: false,
-            right: false
+            right: false,
+            up: false
         };
 
         // ========== AUDIO CONTEXT ==========
@@ -368,13 +371,17 @@
             const key = e.key.toLowerCase();
             if (key === 'arrowleft' || key === 'a') input.left = true;
             if (key === 'arrowright' || key === 'd') input.right = true;
-            if (key === ' ') e.preventDefault();
+            if (key === 'arrowup' || key === 'w' || key === ' ') {
+                input.up = true;
+                e.preventDefault();
+            }
         });
 
         document.addEventListener('keyup', e => {
             const key = e.key.toLowerCase();
             if (key === 'arrowleft' || key === 'a') input.left = false;
             if (key === 'arrowright' || key === 'd') input.right = false;
+            if (key === 'arrowup' || key === 'w' || key === ' ') input.up = false;
         });
 
         // Touch controls
@@ -391,6 +398,7 @@
         }
 
         bindButton('btnLeft', 'left');
+        bindButton('btnUp', 'up');
         bindButton('btnRight', 'right');
 
         // ========== UTILITY FUNCTIONS ==========
@@ -424,6 +432,19 @@
                     vx: direction * (2 + Math.random() * 2),
                     vy: Math.random() * 2 - 1,
                     life: 0.2 + Math.random() * 0.3,
+                    size: 3 + Math.random() * 2,
+                    color: '#ff8800'
+                });
+            }
+        }
+
+        function createUpwardThrustParticles(x, y) {
+            for (let i = 0; i < 4; i++) {
+                game.particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 2,
+                    vy: 2 + Math.random() * 3,
+                    life: 0.3 + Math.random() * 0.4,
                     size: 3 + Math.random() * 2,
                     color: '#ff8800'
                 });
@@ -493,6 +514,12 @@
                     game.crate.vx += THRUST_POWER * dt;
                     game.fuel -= 0.5 * dt;
                     createThrustParticles(game.crate.x, game.crate.y + CRATE_SIZE / 2, -1);
+                    if (Math.random() > 0.7) playThrustSound();
+                }
+                if (input.up && game.fuel > 0) {
+                    game.crate.vy -= VERTICAL_THRUST_POWER * dt;
+                    game.fuel -= 0.6 * dt;
+                    createUpwardThrustParticles(game.crate.x + CRATE_SIZE / 2, game.crate.y + CRATE_SIZE);
                     if (Math.random() > 0.7) playThrustSound();
                 }
 
@@ -756,6 +783,14 @@
                     ctx.moveTo(game.crate.x, game.crate.y + CRATE_SIZE / 2 - 5);
                     ctx.lineTo(game.crate.x - 15, game.crate.y + CRATE_SIZE / 2);
                     ctx.lineTo(game.crate.x, game.crate.y + CRATE_SIZE / 2 + 5);
+                    ctx.fill();
+                }
+                if (input.up && game.fuel > 0) {
+                    ctx.fillStyle = '#ff8800';
+                    ctx.beginPath();
+                    ctx.moveTo(game.crate.x + CRATE_SIZE / 2 - 5, game.crate.y + CRATE_SIZE);
+                    ctx.lineTo(game.crate.x + CRATE_SIZE / 2, game.crate.y + CRATE_SIZE + 15);
+                    ctx.lineTo(game.crate.x + CRATE_SIZE / 2 + 5, game.crate.y + CRATE_SIZE);
                     ctx.fill();
                 }
             }
