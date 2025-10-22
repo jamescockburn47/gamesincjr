@@ -195,7 +195,7 @@ export default function MakeYourGameForm() {
             <label className="mb-3 block text-sm font-medium text-slate-700">Colors</label>
             <select
               value={formData.colors}
-              onChange={(e) => setFormData({...formData, colors: e.target.value as any})}
+              onChange={(e) => setFormData({...formData, colors: e.target.value as typeof formData.colors})}
               className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
             >
               <option value="colorful">Colorful</option>
@@ -209,7 +209,7 @@ export default function MakeYourGameForm() {
             <label className="mb-3 block text-sm font-medium text-slate-700">Art Style</label>
             <select
               value={formData.artStyle}
-              onChange={(e) => setFormData({...formData, artStyle: e.target.value as any})}
+              onChange={(e) => setFormData({...formData, artStyle: e.target.value as typeof formData.artStyle})}
               className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
             >
               <option value="geometric">Geometric</option>
@@ -223,7 +223,7 @@ export default function MakeYourGameForm() {
             <label className="mb-3 block text-sm font-medium text-slate-700">Background</label>
             <select
               value={formData.background}
-              onChange={(e) => setFormData({...formData, background: e.target.value as any})}
+              onChange={(e) => setFormData({...formData, background: e.target.value as typeof formData.background})}
               className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
             >
               <option value="space">Space</option>
@@ -297,7 +297,7 @@ export default function MakeYourGameForm() {
             <label className="mb-3 block text-sm font-medium text-slate-700">Movement</label>
             <select
               value={formData.movement}
-              onChange={(e) => setFormData({...formData, movement: e.target.value as any})}
+              onChange={(e) => setFormData({...formData, movement: e.target.value as typeof formData.movement})}
               className="w-full rounded-xl border border-slate-300 px-4 py-2 text-sm focus:border-sky-500 focus:outline-none focus:ring-2 focus:ring-sky-500/20"
             >
               <option value="left-right">Left & Right</option>

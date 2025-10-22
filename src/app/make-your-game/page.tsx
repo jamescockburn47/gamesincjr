@@ -83,7 +83,7 @@ export default function MakeYourGamePage() {
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl bg-white/80 p-4 text-sm text-slate-700">
               <strong className="text-sky-700">✨ Be creative with your title!</strong>
-              <p className="mt-1 text-slate-600">"Space Pizza Rescue" is more fun than "Space Game"</p>
+              <p className="mt-1 text-slate-600">&quot;Space Pizza Rescue&quot; is more fun than &quot;Space Game&quot;</p>
             </div>
             <div className="rounded-2xl bg-white/80 p-4 text-sm text-slate-700">
               <strong className="text-sky-700">📝 Write a clear description</strong>
