@@ -1,3 +1,6 @@
+// Force dynamic rendering for game pages - ensures new games appear immediately
+export const dynamic = 'force-dynamic';
+
 import Image from "next/image";
 import { Suspense } from "react";
 import type { Metadata } from "next";
@@ -6,6 +9,7 @@ import PageShell from "@/components/PageShell";
 import { Button, buttonVariants } from "@/components/ui/button";
 import ComingSoon from "@/components/ComingSoon";
 import GamePlayer from "@/components/GamePlayer";
+import { GamePlayerErrorBoundary } from "@/components/GamePlayerErrorBoundary";
 import { getGameBySlug } from "@/lib/games";
 import { cn } from "@/lib/utils";
 import { getUserFromCookies, hasAccessToGame } from "@/lib/user-session";
@@ -123,7 +127,9 @@ export default async function GamePage({ params }: GamePageProps) {
               Preview mode: play level one here. To unlock all levels, choose a tier on the <a className="font-semibold text-amber-900 underline" href="/about">About</a> page and then sign in on the <a className="font-semibold text-amber-900 underline" href="/account">Account</a> page.
             </div>
           )}
-          <GamePlayer game={game} />
+          <GamePlayerErrorBoundary>
+            <GamePlayer game={game} />
+          </GamePlayerErrorBoundary>
           <Suspense>
             <Scores slug={game.slug} />
           </Suspense>
