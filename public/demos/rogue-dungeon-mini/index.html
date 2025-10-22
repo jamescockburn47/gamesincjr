@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Rogue Dungeon Mini - Demo</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: 'Courier New', monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 32px 16px 64px;
+      background: linear-gradient(180deg, #1c0f13 0%, #0a0406 100%);
+      color: #e0f2fe;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.4rem, 5vw, 3.6rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #dc2626;
+      text-shadow: 0 0 20px rgba(220, 38, 38, 0.8);
+    }
+
+    .tagline {
+      margin: 0;
+      font-size: clamp(1rem, 2.5vw, 1.4rem);
+      color: #bae6fd;
+      text-align: center;
+      max-width: 760px;
+    }
+
+    .hud {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: clamp(16px, 4vw, 32px);
+      font-size: clamp(1.1rem, 2.4vw, 1.5rem);
+      font-weight: 700;
+    }
+
+    .hud span {
+      color: #fbbf24;
+      margin-left: 6px;
+    }
+
+    .stage {
+      position: relative;
+      width: min(92vw, 880px);
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 2px solid rgba(220, 38, 38, 0.45);
+      box-shadow: 0 28px 68px rgba(5, 12, 24, 0.7);
+      background: linear-gradient(180deg, rgba(28, 15, 19, 0.85), rgba(10, 4, 6, 0.95));
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(4, 7, 19, 0.88);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .overlay.hidden {
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .overlay h2 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 2.6rem);
+      color: #dc2626;
+    }
+
+    .overlay p {
+      margin: 0;
+      color: #e0f2fe;
+      line-height: 1.6;
+    }
+
+    .overlay button {
+      padding: 14px 28px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #fefce8;
+      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 16px 40px rgba(220, 38, 38, 0.4);
+    }
+
+    .overlay button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 52px rgba(220, 38, 38, 0.6);
+    }
+
+    .controls {
+      display: none;
+      gap: 12px;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 14px 18px;
+      border-radius: 18px;
+      background: rgba(2, 6, 23, 0.75);
+      border: 1px solid rgba(220, 38, 38, 0.35);
+      backdrop-filter: blur(12px);
+    }
+
+    .controls button {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      border: 1px solid rgba(220, 38, 38, 0.4);
+      background: rgba(5, 12, 24, 0.8);
+      color: #dc2626;
+      font-size: 1.3rem;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    .controls button:active {
+      transform: scale(0.96);
+      background: rgba(220, 38, 38, 0.8);
+    }
+
+    @media (max-width: 900px) {
+      .controls { display: grid; grid-template-columns: repeat(3, 1fr); }
+    }
+  </style>
+</head>
+<body>
+  <h1>Rogue Dungeon Mini</h1>
+  <p class="tagline">Navigate procedural rooms, defeat enemies, collect gold. One life. One chance.</p>
+
+  <div class="hud" role="status" aria-live="polite">
+    <div>HP:<span id="hp">10</span></div>
+    <div>Gold:<span id="gold">0</span></div>
+    <div>Room:<span id="room">1</span></div>
+  </div>
+
+  <div class="stage">
+    <canvas id="game" width="800" height="600" aria-label="Roguelite dungeon game"></canvas>
+    <div id="tryOverlay" class="overlay">
+      <h2>Rogue Dungeon Mini</h2>
+      <p>Navigate procedural rooms, defeat enemies, collect gold!</p>
+      <button id="tryBtn">Try Now</button>
+    </div>
+    <div id="startOverlay" class="overlay hidden">
+      <h2>Enter the Dungeon?</h2>
+      <p>Use WASD or arrow keys to move. Collide with enemies to attack. Find the exit portal to advance!</p>
+      <button id="startBtn">Start</button>
+    </div>
+  </div>
+
+  <div class="controls" aria-hidden="true">
+    <div></div>
+    <button data-move="up">▲</button>
+    <div></div>
+    <button data-move="left">◄</button>
+    <button data-move="down">▼</button>
+    <button data-move="right">►</button>
+  </div>
+
+  <script type="module">
+    (() => {
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
+      const tryOverlay = document.getElementById('tryOverlay');
+      const startOverlay = document.getElementById('startOverlay');
+      const tryBtn = document.getElementById('tryBtn');
+      const startBtn = document.getElementById('startBtn');
+      const hpEl = document.getElementById('hp');
+      const goldEl = document.getElementById('gold');
+      const roomEl = document.getElementById('room');
+
+      const state = {
+        running: false,
+        hp: 10,
+        maxHp: 10,
+        gold: 0,
+        room: 1,
+        lastTime: 0,
+        player: null,
+        enemies: [],
+        walls: [],
+        coins: [],
+        portal: null,
+      };
+
+      const keys = {};
+
+      window.addEventListener('keydown', e => {
+        keys[e.key.toLowerCase()] = true;
+      });
+      window.addEventListener('keyup', e => {
+        keys[e.key.toLowerCase()] = false;
+      });
+
+      document.querySelectorAll('[data-move]').forEach(btn => {
+        btn.addEventListener('pointerdown', e => {
+          e.preventDefault();
+          keys[btn.dataset.move] = true;
+        });
+        btn.addEventListener('pointerup', () => {
+          keys[btn.dataset.move] = false;
+        });
+      });
+
+      tryBtn.addEventListener('click', () => {
+        requestFullscreen();
+        tryOverlay.classList.add('hidden');
+        startOverlay.classList.remove('hidden');
+      });
+
+      startBtn.addEventListener('click', () => {
+        if (!state.running) startGame();
+      });
+
+      function requestFullscreen() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen().catch(() => {});
+        } else if (elem.webkitRequestFullscreen) {
+          elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+          elem.msRequestFullscreen();
+        }
+      }
+
+      function startGame() {
+        startOverlay.classList.add('hidden');
+        state.running = true;
+        state.hp = 10;
+        state.maxHp = 10;
+        state.gold = 0;
+        state.room = 1;
+        generateRoom();
+        state.lastTime = performance.now();
+        requestAnimationFrame(loop);
+      }
+
+      function generateRoom() {
+        state.player = { x: 100, y: 300, size: 20, speed: 200 };
+        state.enemies = [];
+        state.walls = [];
+        state.coins = [];
+
+        // Create walls (room bounds)
+        const wallThickness = 30;
+        state.walls.push(
+          { x: 0, y: 0, w: canvas.width, h: wallThickness },
+          { x: 0, y: canvas.height - wallThickness, w: canvas.width, h: wallThickness },
+          { x: 0, y: 0, w: wallThickness, h: canvas.height },
+          { x: canvas.width - wallThickness, y: 0, w: wallThickness, h: canvas.height }
+        );
+
+        // Add random obstacles
+        const obstacleCount = 3 + Math.floor(state.room / 2);
+        for (let i = 0; i < obstacleCount; i++) {
+          state.walls.push({
+            x: 100 + Math.random() * 600,
+            y: 100 + Math.random() * 400,
+            w: 40 + Math.random() * 60,
+            h: 40 + Math.random() * 60,
+          });
+        }
+
+        // Spawn enemies
+        const enemyCount = 2 + state.room;
+        for (let i = 0; i < enemyCount; i++) {
+          state.enemies.push({
+            x: 300 + Math.random() * 400,
+            y: 100 + Math.random() * 400,
+            size: 16,
+            hp: 2 + Math.floor(state.room / 3),
+            speed: 50 + state.room * 5,
+          });
+        }
+
+        // Spawn coins
+        const coinCount = 3 + Math.floor(state.room / 2);
+        for (let i = 0; i < coinCount; i++) {
+          state.coins.push({
+            x: 150 + Math.random() * 500,
+            y: 100 + Math.random() * 400,
+            size: 12,
+          });
+        }
+
+        // Spawn portal
+        state.portal = {
+          x: 650 + Math.random() * 100,
+          y: 200 + Math.random() * 200,
+          size: 40,
+        };
+
+        updateHud();
+      }
+
+      function loop(timestamp) {
+        if (!state.running) return;
+        const delta = Math.min((timestamp - state.lastTime) / 1000, 0.05);
+        state.lastTime = timestamp;
+        update(delta);
+        render();
+        requestAnimationFrame(loop);
+      }
+
+      function update(delta) {
+        const p = state.player;
+
+        // Player movement
+        let dx = 0, dy = 0;
+        if (keys['arrowup'] || keys['w']) dy -= 1;
+        if (keys['arrowdown'] || keys['s']) dy += 1;
+        if (keys['arrowleft'] || keys['a']) dx -= 1;
+        if (keys['arrowright'] || keys['d']) dx += 1;
+
+        if (dx !== 0 || dy !== 0) {
+          const len = Math.sqrt(dx * dx + dy * dy);
+          dx /= len;
+          dy /= len;
+
+          const newX = p.x + dx * p.speed * delta;
+          const newY = p.y + dy * p.speed * delta;
+
+          // Check wall collisions
+          let canMove = true;
+          for (const wall of state.walls) {
+            if (newX + p.size / 2 > wall.x && newX - p.size / 2 < wall.x + wall.w &&
+                newY + p.size / 2 > wall.y && newY - p.size / 2 < wall.y + wall.h) {
+              canMove = false;
+              break;
+            }
+          }
+
+          if (canMove) {
+            p.x = newX;
+            p.y = newY;
+          }
+        }
+
+        // Enemy AI
+        for (const enemy of state.enemies) {
+          const dx = p.x - enemy.x;
+          const dy = p.y - enemy.y;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+
+          if (dist > 30) {
+            enemy.x += (dx / dist) * enemy.speed * delta;
+            enemy.y += (dy / dist) * enemy.speed * delta;
+          }
+
+          // Enemy collision with player
+          if (Math.abs(p.x - enemy.x) < (p.size + enemy.size) / 2 &&
+              Math.abs(p.y - enemy.y) < (p.size + enemy.size) / 2) {
+            enemy.hp--;
+            state.hp--;
+            updateHud();
+
+            if (state.hp <= 0) {
+              endGame();
+              return;
+            }
+
+            // Knockback
+            const angle = Math.atan2(p.y - enemy.y, p.x - enemy.x);
+            p.x += Math.cos(angle) * 50;
+            p.y += Math.sin(angle) * 50;
+          }
+        }
+
+        // Remove dead enemies
+        state.enemies = state.enemies.filter(e => e.hp > 0);
+
+        // Coin collection
+        for (let i = state.coins.length - 1; i >= 0; i--) {
+          const coin = state.coins[i];
+          if (Math.abs(p.x - coin.x) < 20 && Math.abs(p.y - coin.y) < 20) {
+            state.gold += 10;
+            state.coins.splice(i, 1);
+            updateHud();
+          }
+        }
+
+        // Portal interaction
+        if (state.portal && Math.abs(p.x - state.portal.x) < 30 && Math.abs(p.y - state.portal.y) < 30) {
+          state.room++;
+          generateRoom();
+        }
+      }
+
+      function updateHud() {
+        hpEl.textContent = state.hp;
+        goldEl.textContent = state.gold;
+        roomEl.textContent = state.room;
+      }
+
+      function endGame() {
+        state.running = false;
+        startOverlay.classList.remove('hidden');
+        startOverlay.querySelector('h2').textContent = 'You Died';
+        startOverlay.querySelector('p').textContent = `Room ${state.room}. Gold collected: ${state.gold}. Try again?`;
+        startBtn.textContent = 'Retry';
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Background
+        ctx.fillStyle = '#0a0406';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Walls
+        ctx.fillStyle = '#334155';
+        for (const wall of state.walls) {
+          ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
+        }
+
+        // Coins
+        ctx.fillStyle = '#fbbf24';
+        for (const coin of state.coins) {
+          ctx.beginPath();
+          ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Portal
+        if (state.portal) {
+          const time = performance.now() / 1000;
+          ctx.save();
+          ctx.translate(state.portal.x, state.portal.y);
+          ctx.rotate(time);
+          ctx.fillStyle = '#8b5cf6';
+          ctx.globalAlpha = 0.6 + Math.sin(time * 3) * 0.2;
+          ctx.fillRect(-state.portal.size / 2, -state.portal.size / 2, state.portal.size, state.portal.size);
+          ctx.globalAlpha = 1;
+          ctx.restore();
+        }
+
+        // Enemies
+        ctx.fillStyle = '#dc2626';
+        for (const enemy of state.enemies) {
+          ctx.beginPath();
+          ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
+          ctx.fill();
+
+          // HP bar
+          ctx.fillStyle = '#7f1d1d';
+          ctx.fillRect(enemy.x - 12, enemy.y - 24, 24, 4);
+          ctx.fillStyle = '#ef4444';
+          ctx.fillRect(enemy.x - 12, enemy.y - 24, 24 * (enemy.hp / (2 + Math.floor(state.room / 3))), 4);
+        }
+
+        // Player
+        const p = state.player;
+        ctx.fillStyle = '#06b6d4';
+        ctx.beginPath();
+        ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Player HP bar
+        ctx.fillStyle = '#1e293b';
+        ctx.fillRect(p.x - 15, p.y - 30, 30, 5);
+        ctx.fillStyle = '#22c55e';
+        ctx.fillRect(p.x - 15, p.y - 30, 30 * (state.hp / state.maxHp), 5);
+      }
+
+      render();
+      updateHud();
+    })();
+  </script>
+</body>
+</html>

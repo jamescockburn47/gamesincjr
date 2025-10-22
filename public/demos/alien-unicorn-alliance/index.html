@@ -300,9 +300,16 @@
     <button class="btn-right" aria-label="Glide right">➡️</button>
     <button class="btn-pulse" aria-label="Trigger starlight pulse">✨ Pulse</button>
   </div>
-  <div id="startOverlay" class="overlay visible" role="dialog" aria-modal="true">
+  <div id="tryOverlay" class="overlay visible" role="dialog" aria-modal="true">
     <div class="panel">
       <h2>Alien Unicorn Alliance</h2>
+      <p>Pilot an aurora unicorn through alien raids, collecting harmony crystals!</p>
+      <button id="tryBtn">Try Now</button>
+    </div>
+  </div>
+  <div id="startOverlay" class="overlay" role="dialog" aria-modal="true" aria-hidden="true">
+    <div class="panel">
+      <h2>Ready to Fly?</h2>
       <p>The Nebula Grove is under siege! Pilot the aurora unicorn Astra and gather harmony crystals while evading raider drones.</p>
       <ul>
         <li><strong>Move</strong>: Arrow keys or WASD. Tap the canvas on touch devices, then use the floating controls.</li>
@@ -310,7 +317,7 @@
         <li><strong>Pulse</strong>: Press <kbd>Space</kbd> (or ✨ Pulse) to emit a starlight wave that converts nearby drones into bonus crystals. Wait for the pulse to recharge.</li>
         <li><strong>Avoid</strong>: Drones drain your shields. Lose all three and the mission ends.</li>
       </ul>
-      <button id="startBtn">Start mission</button>
+      <button id="startBtn">Start</button>
     </div>
   </div>
   <div id="gameOverOverlay" class="overlay" role="dialog" aria-modal="true" aria-hidden="true">
@@ -342,8 +349,10 @@
       const pulseEl = document.getElementById('pulse');
       const distanceEl = document.getElementById('distance');
       const statusEl = document.getElementById('status');
+      const tryOverlay = document.getElementById('tryOverlay');
       const startOverlay = document.getElementById('startOverlay');
       const gameOverOverlay = document.getElementById('gameOverOverlay');
+      const tryBtn = document.getElementById('tryBtn');
       const startBtn = document.getElementById('startBtn');
       const countdownEl = document.getElementById('countdown');
       const playAgainBtn = document.getElementById('playAgain');
@@ -1028,10 +1037,18 @@
         }
       }
 
-      startBtn.addEventListener('click', () => {
+      tryBtn.addEventListener('click', () => {
         if (state !== 'menu') return;
         requestFullscreen();
+        tryOverlay.classList.remove('visible');
+        startOverlay.classList.add('visible');
+        startOverlay.removeAttribute('aria-hidden');
+      });
+
+      startBtn.addEventListener('click', () => {
+        if (state !== 'menu') return;
         startOverlay.classList.remove('visible');
+        startOverlay.setAttribute('aria-hidden', 'true');
         state = 'countdown';
         countdownEl.style.display = 'flex';
         let timer = 5;

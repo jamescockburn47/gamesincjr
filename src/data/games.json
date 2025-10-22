@@ -119,11 +119,11 @@
     "gameType": "html5",
     "engine": "vanilla-js",
     "version": "0.1.0",
-    "status": "coming-soon"
+    "status": "released"
   },
   {
     "slug": "brick-blitz-84",
-    "title": "Brick Blitz ‘84",
+    "title": "Brick Blitz '84",
     "tags": [
       "breakout",
       "paddle",
@@ -139,7 +139,7 @@
     "gameType": "html5",
     "engine": "vanilla-js",
     "version": "0.1.0",
-    "status": "coming-soon"
+    "status": "released"
   },
   {
     "slug": "rogue-dungeon-mini",
@@ -159,7 +159,7 @@
     "gameType": "html5",
     "engine": "vanilla-js",
     "version": "0.1.0",
-    "status": "coming-soon"
+    "status": "released"
   },
   {
     "slug": "gravity-lander",
@@ -199,11 +199,11 @@
     "gameType": "html5",
     "engine": "vanilla-js",
     "version": "0.1.0",
-    "status": "coming-soon"
+    "status": "released"
   },
   {
     "slug": "tower-frenzy-90",
-    "title": "Tower Frenzy ‘90",
+    "title": "Tower Frenzy '90",
     "tags": [
       "puzzle",
       "stacking",
@@ -219,7 +219,7 @@
     "gameType": "html5",
     "engine": "vanilla-js",
     "version": "0.1.0",
-    "status": "coming-soon"
+    "status": "released"
   },
   {
     "slug": "frog-cross-dash",
@@ -239,7 +239,7 @@
     "gameType": "html5",
     "engine": "vanilla-js",
     "version": "0.1.0",
-    "status": "coming-soon"
+    "status": "released"
   },
   {
     "slug": "bubble-pop-arena",

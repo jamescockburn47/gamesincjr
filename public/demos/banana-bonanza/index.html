@@ -256,15 +256,17 @@
   </div>
   <div id="status" class="status" aria-live="polite">Press Start to begin the banana rush!</div>
 
-  <div id="overlay" class="overlay show" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
+  <div id="tryOverlay" class="overlay show" role="dialog" aria-modal="true" aria-labelledby="tryTitle">
     <div class="dialog">
-      <h2 id="overlayTitle">Banana Bonanza</h2>
-      <p id="overlaySubtitle">Catch the ripe bananas, dodge the rotten ones, and keep the crate moving!</p>
-      <div id="gameOverStats" class="stats" hidden>
-        <div>Final Score: <span id="finalScore">0</span></div>
-        <div>Level Reached: <span id="finalLevel">1</span></div>
-        <div>Bananas Caught: <span id="finalCaught">0</span></div>
-      </div>
+      <h2 id="tryTitle">Banana Bonanza</h2>
+      <p>Catch the ripe bananas, dodge the rotten ones, and keep the crate moving!</p>
+      <button id="tryBtn">Try Now</button>
+    </div>
+  </div>
+
+  <div id="startOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="startTitle">
+    <div class="dialog">
+      <h2 id="startTitle">How to Play</h2>
       <ul id="introInstructions">
         <li><strong>Desktop:</strong> Use <kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd>/<kbd>D</kbd> to move.</li>
         <li><strong>Touch:</strong> Tap the glowing buttons to slide the crate.</li>
@@ -272,7 +274,20 @@
         <li>Missed ripe fruit also costs a life. Keep the combo alive!</li>
       </ul>
       <p>Tip: Click or tap the game area after starting to lock the controls.</p>
-      <button id="primaryAction" data-action="start">Start Game</button>
+      <button id="startBtn">Start</button>
+    </div>
+  </div>
+
+  <div id="gameOverOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
+    <div class="dialog">
+      <h2 id="overlayTitle">Game Over</h2>
+      <p id="overlaySubtitle">Nice try! Ready for another bunch?</p>
+      <div id="gameOverStats" class="stats">
+        <div>Final Score: <span id="finalScore">0</span></div>
+        <div>Level Reached: <span id="finalLevel">1</span></div>
+        <div>Bananas Caught: <span id="finalCaught">0</span></div>
+      </div>
+      <button id="primaryAction" data-action="restart">Play Again</button>
     </div>
   </div>
 
@@ -308,10 +323,13 @@
       const livesEl = document.getElementById('lives');
       const levelEl = document.getElementById('level');
       const statusEl = document.getElementById('status');
-      const overlay = document.getElementById('overlay');
+      const tryOverlay = document.getElementById('tryOverlay');
+      const startOverlay = document.getElementById('startOverlay');
+      const gameOverOverlay = document.getElementById('gameOverOverlay');
+      const tryBtn = document.getElementById('tryBtn');
+      const startBtn = document.getElementById('startBtn');
       const primaryAction = document.getElementById('primaryAction');
       const overlaySubtitle = document.getElementById('overlaySubtitle');
-      const introInstructions = document.getElementById('introInstructions');
       const statsPanel = document.getElementById('gameOverStats');
       const finalScoreEl = document.getElementById('finalScore');
       const finalLevelEl = document.getElementById('finalLevel');
@@ -403,7 +421,7 @@
         if (gameState === 'countdown') return;
         clearCountdown();
         resetGameState();
-        overlay.classList.remove('show');
+        startOverlay.classList.remove('show');
         gameState = 'countdown';
         setStatus('Get ready…', 'paused');
         let remaining = 3;
@@ -576,12 +594,7 @@
         finalScoreEl.textContent = state.score.toString();
         finalLevelEl.textContent = state.level.toString();
         finalCaughtEl.textContent = state.caught.toString();
-        overlay.classList.add('show');
-        overlaySubtitle.textContent = 'Nice try! Ready for another bunch?';
-        introInstructions.hidden = true;
-        statsPanel.hidden = false;
-        primaryAction.textContent = 'Play Again';
-        primaryAction.dataset.action = 'restart';
+        gameOverOverlay.classList.add('show');
       }
 
       /**
@@ -757,17 +770,27 @@
         }
       });
 
+      function requestFs(){
+        const el=document.documentElement;
+        if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+        else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen().catch(()=>{});
+        else if(el.msRequestFullscreen) el.msRequestFullscreen().catch(()=>{});
+      }
+
+      tryBtn.addEventListener('click', () => {
+        requestFs();
+        tryOverlay.classList.remove('show');
+        startOverlay.classList.add('show');
+      });
+
+      startBtn.addEventListener('click', () => {
+        beginCountdown();
+      });
+
       primaryAction.addEventListener('click', () => {
-        if (primaryAction.dataset.action === 'start' || primaryAction.dataset.action === 'restart') {
-          introInstructions.hidden = false;
-          statsPanel.hidden = true;
-          overlaySubtitle.textContent = 'Catch the ripe bananas, dodge the rotten ones, and keep the crate moving!';
-          primaryAction.textContent = 'Loading…';
-          setTimeout(() => {
-            primaryAction.textContent = 'Start Game';
-            primaryAction.dataset.action = 'start';
-            beginCountdown();
-          }, 120);
+        if (primaryAction.dataset.action === 'restart') {
+          gameOverOverlay.classList.remove('show');
+          startOverlay.classList.add('show');
         }
       });
 

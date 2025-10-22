@@ -189,11 +189,16 @@
 
   <div class="stage">
     <canvas id="game" width="800" height="600" aria-label="Frog dodging snakes and catching flies"></canvas>
-    <div id="overlay" class="overlay" role="dialog" aria-modal="true">
+    <div id="tryOverlay" class="overlay" role="dialog" aria-modal="true">
+      <h2>Frog Fly Feast</h2>
+      <p>Leap between lily pads, dodge snakes, and snap up glowing flies!</p>
+      <button id="tryBtn">Try Now</button>
+    </div>
+    <div id="startOverlay" class="overlay hidden" role="dialog" aria-modal="true">
       <h2>Ready to Hop?</h2>
       <p data-overlay-main>Use the arrow keys (or the green controls) to hop to neighbouring lily pads. Wait for the gap, dodge the snakes, and reach flies before they blink out.</p>
       <p data-overlay-detail>Catch <strong>five</strong> flies in a row to earn a bonus streak!</p>
-      <button id="start">Start hopping</button>
+      <button id="startBtn">Start</button>
     </div>
   </div>
 
@@ -227,15 +232,17 @@
         return;
       }
 
-      const overlay = document.getElementById('overlay');
-      if (!(overlay instanceof HTMLElement)) {
-        console.error('Frog Fly Feast: expected an overlay container with id "overlay".');
+      const tryOverlay = document.getElementById('tryOverlay');
+      const startOverlay = document.getElementById('startOverlay');
+      if (!(tryOverlay instanceof HTMLElement) || !(startOverlay instanceof HTMLElement)) {
+        console.error('Frog Fly Feast: expected overlay containers.');
         return;
       }
 
-      const startButton = document.getElementById('start');
-      if (!(startButton instanceof HTMLButtonElement)) {
-        console.error('Frog Fly Feast: start button is missing or not a <button>.');
+      const tryBtn = document.getElementById('tryBtn');
+      const startBtn = document.getElementById('startBtn');
+      if (!(tryBtn instanceof HTMLButtonElement) || !(startBtn instanceof HTMLButtonElement)) {
+        console.error('Frog Fly Feast: buttons are missing or not <button> elements.');
         return;
       }
 
@@ -248,9 +255,9 @@
       }
 
       const controlButtons = document.querySelectorAll('[data-move]');
-      const overlayTitle = overlay.querySelector('h2');
-      const overlayMain = overlay.querySelector('[data-overlay-main]');
-      const overlayDetail = overlay.querySelector('[data-overlay-detail]');
+      const overlayTitle = startOverlay.querySelector('h2');
+      const overlayMain = startOverlay.querySelector('[data-overlay-main]');
+      const overlayDetail = startOverlay.querySelector('[data-overlay-detail]');
 
       if (!(overlayTitle instanceof HTMLElement && overlayMain instanceof HTMLElement && overlayDetail instanceof HTMLElement)) {
         console.error('Frog Fly Feast: overlay content elements are missing.');
@@ -301,13 +308,30 @@
         });
       });
 
-      startButton.addEventListener('click', () => {
+      tryBtn.addEventListener('click', () => {
+        requestFullscreen();
+        tryOverlay.classList.add('hidden');
+        startOverlay.classList.remove('hidden');
+      });
+
+      startBtn.addEventListener('click', () => {
         if (!state.running) {
           startGame();
         } else {
           resumeGame();
         }
       });
+
+      function requestFullscreen() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen().catch(() => {});
+        } else if (elem.webkitRequestFullscreen) {
+          elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+          elem.msRequestFullscreen();
+        }
+      }
 
       function setOverlayContent(title, main, detail) {
         overlayTitle.textContent = title;
@@ -363,16 +387,16 @@
       }
 
       function startGame() {
-        overlay.classList.add('hidden');
+        startOverlay.classList.add('hidden');
         resetGame();
-        startButton.textContent = 'Resume';
+        startBtn.textContent = 'Resume';
         state.running = true;
         state.lastTime = performance.now();
         requestAnimationFrame(loop);
       }
 
       function resumeGame() {
-        overlay.classList.add('hidden');
+        startOverlay.classList.add('hidden');
         state.running = true;
         state.lastTime = performance.now();
         requestAnimationFrame(loop);
@@ -381,16 +405,16 @@
       function pauseGame() {
         if (!state.running) return;
         state.running = false;
-        overlay.classList.remove('hidden');
+        startOverlay.classList.remove('hidden');
         setOverlayContent('Paused', 'Snakes are circling. Tap Resume when you are ready to leap again!', 'Tip: watch the gaps in each lane.');
-        startButton.textContent = 'Resume';
+        startBtn.textContent = 'Resume';
       }
 
       function endGame() {
         state.running = false;
-        overlay.classList.remove('hidden');
+        startOverlay.classList.remove('hidden');
         setOverlayContent('Game Over', `You caught ${state.flies} flies. Dodge the snakes and try again!`, 'Press Play again to restart the pond.');
-        startButton.textContent = 'Play again';
+        startBtn.textContent = 'Play again';
       }
 
       function handleKey(event) {

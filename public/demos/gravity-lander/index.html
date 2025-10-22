@@ -24,6 +24,22 @@
       <div class="badge">V-Speed: <span id="vs">0.0</span></div>
       <div class="badge">Score: <span id="score">0</span></div>
     </div>
+    <div id="tryOverlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:1000;">
+      <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:680px;color:#fff;text-align:center">
+        <h2 style="margin:0 0 8px">Gravity Lander</h2>
+        <p style="margin:0 0 12px">Guide your lander to a safe touchdown on the platform!</p>
+        <button id="tryBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Try Now</button>
+      </div>
+    </div>
+    <div id="startOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:1000;">
+      <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:680px;color:#fff;text-align:center">
+        <h2 style="margin:0 0 8px">How to Play</h2>
+        <p style="margin:0 0 6px"><strong>Goal:</strong> Land softly on the green platform with controlled speed and angle.</p>
+        <p style="margin:0 0 6px"><strong>Controls:</strong> Arrow keys - Left/Right rotate, Up thrusts.</p>
+        <p style="margin:0 0 12px"><strong>Tip:</strong> Watch your fuel and vertical speed. Land gently!</p>
+        <button id="startBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Start</button>
+      </div>
+    </div>
     <div class="stage"><canvas id="game" width="800" height="600" aria-label="Gravity Lander"></canvas></div>
     <div class="mobile" aria-label="Mobile controls">
       <button id="left">◀︎</button>
@@ -44,7 +60,7 @@
       const rotPower = 0.04;
       let wind = 0.0;
 
-      const lander={ x:400, y:80, vx:0, vy:0, angle:0, fuel:100, alive:true };
+      const lander={ x:400, y:80, vx:0, vy:0, angle:0, fuel:100, alive:false };
       let pad={ x: 540, y: 520, w: 120 };
       let score=0;
 
@@ -154,6 +170,26 @@
       }
       window.addEventListener('resize', resize);
       resize();
+
+      const tryOverlay=document.getElementById('tryOverlay');
+      const startOverlay=document.getElementById('startOverlay');
+      const tryBtn=document.getElementById('tryBtn');
+      const startBtn=document.getElementById('startBtn');
+      function requestFs(){
+        const el=document.documentElement;
+        if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+        else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen().catch(()=>{});
+        else if(el.msRequestFullscreen) el.msRequestFullscreen().catch(()=>{});
+      }
+      tryBtn.addEventListener('click', ()=>{
+        requestFs();
+        tryOverlay.style.display='none';
+        startOverlay.style.display='flex';
+      });
+      startBtn.addEventListener('click', ()=>{
+        startOverlay.style.display='none';
+        lander.alive=true;
+      });
 
       function loop(){ update(); render(); requestAnimationFrame(loop); }
       reset(); loop();

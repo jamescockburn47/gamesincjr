@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Tower Frenzy '90 - Demo</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      font-family: 'Courier New', monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 32px 16px 64px;
+      background: linear-gradient(180deg, #312e81 0%, #1e1b4b 100%);
+      color: #e0f2fe;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2.4rem, 5vw, 3.6rem);
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: #fbbf24;
+      text-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
+    }
+
+    .tagline {
+      margin: 0;
+      font-size: clamp(1rem, 2.5vw, 1.4rem);
+      color: #bae6fd;
+      text-align: center;
+      max-width: 760px;
+    }
+
+    .hud {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: clamp(16px, 4vw, 32px);
+      font-size: clamp(1.1rem, 2.4vw, 1.5rem);
+      font-weight: 700;
+    }
+
+    .hud span {
+      color: #fbbf24;
+      margin-left: 6px;
+    }
+
+    .stage {
+      position: relative;
+      width: min(92vw, 880px);
+      aspect-ratio: 4 / 3;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 2px solid rgba(251, 191, 36, 0.45);
+      box-shadow: 0 28px 68px rgba(5, 12, 24, 0.7);
+      background: linear-gradient(180deg, rgba(49, 46, 129, 0.85), rgba(30, 27, 75, 0.95));
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(4, 7, 19, 0.88);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 24px;
+      text-align: center;
+    }
+
+    .overlay.hidden {
+      pointer-events: none;
+      opacity: 0;
+    }
+
+    .overlay h2 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 2.6rem);
+      color: #fbbf24;
+    }
+
+    .overlay p {
+      margin: 0;
+      color: #e0f2fe;
+      line-height: 1.6;
+    }
+
+    .overlay button {
+      padding: 14px 28px;
+      font-size: 1.1rem;
+      font-weight: 700;
+      color: #1e1b4b;
+      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      box-shadow: 0 16px 40px rgba(251, 191, 36, 0.4);
+    }
+
+    .overlay button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 20px 52px rgba(251, 191, 36, 0.6);
+    }
+  </style>
+</head>
+<body>
+  <h1>Tower Frenzy '90</h1>
+  <p class="tagline">Stack blocks with perfect timing. Build high, don't topple, and chase the high score!</p>
+
+  <div class="hud" role="status" aria-live="polite">
+    <div>Score:<span id="score">0</span></div>
+    <div>Height:<span id="height">0</span></div>
+    <div>Combo:<span id="combo">0</span></div>
+  </div>
+
+  <div class="stage">
+    <canvas id="game" width="800" height="600" aria-label="Tower stacking game"></canvas>
+    <div id="tryOverlay" class="overlay">
+      <h2>Tower Frenzy '90</h2>
+      <p>Stack blocks with perfect timing!</p>
+      <button id="tryBtn">Try Now</button>
+    </div>
+    <div id="startOverlay" class="overlay hidden">
+      <h2>Ready to Stack?</h2>
+      <p>Press SPACE (or tap) to drop blocks. Stack them perfectly for combo bonuses!</p>
+      <button id="startBtn">Start</button>
+    </div>
+  </div>
+
+  <script type="module">
+    (() => {
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
+      const tryOverlay = document.getElementById('tryOverlay');
+      const startOverlay = document.getElementById('startOverlay');
+      const tryBtn = document.getElementById('tryBtn');
+      const startBtn = document.getElementById('startBtn');
+      const scoreEl = document.getElementById('score');
+      const heightEl = document.getElementById('height');
+      const comboEl = document.getElementById('combo');
+
+      const state = {
+        running: false,
+        score: 0,
+        height: 0,
+        combo: 0,
+        lastTime: 0,
+        blocks: [],
+        currentBlock: null,
+        baseWidth: 200,
+      };
+
+      window.addEventListener('keydown', e => {
+        if (e.key === ' ' && state.running) {
+          e.preventDefault();
+          dropBlock();
+        }
+      });
+
+      canvas.addEventListener('click', () => {
+        if (state.running) dropBlock();
+      });
+
+      tryBtn.addEventListener('click', () => {
+        requestFullscreen();
+        tryOverlay.classList.add('hidden');
+        startOverlay.classList.remove('hidden');
+      });
+
+      startBtn.addEventListener('click', () => {
+        if (!state.running) startGame();
+      });
+
+      function requestFullscreen() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen().catch(() => {});
+        } else if (elem.webkitRequestFullscreen) {
+          elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+          elem.msRequestFullscreen();
+        }
+      }
+
+      function startGame() {
+        startOverlay.classList.add('hidden');
+        state.running = true;
+        state.score = 0;
+        state.height = 0;
+        state.combo = 0;
+        state.blocks = [];
+
+        // Base block
+        state.blocks.push({
+          x: canvas.width / 2 - state.baseWidth / 2,
+          y: canvas.height - 40,
+          width: state.baseWidth,
+          height: 30,
+          color: '#6366f1',
+        });
+
+        spawnBlock();
+        updateHud();
+        state.lastTime = performance.now();
+        requestAnimationFrame(loop);
+      }
+
+      function spawnBlock() {
+        const prevBlock = state.blocks[state.blocks.length - 1];
+        const direction = Math.random() > 0.5 ? 1 : -1;
+        state.currentBlock = {
+          x: direction > 0 ? 0 : canvas.width,
+          y: prevBlock.y - 50,
+          width: prevBlock.width,
+          height: 30,
+          direction,
+          speed: 150 + state.height * 5,
+          color: getRandomColor(),
+        };
+      }
+
+      function getRandomColor() {
+        const colors = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
+        return colors[Math.floor(Math.random() * colors.length)];
+      }
+
+      function dropBlock() {
+        if (!state.currentBlock) return;
+
+        const block = state.currentBlock;
+        const prevBlock = state.blocks[state.blocks.length - 1];
+
+        // Calculate overlap
+        const leftEdge = Math.max(block.x, prevBlock.x);
+        const rightEdge = Math.min(block.x + block.width, prevBlock.x + prevBlock.width);
+        const overlap = rightEdge - leftEdge;
+
+        if (overlap <= 0) {
+          // Complete miss - game over
+          endGame();
+          return;
+        }
+
+        // Create new block with overlap area
+        const newBlock = {
+          x: leftEdge,
+          y: block.y,
+          width: overlap,
+          height: block.height,
+          color: block.color,
+        };
+
+        state.blocks.push(newBlock);
+        state.height++;
+
+        // Calculate score
+        const perfectThreshold = 10;
+        if (Math.abs(block.x - prevBlock.x) < perfectThreshold && Math.abs(overlap - prevBlock.width) < perfectThreshold) {
+          state.combo++;
+          state.score += 100 + state.combo * 50;
+        } else {
+          state.combo = 0;
+          state.score += 10;
+        }
+
+        updateHud();
+
+        // Check if tower is too narrow
+        if (newBlock.width < 30) {
+          endGame();
+          return;
+        }
+
+        // Scroll camera up if needed
+        if (newBlock.y < canvas.height / 3) {
+          const scrollAmount = canvas.height / 3 - newBlock.y;
+          for (const b of state.blocks) {
+            b.y += scrollAmount;
+          }
+        }
+
+        state.currentBlock = null;
+        setTimeout(() => {
+          if (state.running) spawnBlock();
+        }, 200);
+      }
+
+      function loop(timestamp) {
+        if (!state.running) return;
+        const delta = Math.min((timestamp - state.lastTime) / 1000, 0.05);
+        state.lastTime = timestamp;
+        update(delta);
+        render();
+        requestAnimationFrame(loop);
+      }
+
+      function update(delta) {
+        if (state.currentBlock) {
+          const block = state.currentBlock;
+          block.x += block.direction * block.speed * delta;
+
+          // Bounce off edges
+          if (block.direction > 0 && block.x + block.width >= canvas.width) {
+            block.direction = -1;
+            block.x = canvas.width - block.width;
+          } else if (block.direction < 0 && block.x <= 0) {
+            block.direction = 1;
+            block.x = 0;
+          }
+        }
+      }
+
+      function updateHud() {
+        scoreEl.textContent = state.score.toString().padStart(4, '0');
+        heightEl.textContent = state.height;
+        comboEl.textContent = state.combo;
+      }
+
+      function endGame() {
+        state.running = false;
+        startOverlay.classList.remove('hidden');
+        startOverlay.querySelector('h2').textContent = 'Tower Fell!';
+        startOverlay.querySelector('p').textContent = `Height: ${state.height} blocks. Score: ${state.score}. Try again?`;
+        startBtn.textContent = 'Rebuild';
+      }
+
+      function render() {
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        // Background
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, '#312e81');
+        gradient.addColorStop(1, '#1e1b4b');
+        ctx.fillStyle = gradient;
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Grid lines
+        ctx.strokeStyle = 'rgba(139, 92, 246, 0.1)';
+        ctx.lineWidth = 1;
+        for (let i = 0; i < canvas.width; i += 40) {
+          ctx.beginPath();
+          ctx.moveTo(i, 0);
+          ctx.lineTo(i, canvas.height);
+          ctx.stroke();
+        }
+
+        // Blocks
+        for (const block of state.blocks) {
+          if (block.y > canvas.height || block.y + block.height < 0) continue;
+
+          ctx.fillStyle = block.color;
+          ctx.fillRect(block.x, block.y, block.width, block.height);
+
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+          ctx.lineWidth = 2;
+          ctx.strokeRect(block.x, block.y, block.width, block.height);
+        }
+
+        // Current moving block
+        if (state.currentBlock) {
+          const block = state.currentBlock;
+          ctx.fillStyle = block.color;
+          ctx.globalAlpha = 0.9;
+          ctx.fillRect(block.x, block.y, block.width, block.height);
+          ctx.globalAlpha = 1;
+
+          ctx.strokeStyle = '#fbbf24';
+          ctx.lineWidth = 3;
+          ctx.strokeRect(block.x, block.y, block.width, block.height);
+        }
+
+        // Perfect indicator
+        if (state.combo > 0) {
+          ctx.fillStyle = '#fbbf24';
+          ctx.font = 'bold 24px monospace';
+          ctx.textAlign = 'center';
+          ctx.fillText(`PERFECT x${state.combo}`, canvas.width / 2, 40);
+        }
+      }
+
+      render();
+      updateHud();
+    })();
+  </script>
+</body>
+</html>

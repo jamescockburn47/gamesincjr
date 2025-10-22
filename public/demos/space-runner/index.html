@@ -64,9 +64,16 @@
     <h1>Space Runner</h1>
     <div class="score">Score: <span id="score">0</span></div>
     <div class="game-status unfocused" id="gameStatus">Click Start to play</div>
-    <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);z-index:1000;">
+    <div id="tryOverlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);z-index:1000;">
       <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:700px;color:#fff;text-align:center">
         <h2 style="margin:0 0 10px">Space Runner</h2>
+        <p style="margin:0 0 12px">Dodge asteroids and survive as long as you can!</p>
+        <button id="tryBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Try Now</button>
+      </div>
+    </div>
+    <div id="startOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);z-index:1000;">
+      <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:700px;color:#fff;text-align:center">
+        <h2 style="margin:0 0 10px">Ready to Fly?</h2>
         <p style="margin:0 0 6px">Goal: dodge asteroids and score points.</p>
         <p style="margin:0 0 6px">Desktop: Arrow keys / WASD to move.</p>
         <p style="margin:0 0 12px">Mobile: use on‑screen buttons below.</p>
@@ -128,7 +135,9 @@
         });
 
         // Start + fullscreen + countdown
-        const overlay = document.getElementById('overlay');
+        const tryOverlay = document.getElementById('tryOverlay');
+        const startOverlay = document.getElementById('startOverlay');
+        const tryBtn = document.getElementById('tryBtn');
         const startBtn = document.getElementById('startBtn');
         const countdownEl = document.getElementById('countdown');
 
@@ -137,9 +146,14 @@
           if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
         }
 
-        startBtn.addEventListener('click', () => {
+        tryBtn.addEventListener('click', () => {
           requestFs();
-          overlay.style.display = 'none';
+          tryOverlay.style.display = 'none';
+          startOverlay.style.display = 'flex';
+        });
+
+        startBtn.addEventListener('click', () => {
+          startOverlay.style.display = 'none';
           gameState = 'countdown';
           let t = 5;
           countdownEl.style.display = 'flex';

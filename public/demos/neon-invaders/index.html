@@ -27,11 +27,19 @@
     <div class="badge">Wave: <span id="wave">1</span></div>
   </div>
   <div id="status" class="status">Click Start → instructions → 5s countdown.</div>
-  <div id="overlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:1000;">
+  <div id="tryOverlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:1000;">
     <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:680px;color:#fff;text-align:center">
       <h2 style="margin:0 0 8px">Neon Invaders</h2>
-      <p style="margin:0 0 6px">Goal: clear invaders, avoid hits.</p>
-      <p style="margin:0 0 12px">Controls: Arrows/A,D move · Space to shoot.</p>
+      <p style="margin:0 0 12px">Blast through waves of neon invaders in this classic arcade shooter!</p>
+      <button id="tryBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Try Now</button>
+    </div>
+  </div>
+  <div id="startOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:1000;">
+    <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:680px;color:#fff;text-align:center">
+      <h2 style="margin:0 0 8px">How to Play</h2>
+      <p style="margin:0 0 6px"><strong>Goal:</strong> Clear all invaders while avoiding their shots.</p>
+      <p style="margin:0 0 6px"><strong>Controls:</strong> Arrow keys or A/D to move, Space to shoot.</p>
+      <p style="margin:0 0 12px"><strong>Tip:</strong> Invaders speed up each wave. Stay alert!</p>
       <button id="startBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Start</button>
     </div>
   </div>
@@ -185,12 +193,24 @@
   window.addEventListener('resize', resize);
   resize();
 
-  const overlay=document.getElementById('overlay');
+  const tryOverlay=document.getElementById('tryOverlay');
+  const startOverlay=document.getElementById('startOverlay');
+  const tryBtn=document.getElementById('tryBtn');
   const startBtn=document.getElementById('startBtn');
   const countdownEl=document.getElementById('countdown');
-  function requestFs(){ const el=document.documentElement; if(el.requestFullscreen) el.requestFullscreen().catch(()=>{}); }
+  function requestFs(){
+    const el=document.documentElement;
+    if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+    else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen().catch(()=>{});
+    else if(el.msRequestFullscreen) el.msRequestFullscreen().catch(()=>{});
+  }
+  tryBtn.addEventListener('click', ()=>{
+    requestFs();
+    tryOverlay.style.display='none';
+    startOverlay.style.display='flex';
+  });
   startBtn.addEventListener('click', ()=>{
-    requestFs(); overlay.style.display='none'; state='countdown'; let t=5; countdownEl.style.display='flex'; countdownEl.textContent=String(t);
+    startOverlay.style.display='none'; state='countdown'; let t=5; countdownEl.style.display='flex'; countdownEl.textContent=String(t);
     const iv=setInterval(()=>{ t-=1; countdownEl.textContent=String(t); if(t<=0){ clearInterval(iv); countdownEl.style.display='none'; state='playing'; focused=true; statusEl.textContent='Controls active. Good luck!'; } },1000);
   });
 

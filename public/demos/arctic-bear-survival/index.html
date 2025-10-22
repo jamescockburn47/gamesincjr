@@ -101,6 +101,46 @@
             0%, 70% { opacity: 1; }
             100% { opacity: 0; }
         }
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        .overlay.hidden {
+            display: none;
+        }
+        .overlay-panel {
+            background: rgba(20,0,0,0.95);
+            padding: 40px;
+            border-radius: 15px;
+            border: 3px solid #4da6ff;
+            text-align: center;
+            max-width: 600px;
+        }
+        .overlay-panel h2 {
+            color: #4da6ff;
+            margin: 0 0 20px;
+            font-size: 32px;
+        }
+        .overlay-panel p {
+            color: #fff;
+            margin: 0 0 20px;
+            line-height: 1.6;
+        }
+        .overlay-panel button {
+            padding: 14px 28px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: #fff;
+            background: linear-gradient(135deg, #4da6ff, #0066cc);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+        }
         .game-over {
             position: fixed;
             top: 50%;
@@ -157,8 +197,22 @@
         <div><strong>R</strong> - Bear Trap (5w+5m)</div>
         <div style="margin-top: 5px; color: #ffa500;">💡 Combo: Eat near fire for bonus!</div>
     </div>
-    
-    <button id="startBtn">START</button>
+
+    <div id="tryOverlay" class="overlay">
+        <div class="overlay-panel">
+            <h2>Arctic Bear Survival</h2>
+            <p>Survive polar nights by gathering resources and outsmarting roaming bears!</p>
+            <button id="tryBtn">Try Now</button>
+        </div>
+    </div>
+
+    <div id="startOverlay" class="overlay hidden">
+        <div class="overlay-panel">
+            <h2>Ready to Survive?</h2>
+            <p>Gather resources, build shelter, and survive the harsh arctic conditions. Watch out for bears!</p>
+            <button id="startBtn">Start</button>
+        </div>
+    </div>
     
     <div id="messages"></div>
     
@@ -1456,14 +1510,24 @@
             requestAnimationFrame(gameLoop);
         }
 
+        document.getElementById('tryBtn').addEventListener('click', () => {
+            const elem = document.documentElement;
+            if (elem.requestFullscreen) {
+                elem.requestFullscreen().catch(() => {});
+            } else if (elem.webkitRequestFullscreen) {
+                elem.webkitRequestFullscreen();
+            } else if (elem.msRequestFullscreen) {
+                elem.msRequestFullscreen();
+            }
+            document.getElementById('tryOverlay').classList.add('hidden');
+            document.getElementById('startOverlay').classList.remove('hidden');
+        });
+
         document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('startOverlay').classList.add('hidden');
             if (!game.running) {
                 game.running = true;
-                document.getElementById('startBtn').textContent = 'PAUSE';
                 showMessage('Bears docile for 15 seconds!');
-            } else {
-                game.running = false;
-                document.getElementById('startBtn').textContent = 'RESUME';
             }
         });
 

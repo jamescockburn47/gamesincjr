@@ -23,6 +23,22 @@
     <div class="badge">Score: <span id="score">0</span></div>
     <div class="badge">Best: <span id="best">0</span></div>
   </div>
+  <div id="tryOverlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:1000;">
+    <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:680px;color:#fff;text-align:center">
+      <h2 style="margin:0 0 8px">Pixel Pac Run</h2>
+      <p style="margin:0 0 12px">Jump over obstacles in this fast-paced endless runner!</p>
+      <button id="tryBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Try Now</button>
+    </div>
+  </div>
+  <div id="startOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:1000;">
+    <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:680px;color:#fff;text-align:center">
+      <h2 style="margin:0 0 8px">How to Play</h2>
+      <p style="margin:0 0 6px"><strong>Goal:</strong> Jump over obstacles and survive as long as possible.</p>
+      <p style="margin:0 0 6px"><strong>Controls:</strong> Press Space or Up Arrow to jump.</p>
+      <p style="margin:0 0 12px"><strong>Tip:</strong> Time your jumps carefully for maximum distance!</p>
+      <button id="startBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Start</button>
+    </div>
+  </div>
   <div class="stage"><canvas id="game" width="800" height="450" aria-label="Pixel Pac Run"></canvas></div>
   <div class="mobile" aria-label="Mobile controls">
     <button id="jump">Tap to Jump</button>
@@ -35,7 +51,7 @@
     const bestEl=document.getElementById('best');
     const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 
-    let score=0, best=0, running=true, grounded=true;
+    let score=0, best=0, running=false, grounded=true;
     const player={ x:100, y:360, w:30, h:30, vy:0 };
     const g=0.6, jumpV=-11;
     const obstacles=[]; // {x,y,w,h}
@@ -99,6 +115,26 @@
     }
     window.addEventListener('resize', resize);
     resize();
+
+    const tryOverlay=document.getElementById('tryOverlay');
+    const startOverlay=document.getElementById('startOverlay');
+    const tryBtn=document.getElementById('tryBtn');
+    const startBtn=document.getElementById('startBtn');
+    function requestFs(){
+      const el=document.documentElement;
+      if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
+      else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen().catch(()=>{});
+      else if(el.msRequestFullscreen) el.msRequestFullscreen().catch(()=>{});
+    }
+    tryBtn.addEventListener('click', ()=>{
+      requestFs();
+      tryOverlay.style.display='none';
+      startOverlay.style.display='flex';
+    });
+    startBtn.addEventListener('click', ()=>{
+      startOverlay.style.display='none';
+      running=true;
+    });
 
     function loop(){ update(); render(); requestAnimationFrame(loop); }
     loop();
