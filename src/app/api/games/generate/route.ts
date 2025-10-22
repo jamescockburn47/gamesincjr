@@ -168,7 +168,7 @@ async function generateGameAsync(
     console.log('[Game Generator] Code validated, generating assets...');
     
     // Generate placeholder assets
-    const assets = generatePlaceholderAssets(submission.gameTitle, submission.colors);
+    const assets = generatePlaceholderAssets(submission.gameTitle);
     
     // Save generated content
     await updateSubmission(submissionId, {
@@ -270,7 +270,7 @@ function validateGeneratedCode(code: string): boolean {
   return true;
 }
 
-function generatePlaceholderAssets(title: string, colors: string) {
+function generatePlaceholderAssets(title: string) {
   const hero = `<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
     <rect width="800" height="450" fill="#1a237e"/>
     <text x="400" y="225" text-anchor="middle" font-family="Arial" font-size="48" font-weight="bold" fill="#fff">
@@ -321,7 +321,7 @@ async function checkRateLimit(email: string): Promise<boolean> {
   return count < 3; // Max 3 per day
 }
 
-async function updateSubmission(id: string, updates: any): Promise<void> {
+async function updateSubmission(id: string, updates: Partial<{ status: string; generatedCode?: string; heroSvg?: string; screenshotsSvg?: unknown[]; reviewNotes?: string }>): Promise<void> {
   await prisma.gameSubmission.update({
     where: { id },
     data: updates
