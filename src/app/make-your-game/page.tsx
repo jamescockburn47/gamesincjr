@@ -65,16 +65,16 @@ export default function MakeYourGamePage() {
             <div className="rounded-2xl bg-slate-50/60 p-5 ring-1 ring-slate-100">
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-2xl">👀</div>
               <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-700">Review (1-2 days)</h3>
-              <p className="text-sm text-slate-600">Our team checks the game to make sure it's fun and safe</p>
+              <p className="text-sm text-slate-600">Our team checks the game to make sure it&apos;s fun and safe</p>
             </div>
             <div className="rounded-2xl bg-slate-50/60 p-5 ring-1 ring-slate-100">
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-green-100 text-2xl">🎮</div>
               <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-700">Play!</h3>
-              <p className="text-sm text-slate-600">Once approved, we'll email you a link to play and share your game</p>
+              <p className="text-sm text-slate-600">Once approved, we&apos;ll email you a link to play and share your game</p>
             </div>
           </div>
           <p className="mt-6 text-sm text-slate-500">
-            Games typically go live within 2-3 days. We'll email you at every step of the process.
+            Games typically go live within 2-3 days. We&apos;ll email you at every step of the process.
           </p>
         </section>
 

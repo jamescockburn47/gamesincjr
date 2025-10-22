@@ -118,7 +118,7 @@ export default function MakeYourGameForm() {
         </div>
 
         <div>
-          <label htmlFor="creatorEmail" className="mb-2 block text-sm font-medium text-slate-700">Parent's Email</label>
+          <label htmlFor="creatorEmail" className="mb-2 block text-sm font-medium text-slate-700">Parent&apos;s Email</label>
           <input
             type="email"
             id="creatorEmail"
@@ -128,7 +128,7 @@ export default function MakeYourGameForm() {
             required
             placeholder="parent@email.com"
           />
-          <p className="mt-1 text-xs text-slate-500">We'll email updates about your game here</p>
+          <p className="mt-1 text-xs text-slate-500">We&apos;ll email updates about your game here</p>
         </div>
       </section>
 
