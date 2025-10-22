@@ -10,11 +10,12 @@ import { cn } from "@/lib/utils";
 import { getUserFromCookies, hasAccessToGame } from "@/lib/user-session";
 
 interface Params {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 export default async function GiocoIt({ params }: Params) {
-  const game = getGameBySlug(params.slug);
+  const { slug } = await params;
+  const game = getGameBySlug(slug);
   const user = await getUserFromCookies();
 
   if (!game) {
@@ -93,7 +94,7 @@ export default async function GiocoIt({ params }: Params) {
           )}
           <GamePlayer game={game} />
           <Suspense>
-            <Scores slug={game.slug} />
+            <Scores slug={slug} />
           </Suspense>
         </section>
 
