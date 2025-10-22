@@ -182,6 +182,22 @@
     "status": "released"
   },
   {
+    "slug": "cargo-thrust-lander",
+    "title": "Cargo Thrust Lander",
+    "tags": [
+      "physics",
+      "cargo",
+      "accuracy"
+    ],
+    "description": "Drop cargo crates onto moving pads using side thrusters only. Score based on accuracy and fuel saved.",
+    "description_it": "Lascia cadere casse cargo su piattaforme mobili usando solo i propulsori laterali. Punteggio basato su precisione e carburante risparmiato.",
+    "demoPath": "/demos/cargo-thrust-lander/index.html",
+    "gameType": "html5",
+    "engine": "vanilla-js",
+    "version": "1.0.0",
+    "status": "released"
+  },
+  {
     "slug": "vector-asteroids",
     "title": "Vector Asteroids",
     "tags": [

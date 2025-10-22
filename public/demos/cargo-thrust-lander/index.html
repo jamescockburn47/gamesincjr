@@ -1,0 +1,822 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Cargo Thrust Lander - Games Inc Jr</title>
+    <style>
+        /* ========== RESET & BASE ========== */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(180deg, #0a0a1e 0%, #1a0a2e 100%);
+            color: #ffffff;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            touch-action: none;
+        }
+
+        /* ========== CANVAS ========== */
+        #gameCanvas {
+            border: 3px solid #00d4ff;
+            background: linear-gradient(180deg, #0a0515 0%, #1a1530 100%);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
+            display: block;
+            max-width: 100%;
+            max-height: 100%;
+        }
+
+        /* ========== UI OVERLAY ========== */
+        .ui-overlay {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.85);
+            padding: 16px;
+            border-radius: 10px;
+            border: 2px solid rgba(0, 212, 255, 0.5);
+            font-size: 16px;
+            z-index: 100;
+            min-width: 200px;
+        }
+
+        .stat {
+            margin: 8px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .stat-label {
+            color: #00d4ff;
+            font-weight: bold;
+        }
+
+        .fuel-bar {
+            width: 100%;
+            height: 20px;
+            background: rgba(50, 50, 50, 0.8);
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 5px;
+            border: 1px solid #00d4ff;
+        }
+
+        .fuel-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #ff4444 0%, #ffaa00 50%, #44ff44 100%);
+            transition: width 0.1s;
+        }
+
+        /* ========== MOBILE CONTROLS ========== */
+        .mobile-controls {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 20px;
+            z-index: 100;
+        }
+
+        .mobile-controls button {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            border: 3px solid #00d4ff;
+            background: rgba(0, 100, 200, 0.85);
+            color: #ffffff;
+            font-size: 32px;
+            font-weight: bold;
+            cursor: pointer;
+            touch-action: manipulation;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+        }
+
+        .mobile-controls button:active {
+            transform: scale(0.9);
+            background: rgba(0, 150, 255, 0.95);
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            .mobile-controls {
+                display: flex;
+            }
+        }
+
+        /* ========== MODAL OVERLAYS ========== */
+        .overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.92);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+        }
+
+        .overlay.hidden {
+            display: none;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, #1a2a4e, #0f1a3a);
+            padding: 40px;
+            border-radius: 15px;
+            border: 3px solid #00d4ff;
+            text-align: center;
+            max-width: 600px;
+            box-shadow: 0 0 50px rgba(0, 212, 255, 0.6);
+        }
+
+        .modal h2 {
+            color: #00d4ff;
+            margin: 0 0 20px;
+            font-size: 36px;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+        }
+
+        .modal p {
+            margin: 0 0 15px;
+            line-height: 1.6;
+            font-size: 16px;
+        }
+
+        .modal strong {
+            color: #00d4ff;
+        }
+
+        .modal button {
+            padding: 16px 32px;
+            font-size: 20px;
+            font-weight: bold;
+            color: #ffffff;
+            background: linear-gradient(135deg, #00d4ff, #0088cc);
+            border: none;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: transform 0.2s;
+            box-shadow: 0 4px 15px rgba(0, 212, 255, 0.4);
+            margin-top: 10px;
+        }
+
+        .modal button:hover {
+            transform: scale(1.05);
+        }
+
+        /* ========== MESSAGE TOASTS ========== */
+        .message {
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 20px 35px;
+            border-radius: 12px;
+            font-size: 24px;
+            font-weight: bold;
+            border: 3px solid #00d4ff;
+            z-index: 2000;
+            pointer-events: none;
+            animation: fadeOut 2s forwards;
+            text-shadow: 0 0 10px rgba(0, 212, 255, 0.8);
+        }
+
+        @keyframes fadeOut {
+            0%, 70% { opacity: 1; }
+            100% { opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Try/Start Overlays -->
+    <div id="tryOverlay" class="overlay">
+        <div class="modal">
+            <h2>Cargo Thrust Lander</h2>
+            <p>Drop 10 cargo crates onto the moving landing pad!</p>
+            <p>Use side thrusters to guide each crate safely down.</p>
+            <button id="tryBtn">Try Now</button>
+        </div>
+    </div>
+
+    <div id="startOverlay" class="overlay hidden">
+        <div class="modal">
+            <h2>How to Play</h2>
+            <p><strong>Goal:</strong> Land all 10 crates on the moving pad</p>
+            <p><strong>Controls:</strong> LEFT/RIGHT arrows = side thrusters (no rotation!)</p>
+            <p><strong>Scoring:</strong> More points for accuracy + fuel saved</p>
+            <p><strong>Tip:</strong> Watch your fuel! Small adjustments work best.</p>
+            <button id="startBtn">Start Mission</button>
+        </div>
+    </div>
+
+    <!-- Game Canvas -->
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+
+    <!-- UI Overlay -->
+    <div class="ui-overlay">
+        <div class="stat">
+            <span class="stat-label">Score:</span>
+            <span id="score">0</span>
+        </div>
+        <div class="stat">
+            <span class="stat-label">Crate:</span>
+            <span id="crateNum">1/10</span>
+        </div>
+        <div class="stat">
+            <span class="stat-label">Fuel:</span>
+        </div>
+        <div class="fuel-bar">
+            <div class="fuel-fill" id="fuelFill" style="width: 100%"></div>
+        </div>
+    </div>
+
+    <!-- Mobile Controls -->
+    <div class="mobile-controls">
+        <button id="btnLeft">◀</button>
+        <button id="btnRight">▶</button>
+    </div>
+
+    <!-- Message Container -->
+    <div id="messageContainer"></div>
+
+    <script>
+        // ========== GAME STATE ==========
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Game constants (calibrated for age 10)
+        const GRAVITY = 0.15;
+        const THRUST_POWER = 0.3;
+        const MAX_FUEL = 100;
+        const PAD_WIDTH = 120;
+        const PAD_HEIGHT = 20;
+        const CRATE_SIZE = 40;
+        const HITBOX_SIZE = CRATE_SIZE * 0.7; // Forgiving hitbox
+        const MAX_SAFE_VELOCITY = 4; // Max safe landing speed
+
+        const game = {
+            running: false,
+            score: 0,
+            cratesLanded: 0,
+            totalCrates: 10,
+            crate: null,
+            fuel: MAX_FUEL,
+            pad: {
+                x: canvas.width / 2 - PAD_WIDTH / 2,
+                y: canvas.height - 50,
+                width: PAD_WIDTH,
+                height: PAD_HEIGHT,
+                vx: 2,
+                minX: 50,
+                maxX: canvas.width - PAD_WIDTH - 50
+            },
+            particles: [],
+            stars: [],
+            scorePopups: [],
+            screenShake: { intensity: 0, duration: 0 }
+        };
+
+        const input = {
+            left: false,
+            right: false
+        };
+
+        // ========== AUDIO CONTEXT ==========
+        const audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        let audioUnlocked = false;
+
+        function unlockAudio() {
+            if (!audioUnlocked) {
+                audioCtx.resume();
+                audioUnlocked = true;
+            }
+        }
+
+        // Sound effects using Web Audio API
+        function playThrustSound() {
+            unlockAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.frequency.value = 80;
+            osc.type = 'sawtooth';
+            gain.gain.value = 0.05;
+
+            osc.start();
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.05);
+            osc.stop(audioCtx.currentTime + 0.05);
+        }
+
+        function playLandSound(perfect) {
+            unlockAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (perfect) {
+                osc.frequency.value = 800;
+                osc.type = 'sine';
+                gain.gain.value = 0.15;
+                osc.start();
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
+                osc.stop(audioCtx.currentTime + 0.2);
+            } else {
+                osc.frequency.value = 200;
+                osc.type = 'sine';
+                gain.gain.value = 0.1;
+                osc.start();
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.stop(audioCtx.currentTime + 0.15);
+            }
+        }
+
+        function playCrashSound() {
+            unlockAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            osc.frequency.value = 100;
+            osc.type = 'sawtooth';
+            gain.gain.value = 0.2;
+
+            osc.start();
+            osc.frequency.exponentialRampToValueAtTime(30, audioCtx.currentTime + 0.3);
+            gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+            osc.stop(audioCtx.currentTime + 0.3);
+        }
+
+        // ========== INPUT HANDLING ==========
+        document.addEventListener('keydown', e => {
+            const key = e.key.toLowerCase();
+            if (key === 'arrowleft' || key === 'a') input.left = true;
+            if (key === 'arrowright' || key === 'd') input.right = true;
+            if (key === ' ') e.preventDefault();
+        });
+
+        document.addEventListener('keyup', e => {
+            const key = e.key.toLowerCase();
+            if (key === 'arrowleft' || key === 'a') input.left = false;
+            if (key === 'arrowright' || key === 'd') input.right = false;
+        });
+
+        // Touch controls
+        function bindButton(id, key) {
+            const btn = document.getElementById(id);
+            btn.addEventListener('touchstart', e => {
+                e.preventDefault();
+                input[key] = true;
+            });
+            btn.addEventListener('touchend', e => {
+                e.preventDefault();
+                input[key] = false;
+            });
+        }
+
+        bindButton('btnLeft', 'left');
+        bindButton('btnRight', 'right');
+
+        // ========== UTILITY FUNCTIONS ==========
+        function showMessage(text) {
+            const div = document.createElement('div');
+            div.className = 'message';
+            div.textContent = text;
+            document.getElementById('messageContainer').appendChild(div);
+            setTimeout(() => div.remove(), 2000);
+        }
+
+        function createParticles(x, y, color, count = 8, speed = 3) {
+            for (let i = 0; i < count; i++) {
+                const angle = (Math.PI * 2 / count) * i;
+                const particleSpeed = speed + Math.random() * 2;
+                game.particles.push({
+                    x, y,
+                    vx: Math.cos(angle) * particleSpeed,
+                    vy: Math.sin(angle) * particleSpeed,
+                    life: 0.5 + Math.random() * 0.5,
+                    size: 2 + Math.random() * 3,
+                    color
+                });
+            }
+        }
+
+        function createThrustParticles(x, y, direction) {
+            for (let i = 0; i < 3; i++) {
+                game.particles.push({
+                    x, y,
+                    vx: direction * (2 + Math.random() * 2),
+                    vy: Math.random() * 2 - 1,
+                    life: 0.2 + Math.random() * 0.3,
+                    size: 3 + Math.random() * 2,
+                    color: '#ff8800'
+                });
+            }
+        }
+
+        function createScorePopup(x, y, value, text) {
+            game.scorePopups.push({
+                x, y,
+                value,
+                text: text || `+${value}`,
+                life: 1.5,
+                vy: -1.5
+            });
+        }
+
+        function triggerScreenShake(intensity = 4, duration = 0.2) {
+            game.screenShake.intensity = intensity;
+            game.screenShake.duration = duration;
+        }
+
+        // ========== GAME INITIALIZATION ==========
+        function init() {
+            // Create starfield
+            for (let i = 0; i < 100; i++) {
+                game.stars.push({
+                    x: Math.random() * canvas.width,
+                    y: Math.random() * canvas.height,
+                    size: Math.random() * 2,
+                    brightness: Math.random()
+                });
+            }
+
+            spawnCrate();
+        }
+
+        function spawnCrate() {
+            game.crate = {
+                x: canvas.width / 2 - CRATE_SIZE / 2,
+                y: 50,
+                vx: 0,
+                vy: 0,
+                angle: 0,
+                rotation: 0
+            };
+            game.fuel = MAX_FUEL;
+            updateUI();
+        }
+
+        // ========== GAME UPDATE ==========
+        function update(dt) {
+            if (!game.running) return;
+
+            // Update crate physics
+            if (game.crate) {
+                // Apply gravity
+                game.crate.vy += GRAVITY * dt;
+
+                // Apply thrust
+                if (input.left && game.fuel > 0) {
+                    game.crate.vx -= THRUST_POWER * dt;
+                    game.fuel -= 0.5 * dt;
+                    createThrustParticles(game.crate.x + CRATE_SIZE, game.crate.y + CRATE_SIZE / 2, 1);
+                    if (Math.random() > 0.7) playThrustSound();
+                }
+                if (input.right && game.fuel > 0) {
+                    game.crate.vx += THRUST_POWER * dt;
+                    game.fuel -= 0.5 * dt;
+                    createThrustParticles(game.crate.x, game.crate.y + CRATE_SIZE / 2, -1);
+                    if (Math.random() > 0.7) playThrustSound();
+                }
+
+                game.fuel = Math.max(0, game.fuel);
+
+                // Cap velocities
+                game.crate.vx = Math.max(-6, Math.min(6, game.crate.vx));
+                game.crate.vy = Math.min(game.crate.vy, 10);
+
+                // Update position
+                game.crate.x += game.crate.vx * dt;
+                game.crate.y += game.crate.vy * dt;
+
+                // Rotation based on velocity
+                game.crate.rotation = game.crate.vx * 0.05;
+
+                // Boundary check (sides only)
+                if (game.crate.x < 0) {
+                    game.crate.x = 0;
+                    game.crate.vx *= -0.3; // bounce
+                }
+                if (game.crate.x + CRATE_SIZE > canvas.width) {
+                    game.crate.x = canvas.width - CRATE_SIZE;
+                    game.crate.vx *= -0.3;
+                }
+
+                // Check landing
+                if (game.crate.y + CRATE_SIZE >= game.pad.y) {
+                    checkLanding();
+                }
+            }
+
+            // Update landing pad
+            game.pad.x += game.pad.vx * dt;
+            if (game.pad.x <= game.pad.minX || game.pad.x >= game.pad.maxX) {
+                game.pad.vx *= -1;
+            }
+
+            // Increase pad speed slightly as game progresses (difficulty ramp)
+            const difficulty = 1 + (game.cratesLanded * 0.05);
+            const basePadSpeed = 2;
+            game.pad.vx = game.pad.vx > 0 ? basePadSpeed * difficulty : -basePadSpeed * difficulty;
+
+            // Update particles
+            for (let i = game.particles.length - 1; i >= 0; i--) {
+                const p = game.particles[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.vy += 0.15; // gravity
+                p.life -= dt / 60;
+                if (p.life <= 0) game.particles.splice(i, 1);
+            }
+
+            // Update score popups
+            for (let i = game.scorePopups.length - 1; i >= 0; i--) {
+                const popup = game.scorePopups[i];
+                popup.y += popup.vy * dt;
+                popup.life -= dt / 60;
+                if (popup.life <= 0) game.scorePopups.splice(i, 1);
+            }
+
+            // Update screen shake
+            if (game.screenShake.duration > 0) {
+                game.screenShake.duration -= dt / 60;
+                game.screenShake.intensity *= 0.9;
+            } else {
+                game.screenShake.intensity = 0;
+            }
+
+            updateUI();
+        }
+
+        function checkLanding() {
+            const crateCenter = game.crate.x + CRATE_SIZE / 2;
+            const padCenter = game.pad.x + game.pad.width / 2;
+            const padLeft = game.pad.x;
+            const padRight = game.pad.x + game.pad.width;
+
+            // Check if crate is over pad (using forgiving hitbox)
+            const hitboxOffset = (CRATE_SIZE - HITBOX_SIZE) / 2;
+            const crateLeft = game.crate.x + hitboxOffset;
+            const crateRight = game.crate.x + CRATE_SIZE - hitboxOffset;
+
+            const onPad = crateRight > padLeft && crateLeft < padRight;
+            const velocity = Math.abs(game.crate.vy);
+
+            if (onPad && velocity < MAX_SAFE_VELOCITY) {
+                // Successful landing!
+                const accuracy = 1 - (Math.abs(crateCenter - padCenter) / (game.pad.width / 2));
+                const fuelBonus = Math.floor(game.fuel / 2);
+                const accuracyScore = Math.floor(accuracy * 100);
+                const totalScore = accuracyScore + fuelBonus;
+
+                game.score += totalScore;
+                game.cratesLanded++;
+
+                // Determine if perfect landing
+                const isPerfect = accuracy > 0.7 && game.fuel > 50;
+
+                if (isPerfect) {
+                    createScorePopup(game.crate.x, game.crate.y, totalScore + 50, `PERFECT! +${totalScore + 50}`);
+                    game.score += 50;
+                    showMessage('🎯 PERFECT LANDING!');
+                    playLandSound(true);
+                    createParticles(padCenter, game.pad.y, '#FFD700', 20, 5);
+                    triggerScreenShake(6, 0.3);
+                } else {
+                    createScorePopup(game.crate.x, game.crate.y, totalScore);
+                    showMessage('Nice landing!');
+                    playLandSound(false);
+                    createParticles(crateCenter, game.pad.y, '#00d4ff', 12, 3);
+                    triggerScreenShake(3, 0.15);
+                }
+
+                // Check if game complete
+                if (game.cratesLanded >= game.totalCrates) {
+                    setTimeout(gameComplete, 1000);
+                } else {
+                    setTimeout(spawnCrate, 1000);
+                }
+
+                game.crate = null;
+            } else if (!onPad || velocity >= MAX_SAFE_VELOCITY) {
+                // Crash!
+                playCrashSound();
+                createParticles(game.crate.x + CRATE_SIZE / 2, game.crate.y + CRATE_SIZE / 2, '#ff4444', 15, 4);
+                triggerScreenShake(8, 0.4);
+
+                if (!onPad) {
+                    showMessage('Missed the pad! Try again!');
+                } else {
+                    showMessage('Too fast! Slow down!');
+                }
+
+                setTimeout(spawnCrate, 1500);
+                game.crate = null;
+            }
+        }
+
+        function gameComplete() {
+            game.running = false;
+            showMessage(`🎉 MISSION COMPLETE! Final Score: ${game.score}`);
+
+            setTimeout(() => {
+                if (confirm(`Mission complete! Final score: ${game.score}\n\nPlay again?`)) {
+                    resetGame();
+                }
+            }, 2000);
+        }
+
+        function resetGame() {
+            game.score = 0;
+            game.cratesLanded = 0;
+            game.particles = [];
+            game.scorePopups = [];
+            init();
+            game.running = true;
+        }
+
+        function updateUI() {
+            document.getElementById('score').textContent = game.score;
+            document.getElementById('crateNum').textContent = `${game.cratesLanded + 1}/${game.totalCrates}`;
+            const fuelPercent = (game.fuel / MAX_FUEL) * 100;
+            document.getElementById('fuelFill').style.width = fuelPercent + '%';
+        }
+
+        // ========== GAME RENDER ==========
+        function render() {
+            ctx.save();
+
+            // Apply screen shake
+            if (game.screenShake.intensity > 0) {
+                const offsetX = (Math.random() - 0.5) * game.screenShake.intensity;
+                const offsetY = (Math.random() - 0.5) * game.screenShake.intensity;
+                ctx.translate(offsetX, offsetY);
+            }
+
+            // Clear canvas with gradient background
+            const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+            gradient.addColorStop(0, '#0a0515');
+            gradient.addColorStop(1, '#1a1530');
+            ctx.fillStyle = gradient;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw stars
+            game.stars.forEach(star => {
+                ctx.fillStyle = `rgba(255, 255, 255, ${star.brightness})`;
+                ctx.fillRect(star.x, star.y, star.size, star.size);
+            });
+
+            // Draw landing pad with glow
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#00d4ff';
+            ctx.fillStyle = '#00d4ff';
+            ctx.fillRect(game.pad.x, game.pad.y, game.pad.width, game.pad.height);
+
+            // Draw pad target zone (center)
+            ctx.fillStyle = '#00ff88';
+            const targetZone = 40;
+            ctx.fillRect(
+                game.pad.x + game.pad.width / 2 - targetZone / 2,
+                game.pad.y,
+                targetZone,
+                game.pad.height
+            );
+
+            ctx.shadowBlur = 0;
+
+            // Draw crate
+            if (game.crate) {
+                ctx.save();
+                ctx.translate(game.crate.x + CRATE_SIZE / 2, game.crate.y + CRATE_SIZE / 2);
+                ctx.rotate(game.crate.rotation);
+
+                // Crate body with gradient
+                const crateGradient = ctx.createLinearGradient(-CRATE_SIZE / 2, -CRATE_SIZE / 2, CRATE_SIZE / 2, CRATE_SIZE / 2);
+                crateGradient.addColorStop(0, '#8B4513');
+                crateGradient.addColorStop(0.5, '#D2691E');
+                crateGradient.addColorStop(1, '#8B4513');
+                ctx.fillStyle = crateGradient;
+                ctx.fillRect(-CRATE_SIZE / 2, -CRATE_SIZE / 2, CRATE_SIZE, CRATE_SIZE);
+
+                // Crate details (stripes)
+                ctx.strokeStyle = '#654321';
+                ctx.lineWidth = 2;
+                ctx.strokeRect(-CRATE_SIZE / 2, -CRATE_SIZE / 2, CRATE_SIZE, CRATE_SIZE);
+
+                // Diagonal stripes
+                ctx.beginPath();
+                ctx.moveTo(-CRATE_SIZE / 2, 0);
+                ctx.lineTo(CRATE_SIZE / 2, 0);
+                ctx.stroke();
+
+                ctx.beginPath();
+                ctx.moveTo(0, -CRATE_SIZE / 2);
+                ctx.lineTo(0, CRATE_SIZE / 2);
+                ctx.stroke();
+
+                // Warning label
+                ctx.fillStyle = '#FFD700';
+                ctx.font = 'bold 10px Arial';
+                ctx.textAlign = 'center';
+                ctx.fillText('CARGO', 0, -8);
+                ctx.fillStyle = '#ff4444';
+                ctx.fillText('FRAGILE', 0, 5);
+
+                ctx.restore();
+
+                // Draw thrust indicators
+                if (input.left && game.fuel > 0) {
+                    ctx.fillStyle = '#ff8800';
+                    ctx.beginPath();
+                    ctx.moveTo(game.crate.x + CRATE_SIZE, game.crate.y + CRATE_SIZE / 2 - 5);
+                    ctx.lineTo(game.crate.x + CRATE_SIZE + 15, game.crate.y + CRATE_SIZE / 2);
+                    ctx.lineTo(game.crate.x + CRATE_SIZE, game.crate.y + CRATE_SIZE / 2 + 5);
+                    ctx.fill();
+                }
+                if (input.right && game.fuel > 0) {
+                    ctx.fillStyle = '#ff8800';
+                    ctx.beginPath();
+                    ctx.moveTo(game.crate.x, game.crate.y + CRATE_SIZE / 2 - 5);
+                    ctx.lineTo(game.crate.x - 15, game.crate.y + CRATE_SIZE / 2);
+                    ctx.lineTo(game.crate.x, game.crate.y + CRATE_SIZE / 2 + 5);
+                    ctx.fill();
+                }
+            }
+
+            // Draw particles
+            game.particles.forEach(p => {
+                ctx.save();
+                ctx.globalAlpha = p.life;
+                ctx.fillStyle = p.color;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            });
+
+            // Draw score popups
+            game.scorePopups.forEach(popup => {
+                ctx.save();
+                ctx.globalAlpha = popup.life;
+                ctx.fillStyle = '#FFD700';
+                ctx.font = 'bold 24px Arial';
+                ctx.textAlign = 'center';
+                ctx.strokeStyle = '#000';
+                ctx.lineWidth = 3;
+                ctx.strokeText(popup.text, popup.x + CRATE_SIZE / 2, popup.y);
+                ctx.fillText(popup.text, popup.x + CRATE_SIZE / 2, popup.y);
+                ctx.restore();
+            });
+
+            ctx.restore();
+        }
+
+        // ========== GAME LOOP ==========
+        let lastTime = 0;
+        function gameLoop(time) {
+            const dt = Math.min((time - lastTime) / 1000, 0.1) * 60;
+            lastTime = time;
+
+            update(dt);
+            render();
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // ========== OVERLAY HANDLERS ==========
+        document.getElementById('tryBtn').addEventListener('click', () => {
+            unlockAudio();
+            document.getElementById('tryOverlay').classList.add('hidden');
+            document.getElementById('startOverlay').classList.remove('hidden');
+        });
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            unlockAudio();
+            document.getElementById('startOverlay').classList.add('hidden');
+            game.running = true;
+            showMessage('Mission started! Good luck!');
+        });
+
+        // ========== START GAME ==========
+        init();
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+</html>
