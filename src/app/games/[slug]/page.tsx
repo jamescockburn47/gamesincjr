@@ -15,13 +15,14 @@ import { cn } from "@/lib/utils";
 import { getUserFromCookies, hasAccessToGame } from "@/lib/user-session";
 
 interface GamePageProps {
-  params: {
+  params: Promise<{
     slug: string;
-  };
+  }>;
 }
 
 export async function generateMetadata({ params }: GamePageProps): Promise<Metadata> {
-  const game = getGameBySlug(params.slug);
+  const { slug } = await params;
+  const game = getGameBySlug(slug);
 
   if (!game) {
     return {
@@ -50,7 +51,8 @@ export async function generateMetadata({ params }: GamePageProps): Promise<Metad
 }
 
 export default async function GamePage({ params }: GamePageProps) {
-  const game = getGameBySlug(params.slug);
+  const { slug } = await params;
+  const game = getGameBySlug(slug);
   const user = await getUserFromCookies();
 
   if (!game) {
@@ -131,7 +133,7 @@ export default async function GamePage({ params }: GamePageProps) {
             <GamePlayer game={game} />
           </GamePlayerErrorBoundary>
           <Suspense>
-            <Scores slug={game.slug} />
+            <Scores slug={slug} />
           </Suspense>
         </section>
 
