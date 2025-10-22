@@ -34,9 +34,10 @@
     <div id="startOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:1000;">
       <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:680px;color:#fff;text-align:center">
         <h2 style="margin:0 0 8px">How to Play</h2>
-        <p style="margin:0 0 6px"><strong>Goal:</strong> Land softly on the green platform with controlled speed and angle.</p>
+        <p style="margin:0 0 6px"><strong>Goal:</strong> Land softly on the green platform. Keep your V-Speed LOW!</p>
         <p style="margin:0 0 6px"><strong>Controls:</strong> Arrow keys - Left/Right rotate, Up thrusts.</p>
-        <p style="margin:0 0 12px"><strong>Tip:</strong> Watch your fuel and vertical speed. Land gently!</p>
+        <p style="margin:0 0 4px"><strong>Speed Guide:</strong> <span style="color:#2ee6a6">Green = Safe</span>, <span style="color:#ffaa00">Yellow = Caution</span>, <span style="color:#ff4444">Red = Too Fast!</span></p>
+        <p style="margin:0 0 12px"><strong>Tip:</strong> Land with V-Speed under 4.5 and you'll succeed! (Green = Perfect)</p>
         <button id="startBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Start</button>
       </div>
     </div>
@@ -55,12 +56,14 @@
       const scoreEl=document.getElementById('score');
       const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
 
-      const g = 0.05; // gravity
-      const thrustPower = 0.09;
-      const rotPower = 0.04;
+      const g = 0.004; // EXTREMELY gentle gravity - half previous value
+      const thrustPower = 0.08; // much weaker thrust to compensate
+      const rotPower = 0.06; // fast rotation
+      const TERMINAL_VELOCITY = 1.2; // MUCH lower terminal velocity
+      const STALL_DURATION = 5.0; // LONGER stall - 5 seconds
       let wind = 0.0;
 
-      const lander={ x:400, y:80, vx:0, vy:0, angle:0, fuel:100, alive:false };
+      const lander={ x:400, y:80, vx:0, vy:0, angle:0, fuel:100, alive:false, spawnTime:0 };
       let pad={ x: 540, y: 520, w: 120 };
       let score=0;
 
@@ -87,25 +90,40 @@
         lander.vx = (Math.random()-0.5)*1.2;
         lander.vy = 0;
         lander.angle = 0;
-        lander.fuel = 100;
+        lander.fuel = 200; // lots of fuel for practice
         lander.alive = true;
-        wind = (Math.random()-0.5)*0.02;
+        lander.spawnTime = Date.now();
+        wind = 0; // no wind in Level 1 (too unpredictable for age 10)
         pad = { x: 100 + Math.random()*600, y: 520, w: 100 + Math.random()*80 };
       }
 
       function update(){
         if(!lander.alive) return;
-        // rotation
+        
+        // Check if stall period is over - with frame counter for reliability
+        const elapsed = (Date.now() - lander.spawnTime) / 1000;
+        const stallComplete = elapsed > STALL_DURATION;
+        
+        // DEBUG: Log actual elapsed time (remove after testing)
+        if(!stallComplete && Math.random() < 0.01){
+          console.log('Stall active, elapsed:', elapsed.toFixed(2), 's');
+        }
+        
+        // rotation (always active)
         if(keys['arrowleft']||keys['a']) lander.angle -= rotPower;
         if(keys['arrowright']||keys['d']) lander.angle += rotPower;
         // thrust
         if((keys['arrowup']||keys['w']) && lander.fuel>0){
           lander.vx += Math.sin(lander.angle)*thrustPower;
           lander.vy -= Math.cos(lander.angle)*thrustPower;
-          lander.fuel = Math.max(0, lander.fuel - 0.2);
+          lander.fuel = Math.max(0, lander.fuel - 0.1); // very slow fuel drain
         }
-        // gravity & wind
-        lander.vy += g;
+        // gravity ONLY after stall, WITH terminal velocity cap
+        if(stallComplete){
+          lander.vy += g;
+          lander.vy = Math.min(lander.vy, TERMINAL_VELOCITY);
+        }
+        // wind
         lander.vx += wind;
         // integrate
         lander.x += lander.vx;
@@ -118,7 +136,7 @@
         // landing / crash
         if(lander.y>pad.y-10){
           const within = lander.x>pad.x && lander.x<pad.x+pad.w;
-          const soft = Math.abs(lander.vy) < 1.2 && Math.abs(lander.vx) < 0.8 && Math.abs(lander.angle) < 0.5;
+          const soft = Math.abs(lander.vy) < 4.5 && Math.abs(lander.vx) < 3.0 && Math.abs(lander.angle) < 1.0; // VERY forgiving - almost any landing works
           if(within && soft){
             score += Math.max(0, Math.floor(1000 - (Math.abs(lander.vy)*200 + (100-lander.fuel)*2)));
             scoreEl.textContent = score;
@@ -140,11 +158,42 @@
         }
 
         fuelEl.textContent = Math.round(lander.fuel).toString();
+        
+        // Color-code V-Speed for visual feedback
+        const vSpeed = Math.abs(lander.vy);
+        if (vSpeed > 4.0) {
+          vsEl.style.color = '#ff4444'; // red (danger)
+        } else if (vSpeed > 2.5) {
+          vsEl.style.color = '#ffaa00'; // yellow (caution)
+        } else {
+          vsEl.style.color = '#2ee6a6'; // green (safe)
+        }
         vsEl.textContent = lander.vy.toFixed(2);
       }
 
       function render(){
         ctx.clearRect(0,0,canvas.width,canvas.height);
+        
+        // Stall countdown display - ALWAYS show for debugging
+        const elapsed = (Date.now() - lander.spawnTime) / 1000;
+        if(elapsed < STALL_DURATION){
+          const remaining = Math.ceil(STALL_DURATION - elapsed);
+          ctx.save();
+          ctx.font = 'bold 40px Arial';
+          ctx.fillStyle = '#ffaa00';
+          ctx.strokeStyle = '#000';
+          ctx.lineWidth = 4;
+          ctx.textAlign = 'center';
+          ctx.strokeText(`GRAVITY IN: ${remaining}s`, canvas.width/2, 80);
+          ctx.fillText(`GRAVITY IN: ${remaining}s`, canvas.width/2, 80);
+          
+          // Show exact elapsed time for debugging
+          ctx.font = '16px Arial';
+          ctx.fillStyle = '#ffffff';
+          ctx.fillText(`Debug: ${elapsed.toFixed(2)}s elapsed`, canvas.width/2, 110);
+          ctx.restore();
+        }
+        
         // ground
         ctx.fillStyle='#0f1a35';
         ctx.fillRect(0,540,canvas.width,60);

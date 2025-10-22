@@ -4,9 +4,10 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "postinstall": "prisma generate"
   },
   "dependencies": {
     "@radix-ui/react-navigation-menu": "^1.2.14",
@@ -21,7 +22,9 @@
     "react-dom": "19.1.0",
     "tailwind-merge": "^3.3.1",
     "@prisma/client": "^5.20.0",
-    "zod": "^3.23.8"
+    "zod": "^3.23.8",
+    "ai": "^4.2.2",
+    "@ai-sdk/anthropic": "^1.1.4"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",

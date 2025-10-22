@@ -94,3 +94,45 @@ enum Role {
   PARENT
   ADMIN
 }
+
+// Game Submissions for "Make Your Game" feature
+model GameSubmission {
+  id              String   @id @default(cuid())
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+  
+  // Status tracking
+  status          String   @default("pending") // pending | building | review | approved | rejected | live
+  
+  // Creator info
+  creatorName     String   @db.VarChar(30)
+  creatorEmail    String   @db.VarChar(100)
+  
+  // Game identity
+  gameTitle       String   @db.VarChar(30)
+  gameDescription String   @db.VarChar(300)
+  gameSlug        String   @unique @db.VarChar(50)
+  
+  // Design choices (stored as JSON)
+  gameType        String   @db.VarChar(20)
+  difficulty      Json     // { overall: 1-5, speed: 1-5, lives: number }
+  visualStyle     Json     // { colors: string, artStyle: string, background: string }
+  controls        Json     // { movement: string, specialAction: string }
+  elements        Json     // { collectibles: string[], hazards: string[], features: string[] }
+  
+  // Generated content
+  generatedCode   String?  @db.Text
+  heroSvg         String?  @db.Text
+  screenshotsSvg  Json?
+  
+  // Admin review
+  reviewNotes     String?  @db.Text
+  approvedBy      String?
+  approvedAt      DateTime?
+  liveUrl         String?
+  
+  @@index([status])
+  @@index([creatorEmail])
+  @@index([createdAt])
+  @@map("game_submissions")
+}
