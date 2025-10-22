@@ -15,6 +15,7 @@ export default async function Header() {
     { href: '/community', label: 'Community' },
     { href: '/tutorials', label: 'Tutorials' },
     { href: '/imaginary-friends', label: 'Magic AI Friends' },
+    { href: '/make-your-game', label: 'Make Your Game' },
     { href: '/tech', label: 'How it works' },
     { href: '/about', label: 'About' },
     { href: '/account/parent', label: 'Parent Dashboard' },

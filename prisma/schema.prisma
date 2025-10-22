@@ -3,8 +3,9 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")      // Pooled connection for serverless
+  directUrl = env("DIRECT_URL")        // Direct connection for migrations
 }
 
 model User {
@@ -95,6 +96,15 @@ enum Role {
   ADMIN
 }
 
+enum SubmissionStatus {
+  PENDING
+  BUILDING
+  REVIEW
+  APPROVED
+  REJECTED
+  LIVE
+}
+
 // Game Submissions for "Make Your Game" feature
 model GameSubmission {
   id              String   @id @default(cuid())
@@ -102,7 +112,7 @@ model GameSubmission {
   updatedAt       DateTime @updatedAt
   
   // Status tracking
-  status          String   @default("pending") // pending | building | review | approved | rejected | live
+  status          SubmissionStatus @default(PENDING)
   
   // Creator info
   creatorName     String   @db.VarChar(30)
@@ -134,5 +144,6 @@ model GameSubmission {
   @@index([status])
   @@index([creatorEmail])
   @@index([createdAt])
+  @@index([creatorEmail, createdAt])  // For rate limiting queries
   @@map("game_submissions")
 }
