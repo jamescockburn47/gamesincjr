@@ -149,6 +149,29 @@ This is attempt 2 - FIX these issues now.`;
           }
         }
 
+        // Graphics enhancement pass
+        console.log(`[Cron] Enhancing graphics for ${submission.id}...`);
+        let enhancedCode = finalCode;
+        try {
+          const graphicsPrompt = buildGraphicsEnhancementPrompt(finalCode, submission);
+          const { text: enhancedText } = await withTimeout(
+            generateWithRetry(graphicsPrompt),
+            120000, // 2 min timeout for graphics pass
+            'Graphics timeout'
+          );
+
+          const candidateCode = extractHTMLFromResponse(enhancedText);
+          if (validateGeneratedCode(candidateCode)) {
+            const enhancedIssues = analyzeGameplayMechanics(candidateCode);
+            if (enhancedIssues.filter(i => i.severity === 'critical').length === 0) {
+              enhancedCode = candidateCode;
+              console.log(`[Cron] ✓ Graphics enhanced for ${submission.id}`);
+            }
+          }
+        } catch (e) {
+          console.log(`[Cron] Graphics enhancement skipped for ${submission.id}`);
+        }
+
         // Generate placeholder assets
         const assets = generatePlaceholderAssets(submission.gameTitle);
 
@@ -157,7 +180,7 @@ This is attempt 2 - FIX these issues now.`;
           where: { id: submission.id },
           data: {
             status: SubmissionStatus.REVIEW,
-            generatedCode: finalCode,
+            generatedCode: enhancedCode,
             heroSvg: assets.hero,
             screenshotsSvg: assets.screenshots,
           },
@@ -214,6 +237,27 @@ This is attempt 2 - FIX these issues now.`;
       { status: 500 }
     );
   }
+}
+
+// Helper: Build graphics enhancement prompt
+function buildGraphicsEnhancementPrompt(gameCode: string, submission: GameSubmission): string {
+  return `Improve the VISUALS of this complete, working game. Keep all gameplay identical.
+
+Game: "${submission.gameTitle}" | Style: ${submission.artStyle} | Colors: ${submission.colors}
+
+ENHANCE:
+1. Sprites with more detail & animation frames
+2. Gradients & depth in backgrounds
+3. Particle effect variety
+4. Color palette refinement
+5. Shadows/glows and visual polish
+
+KEEP IDENTICAL:
+- Game logic, mechanics, collision detection
+- Score/lives systems, player movement
+- All event handlers and functions
+
+Return complete HTML (<!DOCTYPE html> to </html>).`;
 }
 
 // Helper: Analyze gameplay mechanics for common issues

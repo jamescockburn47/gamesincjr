@@ -12,8 +12,9 @@ const RATE_LIMIT_PER_DAY = 50;
 const MAX_TOKENS = 16000;
 const ESTIMATED_GENERATION_TIME_SECONDS = 300;
 const AI_GENERATION_TIMEOUT_MS = 300000; // 5 minutes
-const MIN_VALID_CODE_LENGTH = 5000;
+const MIN_VALID_CODE_LENGTH = 8000; // Increased to enforce more detailed code
 const API_RETRY_ATTEMPTS = 3;
+const GRAPHICS_ENHANCEMENT_TIMEOUT_MS = 120000; // 2 minutes for graphics pass
 
 // Validation schema
 const GameSubmissionSchema = z.object({
@@ -274,7 +275,37 @@ async function generateGameAsync(
       }
     }
 
-    console.log('[Game Generator] ✓ Gameplay mechanics validated, generating assets...');
+    console.log('[Game Generator] ✓ Gameplay mechanics validated, enhancing graphics...');
+
+    // Graphics enhancement pass - improve visuals while keeping gameplay intact
+    let finalCode = generatedCode;
+    try {
+      const graphicsPrompt = buildGraphicsEnhancementPrompt(generatedCode, submission);
+      const { text: enhancedText } = await withTimeout(
+        generateWithRetry(graphicsPrompt),
+        GRAPHICS_ENHANCEMENT_TIMEOUT_MS,
+        'Graphics enhancement timed out'
+      );
+
+      const enhancedCode = extractHTMLFromResponse(enhancedText);
+
+      // Validate that enhanced version still works
+      if (validateGeneratedCode(enhancedCode)) {
+        const enhancedIssues = analyzeGameplayMechanics(enhancedCode);
+        const enhancedProblems = enhancedIssues.filter(i => i.severity === 'critical');
+
+        if (enhancedProblems.length === 0) {
+          console.log('[Game Generator] ✓ Graphics enhanced successfully');
+          finalCode = enhancedCode;
+        } else {
+          console.log('[Game Generator] ⚠️ Enhanced version had issues, using original');
+        }
+      } else {
+        console.log('[Game Generator] ⚠️ Enhanced version failed validation, using original');
+      }
+    } catch (graphicsError) {
+      console.log('[Game Generator] ⚠️ Graphics enhancement failed, using original code');
+    }
 
     // Generate placeholder assets
     const assets = generatePlaceholderAssets(submission.gameTitle);
@@ -282,7 +313,7 @@ async function generateGameAsync(
     // Save generated content
     await updateSubmission(submissionId, {
       status: SubmissionStatus.REVIEW,
-      generatedCode,
+      generatedCode: finalCode,
       heroSvg: assets.hero,
       screenshotsSvg: assets.screenshots,
     });
@@ -605,11 +636,19 @@ IMPLEMENTATION CHECKLIST
 10. ✅ Save high score to localStorage
 
 ===========================================
-OUTPUT FORMAT
+OUTPUT FORMAT & CODE QUALITY
 ===========================================
 Return ONLY the complete HTML file, nothing else.
 Do NOT include markdown code blocks or explanations.
 Start with <!DOCTYPE html> and end with </html>.
+
+CODE LENGTH REQUIREMENT: Your HTML file MUST be at least 8000 characters.
+This ensures sufficient detail in:
+- Sprite animations (3+ frames per sprite)
+- Particle effect patterns
+- Visual polish and effects
+- Sound synthesis code
+- Game balance and gameplay depth
 
 Create a polished, fun, child-friendly game that works perfectly on first load.`;
 }
@@ -821,6 +860,44 @@ ${criticalIssues.map((issue, i) => `${i + 1}. ISSUE: ${issue.issue}\n   FIX: ${i
 
 CRITICAL: Your new version MUST include all the fixes above.
 This is the SECOND attempt - make sure the game actually works this time.`;
+}
+
+function buildGraphicsEnhancementPrompt(gameCode: string, submission: GameSubmission): string {
+  return `You have a complete, working HTML5 game. Now IMPROVE THE VISUALS ONLY.
+
+Game title: "${submission.gameTitle}"
+Color scheme: ${submission.colors}
+Art style: ${submission.artStyle}
+
+ENHANCE THE GRAPHICS BY:
+1. Improve sprite designs with more detail and personality
+2. Add gradient backgrounds with depth (not flat colors)
+3. Enhance particle effects with more visual variety
+4. Improve color palette to match theme better
+5. Add more animation frames for smoother motion
+6. Better visual feedback effects
+7. More detailed shapes and outlines
+8. Enhanced shadow/glow effects
+
+CRITICAL: Keep ALL game logic and mechanics EXACTLY the same.
+Only modify:
+- CSS styles (colors, gradients, shadows, animations)
+- Sprite drawing code (canvas drawing, SVG, more frames)
+- Particle effect patterns
+- Background visuals
+- Visual feedback effects
+
+DO NOT change:
+- Game logic or functionality
+- Player movement mechanics
+- Collision detection
+- Score/lives mechanics
+- Sound effects
+- Event handlers
+- Game state variables
+
+Return the COMPLETE improved HTML file with enhanced visuals.
+Start with <!DOCTYPE html> and end with </html>.`;
 }
 
 function generatePlaceholderAssets(title: string) {
