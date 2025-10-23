@@ -241,9 +241,18 @@ This is attempt 2 - FIX these issues now.`;
 
 // Helper: Build graphics enhancement prompt
 function buildGraphicsEnhancementPrompt(gameCode: string, submission: GameSubmission): string {
+  // Safe access to JSON fields
+  const visualStyle = (submission.visualStyle as Record<string, unknown> | null) || {};
+  const artStyle = typeof visualStyle === 'object' && visualStyle !== null && 'artStyle' in visualStyle
+    ? String(visualStyle.artStyle)
+    : 'cartoon';
+  const colors = typeof visualStyle === 'object' && visualStyle !== null && 'colors' in visualStyle
+    ? String(visualStyle.colors)
+    : 'colorful';
+
   return `Improve the VISUALS of this complete, working game. Keep all gameplay identical.
 
-Game: "${submission.gameTitle}" | Style: ${submission.artStyle} | Colors: ${submission.colors}
+Game: "${submission.gameTitle}" | Style: ${artStyle} | Colors: ${colors}
 
 ENHANCE:
 1. Sprites with more detail & animation frames

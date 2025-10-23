@@ -243,7 +243,7 @@ async function generateGameAsync(
 
       // Generate feedback and retry ONCE
       const feedbackPrompt = buildIterationFeedbackPrompt(prompt, issues);
-      const { text: retryText, usage: retryUsage } = await withTimeout(
+      const { text: retryText } = await withTimeout(
         generateWithRetry(feedbackPrompt),
         AI_GENERATION_TIMEOUT_MS,
         'Iteration generation timed out'
@@ -303,7 +303,7 @@ async function generateGameAsync(
       } else {
         console.log('[Game Generator] ⚠️ Enhanced version failed validation, using original');
       }
-    } catch (graphicsError) {
+    } catch {
       console.log('[Game Generator] ⚠️ Graphics enhancement failed, using original code');
     }
 
@@ -877,7 +877,6 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
   }
 
   // Check 2: Hazards array exists and is used
-  const hasHazards = /hazard|obstacle|enemy/.test(code.toLowerCase());
   const hasHazardArray = /\bhazards\s*=\s*\[|let\s+hazards|const\s+hazards/.test(code);
 
   if (!hasHazardArray) {
@@ -889,7 +888,6 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
   }
 
   // Check 3: Collectibles array exists
-  const hasCollectibles = /collectible|collect|gem|coin|item/.test(code.toLowerCase());
   const hasCollectArray = /\bcollectibles\s*=\s*\[|let\s+collectibles|const\s+collectibles/.test(code);
 
   if (!hasCollectArray) {
@@ -913,7 +911,6 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
   }
 
   // Check 5: Score changes on collection
-  const hasScore = /score|points/.test(code.toLowerCase());
   const scoreIncrement = /score\s*\+=|score\s*=\s*score\s*\+|points\s*\+=/.test(code);
 
   if (!scoreIncrement) {
@@ -925,7 +922,6 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
   }
 
   // Check 6: Lives decrease on hazard hit
-  const hasLives = /lives|health|hp/.test(code.toLowerCase());
   const livesDecrement = /lives\s*--|-=|lives\s*=\s*lives\s*-/.test(code);
 
   if (!livesDecrement) {
