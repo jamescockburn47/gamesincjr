@@ -38,7 +38,7 @@ export default async function Header() {
           </Link>
 
           <nav className="hidden items-center gap-2 md:flex">
-            {navLinks.map((link: any) => (
+            {navLinks.map((link: { href: string; label: string; admin?: boolean }) => (
               <Link
                 key={link.href}
                 href={link.href}

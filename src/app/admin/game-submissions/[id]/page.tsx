@@ -1,5 +1,3 @@
-import { redirect } from 'next/navigation';
-import { isAdminAuthenticated } from '@/lib/admin-auth';
 import GameSubmissionDetail from '@/components/GameSubmissionDetail';
 
 export default async function GameSubmissionDetailPage({

@@ -97,7 +97,7 @@ export default function MakeYourGameForm() {
       <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-2xl p-6 border border-sky-200">
         <h2 className="text-2xl font-bold text-slate-900 mb-2">Create Your Own Game 🎮</h2>
         <p className="text-sm text-slate-600">
-          Describe your game idea and we'll use AI to bring it to life!
+          Describe your game idea and we&apos;ll use AI to bring it to life!
           <span className="block mt-2">Quick steps: Tell us about your game → Pick visual style → Done!
           (Advanced options available if you want more control)</span>
         </p>
