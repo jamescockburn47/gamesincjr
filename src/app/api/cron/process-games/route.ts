@@ -144,7 +144,7 @@ This is attempt 2 - FIX these issues now.`;
             } else {
               console.log(`[Cron] Iteration still had issues, using first attempt`);
             }
-          } catch (retryError) {
+          } catch {
             console.log(`[Cron] Iteration failed, using first attempt`);
           }
         }
@@ -168,7 +168,7 @@ This is attempt 2 - FIX these issues now.`;
               console.log(`[Cron] ✓ Graphics enhanced for ${submission.id}`);
             }
           }
-        } catch (e) {
+        } catch {
           console.log(`[Cron] Graphics enhancement skipped for ${submission.id}`);
         }
 
@@ -362,7 +362,8 @@ function buildGamePrompt(submission: GameSubmission): string {
   const difficulty = (submission.difficulty as Record<string, unknown> | null) || {};
   const visualStyle = (submission.visualStyle as Record<string, unknown> | null) || {};
   const controls = (submission.controls as Record<string, unknown> | null) || {};
-  
+  const elements = (submission.elements as Record<string, unknown> | null) || {};
+
   // Extract values with safe fallbacks
   const difficultyOverall = typeof difficulty === 'object' && difficulty !== null && 'overall' in difficulty ? Number(difficulty.overall) || 3 : 3;
   const difficultySpeed = typeof difficulty === 'object' && difficulty !== null && 'speed' in difficulty ? Number(difficulty.speed) || 3 : 3;
@@ -371,6 +372,7 @@ function buildGamePrompt(submission: GameSubmission): string {
   const background = typeof visualStyle === 'object' && visualStyle !== null && 'background' in visualStyle ? String(visualStyle.background) : 'space';
   const movement = typeof controls === 'object' && controls !== null && 'movement' in controls ? String(controls.movement) : 'four-way';
   const specialAction = typeof controls === 'object' && controls !== null && 'specialAction' in controls ? String(controls.specialAction) : 'shoot';
+  const lives = typeof elements === 'object' && elements !== null && 'lives' in elements ? Number(elements.lives) || 3 : (typeof submission.lives === 'number' ? submission.lives : 3);
 
   return `You are creating a complete, production-ready HTML5 game for Games Inc Jr.
 
@@ -413,7 +415,7 @@ Game Type Pattern: ${getArcadeFlavorForType(submission.gameType)}
 - Escalating difficulty: +5-10% per wave
 - First 30s very easy, then ramp difficulty
 - Arcade-style point values: 10, 25, 50, 100, 500, 1000
-- Lives counter visible (${submission.lives} lives)
+- Lives counter visible (${lives} lives)
 - Clear visual feedback on every action
 
 OUTPUT: Return ONLY the complete HTML file, nothing else.
