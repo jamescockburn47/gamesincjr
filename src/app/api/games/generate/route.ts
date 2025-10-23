@@ -169,7 +169,7 @@ async function generateWithRetry(prompt: string, maxRetries = API_RETRY_ATTEMPTS
   for (let attempt = 0; attempt < maxRetries; attempt++) {
     try {
       const result = await generateText({
-        model: anthropic('claude-haiku-4-5-20250929', {
+        model: anthropic('claude-haiku-4-5', {
           cacheControl: true,
         }),
         maxTokens: MAX_TOKENS,
@@ -567,7 +567,7 @@ async function moderateContent(submission: GameSubmission): Promise<{ approved: 
     // AI-powered content moderation with timeout
     const { text } = await withTimeout(
       generateText({
-        model: anthropic('claude-haiku-4-5-20250929'),
+        model: anthropic('claude-haiku-4-5'),
         maxTokens: 200,
         temperature: 0,
         prompt: `You are a content moderator for a children's game platform (ages 8-14).
