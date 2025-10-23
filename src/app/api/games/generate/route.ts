@@ -676,11 +676,13 @@ Respond with JSON only:
     };
   } catch (error) {
     console.error('[Moderation] Error:', error);
-    // SECURITY: Reject on error to prevent bypassing moderation
-    // Log the error for admin review
+    // On moderation error/timeout: approve and flag for admin review
+    // This prevents false rejections due to service issues
+    // Admins will review in the detail dashboard
+    console.warn('[Moderation] Approved with warning due to service unavailability');
     return {
-      approved: false,
-      reason: 'Content moderation temporarily unavailable. Please try again in a few moments.'
+      approved: true,
+      reason: 'Auto-approved due to moderation service timeout. Admin review recommended.'
     };
   }
 }
