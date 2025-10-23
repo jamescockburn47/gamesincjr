@@ -10,7 +10,6 @@ const RATE_LIMIT_PER_DAY = 3;
 const MAX_TOKENS = 16000;
 const ESTIMATED_GENERATION_TIME_SECONDS = 300;
 const AI_GENERATION_TIMEOUT_MS = 300000; // 5 minutes
-const THINKING_BUDGET_TOKENS = 4000;
 const MIN_VALID_CODE_LENGTH = 5000;
 const API_RETRY_ATTEMPTS = 3;
 
@@ -181,14 +180,6 @@ async function generateWithRetry(prompt: string, maxRetries = API_RETRY_ATTEMPTS
         maxTokens: MAX_TOKENS,
         temperature: 1.0,
         prompt: prompt,
-        providerOptions: {
-          anthropic: {
-            thinking: {
-              type: 'enabled',
-              budget_tokens: THINKING_BUDGET_TOKENS
-            }
-          }
-        }
       });
       return result;
     } catch (error) {
