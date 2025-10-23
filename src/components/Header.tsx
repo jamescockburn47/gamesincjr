@@ -19,6 +19,7 @@ export default async function Header() {
     { href: '/tech', label: 'How it works' },
     { href: '/about', label: 'About' },
     { href: '/account/parent', label: 'Parent Dashboard' },
+    { href: '/admin/game-submissions', label: '🎛️ Admin', admin: true },
   ];
 
   return (
@@ -37,11 +38,15 @@ export default async function Header() {
           </Link>
 
           <nav className="hidden items-center gap-2 md:flex">
-            {navLinks.map((link) => (
+            {navLinks.map((link: any) => (
               <Link
                 key={link.href}
                 href={link.href}
-                className="rounded-xl px-3 py-2 text-sm font-medium text-slate-600 transition hover:bg-sky-50 hover:text-sky-600 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500"
+                className={`rounded-xl px-3 py-2 text-sm font-medium transition focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-500 ${
+                  link.admin
+                    ? 'bg-amber-100 text-amber-700 hover:bg-amber-200'
+                    : 'text-slate-600 hover:bg-sky-50 hover:text-sky-600'
+                }`}
               >
                 {link.label}
               </Link>
