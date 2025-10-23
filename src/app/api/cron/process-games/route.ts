@@ -362,17 +362,16 @@ function buildGamePrompt(submission: GameSubmission): string {
   const difficulty = (submission.difficulty as Record<string, unknown> | null) || {};
   const visualStyle = (submission.visualStyle as Record<string, unknown> | null) || {};
   const controls = (submission.controls as Record<string, unknown> | null) || {};
-  const elements = (submission.elements as Record<string, unknown> | null) || {};
 
   // Extract values with safe fallbacks
   const difficultyOverall = typeof difficulty === 'object' && difficulty !== null && 'overall' in difficulty ? Number(difficulty.overall) || 3 : 3;
   const difficultySpeed = typeof difficulty === 'object' && difficulty !== null && 'speed' in difficulty ? Number(difficulty.speed) || 3 : 3;
+  const lives = typeof difficulty === 'object' && difficulty !== null && 'lives' in difficulty ? Number(difficulty.lives) || 3 : 3;
   const colors = typeof visualStyle === 'object' && visualStyle !== null && 'colors' in visualStyle ? String(visualStyle.colors) : 'colorful';
   const artStyle = typeof visualStyle === 'object' && visualStyle !== null && 'artStyle' in visualStyle ? String(visualStyle.artStyle) : 'cartoon';
   const background = typeof visualStyle === 'object' && visualStyle !== null && 'background' in visualStyle ? String(visualStyle.background) : 'space';
   const movement = typeof controls === 'object' && controls !== null && 'movement' in controls ? String(controls.movement) : 'four-way';
   const specialAction = typeof controls === 'object' && controls !== null && 'specialAction' in controls ? String(controls.specialAction) : 'shoot';
-  const lives = typeof elements === 'object' && elements !== null && 'lives' in elements ? Number(elements.lives) || 3 : (typeof submission.lives === 'number' ? submission.lives : 3);
 
   return `You are creating a complete, production-ready HTML5 game for Games Inc Jr.
 
