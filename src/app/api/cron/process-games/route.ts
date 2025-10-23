@@ -7,7 +7,7 @@ import { anthropic } from '@ai-sdk/anthropic';
 // Constants from main generation route
 const MAX_TOKENS = 16000;
 const AI_GENERATION_TIMEOUT_MS = 300000; // 5 minutes
-const MIN_VALID_CODE_LENGTH = 5000;
+const MIN_VALID_CODE_LENGTH = 8000; // Increased to enforce detailed code
 const API_RETRY_ATTEMPTS = 3;
 
 // Type for submission result
@@ -331,6 +331,22 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
   return issues;
 }
 
+// 80s Arcade Flavor - Simple version for cron job
+function getArcadeFlavorForType(gameType: string): string {
+  const arcadePatterns: Record<string, string> = {
+    'space': 'Space Invaders-style waves with formations, 50-100 point scoring, escalating speeds',
+    'runner': 'Obstacle avoidance with progressive difficulty, distance-based scoring, predictable patterns',
+    'puzzle': 'Progressive puzzle complexity, level-based advancement, time bonuses',
+    'racing': 'Traffic/obstacle patterns with escalating density, distance/overtake scoring',
+    'shooter': 'Enemy formations, wave progression, multiplier chains on kills',
+    'flying': 'Obstacle patterns with altitude stages, avoidance scoring, escalation',
+    'collecting': 'Collection loops with pursuing enemies, Pac-Man-like ghost patterns',
+    'fighting': 'Wave-based opponent battles, combo scoring, escalating difficulty',
+    'strategy': 'Escalating AI strategies, turn-based progression, objective scoring'
+  };
+  return arcadePatterns[gameType] || arcadePatterns['space'];
+}
+
 // Helper functions (copied from main generation route)
 function buildGamePrompt(submission: GameSubmission): string {
   // Safe access to JSON fields with explicit type assertions
@@ -379,6 +395,17 @@ VISUAL STYLE:
 CONTROLS:
 - Movement: ${movement}
 - Action: ${specialAction}
+
+80S ARCADE FLAVOR (Your Choices Respected):
+Game Type Pattern: ${getArcadeFlavorForType(submission.gameType)}
+- Implement wave/level progression
+- Score multipliers on combos (1x, 1.5x, 2x)
+- Visible progression counter (waves, levels, distance)
+- Escalating difficulty: +5-10% per wave
+- First 30s very easy, then ramp difficulty
+- Arcade-style point values: 10, 25, 50, 100, 500, 1000
+- Lives counter visible (${submission.lives} lives)
+- Clear visual feedback on every action
 
 OUTPUT: Return ONLY the complete HTML file, nothing else.
 Start with <!DOCTYPE html> and end with </html>`;

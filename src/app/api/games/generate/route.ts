@@ -393,6 +393,132 @@ export async function GET() {
   }
 }
 
+// 80s Arcade Flavor System - Adds authentic arcade feel without overriding user choices
+interface ArcadePattern {
+  enemyFormation: string;
+  scoringSystem: string;
+  progressionPattern: string;
+  arcadeElement: string;
+}
+
+function mapGameTypeToArcadePattern(gameType: string): ArcadePattern {
+  const patterns: Record<string, ArcadePattern> = {
+    'space': {
+      enemyFormation: 'wave-based formations (like Space Invaders) that descend and accelerate',
+      scoringSystem: '50 points per enemy killed, 100 for wave completion, bonus for perfect waves',
+      progressionPattern: 'waves start slow with few enemies, escalate with more enemies/faster speeds',
+      arcadeElement: 'Implement arcade scoring multipliers: 1x baseline, 1.5x for speed, 2x for perfection'
+    },
+    'runner': {
+      enemyFormation: 'obstacles and enemies spawning in predictable patterns with increasing frequency',
+      scoringSystem: '10 points per obstacle avoided, 100 for distance milestones, 50 for collectibles',
+      progressionPattern: 'starts with sparse obstacles, density increases every 30 seconds, speed ramps',
+      arcadeElement: 'Add visible level progression counter showing distance/waves completed'
+    },
+    'puzzle': {
+      enemyFormation: 'patterns to solve that increase in complexity each level',
+      scoringSystem: '100 points per puzzle solved, time bonus if fast, 50 for hints avoided',
+      progressionPattern: 'progressive difficulty: simple 3-step puzzles become 7-10 step challenges',
+      arcadeElement: 'Visible puzzle counter, level progression, timer for speed bonus'
+    },
+    'racing': {
+      enemyFormation: 'traffic patterns that become denser and more chaotic at higher speeds',
+      scoringSystem: '1 point per distance unit, 50 for successful overtakes, bonuses for clean runs',
+      progressionPattern: 'track difficulty escalates: clear roads → traffic → aggressive opponents',
+      arcadeElement: 'Speed indicator, lap/section counter, best times saved'
+    },
+    'shooter': {
+      enemyFormation: 'arcade-style enemy waves in formations (V-patterns, grids, spirals)',
+      scoringSystem: '25 for basic enemy, 100 for formation completion, 500 for wave clear',
+      progressionPattern: 'waves start with 5 enemies, grow to 20+, movement speeds increase',
+      arcadeElement: 'Wave counter, enemy counter, multiplier chain on consecutive kills'
+    },
+    'flying': {
+      enemyFormation: 'obstacles and enemies that patrol predictable paths in formation',
+      scoringSystem: '10 per hazard dodged, 50 per enemy defeated, 200 for wave clear',
+      progressionPattern: 'altitude stages unlock progressively harder patterns',
+      arcadeElement: 'Altitude counter, enemy formation radar, speed escalation indicator'
+    },
+    'collecting': {
+      enemyFormation: 'ghost-like enemies that patrol maze or arena, avoid or outsmart for points',
+      scoringSystem: '10 per collectible, 50 per ghost escape, 100 for maze clear',
+      progressionPattern: 'ghosts move slower then faster, mazes change pattern per level',
+      arcadeElement: 'Collection counter, ghost speed indicator, maze progression visual'
+    },
+    'fighting': {
+      enemyFormation: 'enemy waves with increasing difficulty: single opponent → group battles',
+      scoringSystem: '50 per combo hit, 100 per enemy defeated, 500 for wave clear',
+      progressionPattern: 'opponents get stronger, quicker, more aggressive each wave',
+      arcadeElement: 'Combo counter, wave indicator, enemy health/difficulty visual'
+    },
+    'strategy': {
+      enemyFormation: 'AI opponents with escalating strategies and tactics',
+      scoringSystem: '100 per successful action, 200 per objective, 1000 per victory',
+      progressionPattern: 'turns increase in complexity, opponents play smarter',
+      arcadeElement: 'Turn counter, resource indicators, strategic depth visual'
+    }
+  };
+
+  return patterns[gameType] || patterns['space'];
+}
+
+function buildArcadeFlavorAddition(submission: GameSubmission): string {
+  const pattern = mapGameTypeToArcadePattern(submission.gameType);
+
+  return `
+===========================================
+80S ARCADE FLAVOR (Respects Your Choices)
+===========================================
+Your game type "${submission.gameType}" with ${submission.artStyle} style and ${submission.colors} colors.
+
+ARCADE AUTHENTICITY (Without Overriding):
+- Apply 80s arcade game DNA while respecting all your selections above
+- User's difficulty (${submission.difficulty}/5) sets base game speed
+- User's speed (${submission.speed}/5) determines reaction time challenge
+- User's color choice is preserved; enhance with arcade contrast
+- User's art style is baseline; add arcade polish (crisp edges, clear readability)
+
+PATTERN FOR YOUR GAME TYPE:
+- Enemy Formation: ${pattern.enemyFormation}
+- Scoring System: ${pattern.scoringSystem}
+- Progression: ${pattern.progressionPattern}
+- Arcade Element: ${pattern.arcadeElement}
+
+AUTHENTIC ARCADE MECHANICS:
+1. Wave/Level System: Structure gameplay in clearly defined waves or levels
+2. Progressive Difficulty: First 30s very easy, then escalate 5-10% per wave
+3. Scoring Focus: Big point values (50, 100, 500) that feel satisfying
+4. Lives System: Typically 3-5 lives visible on screen (user selected ${submission.lives})
+5. Feedback: Every action produces immediate visual/audio confirmation
+6. Formations: Enemies appear in patterns, not random (Galaga, Space Invaders style)
+7. Arcade Visuals: Simple geometric shapes, pixel-style, bright distinct colors
+8. Addictive Loop: Players want "one more try" to beat their score
+
+SCORING RECOMMENDATIONS:
+- Small collectible: 10-25 points
+- Medium enemy: 50-100 points
+- Large hazard/boss: 200-500 points
+- Wave completion: 1000 point bonus
+- Perfect (no hits taken): 2x multiplier
+
+YOUR SETTINGS PRESERVED:
+✓ Title: "${submission.gameTitle}"
+✓ Description: "${submission.gameDescription}"
+✓ Type: ${submission.gameType}
+✓ Colors: ${submission.colors}
+✓ Art Style: ${submission.artStyle}
+✓ Difficulty: ${submission.difficulty}/5
+✓ Speed: ${submission.speed}/5
+✓ Lives: ${submission.lives}
+✓ Movement: ${submission.movement}
+✓ Action: ${submission.specialAction}
+✓ Collectibles: ${submission.collectibles.join(', ') || 'default'}
+✓ Hazards: ${submission.hazards.join(', ') || 'default'}
+
+Make this an authentic arcade game that respects these choices while capturing
+the addictive, simple, skill-based gameplay that made 80s arcades legendary.`;
+}
+
 function buildEnhancedGamePrompt(gameSlug: string, submission: GameSubmission): string {
   return `You are creating a complete, production-ready HTML5 game for Games Inc Jr. This game MUST work perfectly with ZERO manual fixes required.
 
@@ -547,6 +673,8 @@ Your game MUST follow this EXACT structure:
     </script>
 </body>
 </html>
+
+${buildArcadeFlavorAddition(submission)}
 
 ===========================================
 GAME REQUIREMENTS (Age 10 Players)
