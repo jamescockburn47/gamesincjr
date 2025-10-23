@@ -231,7 +231,50 @@ async function generateGameAsync(
       throw new Error('Generated code failed validation');
     }
 
-    console.log('[Game Generator] ✓ Code validated, generating assets...');
+    console.log('[Game Generator] ✓ Code validated, analyzing gameplay mechanics...');
+
+    // Analyze gameplay mechanics to catch common issues
+    const issues = analyzeGameplayMechanics(generatedCode);
+    const criticalIssues = issues.filter(i => i.severity === 'critical');
+
+    if (criticalIssues.length > 0) {
+      console.log(`[Game Generator] ⚠️ Found ${criticalIssues.length} critical gameplay issues, attempting fix...`);
+
+      // Generate feedback and retry ONCE
+      const feedbackPrompt = buildIterationFeedbackPrompt(prompt, issues);
+      const { text: retryText, usage: retryUsage } = await withTimeout(
+        generateWithRetry(feedbackPrompt),
+        AI_GENERATION_TIMEOUT_MS,
+        'Iteration generation timed out'
+      );
+
+      const retryCode = extractHTMLFromResponse(retryText);
+      const retryIssues = analyzeGameplayMechanics(retryCode);
+      const retryProblems = retryIssues.filter(i => i.severity === 'critical');
+
+      if (retryProblems.length === 0 && validateGeneratedCode(retryCode)) {
+        console.log('[Game Generator] ✓ Second attempt fixed the issues!');
+        // Use the retry version
+        const generatedCodeFinal = retryCode;
+        const assets = generatePlaceholderAssets(submission.gameTitle);
+
+        await updateSubmission(submissionId, {
+          status: SubmissionStatus.REVIEW,
+          generatedCode: generatedCodeFinal,
+          heroSvg: assets.hero,
+          screenshotsSvg: assets.screenshots,
+          reviewNotes: `Generated on iteration 2. Issues fixed: ${criticalIssues.map(i => i.issue).join('; ')}`
+        });
+
+        const totalTime = Date.now() - startTime;
+        console.log(`[${new Date().toISOString()}] [Game Generator] ✓✓✓ COMPLETE AFTER ITERATION (${totalTime}ms)! Status: REVIEW for ${submissionId}`);
+        return;
+      } else {
+        console.log(`[Game Generator] ⚠️ Second attempt still has issues, proceeding with first attempt...`);
+      }
+    }
+
+    console.log('[Game Generator] ✓ Gameplay mechanics validated, generating assets...');
 
     // Generate placeholder assets
     const assets = generatePlaceholderAssets(submission.gameTitle);
@@ -488,6 +531,39 @@ GAME REQUIREMENTS (Age 10 Players)
 ✅ Both keyboard (WASD + Arrow Keys) and touch controls
 ✅ localStorage for high scores
 
+===========================================
+CRITICAL GAMEPLAY MECHANICS (MUST DO)
+===========================================
+SPATIAL DISTRIBUTION:
+- Player sprite spawns at specific location (e.g., center-bottom, left-side)
+- Obstacles/hazards spawn at DIFFERENT locations from player (randomized across canvas)
+- Collectibles spawn at VARIED positions throughout canvas
+- NO all sprites in same row/column - must span multiple Y positions
+- Visual confirmation: Objects are spread across the play area, not clustered
+
+COLLISION DETECTION & INTERACTION:
+- Check distance between player sprite and each game object (hazard/collectible)
+- If distance < (player_size + object_size) * 0.7 (forgiving hitbox):
+  - If HAZARD: lose 1 life, play hurt sound, spawn particles
+  - If COLLECTIBLE: gain 10+ points, play pickup sound, spawn particles
+- Collision detection must be ACTIVE in game update loop
+- State changes MUST occur: score increments, lives decrement on hazard
+
+SPAWN LOGIC:
+- Objects spawn at varied Y positions: Math.random() * canvas.height
+- Objects spawn at varied X positions: Math.random() * canvas.width
+- Spawn rate increases with difficulty over time
+- New objects appear throughout game, not just at start
+
+PROOF OF WORKING GAMEPLAY:
+Your code will be analyzed. It MUST contain:
+- Variable for player x,y position: player = { x: ..., y: ... }
+- Variable for game objects array: hazards = [...], collectibles = [...]
+- Distance calculation function: Math.hypot(dx, dy) or similar
+- Score variable that INCREASES on collectible hit
+- Lives variable that DECREASES on hazard hit
+- Spawn function with randomized positions
+
 DIFFICULTY SETTINGS:
 - Overall Difficulty: ${submission.difficulty}/5
 - Game Speed: ${submission.speed}/5
@@ -610,6 +686,141 @@ function validateGeneratedCode(code: string): boolean {
 
   console.log('[Validation] ✓ Code passed all validation checks');
   return true;
+}
+
+interface GameplayIssue {
+  severity: 'critical' | 'warning';
+  issue: string;
+  fix: string;
+}
+
+function analyzeGameplayMechanics(code: string): GameplayIssue[] {
+  const issues: GameplayIssue[] = [];
+
+  // Check 1: Player object/variables exist
+  const hasPlayerVar = /\bplayer\s*=|let\s+player|const\s+player|var\s+player/.test(code);
+  const hasPlayerXY = /player\s*\.x|player\s*\.y|playerX|playerY/.test(code);
+
+  if (!hasPlayerVar || !hasPlayerXY) {
+    issues.push({
+      severity: 'critical',
+      issue: 'Missing player position tracking (player.x, player.y)',
+      fix: 'Create a player object with x and y properties that track position'
+    });
+  }
+
+  // Check 2: Hazards array exists and is used
+  const hasHazards = /hazard|obstacle|enemy/.test(code.toLowerCase());
+  const hasHazardArray = /\bhazards\s*=\s*\[|let\s+hazards|const\s+hazards/.test(code);
+
+  if (!hasHazardArray) {
+    issues.push({
+      severity: 'critical',
+      issue: 'Missing hazards array to track obstacles',
+      fix: 'Create a hazards array to store all hazard objects: const hazards = [];'
+    });
+  }
+
+  // Check 3: Collectibles array exists
+  const hasCollectibles = /collectible|collect|gem|coin|item/.test(code.toLowerCase());
+  const hasCollectArray = /\bcollectibles\s*=\s*\[|let\s+collectibles|const\s+collectibles/.test(code);
+
+  if (!hasCollectArray) {
+    issues.push({
+      severity: 'critical',
+      issue: 'Missing collectibles array to track items',
+      fix: 'Create a collectibles array: const collectibles = [];'
+    });
+  }
+
+  // Check 4: Distance/collision calculation
+  const hasDistance = /hypot|sqrt|pow|distance|collision/.test(code);
+  const hasCollisionCheck = /if\s*\(.*distance|if\s*\(.*collision|if\s*\(.*dx.*dy/.test(code);
+
+  if (!hasDistance || !hasCollisionCheck) {
+    issues.push({
+      severity: 'critical',
+      issue: 'Missing collision detection logic',
+      fix: 'Add distance calculation: Math.hypot(obj.x - player.x, obj.y - player.y) and check if < hitbox distance'
+    });
+  }
+
+  // Check 5: Score changes on collection
+  const hasScore = /score|points/.test(code.toLowerCase());
+  const scoreIncrement = /score\s*\+=|score\s*=\s*score\s*\+|points\s*\+=/.test(code);
+
+  if (!scoreIncrement) {
+    issues.push({
+      severity: 'critical',
+      issue: 'Score does not increase when collectibles are hit',
+      fix: 'Add score += 10 (or similar) inside the collectible collision check'
+    });
+  }
+
+  // Check 6: Lives decrease on hazard hit
+  const hasLives = /lives|health|hp/.test(code.toLowerCase());
+  const livesDecrement = /lives\s*--|-=|lives\s*=\s*lives\s*-/.test(code);
+
+  if (!livesDecrement) {
+    issues.push({
+      severity: 'critical',
+      issue: 'Lives do not decrease when hazards are hit',
+      fix: 'Add lives-- (or lives -= 1) inside the hazard collision check'
+    });
+  }
+
+  // Check 7: Spawn with randomization
+  const hasRandom = /Math\.random/.test(code);
+  const hasSpawn = /spawn|create|new.*object|push.*hazard|push.*collectible/.test(code);
+
+  if (!hasRandom && hasSpawn) {
+    issues.push({
+      severity: 'warning',
+      issue: 'Objects might not spawn at varied positions',
+      fix: 'Use Math.random() when spawning objects at x: Math.random() * canvas.width'
+    });
+  }
+
+  // Check 8: Objects should be at different Y positions
+  // Look for evidence of varied Y spawning
+  const yVariation = /Math\.random\(\)\s*\*\s*(?:canvas\.height|height|600)/.test(code);
+
+  if (!yVariation) {
+    issues.push({
+      severity: 'warning',
+      issue: 'Objects may not spawn at varied Y positions',
+      fix: 'Use Math.random() * canvas.height (or width) to vary spawn positions throughout canvas'
+    });
+  }
+
+  // Check 9: Meaningful hazards vs collectibles
+  const distinguishable = /if.*hazard|if.*collectible|type.*hazard|type.*collectible/.test(code);
+
+  if (!distinguishable) {
+    issues.push({
+      severity: 'warning',
+      issue: 'Hazards and collectibles may not be treated differently',
+      fix: 'Add type checking: if (obj.type === "hazard") { lives-- } else if (obj.type === "collectible") { score++ }'
+    });
+  }
+
+  return issues;
+}
+
+function buildIterationFeedbackPrompt(originalPrompt: string, issues: GameplayIssue[]): string {
+  const criticalIssues = issues.filter(i => i.severity === 'critical');
+
+  return `${originalPrompt}
+
+===========================================
+ITERATION FEEDBACK - FIX THESE ISSUES
+===========================================
+The previous version had ${criticalIssues.length} critical gameplay issues that must be fixed:
+
+${criticalIssues.map((issue, i) => `${i + 1}. ISSUE: ${issue.issue}\n   FIX: ${issue.fix}`).join('\n\n')}
+
+CRITICAL: Your new version MUST include all the fixes above.
+This is the SECOND attempt - make sure the game actually works this time.`;
 }
 
 function generatePlaceholderAssets(title: string) {

@@ -18,6 +18,13 @@ interface SubmissionResult {
   error?: string;
 }
 
+// Type for gameplay issues
+interface GameplayIssue {
+  severity: 'critical' | 'warning';
+  issue: string;
+  fix: string;
+}
+
 // Helper: Timeout wrapper for promises
 function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
   return Promise.race([
@@ -102,6 +109,46 @@ export async function GET(request: NextRequest) {
           throw new Error('Generated code failed validation');
         }
 
+        // Analyze gameplay mechanics
+        const issues = analyzeGameplayMechanics(generatedCode);
+        const criticalIssues = issues.filter(i => i.severity === 'critical');
+
+        let finalCode = generatedCode;
+        if (criticalIssues.length > 0) {
+          console.log(`[Cron] Found ${criticalIssues.length} critical issues, attempting iteration...`);
+
+          // Build feedback and retry
+          const feedback = `${prompt}
+
+===========================================
+ITERATION FEEDBACK - FIX THESE ISSUES
+===========================================
+Critical issues found: ${criticalIssues.map((i, idx) => `${idx + 1}. ${i.issue}: ${i.fix}`).join(' | ')}
+
+This is attempt 2 - FIX these issues now.`;
+
+          try {
+            const { text: retryText } = await withTimeout(
+              generateWithRetry(feedback),
+              AI_GENERATION_TIMEOUT_MS,
+              'Iteration timeout'
+            );
+
+            const retryCode = extractHTMLFromResponse(retryText);
+            const retryIssues = analyzeGameplayMechanics(retryCode);
+            const retryProblems = retryIssues.filter(i => i.severity === 'critical');
+
+            if (retryProblems.length === 0 && validateGeneratedCode(retryCode)) {
+              console.log(`[Cron] ✓ Iteration fixed the issues for ${submission.id}`);
+              finalCode = retryCode;
+            } else {
+              console.log(`[Cron] Iteration still had issues, using first attempt`);
+            }
+          } catch (retryError) {
+            console.log(`[Cron] Iteration failed, using first attempt`);
+          }
+        }
+
         // Generate placeholder assets
         const assets = generatePlaceholderAssets(submission.gameTitle);
 
@@ -110,7 +157,7 @@ export async function GET(request: NextRequest) {
           where: { id: submission.id },
           data: {
             status: SubmissionStatus.REVIEW,
-            generatedCode,
+            generatedCode: finalCode,
             heroSvg: assets.hero,
             screenshotsSvg: assets.screenshots,
           },
@@ -169,12 +216,92 @@ export async function GET(request: NextRequest) {
   }
 }
 
+// Helper: Analyze gameplay mechanics for common issues
+function analyzeGameplayMechanics(code: string): GameplayIssue[] {
+  const issues: GameplayIssue[] = [];
+
+  // Check 1: Player object/variables exist
+  const hasPlayerVar = /\bplayer\s*=|let\s+player|const\s+player|var\s+player/.test(code);
+  const hasPlayerXY = /player\s*\.x|player\s*\.y|playerX|playerY/.test(code);
+
+  if (!hasPlayerVar || !hasPlayerXY) {
+    issues.push({
+      severity: 'critical',
+      issue: 'Missing player position tracking',
+      fix: 'Create player object with x, y properties'
+    });
+  }
+
+  // Check 2: Hazards array
+  const hasHazardArray = /\bhazards\s*=\s*\[|let\s+hazards|const\s+hazards/.test(code);
+  if (!hasHazardArray) {
+    issues.push({
+      severity: 'critical',
+      issue: 'Missing hazards array',
+      fix: 'Create: const hazards = [];'
+    });
+  }
+
+  // Check 3: Collectibles array
+  const hasCollectArray = /\bcollectibles\s*=\s*\[|let\s+collectibles|const\s+collectibles/.test(code);
+  if (!hasCollectArray) {
+    issues.push({
+      severity: 'critical',
+      issue: 'Missing collectibles array',
+      fix: 'Create: const collectibles = [];'
+    });
+  }
+
+  // Check 4: Collision detection
+  const hasDistance = /hypot|sqrt|pow|distance|collision/.test(code);
+  const hasCollisionCheck = /if\s*\(.*distance|if\s*\(.*collision|if\s*\(.*dx.*dy/.test(code);
+
+  if (!hasDistance || !hasCollisionCheck) {
+    issues.push({
+      severity: 'critical',
+      issue: 'Missing collision detection',
+      fix: 'Add: if (Math.hypot(dx, dy) < hitbox) { ... }'
+    });
+  }
+
+  // Check 5: Score increment
+  const scoreIncrement = /score\s*\+=|score\s*=\s*score\s*\+|points\s*\+=/.test(code);
+  if (!scoreIncrement) {
+    issues.push({
+      severity: 'critical',
+      issue: 'Score does not increase',
+      fix: 'Add: score += 10 on collectible hit'
+    });
+  }
+
+  // Check 6: Lives decrement
+  const livesDecrement = /lives\s*--|-=|lives\s*=\s*lives\s*-/.test(code);
+  if (!livesDecrement) {
+    issues.push({
+      severity: 'critical',
+      issue: 'Lives do not decrease',
+      fix: 'Add: lives-- on hazard hit'
+    });
+  }
+
+  return issues;
+}
+
 // Helper functions (copied from main generation route)
 function buildGamePrompt(submission: GameSubmission): string {
-  // Safe access to JSON fields
-  const difficulty = (submission.difficulty as Record<string, number | undefined>) || {};
-  const visualStyle = (submission.visualStyle as Record<string, string | undefined>) || {};
-  const controls = (submission.controls as Record<string, string | undefined>) || {};
+  // Safe access to JSON fields with explicit type assertions
+  const difficulty = (submission.difficulty as Record<string, unknown> | null) || {};
+  const visualStyle = (submission.visualStyle as Record<string, unknown> | null) || {};
+  const controls = (submission.controls as Record<string, unknown> | null) || {};
+  
+  // Extract values with safe fallbacks
+  const difficultyOverall = typeof difficulty === 'object' && difficulty !== null && 'overall' in difficulty ? Number(difficulty.overall) || 3 : 3;
+  const difficultySpeed = typeof difficulty === 'object' && difficulty !== null && 'speed' in difficulty ? Number(difficulty.speed) || 3 : 3;
+  const colors = typeof visualStyle === 'object' && visualStyle !== null && 'colors' in visualStyle ? String(visualStyle.colors) : 'colorful';
+  const artStyle = typeof visualStyle === 'object' && visualStyle !== null && 'artStyle' in visualStyle ? String(visualStyle.artStyle) : 'cartoon';
+  const background = typeof visualStyle === 'object' && visualStyle !== null && 'background' in visualStyle ? String(visualStyle.background) : 'space';
+  const movement = typeof controls === 'object' && controls !== null && 'movement' in controls ? String(controls.movement) : 'four-way';
+  const specialAction = typeof controls === 'object' && controls !== null && 'specialAction' in controls ? String(controls.specialAction) : 'shoot';
 
   return `You are creating a complete, production-ready HTML5 game for Games Inc Jr.
 
@@ -197,17 +324,17 @@ REQUIREMENTS:
 ✅ localStorage for high scores
 ✅ First 30s tutorial-easy (90% success rate)
 
-DIFFICULTY: ${difficulty.overall || 3}/5
-SPEED: ${difficulty.speed || 3}/5
+DIFFICULTY: ${difficultyOverall}/5
+SPEED: ${difficultySpeed}/5
 
 VISUAL STYLE:
-- Colors: ${visualStyle.colors || 'colorful'}
-- Art: ${visualStyle.artStyle || 'cartoon'}
-- Background: ${visualStyle.background || 'space'}
+- Colors: ${colors}
+- Art: ${artStyle}
+- Background: ${background}
 
 CONTROLS:
-- Movement: ${controls.movement || 'four-way'}
-- Action: ${controls.specialAction || 'shoot'}
+- Movement: ${movement}
+- Action: ${specialAction}
 
 OUTPUT: Return ONLY the complete HTML file, nothing else.
 Start with <!DOCTYPE html> and end with </html>`;
