@@ -6,7 +6,9 @@ import { Prisma, SubmissionStatus } from '@prisma/client';
 import { prisma } from '@/lib/tables/db/prisma';
 
 // Constants
-const RATE_LIMIT_PER_DAY = 3;
+// Rate limit: submissions per day per email address
+// Set to 50 for testing/development, reduce to 3 for production
+const RATE_LIMIT_PER_DAY = 50;
 const MAX_TOKENS = 16000;
 const ESTIMATED_GENERATION_TIME_SECONDS = 300;
 const AI_GENERATION_TIMEOUT_MS = 300000; // 5 minutes
