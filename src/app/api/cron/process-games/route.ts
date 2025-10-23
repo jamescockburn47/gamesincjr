@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/tables/db/prisma';
-import { SubmissionStatus } from '@prisma/client';
+import { SubmissionStatus, GameSubmission } from '@prisma/client';
 import { generateText } from 'ai';
 import { anthropic } from '@ai-sdk/anthropic';
 
@@ -9,6 +9,14 @@ const MAX_TOKENS = 16000;
 const AI_GENERATION_TIMEOUT_MS = 300000; // 5 minutes
 const MIN_VALID_CODE_LENGTH = 5000;
 const API_RETRY_ATTEMPTS = 3;
+
+// Type for submission result
+interface SubmissionResult {
+  id: string;
+  slug: string;
+  status: 'completed' | 'failed';
+  error?: string;
+}
 
 // Helper: Timeout wrapper for promises
 function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): Promise<T> {
@@ -68,7 +76,7 @@ export async function GET(request: NextRequest) {
       processed: 0,
       succeeded: 0,
       failed: 0,
-      submissions: [] as any[],
+      submissions: [] as SubmissionResult[],
     };
 
     for (const submission of buildingSubmissions) {
@@ -162,7 +170,7 @@ export async function GET(request: NextRequest) {
 }
 
 // Helper functions (copied from main generation route)
-function buildGamePrompt(submission: any): string {
+function buildGamePrompt(submission: GameSubmission): string {
   return `You are creating a complete, production-ready HTML5 game for Games Inc Jr.
 
 GAME IDENTITY
@@ -223,7 +231,7 @@ function validateGeneratedCode(code: string): boolean {
   return true;
 }
 
-function generatePlaceholderAssets(title: string) {
+function generatePlaceholderAssets(title: string): { hero: string; screenshots: string[] } {
   const hero = `<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">
     <rect width="800" height="450" fill="#1a237e"/>
     <text x="400" y="225" text-anchor="middle" font-family="Arial" font-size="48" font-weight="bold" fill="#fff">
