@@ -6,7 +6,8 @@
       "Bash(git log:*)",
       "Bash(dir:*)",
       "Bash(npx tsc:*)",
-      "Bash(git add:*)"
+      "Bash(git add:*)",
+      "Read(//c/Users/James/**)"
     ],
     "deny": [],
     "ask": []

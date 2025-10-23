@@ -7,6 +7,7 @@ export default function MakeYourGameForm() {
   const [submitting, setSubmitting] = useState(false);
   const [result, setResult] = useState<{ submissionId: string; status: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [showAdvanced, setShowAdvanced] = useState(false);
 
   const [formData, setFormData] = useState<{
     creatorName: string;
@@ -92,6 +93,16 @@ export default function MakeYourGameForm() {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-8">
+      {/* Form Intro */}
+      <div className="bg-gradient-to-r from-sky-50 to-blue-50 rounded-2xl p-6 border border-sky-200">
+        <h2 className="text-2xl font-bold text-slate-900 mb-2">Create Your Own Game 🎮</h2>
+        <p className="text-sm text-slate-600">
+          Describe your game idea and we'll use AI to bring it to life!
+          <span className="block mt-2">Quick steps: Tell us about your game → Pick visual style → Done!
+          (Advanced options available if you want more control)</span>
+        </p>
+      </div>
+
       {error && (
         <div className="rounded-2xl bg-red-50 p-4 text-sm text-red-800 ring-1 ring-red-200">
           {error}
@@ -133,7 +144,7 @@ export default function MakeYourGameForm() {
 
       {/* Step 2: Game Identity */}
       <section className="space-y-4">
-        <h3 className="text-lg font-semibold text-slate-900">Step 2: Name Your Game</h3>
+        <h3 className="text-lg font-semibold text-slate-900">Step 2: Describe Your Game Idea</h3>
 
         <div>
           <label htmlFor="gameTitle" className="mb-2 block text-sm font-medium text-slate-700">Game Title</label>
@@ -167,7 +178,7 @@ export default function MakeYourGameForm() {
 
       {/* Step 3: Game Type & Style */}
       <section className="space-y-4">
-        <h3 className="text-lg font-semibold text-slate-900">Step 3: Choose Game Type</h3>
+        <h3 className="text-lg font-semibold text-slate-900">Step 3: Visual Style & Gameplay</h3>
 
         <div>
           <label className="mb-3 block text-sm font-medium text-slate-700">Game Type</label>
@@ -233,11 +244,10 @@ export default function MakeYourGameForm() {
             </select>
           </div>
         </div>
-      </section>
 
-      {/* Step 4: Difficulty & Controls */}
-      <section className="space-y-4">
-        <h3 className="text-lg font-semibold text-slate-900">Step 4: Difficulty & Controls</h3>
+        <div className="border-t border-slate-200 pt-6 mt-6">
+          <h4 className="text-sm font-semibold text-slate-900 mb-4">Gameplay Options</h4>
+        </div>
 
         <div>
           <label className="mb-2 flex items-center justify-between text-sm font-medium text-slate-700">
@@ -328,9 +338,23 @@ export default function MakeYourGameForm() {
         </div>
       </section>
 
-      {/* Step 5: Game Elements */}
-      <section className="space-y-6">
-        <h3 className="text-lg font-semibold text-slate-900">Step 5: Game Elements</h3>
+      {/* Advanced Options Toggle */}
+      <div className="border-t border-slate-200 pt-8">
+        <button
+          type="button"
+          onClick={() => setShowAdvanced(!showAdvanced)}
+          className="flex items-center justify-between w-full"
+        >
+          <h3 className="text-lg font-semibold text-slate-900">⚙️ Advanced Options</h3>
+          <span className="text-2xl text-slate-400">{showAdvanced ? '−' : '+'}</span>
+        </button>
+        <p className="text-sm text-slate-500 mt-2">Optional: Specify collectibles, hazards, and features. Leave blank to let Claude decide.</p>
+      </div>
+
+      {/* Step 5: Game Elements (Advanced/Optional) */}
+      {showAdvanced && (
+      <section className="space-y-6 bg-slate-50 p-6 rounded-xl border border-slate-200">
+        <h3 className="text-lg font-semibold text-slate-900">Customize Game Elements (Optional)</h3>
 
         <div>
           <label className="mb-3 block text-sm font-medium text-slate-700">
@@ -401,6 +425,7 @@ export default function MakeYourGameForm() {
           </div>
         </div>
       </section>
+      )}
 
       <Button
         type="submit"
