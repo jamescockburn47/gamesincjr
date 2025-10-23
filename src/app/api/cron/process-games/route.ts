@@ -171,6 +171,11 @@ export async function GET(request: NextRequest) {
 
 // Helper functions (copied from main generation route)
 function buildGamePrompt(submission: GameSubmission): string {
+  // Safe access to JSON fields
+  const difficulty = (submission.difficulty as Record<string, number | undefined>) || {};
+  const visualStyle = (submission.visualStyle as Record<string, string | undefined>) || {};
+  const controls = (submission.controls as Record<string, string | undefined>) || {};
+
   return `You are creating a complete, production-ready HTML5 game for Games Inc Jr.
 
 GAME IDENTITY
@@ -192,17 +197,17 @@ REQUIREMENTS:
 ✅ localStorage for high scores
 ✅ First 30s tutorial-easy (90% success rate)
 
-DIFFICULTY: ${submission.difficulty?.overall || 3}/5
-SPEED: ${submission.difficulty?.speed || 3}/5
+DIFFICULTY: ${difficulty.overall || 3}/5
+SPEED: ${difficulty.speed || 3}/5
 
 VISUAL STYLE:
-- Colors: ${submission.visualStyle?.colors || 'colorful'}
-- Art: ${submission.visualStyle?.artStyle || 'cartoon'}
-- Background: ${submission.visualStyle?.background || 'space'}
+- Colors: ${visualStyle.colors || 'colorful'}
+- Art: ${visualStyle.artStyle || 'cartoon'}
+- Background: ${visualStyle.background || 'space'}
 
 CONTROLS:
-- Movement: ${submission.controls?.movement || 'four-way'}
-- Action: ${submission.controls?.specialAction || 'shoot'}
+- Movement: ${controls.movement || 'four-way'}
+- Action: ${controls.specialAction || 'shoot'}
 
 OUTPUT: Return ONLY the complete HTML file, nothing else.
 Start with <!DOCTYPE html> and end with </html>`;
