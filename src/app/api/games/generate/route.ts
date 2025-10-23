@@ -140,13 +140,19 @@ export async function POST(req: NextRequest) {
     });
     
     // Start async generation (don't await)
-    generateGameAsync(submissionId, gameSlug, submission).catch(error => {
-      console.error('Game generation failed:', error);
-      updateSubmission(submissionId, {
-        status: SubmissionStatus.REJECTED,
-        reviewNotes: error.message
-      }).catch(console.error);
-    });
+    // Fire and forget with comprehensive error handling
+    generateGameAsync(submissionId, gameSlug, submission)
+      .catch(error => {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        console.error(`[Game Generator] CRITICAL: Generation failed for ${submissionId}:`, errorMsg);
+        // Attempt to update database with error
+        return updateSubmission(submissionId, {
+          status: SubmissionStatus.REJECTED,
+          reviewNotes: `[FATAL] ${errorMsg}`
+        }).catch(dbError => {
+          console.error(`[Game Generator] CRITICAL: Failed to update database for ${submissionId}:`, dbError);
+        });
+      });
 
     // Return immediately
     return NextResponse.json({
@@ -203,11 +209,15 @@ async function generateGameAsync(
   gameSlug: string,
   submission: GameSubmission
 ) {
+  const startTime = Date.now();
+  const MAX_GENERATION_TIME_MS = 5 * 60 * 1000; // 5 minutes hard limit
+
   // Build the prompt with strict requirements for functional output
   const prompt = buildEnhancedGamePrompt(gameSlug, submission);
 
   try {
-    console.log('[Game Generator] Starting generation for:', submissionId);
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] [Game Generator] ✓ Starting generation for: ${submissionId}`);
 
     // Call Claude Haiku 4.5 with timeout and retry logic
     const { text, usage } = await withTimeout(
@@ -215,23 +225,25 @@ async function generateGameAsync(
       AI_GENERATION_TIMEOUT_MS,
       'AI generation timed out after 5 minutes'
     );
-    
-    console.log('[Game Generator] Claude responded, extracting HTML...');
+
+    const genTime = Date.now() - startTime;
+    console.log(`[${new Date().toISOString()}] [Game Generator] ✓ Claude responded (${genTime}ms)`);
     console.log('[Game Generator] Tokens used:', usage);
-    
+
     // Extract HTML code from response
     const generatedCode = extractHTMLFromResponse(text);
-    
+    console.log(`[Game Generator] Extracted ${generatedCode.length} bytes of HTML`);
+
     // Validate the generated code
     if (!validateGeneratedCode(generatedCode)) {
       throw new Error('Generated code failed validation');
     }
-    
-    console.log('[Game Generator] Code validated, generating assets...');
-    
+
+    console.log('[Game Generator] ✓ Code validated, generating assets...');
+
     // Generate placeholder assets
     const assets = generatePlaceholderAssets(submission.gameTitle);
-    
+
     // Save generated content
     await updateSubmission(submissionId, {
       status: SubmissionStatus.REVIEW,
@@ -240,18 +252,78 @@ async function generateGameAsync(
       screenshotsSvg: assets.screenshots,
     });
 
-    console.log('[Game Generator] ✓ Complete! Status: review');
+    const totalTime = Date.now() - startTime;
+    console.log(`[${new Date().toISOString()}] [Game Generator] ✓✓✓ COMPLETE (${totalTime}ms total)! Status: REVIEW for ${submissionId}`);
 
     // TODO: Notify admin via email
     // await notifyAdmin(submissionId, submission, gameSlug);
 
   } catch (error) {
-    console.error('[Game Generator] ERROR:', error);
-    await updateSubmission(submissionId, {
-      status: SubmissionStatus.REJECTED,
-      reviewNotes: `Generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`
+    const totalTime = Date.now() - startTime;
+    const errorMsg = error instanceof Error ? error.message : String(error);
+    const timestamp = new Date().toISOString();
+    console.error(`[${timestamp}] [Game Generator] ✗ ERROR after ${totalTime}ms for ${submissionId}:`);
+    console.error(`[Game Generator] Message: ${errorMsg}`);
+    console.error(`[Game Generator] Stack:`, error instanceof Error ? error.stack : 'N/A');
+
+    // Determine if it was a timeout
+    const isTimeout = totalTime > AI_GENERATION_TIMEOUT_MS;
+    const reasonPrefix = isTimeout ? '[TIMEOUT] ' : '[ERROR] ';
+
+    try {
+      await updateSubmission(submissionId, {
+        status: SubmissionStatus.REJECTED,
+        reviewNotes: `${reasonPrefix}${errorMsg}\nTime elapsed: ${totalTime}ms`
+      });
+      console.error(`[Game Generator] ✓ Error recorded in database for ${submissionId}`);
+    } catch (dbError) {
+      console.error(`[Game Generator] ✗✗✗ CRITICAL: Failed to update database for ${submissionId}:`, dbError);
+      console.error('[Game Generator] This submission will be stuck in BUILDING status');
+    }
+  }
+}
+
+// Monitor function to clean up stale submissions (run periodically)
+export async function GET() {
+  try {
+    // This endpoint checks for stale BUILDING submissions and marks them as REJECTED
+    // Can be called by a cron job or scheduled task
+
+    const staleThresholdMs = 6 * 60 * 1000; // 6 minutes
+    const staleTime = new Date(Date.now() - staleThresholdMs);
+
+    const staleSubmissions = await prisma.gameSubmission.findMany({
+      where: {
+        status: SubmissionStatus.BUILDING,
+        createdAt: { lt: staleTime }
+      },
+      select: { id: true, createdAt: true }
     });
-    // TODO: Notify user of failure
+
+    if (staleSubmissions.length > 0) {
+      console.log(`[Game Generator] Found ${staleSubmissions.length} stale submissions`);
+
+      for (const submission of staleSubmissions) {
+        const age = Date.now() - new Date(submission.createdAt).getTime();
+        console.log(`[Game Generator] Marking ${submission.id} as REJECTED (age: ${age}ms)`);
+        await updateSubmission(submission.id, {
+          status: SubmissionStatus.REJECTED,
+          reviewNotes: `[TIMEOUT] Generation exceeded 5 minute limit (age: ${age}ms)`
+        });
+      }
+    }
+
+    return NextResponse.json({
+      success: true,
+      cleanedCount: staleSubmissions.length,
+      timestamp: new Date().toISOString()
+    });
+  } catch (error) {
+    console.error('[Game Generator] Cleanup error:', error);
+    return NextResponse.json(
+      { error: 'Cleanup failed' },
+      { status: 500 }
+    );
   }
 }
 
