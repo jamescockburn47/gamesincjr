@@ -8,23 +8,40 @@ export default function MakeYourGameForm() {
   const [result, setResult] = useState<{ submissionId: string; status: string } | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<{
+    creatorName: string;
+    creatorEmail: string;
+    gameTitle: string;
+    gameDescription: string;
+    gameType: 'space' | 'runner' | 'puzzle' | 'racing' | 'shooter' | 'flying' | 'collecting' | 'fighting' | 'strategy';
+    difficulty: number;
+    speed: number;
+    lives: number;
+    colors: 'colorful' | 'dark-neon' | 'bright' | 'retro';
+    artStyle: 'geometric' | 'cartoon' | 'pixel' | 'fancy';
+    background: 'space' | 'city' | 'forest' | 'ocean' | 'sky';
+    movement: 'left-right' | 'four-way' | 'mouse' | 'auto-move';
+    specialAction: 'none' | 'shoot' | 'jump' | 'powerup';
+    collectibles: string[];
+    hazards: string[];
+    features: string[];
+  }>({
     creatorName: '',
     creatorEmail: '',
     gameTitle: '',
     gameDescription: '',
-    gameType: 'space' as const,
+    gameType: 'space',
     difficulty: 3,
     speed: 3,
     lives: 3,
-    colors: 'colorful' as const,
-    artStyle: 'cartoon' as const,
-    background: 'space' as const,
-    movement: 'four-way' as const,
-    specialAction: 'shoot' as const,
-    collectibles: [] as string[],
-    hazards: [] as string[],
-    features: [] as string[],
+    colors: 'colorful',
+    artStyle: 'cartoon',
+    background: 'space',
+    movement: 'four-way',
+    specialAction: 'shoot',
+    collectibles: [],
+    hazards: [],
+    features: [],
   });
 
   const presetOptions = {
@@ -173,7 +190,7 @@ export default function MakeYourGameForm() {
         <div>
           <label className="mb-3 block text-sm font-medium text-slate-700">Game Type</label>
           <div className="grid grid-cols-3 gap-3">
-            {(['space', 'runner', 'puzzle', 'racing', 'shooter', 'flying', 'collecting', 'fighting', 'strategy'] as const).map(type => (
+            {(['space', 'runner', 'puzzle', 'racing', 'shooter', 'flying', 'collecting', 'fighting', 'strategy'] as Array<typeof formData.gameType>).map(type => (
               <button
                 key={type}
                 type="button"
