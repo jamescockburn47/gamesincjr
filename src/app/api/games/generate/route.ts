@@ -210,7 +210,6 @@ async function generateGameAsync(
   submission: GameSubmission
 ) {
   const startTime = Date.now();
-  const MAX_GENERATION_TIME_MS = 5 * 60 * 1000; // 5 minutes hard limit
 
   // Build the prompt with strict requirements for functional output
   const prompt = buildEnhancedGamePrompt(gameSlug, submission);

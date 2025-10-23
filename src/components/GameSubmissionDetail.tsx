@@ -1,7 +1,6 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import Link from 'next/link';
 
@@ -21,10 +20,10 @@ interface SubmissionDetail {
   generatedCode: string | null;
   heroSvg: string | null;
   reviewNotes: string | null;
-  difficulty?: any;
-  visualStyle?: any;
-  controls?: any;
-  elements?: any;
+  difficulty?: Record<string, unknown>;
+  visualStyle?: Record<string, unknown>;
+  controls?: Record<string, unknown>;
+  elements?: Record<string, unknown>;
 }
 
 const STATUS_COLORS: Record<string, { bg: string; text: string; badge: string }> = {
@@ -48,7 +47,6 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
   const [reviewNotes, setReviewNotes] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
-  const router = useRouter();
 
   useEffect(() => {
     const fetchSubmission = async () => {
@@ -254,14 +252,14 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
                 {submission.difficulty && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">Difficulty</label>
-                    <p className="text-sm text-gray-900 mt-1">{submission.difficulty.overall}/5</p>
+                    <p className="text-sm text-gray-900 mt-1">{String((submission.difficulty as Record<string, unknown>).overall)}/5</p>
                   </div>
                 )}
                 {submission.visualStyle && (
                   <div>
                     <label className="text-xs font-medium text-gray-500 uppercase">Visual Style</label>
                     <p className="text-sm text-gray-900 mt-1">
-                      {submission.visualStyle.artStyle} / {submission.visualStyle.colors}
+                      {String((submission.visualStyle as Record<string, unknown>).artStyle)} / {String((submission.visualStyle as Record<string, unknown>).colors)}
                     </p>
                   </div>
                 )}

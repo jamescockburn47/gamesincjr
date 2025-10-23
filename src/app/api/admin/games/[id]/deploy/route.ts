@@ -59,11 +59,11 @@ export async function POST(
 
       // Update games.json
       const gamesJsonPath = path.join(process.cwd(), 'src', 'data', 'games.json');
-      const gamesData = JSON.parse(await fs.readFile(gamesJsonPath, 'utf-8'));
+      const gamesData = JSON.parse(await fs.readFile(gamesJsonPath, 'utf-8')) as Array<{ slug: string }>;
 
       // Check if game already exists
       const existingIndex = gamesData.findIndex(
-        (g: any) => g.slug === submission.gameSlug
+        (g: { slug: string }) => g.slug === submission.gameSlug
       );
 
       const newGameEntry = {
