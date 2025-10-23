@@ -132,9 +132,12 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
         headers: { 'Content-Type': 'application/json' },
       });
 
-      if (!response.ok) throw new Error('Failed to deploy');
-
       const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || data.details || 'Failed to deploy');
+      }
+
       setSubmission(data.submission);
       setActionMessage('🚀 Game deployed successfully! Commit changes to git.');
       setTimeout(() => setActionMessage(''), 5000);
