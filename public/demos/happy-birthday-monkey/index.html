@@ -1036,8 +1036,15 @@
           layer.offset += layer.speed * state.gameSpeed * dt * 60;
           if (layer.offset > currentW) layer.offset = 0;
         });
-
-        // Monkey movement
+        
+        // Throttle decorations update for performance
+        if (Math.floor(now / 50) % 2 === 0) {
+          state.decorations.forEach(d => {
+            d.rotation += d.speed * dt;
+            d.y += (0.5 + d.depth * 0.5) * dt * 60;
+            if (d.y > currentH) d.y = -20;
+          });
+        }
         state.monkey.vx = 0;
         if (keys.left && state.monkey.x > 0) {
           state.monkey.vx = -state.monkey.speed;
@@ -1071,12 +1078,7 @@
         state.monkey.x += state.monkey.vx * 60 * dt;
         state.monkey.x = Math.max(0, Math.min(currentW - state.monkey.width, state.monkey.x));
 
-        // Update decorations with parallax - frame rate independent
-        state.decorations.forEach(d => {
-          d.rotation += d.speed * dt;
-          d.y += (0.5 + d.depth * 0.5) * dt * 60;
-          if (d.y > currentH) d.y = -20;
-        });
+        // Update decorations - moved to throttled section above
 
         // Spawn balloons - INCREASED DIFFICULTY
         const balloonSpawnRate = Math.max(
@@ -1153,13 +1155,11 @@
               if (b.powerUpType === 'shield') {
                 state.shield = true;
                 state.shieldTimer = DIFFICULTY.shieldDuration;
-                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '🛡️ SHIELD! Blocks one hit!', '#4169E1');
-                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y - 30, `Lasts ${DIFFICULTY.shieldDuration}s`, '#4169E1');
+                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '🛡️ SHIELD!', '#4169E1');
               } else if (b.powerUpType === 'slowmo') {
                 state.slowMotion = true;
                 state.slowMotionTimer = DIFFICULTY.slowMoDuration;
                 addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '⏱️ SLOW MOTION!', '#FFD700');
-                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y - 30, `Game slows down ${DIFFICULTY.slowMoDuration}s`, '#FFD700');
               }
               state.balloons.splice(i, 1);
               createParticles(b.x + b.size/2, b.y + b.size/2, b.color);
@@ -1172,8 +1172,10 @@
               state.comboTimer = 0;
               if (state.combo > 1) {
                 state.multiplier = Math.min(5, 1 + Math.floor(state.combo / 3));
-                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y - 20, `COMBO x${state.multiplier}!`, '#FF6B9D');
-                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y - 50, `Score multiplier active!`, '#FF6B9D');
+                // Only show combo effect if multiplier changed
+                if (state.combo % 3 === 0) {
+                  addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y - 20, `COMBO x${state.multiplier}!`, '#FF6B9D');
+                }
               }
             } else {
               state.combo = 1;
@@ -1188,17 +1190,11 @@
             
             createParticles(b.x + b.size/2, b.y + b.size/2, b.color);
             
-            // Show score breakdown
-            if (b.isSpecial8) {
-              addEffect(b.x + b.size/2, b.y, `+${basePoints} (Number 8!)`, '#FF6B9D');
-            } else if (b.isGolden) {
-              addEffect(b.x + b.size/2, b.y, `+${basePoints} (Golden!)`, '#FFD700');
-            } else {
-              addEffect(b.x + b.size/2, b.y, `+${basePoints}`, '#FFFFFF');
-            }
-            
+            // Show score - simplified, only show multiplier if > 1
             if (state.multiplier > 1) {
-              addEffect(b.x + b.size/2, b.y - 25, `x${state.multiplier} = ${points} total!`, '#FFD700');
+              addEffect(b.x + b.size/2, b.y, `+${points} (x${state.multiplier})`, '#FFD700');
+            } else if (b.isSpecial8 || b.isGolden) {
+              addEffect(b.x + b.size/2, b.y, `+${basePoints}`, b.isGolden ? '#FFD700' : '#FF6B9D');
             }
             
             if (points >= 5) {
@@ -1221,9 +1217,9 @@
           c.x += c.speed * 60 * dt * c.direction;
           c.walkFrame += dt * 10;
           
-          // Animate jaw snapping
+          // Animate jaw snapping - slower animation
           if (!c.jawFrame) c.jawFrame = 0;
-          c.jawFrame += dt * 10;
+          c.jawFrame += dt * 6; // Reduced from 10
 
           // Check if monkey lands on croc's back (safe zone)
           const monkeyBottom = state.monkey.y + state.monkey.height;
@@ -1325,31 +1321,37 @@
       }
       
       function createParticles(x, y, color) {
-        for (let i = 0; i < 20; i++) { // Increased from 15
+        const particleCount = 8; // Reduced from 20
+        for (let i = 0; i < particleCount; i++) {
           state.particles.push({
             x: x,
             y: y,
-            vx: (Math.random() - 0.5) * 250,
-            vy: (Math.random() - 0.5) * 250,
+            vx: (Math.random() - 0.5) * 200,
+            vy: (Math.random() - 0.5) * 200,
             color: color,
-            size: 3 + Math.random() * 5,
-            life: 0.6 + Math.random() * 0.6,
-            maxLife: 0.6 + Math.random() * 0.6,
+            size: 3 + Math.random() * 4,
+            life: 0.4 + Math.random() * 0.4,
+            maxLife: 0.4 + Math.random() * 0.4,
             alpha: 1,
           });
         }
       }
       
       function addEffect(x, y, text, color) {
+        // Limit simultaneous effects to prevent clutter
+        if (state.effects.length > 8) {
+          // Remove oldest effect
+          state.effects.shift();
+        }
         state.effects.push({
           x: x,
           y: y,
           text: text,
           color: color,
-          life: 1.5,
-          maxLife: 1.5,
+          life: 1.2,
+          maxLife: 1.2,
           alpha: 1,
-          size: 28, // Increased from 24
+          size: 24, // Reduced from 28
         });
       }
 
@@ -1553,48 +1555,41 @@
           ctx.restore();
           
           // Draw crocodile with animated jaws
-          // Generate croc SVG with current jaw frame
-          const crocSVG = createCrocSVG(c.walkFrame);
-          const crocImg = new Image();
-          crocImg.src = crocSVG;
-          
           ctx.save();
           ctx.scale(c.direction, 1);
           
-          // Try to use cached frame if available, otherwise use generated one
           const frameIndex = Math.floor(c.walkFrame) % imageCache.crocFrames.length;
           const baseCrocImg = imageCache.crocFrames[frameIndex];
           
           if (baseCrocImg.complete && baseCrocImg.naturalWidth > 0) {
-            // Draw cached frame, then overlay jaw animation
+            // Draw cached frame
             ctx.drawImage(baseCrocImg, c.direction > 0 ? c.x : -c.x - 140, c.y, 140, 70);
             
-            // Draw animated snapping jaws overlay
-            const jawOpen = Math.sin(c.jawFrame) * 0.5 + 0.5;
-            const jawAngle = jawOpen * 0.3;
-            const jawOffset = jawOpen * 8;
-            
-            ctx.save();
-            ctx.translate(c.direction > 0 ? c.x + 20 : -c.x - 120, c.y + 38);
-            ctx.rotate(-jawAngle * c.direction);
-            ctx.strokeStyle = '#ff6347';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(-2, 0);
-            ctx.quadraticCurveTo(5, -jawOffset, 15, 0);
-            ctx.stroke();
-            ctx.restore();
-            
-            ctx.save();
-            ctx.translate(c.direction > 0 ? c.x + 120 : -c.x - 20, c.y + 38);
-            ctx.rotate(jawAngle * c.direction);
-            ctx.strokeStyle = '#ff6347';
-            ctx.lineWidth = 4;
-            ctx.beginPath();
-            ctx.moveTo(2, 0);
-            ctx.quadraticCurveTo(-5, -jawOffset, -15, 0);
-            ctx.stroke();
-            ctx.restore();
+            // Simplified jaw animation - only update every few frames
+            if (Math.floor(c.jawFrame) % 2 === 0) {
+              const jawOpen = Math.sin(c.jawFrame) * 0.5 + 0.5;
+              const jawOffset = jawOpen * 6; // Reduced from 8
+              
+              // Draw simplified snapping jaws
+              ctx.save();
+              ctx.strokeStyle = '#ff6347';
+              ctx.lineWidth = 3;
+              ctx.lineCap = 'round';
+              
+              // Left jaw
+              ctx.beginPath();
+              ctx.moveTo(c.direction > 0 ? c.x + 20 : -c.x - 120, c.y + 38);
+              ctx.lineTo(c.direction > 0 ? c.x + 25 : -c.x - 115, c.y + 38 - jawOffset);
+              ctx.stroke();
+              
+              // Right jaw
+              ctx.beginPath();
+              ctx.moveTo(c.direction > 0 ? c.x + 120 : -c.x - 20, c.y + 38);
+              ctx.lineTo(c.direction > 0 ? c.x + 115 : -c.x - 25, c.y + 38 - jawOffset);
+              ctx.stroke();
+              
+              ctx.restore();
+            }
           } else {
             // Fallback: draw simple crocodile shape
             ctx.fillStyle = '#228b22';
