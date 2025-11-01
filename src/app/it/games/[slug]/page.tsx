@@ -15,7 +15,7 @@ interface Params {
 
 export default async function GiocoIt({ params }: Params) {
   const { slug } = await params;
-  const game = getGameBySlug(slug);
+  const game = await getGameBySlug(slug);
   const user = await getUserFromCookies();
 
   if (!game) {

@@ -14,9 +14,37 @@ const GameSchema = z.object({
   tags: z.array(z.string().max(20)).max(10).optional(),
   hero: z.string().regex(/^\/games\/[a-z0-9-]+\/[a-z0-9.-]+$/).optional(),
   screenshots: z.array(z.string().regex(/^\/games\/[a-z0-9-]+\/[a-z0-9.-]+$/)).max(10).optional(),
-  demoPath: z.string()
-    .regex(/^\/demos\/[a-z0-9-]+\/index\.html$/, 'demoPath must be /demos/[slug]/index.html')
-    .optional(),
+import { z } from 'zod';
+import gamesData from '@/data/games.json';
+
+// Zod schema for runtime validation - prevents XSS, path traversal, malformed data
+const GameSchema = z.object({
+  slug: z.string()
+    .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens only')
+    .min(1)
+    .max(50),
+  title: z.string().min(1).max(60),
+  description: z.string().max(200).optional(),
+  description_it: z.string().max(200).optional(),
+  price: z.number().nonnegative().optional(),
+  tags: z.array(z.string().max(20)).max(10).optional(),
+  hero: z.string().regex(/^\/games\/[a-z0-9-]+\/[a-z0-9.-]+$/).optional(),
+  screenshots: z.array(z.string().regex(/^\/games\/[a-z0-9-]+\/[a-z0-9.-]+$/)).max(10).optional(),
+  demoPath: z.string().optional(), // Made optional to support API-served games
+  status: z.enum(['released', 'coming-soon']).optional(),
+  gameType: z.enum(['html5', 'video-preview', 'download', 'ai-powered']).optional(),
+  videoPreview: z.string().url().optional(),
+  downloadUrl: z.string().url().optional(),
+  downloadSize: z.string().max(20).optional(),
+  aiProvider: z.enum(['openai', 'anthropic', 'custom']).optional(),
+  apiCostPerPlay: z.number().nonnegative().optional(),
+  engine: z.enum(['unity', 'godot', 'phaser', 'vanilla-js', 'react', 'vue']).optional(),
+  version: z.string().max(20).optional(),
+  localPath: z.string().optional(),
+  submissionId: z.string().optional(), // Track if game comes from database
+});
+
+export type Game = z.infer<typeof GameSchema>;
   status: z.enum(['released', 'coming-soon']).optional(),
   gameType: z.enum(['html5', 'video-preview', 'download', 'ai-powered']).optional(),
   videoPreview: z.string().url().optional(),
@@ -54,12 +82,60 @@ export function getGames(): Game[] {
   return [...validatedGames];
 }
 
-export function getGameBySlug(slug: string): Game | null {
+export async function getGameBySlug(slug: string): Promise<Game | null> {
   // Additional slug validation at query time to prevent injection
   if (!/^[a-z0-9-]+$/.test(slug)) {
     return null;
   }
-  return validatedGames.find(game => game.slug === slug) || null;
+  
+  // First check static games.json
+  const staticGame = validatedGames.find(game => game.slug === slug);
+  if (staticGame) {
+    return staticGame;
+  }
+  
+  // If not found, check database for approved user-generated games
+  try {
+    const { prisma } = await import('@/lib/tables/db/prisma');
+    const { SubmissionStatus } = await import('@prisma/client');
+    
+    const submission = await prisma.gameSubmission.findFirst({
+      where: {
+        gameSlug: slug,
+        status: SubmissionStatus.APPROVED,
+      },
+      orderBy: {
+        approvedAt: 'desc',
+      },
+    });
+    
+    if (submission && submission.generatedCode) {
+      // Return game object that will be served from API
+      return {
+        slug: submission.gameSlug,
+        title: submission.gameTitle,
+        description: submission.gameDescription,
+        description_it: submission.gameDescription,
+        tags: [submission.gameType, 'user-generated'],
+        hero: `/games/${submission.gameSlug}/hero.svg`,
+        screenshots: [
+          `/games/${submission.gameSlug}/s1.svg`,
+          `/games/${submission.gameSlug}/s2.svg`,
+        ],
+        demoPath: `/api/games/${submission.gameSlug}/demo`, // API endpoint instead of static file
+        gameType: 'html5',
+        engine: 'vanilla-js',
+        version: '1.0.0',
+        status: 'released',
+        submissionId: submission.id,
+      };
+    }
+  } catch (error) {
+    console.error('[Games] Error checking database for game:', error);
+    // Fall through to return null
+  }
+  
+  return null;
 }
 
 export function getGamePaths(): { slug: string }[] {
