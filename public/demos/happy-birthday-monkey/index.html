@@ -480,15 +480,41 @@
       function requestFullscreen() {
         const elem = stage;
         if (elem.requestFullscreen) {
-          elem.requestFullscreen().catch(() => {});
+          return elem.requestFullscreen().catch(() => {});
         } else if (elem.webkitRequestFullscreen) {
-          elem.webkitRequestFullscreen();
+          return Promise.resolve(elem.webkitRequestFullscreen());
         } else if (elem.msRequestFullscreen) {
-          elem.msRequestFullscreen();
+          return Promise.resolve(elem.msRequestFullscreen());
         } else if (elem.mozRequestFullScreen) {
-          elem.mozRequestFullScreen();
+          return Promise.resolve(elem.mozRequestFullScreen());
+        }
+        return Promise.resolve();
+      }
+
+      // Handle canvas resize for fullscreen
+      function resizeCanvas() {
+        const rect = canvas.getBoundingClientRect();
+        if (canvas.width !== rect.width || canvas.height !== rect.height) {
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+          // Update constants
+          const newW = canvas.width;
+          const newH = canvas.height;
+          // Update game state if needed
+          if (state.running) {
+            state.monkey.y = newH - 100;
+          }
         }
       }
+
+      // Listen for fullscreen changes
+      document.addEventListener('fullscreenchange', resizeCanvas);
+      document.addEventListener('webkitfullscreenchange', resizeCanvas);
+      document.addEventListener('mozfullscreenchange', resizeCanvas);
+      document.addEventListener('MSFullscreenChange', resizeCanvas);
+      
+      // Resize canvas on window resize
+      window.addEventListener('resize', resizeCanvas);
 
       // Load images
       Promise.all([
@@ -552,8 +578,12 @@
 
       startBtn.addEventListener('click', () => {
         if (!state.running) {
-          requestFullscreen();
-          setTimeout(() => startGame(), 100);
+          // Try to enter fullscreen, but don't wait for it
+          requestFullscreen().catch(() => {
+            // Fullscreen failed, but that's okay - start game anyway
+          });
+          // Start game immediately
+          startGame();
         }
       });
 
@@ -564,14 +594,24 @@
 
       function startGame() {
         startOverlay.classList.add('hidden');
+        
+        // Ensure canvas is properly sized
+        resizeCanvas();
+        
+        // Recalculate dimensions in case canvas was resized
+        const currentW = canvas.width;
+        const currentH = canvas.height;
+        const currentGroundY = currentH - 100;
+        
         state.running = true;
         state.score = 0;
         state.lives = 3;
-        state.monkey.x = W / 2 - 30;
-        state.monkey.y = GROUND_Y;
+        state.monkey.x = currentW / 2 - 30;
+        state.monkey.y = currentGroundY;
         state.monkey.vy = 0;
         state.monkey.isJumping = false;
         state.monkey.onGround = true;
+        state.monkey.walkFrame = 0;
         state.balloons = [];
         state.crocodiles = [];
         state.lastBalloonTime = 0;
@@ -580,7 +620,9 @@
         createDecorations();
         updateHud();
         state.lastTime = performance.now();
-        requestAnimationFrame(loop);
+        
+        // Start game loop
+        loop(state.lastTime);
       }
 
       function updateHud() {
@@ -589,30 +631,6 @@
         bestEl.textContent = state.best;
       }
 
-      function spawnBalloon() {
-        const colors = balloonColors;
-        const isSpecial8 = Math.random() < 0.12;
-        
-        state.balloons.push({
-          x: 50 + Math.random() * (W - 100),
-          y: -80,
-          speed: (1.5 + Math.random() * 1.5) * state.gameSpeed,
-          color: colors[Math.floor(Math.random() * colors.length)],
-          rotation: (Math.random() - 0.5) * 0.1,
-          size: 50 + Math.random() * 30,
-          isSpecial8: isSpecial8,
-        });
-      }
-
-      function spawnCrocodile() {
-        state.crocodiles.push({
-          x: Math.random() > 0.5 ? -140 : W + 140,
-          y: GROUND_Y + 10,
-          speed: (1.5 + Math.random() * 1.5) * state.gameSpeed,
-          direction: Math.random() > 0.5 ? 1 : -1,
-          walkFrame: 0,
-        });
-      }
 
       function checkCollision(rect1, rect2) {
         return rect1.x < rect2.x + rect2.width &&
@@ -637,10 +655,21 @@
       }
 
       function loop(now) {
-        if (!state.running) return;
+        if (!state.running) {
+          return;
+        }
+
+        // Ensure we have valid time
+        if (!now) now = performance.now();
+        if (!state.lastTime) state.lastTime = now;
 
         const dt = Math.min((now - state.lastTime) / 1000, 0.1);
         state.lastTime = now;
+        
+        // Update canvas dimensions if needed
+        const currentW = canvas.width;
+        const currentH = canvas.height;
+        const currentGroundY = currentH - 100;
 
         // Increase game speed over time
         state.gameSpeed = 1 + (state.score * 0.02);
@@ -668,8 +697,8 @@
         state.monkey.y += state.monkey.vy * 60 * dt;
 
         // Ground collision
-        if (state.monkey.y >= GROUND_Y) {
-          state.monkey.y = GROUND_Y;
+        if (state.monkey.y >= currentGroundY) {
+          state.monkey.y = currentGroundY;
           state.monkey.vy = 0;
           state.monkey.onGround = true;
           state.monkey.isJumping = false;
@@ -677,26 +706,40 @@
 
         // Apply horizontal movement
         state.monkey.x += state.monkey.vx * 60 * dt;
-        state.monkey.x = Math.max(0, Math.min(W - state.monkey.width, state.monkey.x));
+        state.monkey.x = Math.max(0, Math.min(currentW - state.monkey.width, state.monkey.x));
 
         // Update decorations
         state.decorations.forEach(d => {
           d.rotation += d.speed;
           d.y += 0.5;
-          if (d.y > H) d.y = -20;
+          if (d.y > currentH) d.y = -20;
         });
 
         // Spawn balloons (more frequent as score increases)
         const balloonSpawnRate = Math.max(300, 800 - state.score * 8);
         if (now - state.lastBalloonTime > balloonSpawnRate + Math.random() * 500) {
-          spawnBalloon();
+          state.balloons.push({
+            x: 50 + Math.random() * (currentW - 100),
+            y: -80,
+            speed: (1.5 + Math.random() * 1.5) * state.gameSpeed,
+            color: balloonColors[Math.floor(Math.random() * balloonColors.length)],
+            rotation: (Math.random() - 0.5) * 0.1,
+            size: 50 + Math.random() * 30,
+            isSpecial8: Math.random() < 0.12,
+          });
           state.lastBalloonTime = now;
         }
 
         // Spawn crocodiles (more frequent as score increases - creates challenge)
         const crocSpawnRate = Math.max(1500, 3500 - state.score * 25);
         if (now - state.lastCrocTime > crocSpawnRate + Math.random() * 1000) {
-          spawnCrocodile();
+          state.crocodiles.push({
+            x: Math.random() > 0.5 ? -140 : currentW + 140,
+            y: currentGroundY + 10,
+            speed: (1.5 + Math.random() * 1.5) * state.gameSpeed,
+            direction: Math.random() > 0.5 ? 1 : -1,
+            walkFrame: 0,
+          });
           state.lastCrocTime = now;
         }
 
@@ -727,7 +770,7 @@
             continue;
           }
 
-          if (b.y > H) {
+          if (b.y > currentH) {
             state.balloons.splice(i, 1);
           }
         }
@@ -739,7 +782,7 @@
           c.walkFrame += dt * 8;
 
           // Only check collision if monkey is on ground or low jump
-          if (state.monkey.y >= GROUND_Y - 30) {
+          if (state.monkey.y >= currentGroundY - 30) {
             const crocRect = {
               x: c.x + 20,
               y: c.y + 15,
@@ -762,14 +805,14 @@
                 return;
               }
               // Brief invincibility - move monkey to center
-              state.monkey.x = W / 2 - 30;
-              state.monkey.y = GROUND_Y;
+              state.monkey.x = currentW / 2 - 30;
+              state.monkey.y = currentGroundY;
               state.monkey.vy = 0;
               continue;
             }
           }
 
-          if ((c.direction > 0 && c.x > W + 140) || (c.direction < 0 && c.x < -140)) {
+          if ((c.direction > 0 && c.x > currentW + 140) || (c.direction < 0 && c.x < -140)) {
             state.crocodiles.splice(i, 1);
           }
         }
@@ -784,20 +827,24 @@
       }
 
       function draw() {
+        const currentW = canvas.width;
+        const currentH = canvas.height;
+        const currentGroundY = currentH - 100;
+        
         // Clear canvas
-        ctx.fillRect(0, 0, W, H);
+        ctx.fillRect(0, 0, currentW, currentH);
 
         // Draw background gradient
-        const bgGradient = ctx.createLinearGradient(0, 0, 0, H);
+        const bgGradient = ctx.createLinearGradient(0, 0, 0, currentH);
         bgGradient.addColorStop(0, '#87ceeb');
         bgGradient.addColorStop(0.6, '#ffd6e8');
         bgGradient.addColorStop(1, '#ffb3d9');
         ctx.fillStyle = bgGradient;
-        ctx.fillRect(0, 0, W, H);
+        ctx.fillRect(0, 0, currentW, currentH);
 
         // Draw ground
         ctx.fillStyle = '#ffb3d9';
-        ctx.fillRect(0, GROUND_Y + 100, W, H - GROUND_Y - 100);
+        ctx.fillRect(0, currentGroundY + 100, currentW, currentH - currentGroundY - 100);
 
         // Draw floating decorations
         state.decorations.forEach(d => {
@@ -892,7 +939,7 @@
         ctx.font = 'bold 24px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('Happy 8th Birthday Henry!', W / 2, 25);
+        ctx.fillText('Happy 8th Birthday Henry!', currentW / 2, 25);
         ctx.restore();
       }
 
