@@ -190,34 +190,7 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
     }
   };
 
-  const downloadGameFiles = () => {
-    if (!deploymentData?.gameData) return;
-    
-    const { gameData } = deploymentData;
-    
-    // Download HTML file
-    const htmlBlob = new Blob([gameData.code], { type: 'text/html' });
-    const htmlUrl = URL.createObjectURL(htmlBlob);
-    const htmlLink = document.createElement('a');
-    htmlLink.href = htmlUrl;
-    htmlLink.download = `${gameData.slug}-index.html`;
-    htmlLink.click();
-    URL.revokeObjectURL(htmlUrl);
-    
-    // Download game entry JSON
-    const jsonBlob = new Blob([JSON.stringify(gameData.gameEntry, null, 2)], { type: 'application/json' });
-    const jsonUrl = URL.createObjectURL(jsonBlob);
-    const jsonLink = document.createElement('a');
-    jsonLink.href = jsonUrl;
-    jsonLink.download = `${gameData.slug}-game-entry.json`;
-    jsonLink.click();
-    URL.revokeObjectURL(jsonUrl);
-    
-    setActionMessage('✅ Game files downloaded! Check your downloads folder.');
-    setTimeout(() => setActionMessage(''), 3000);
-  };
-
-  if (loading) {
+  const copyCode = async () => {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-gray-600">Loading submission...</div>
@@ -244,7 +217,6 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
   const colors = STATUS_COLORS[submission.status] || STATUS_COLORS.PENDING;
   const canApprove = ['REVIEW', 'BUILDING', 'PENDING'].includes(submission.status);
   const canReject = !['REJECTED', 'LIVE'].includes(submission.status);
-  const canDeploy = submission.status === 'APPROVED' && submission.generatedCode;
 
   return (
     <div className="min-h-screen bg-gray-50">
