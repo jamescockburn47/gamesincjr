@@ -429,8 +429,8 @@
         lastBalloonTime: 0,
         lastCrocTime: 0,
         lastTime: 0,
-        gravity: 0.9,
-        jumpPower: -17,
+        gravity: 0.85,
+        jumpPower: -22,
         gameSpeed: 1,
         combo: 0, // Combo counter
         comboTimer: 0, // Time since last balloon catch
@@ -614,17 +614,37 @@
       });
 
       restartBtn.addEventListener('click', () => {
-        gameOverOverlay.classList.add('hidden');
-        // Reset all keys to prevent stuck controls
+        // Stop game loop
+        state.running = false;
+        
+        // Reset all keys
         keys.left = false;
         keys.right = false;
         keys.jump = false;
-        // Reset game state
-        state.running = false;
+        
+        // Hide game over overlay
+        gameOverOverlay.classList.add('hidden');
+        
+        // Reset all game state
         state.score = 0;
         state.lives = 3;
         state.balloons = [];
         state.crocodiles = [];
+        state.particles = [];
+        state.effects = [];
+        state.combo = 0;
+        state.multiplier = 1;
+        state.comboTimer = 0;
+        state.shield = false;
+        state.shieldTimer = 0;
+        state.slowMotion = false;
+        state.slowMotionTimer = 0;
+        state.screenShake = 0;
+        state.lastBalloonTime = 0;
+        state.lastCrocTime = 0;
+        state.lastComboTime = 0;
+        state.gameSpeed = 1;
+        
         // Show start overlay
         startOverlay.classList.remove('hidden');
       });
@@ -779,7 +799,7 @@
           state.monkey.walkFrame += dt * 8;
         }
 
-        // Jump mechanics
+        // Jump mechanics - allow jump when on ground
         if (keys.jump && state.monkey.onGround && !state.monkey.isJumping) {
           state.monkey.vy = state.jumpPower;
           state.monkey.onGround = false;
@@ -797,6 +817,9 @@
           state.monkey.onGround = true;
           state.monkey.isJumping = false;
         }
+        
+        // Calculate jump height for collision detection
+        const jumpHeight = currentGroundY - state.monkey.y; // How high monkey is above ground
 
         // Apply horizontal movement
         state.monkey.x += state.monkey.vx * 60 * dt;
@@ -935,8 +958,16 @@
           c.x += c.speed * 60 * dt * c.direction;
           c.walkFrame += dt * 8;
 
-          // Only check collision if monkey is on ground or low jump
-          if (state.monkey.y >= currentGroundY - 30) {
+          // Calculate if monkey is high enough to jump over crocodile
+          // Crocodiles are 70px tall, positioned at currentGroundY + 10
+          // Monkey needs to clear the top of the crocodile (currentGroundY + 10 + 70 = currentGroundY + 80)
+          // But we check the monkey's bottom position, so monkey.y + monkey.height should be above croc.y + croc.height
+          const monkeyBottom = state.monkey.y + state.monkey.height;
+          const crocTop = c.y;
+          
+          // Only check collision if monkey's bottom is below or near crocodile top
+          // This allows jumping over crocodiles
+          if (monkeyBottom >= crocTop - 20) {
             const crocRect = {
               x: c.x + 20,
               y: c.y + 15,
