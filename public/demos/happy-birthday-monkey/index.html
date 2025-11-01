@@ -423,12 +423,24 @@
         balloons: [],
         crocodiles: [],
         decorations: [],
+        particles: [], // For particle effects
+        powerUps: [], // For special power-ups
+        effects: [], // For visual effects (text, animations)
         lastBalloonTime: 0,
         lastCrocTime: 0,
         lastTime: 0,
         gravity: 0.9,
         jumpPower: -17,
         gameSpeed: 1,
+        combo: 0, // Combo counter
+        comboTimer: 0, // Time since last balloon catch
+        multiplier: 1, // Score multiplier
+        shield: false, // Shield power-up
+        shieldTimer: 0,
+        slowMotion: false, // Slow motion power-up
+        slowMotionTimer: 0,
+        screenShake: 0, // Screen shake effect
+        lastComboTime: 0,
       };
 
       const keys = {};
@@ -494,15 +506,19 @@
       // Handle canvas resize for fullscreen
       function resizeCanvas() {
         const rect = canvas.getBoundingClientRect();
-        if (canvas.width !== rect.width || canvas.height !== rect.height) {
-          canvas.width = rect.width;
-          canvas.height = rect.height;
-          // Update constants
-          const newW = canvas.width;
-          const newH = canvas.height;
+        const displayWidth = rect.width;
+        const displayHeight = rect.height;
+        
+        // Set actual canvas size - use display size directly (no DPR scaling to avoid issues)
+        if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+          canvas.width = displayWidth;
+          canvas.height = displayHeight;
+          
           // Update game state if needed
           if (state.running) {
-            state.monkey.y = newH - 100;
+            state.monkey.y = displayHeight - 100;
+            // Ensure monkey stays within bounds
+            state.monkey.x = Math.max(0, Math.min(displayWidth - state.monkey.width, state.monkey.x));
           }
         }
       }
@@ -635,9 +651,20 @@
           state.monkey.walkFrame = 0;
           state.balloons = [];
           state.crocodiles = [];
+          state.particles = [];
+          state.effects = [];
           state.lastBalloonTime = 0;
           state.lastCrocTime = 0;
           state.gameSpeed = 1;
+          state.combo = 0;
+          state.multiplier = 1;
+          state.comboTimer = 0;
+          state.shield = false;
+          state.shieldTimer = 0;
+          state.slowMotion = false;
+          state.slowMotionTimer = 0;
+          state.screenShake = 0;
+          state.lastComboTime = 0;
           createDecorations();
           updateHud();
           state.lastTime = performance.now();
@@ -692,9 +719,36 @@
         const currentW = canvas.width;
         const currentH = canvas.height;
         const currentGroundY = currentH - 100;
+        
+        // Apply screen shake
+        const shakeX = state.screenShake > 0 ? (Math.random() - 0.5) * state.screenShake * 2 : 0;
+        const shakeY = state.screenShake > 0 ? (Math.random() - 0.5) * state.screenShake * 2 : 0;
+        state.screenShake *= 0.9; // Decay shake
 
-        // Increase game speed over time
-        state.gameSpeed = 1 + (state.score * 0.02);
+        // Update power-ups
+        if (state.shield) {
+          state.shieldTimer -= dt;
+          if (state.shieldTimer <= 0) {
+            state.shield = false;
+          }
+        }
+        if (state.slowMotion) {
+          state.slowMotionTimer -= dt;
+          if (state.slowMotionTimer <= 0) {
+            state.slowMotion = false;
+          }
+        }
+        
+        // Update combo timer
+        state.comboTimer += dt;
+        if (state.comboTimer > 2) {
+          state.combo = 0;
+          state.multiplier = 1;
+        }
+        
+        // Increase game speed over time (unless slow motion)
+        const baseSpeed = 1 + (state.score * 0.02);
+        state.gameSpeed = state.slowMotion ? baseSpeed * 0.5 : baseSpeed;
 
         // Monkey movement
         state.monkey.vx = 0;
@@ -740,19 +794,23 @@
         // Spawn balloons (more frequent as score increases)
         const balloonSpawnRate = Math.max(300, 800 - state.score * 8);
         if (now - state.lastBalloonTime > balloonSpawnRate + Math.random() * 500) {
-          const sideDrift = (Math.random() - 0.5) * 2; // Horizontal drift for challenge
+          const sideDrift = (Math.random() - 0.5) * 2;
           const startX = 50 + Math.random() * (currentW - 100);
+          const rand = Math.random();
           state.balloons.push({
             x: startX,
             y: -80,
-            speed: (2 + Math.random() * 2) * state.gameSpeed, // Faster balloons
+            speed: (2 + Math.random() * 2) * state.gameSpeed,
             color: balloonColors[Math.floor(Math.random() * balloonColors.length)],
             rotation: (Math.random() - 0.5) * 0.1,
-            size: 45 + Math.random() * 25, // Slightly smaller for more challenge
-            isSpecial8: Math.random() < 0.12,
-            driftSpeed: sideDrift, // Horizontal drift
+            size: 45 + Math.random() * 25,
+            isSpecial8: rand < 0.12,
+            isGolden: rand >= 0.12 && rand < 0.20, // Golden balloon (8% chance)
+            isPowerUp: rand >= 0.92 && rand < 0.96, // Power-up balloon (4% chance)
+            powerUpType: rand >= 0.92 && rand < 0.94 ? 'shield' : 'slowmo',
+            driftSpeed: sideDrift,
             startX: startX,
-            driftAmplitude: 30 + Math.random() * 40, // How far it drifts
+            driftAmplitude: 30 + Math.random() * 40,
           });
           state.lastBalloonTime = now;
         }
@@ -797,7 +855,52 @@
           };
 
           if (checkCollision(balloonRect, monkeyRect)) {
-            state.score += b.isSpecial8 ? 2 : 1;
+            // Handle power-up balloons
+            if (b.isPowerUp) {
+              if (b.powerUpType === 'shield') {
+                state.shield = true;
+                state.shieldTimer = 10; // 10 seconds
+                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '🛡️ SHIELD!', '#4169E1');
+              } else if (b.powerUpType === 'slowmo') {
+                state.slowMotion = true;
+                state.slowMotionTimer = 8; // 8 seconds
+                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '⏱️ SLOW MOTION!', '#FFD700');
+              }
+              state.balloons.splice(i, 1);
+              createParticles(b.x + b.size/2, b.y + b.size/2, b.color);
+              continue;
+            }
+            
+            // Update combo
+            if (now - state.lastComboTime < 1) {
+              state.combo++;
+              state.comboTimer = 0;
+              if (state.combo > 1) {
+                state.multiplier = Math.min(5, 1 + Math.floor(state.combo / 3));
+                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y - 20, `COMBO x${state.multiplier}!`, '#FF6B9D');
+              }
+            } else {
+              state.combo = 1;
+              state.multiplier = 1;
+            }
+            state.lastComboTime = now;
+            
+            // Calculate points
+            let points = b.isSpecial8 ? 2 : (b.isGolden ? 5 : 1);
+            points *= state.multiplier;
+            state.score += points;
+            
+            // Create particles and effects
+            createParticles(b.x + b.size/2, b.y + b.size/2, b.color);
+            if (points > 1) {
+              addEffect(b.x + b.size/2, b.y, `+${points}`, '#FFD700');
+            }
+            
+            // Screen shake on big catches
+            if (points >= 5) {
+              state.screenShake = 5;
+            }
+            
             state.balloons.splice(i, 1);
             updateHud();
             continue;
@@ -830,8 +933,20 @@
             };
 
             if (checkCollision(crocRect, monkeyRect)) {
+              // Shield protects from one hit
+              if (state.shield) {
+                state.shield = false;
+                state.shieldTimer = 0;
+                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, 'SHIELD BLOCKED!', '#00FF00');
+                state.crocodiles.splice(i, 1);
+                state.screenShake = 3;
+                continue;
+              }
+              
               state.lives--;
               state.crocodiles.splice(i, 1);
+              state.screenShake = 8; // Big shake on hit
+              addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, 'OUCH!', '#FF0000');
               updateHud();
               if (state.lives <= 0) {
                 gameOver();
@@ -854,9 +969,64 @@
         if (state.monkey.vx !== 0 && state.monkey.onGround) {
           state.monkey.walkFrame += dt * 8;
         }
+        
+        // Update particles
+        for (let i = state.particles.length - 1; i >= 0; i--) {
+          const p = state.particles[i];
+          p.x += p.vx * dt * 60;
+          p.y += p.vy * dt * 60;
+          p.vy += 0.3 * dt * 60; // Gravity
+          p.life -= dt;
+          p.alpha = Math.max(0, p.life / p.maxLife);
+          if (p.life <= 0) {
+            state.particles.splice(i, 1);
+          }
+        }
+        
+        // Update visual effects
+        for (let i = state.effects.length - 1; i >= 0; i--) {
+          const e = state.effects[i];
+          e.y -= 50 * dt;
+          e.life -= dt;
+          e.alpha = Math.min(1, e.life / e.maxLife);
+          if (e.life <= 0) {
+            state.effects.splice(i, 1);
+          }
+        }
 
         draw();
         requestAnimationFrame(loop);
+      }
+      
+      // Create particle explosion
+      function createParticles(x, y, color) {
+        for (let i = 0; i < 15; i++) {
+          state.particles.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 200,
+            vy: (Math.random() - 0.5) * 200,
+            color: color,
+            size: 3 + Math.random() * 4,
+            life: 0.5 + Math.random() * 0.5,
+            maxLife: 0.5 + Math.random() * 0.5,
+            alpha: 1,
+          });
+        }
+      }
+      
+      // Add visual text effect
+      function addEffect(x, y, text, color) {
+        state.effects.push({
+          x: x,
+          y: y,
+          text: text,
+          color: color,
+          life: 1.5,
+          maxLife: 1.5,
+          alpha: 1,
+          size: 24,
+        });
       }
 
       function draw() {
@@ -864,8 +1034,15 @@
         const currentH = canvas.height;
         const currentGroundY = currentH - 100;
         
+        // Apply screen shake
+        const shakeX = state.screenShake > 0 ? (Math.random() - 0.5) * state.screenShake : 0;
+        const shakeY = state.screenShake > 0 ? (Math.random() - 0.5) * state.screenShake : 0;
+        
+        ctx.save();
+        ctx.translate(shakeX, shakeY);
+        
         // Clear canvas
-        ctx.fillRect(0, 0, currentW, currentH);
+        ctx.fillRect(-shakeX, -shakeY, currentW, currentH);
 
         // Draw background gradient
         const bgGradient = ctx.createLinearGradient(0, 0, 0, currentH);
@@ -909,8 +1086,40 @@
           ctx.translate(b.x + b.size / 2, b.y + b.size / 2);
           ctx.rotate(b.rotation);
           
+          // Golden balloon glow effect
+          if (b.isGolden) {
+            ctx.shadowBlur = 20;
+            ctx.shadowColor = '#FFD700';
+          }
+          
           if (b.isSpecial8 && images.number8Balloon.complete) {
             ctx.drawImage(images.number8Balloon, -b.size / 2, -b.size / 2, b.size, b.size * 1.3);
+          } else if (b.isGolden) {
+            // Draw golden balloon
+            ctx.fillStyle = '#FFD700';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, b.size / 2, b.size / 2 * 0.75, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#FFA500';
+            ctx.beginPath();
+            ctx.ellipse(0, -b.size * 0.1, b.size / 2 * 0.7, b.size / 2 * 0.5, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#FFFF00';
+            ctx.font = 'bold ' + (b.size * 0.3) + 'px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('⭐', 0, 0);
+          } else if (b.isPowerUp) {
+            // Draw power-up balloon
+            ctx.fillStyle = b.powerUpType === 'shield' ? '#4169E1' : '#FF6347';
+            ctx.beginPath();
+            ctx.ellipse(0, 0, b.size / 2, b.size / 2 * 0.75, 0, 0, Math.PI * 2);
+            ctx.fill();
+            ctx.fillStyle = '#FFFFFF';
+            ctx.font = 'bold ' + (b.size * 0.4) + 'px Arial';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(b.powerUpType === 'shield' ? '🛡️' : '⏱️', 0, 0);
           } else {
             const balloonImg = images.balloons[balloonColors.indexOf(b.color) % images.balloons.length];
             if (balloonImg.complete) {
@@ -922,6 +1131,33 @@
               ctx.fill();
             }
           }
+          ctx.shadowBlur = 0;
+          ctx.restore();
+        });
+        
+        // Draw particles
+        state.particles.forEach(p => {
+          ctx.save();
+          ctx.globalAlpha = p.alpha;
+          ctx.fillStyle = p.color;
+          ctx.beginPath();
+          ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
+          ctx.fill();
+          ctx.restore();
+        });
+        
+        // Draw visual effects (text)
+        state.effects.forEach(e => {
+          ctx.save();
+          ctx.globalAlpha = e.alpha;
+          ctx.fillStyle = e.color;
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 3;
+          ctx.font = `bold ${e.size}px Arial`;
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.strokeText(e.text, e.x, e.y);
+          ctx.fillText(e.text, e.x, e.y);
           ctx.restore();
         });
 
@@ -946,6 +1182,18 @@
           ctx.restore();
         });
 
+        // Draw monkey shield effect
+        if (state.shield) {
+          ctx.save();
+          ctx.strokeStyle = '#4169E1';
+          ctx.lineWidth = 4;
+          ctx.globalAlpha = 0.6 + Math.sin(Date.now() / 100) * 0.4;
+          ctx.beginPath();
+          ctx.arc(state.monkey.x + state.monkey.width / 2, state.monkey.y + state.monkey.height / 2, state.monkey.width / 2 + 10, 0, Math.PI * 2);
+          ctx.stroke();
+          ctx.restore();
+        }
+        
         // Draw monkey (with walking animation)
         const monkeyFrameIndex = Math.floor(state.monkey.walkFrame) % images.monkeyFrames.length;
         const monkeyImg = images.monkeyFrames[monkeyFrameIndex];
@@ -958,6 +1206,36 @@
           ctx.arc(state.monkey.x + state.monkey.width / 2, state.monkey.y + state.monkey.height / 2, state.monkey.width / 2, 0, Math.PI * 2);
           ctx.fill();
         }
+        
+        // Draw combo multiplier indicator
+        if (state.multiplier > 1) {
+          ctx.save();
+          ctx.fillStyle = '#FF6B9D';
+          ctx.font = 'bold 18px Arial';
+          ctx.textAlign = 'left';
+          ctx.fillText(`x${state.multiplier} COMBO!`, 10, currentH - 20);
+          ctx.restore();
+        }
+        
+        // Draw power-up timers
+        if (state.shield) {
+          ctx.save();
+          ctx.fillStyle = '#4169E1';
+          ctx.font = 'bold 16px Arial';
+          ctx.textAlign = 'left';
+          ctx.fillText(`🛡️ ${Math.ceil(state.shieldTimer)}s`, currentW - 100, 35);
+          ctx.restore();
+        }
+        if (state.slowMotion) {
+          ctx.save();
+          ctx.fillStyle = '#FFD700';
+          ctx.font = 'bold 16px Arial';
+          ctx.textAlign = 'left';
+          ctx.fillText(`⏱️ ${Math.ceil(state.slowMotionTimer)}s`, currentW - 100, state.shield ? 55 : 35);
+          ctx.restore();
+        }
+        
+        ctx.restore(); // End screen shake transform
 
         // Draw lives hearts
         for (let i = 0; i < state.lives; i++) {
@@ -975,6 +1253,9 @@
         ctx.fillText('Happy 8th Birthday Henry!', currentW / 2, 25);
         ctx.restore();
       }
+      
+      // Initial canvas setup
+      resizeCanvas();
 
       // Initial draw
       draw();
