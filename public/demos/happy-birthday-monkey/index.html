@@ -690,6 +690,7 @@
         monkeyImg.src = createMonkeySVG(i);
         imageCache.monkeyFrames.push(monkeyImg);
         
+        // Create base croc frame (will be modified with jaw animation in draw)
         const crocImg = new Image();
         crocImg.src = createCrocSVG(i);
         imageCache.crocFrames.push(crocImg);
@@ -1534,7 +1535,7 @@
           ctx.restore();
         });
 
-        // Draw crocodiles with shadows
+        // Draw crocodiles with shadows and snapping jaws
         state.crocodiles.forEach(c => {
           // Draw crocodile shadow
           ctx.save();
@@ -1551,14 +1552,51 @@
           ctx.fill();
           ctx.restore();
           
-          // Draw crocodile
+          // Draw crocodile with animated jaws
+          // Generate croc SVG with current jaw frame
+          const crocSVG = createCrocSVG(c.walkFrame);
+          const crocImg = new Image();
+          crocImg.src = crocSVG;
+          
           ctx.save();
           ctx.scale(c.direction, 1);
+          
+          // Try to use cached frame if available, otherwise use generated one
           const frameIndex = Math.floor(c.walkFrame) % imageCache.crocFrames.length;
-          const crocImg = imageCache.crocFrames[frameIndex];
-          if (crocImg.complete && crocImg.naturalWidth > 0) {
-            ctx.drawImage(crocImg, c.direction > 0 ? c.x : -c.x - 140, c.y, 140, 70);
+          const baseCrocImg = imageCache.crocFrames[frameIndex];
+          
+          if (baseCrocImg.complete && baseCrocImg.naturalWidth > 0) {
+            // Draw cached frame, then overlay jaw animation
+            ctx.drawImage(baseCrocImg, c.direction > 0 ? c.x : -c.x - 140, c.y, 140, 70);
+            
+            // Draw animated snapping jaws overlay
+            const jawOpen = Math.sin(c.jawFrame) * 0.5 + 0.5;
+            const jawAngle = jawOpen * 0.3;
+            const jawOffset = jawOpen * 8;
+            
+            ctx.save();
+            ctx.translate(c.direction > 0 ? c.x + 20 : -c.x - 120, c.y + 38);
+            ctx.rotate(-jawAngle * c.direction);
+            ctx.strokeStyle = '#ff6347';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(-2, 0);
+            ctx.quadraticCurveTo(5, -jawOffset, 15, 0);
+            ctx.stroke();
+            ctx.restore();
+            
+            ctx.save();
+            ctx.translate(c.direction > 0 ? c.x + 120 : -c.x - 20, c.y + 38);
+            ctx.rotate(jawAngle * c.direction);
+            ctx.strokeStyle = '#ff6347';
+            ctx.lineWidth = 4;
+            ctx.beginPath();
+            ctx.moveTo(2, 0);
+            ctx.quadraticCurveTo(-5, -jawOffset, -15, 0);
+            ctx.stroke();
+            ctx.restore();
           } else {
+            // Fallback: draw simple crocodile shape
             ctx.fillStyle = '#228b22';
             ctx.fillRect(c.direction > 0 ? c.x : -c.x - 140, c.y, 140, 70);
           }
