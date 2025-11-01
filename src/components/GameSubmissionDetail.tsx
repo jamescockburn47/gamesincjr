@@ -135,6 +135,31 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
       const data = await response.json();
 
       if (!response.ok) {
+        // Handle serverless deployment error with instructions
+        if (data.error === 'File system deployment not available in serverless environment' && data.instructions) {
+          const instructions = data.instructions;
+          const gameData = data.gameData;
+          
+          // Create a detailed error message with instructions
+          let errorMsg = `❌ ${data.error}\n\n📝 ${data.details}\n\n`;
+          
+          if (instructions.local) {
+            errorMsg += `💻 Local Deployment:\n${instructions.local}\n\n`;
+          }
+          
+          if (instructions.manual) {
+            errorMsg += `📋 Manual Deployment:\n${instructions.manual.map((step: string) => `  ${step}`).join('\n')}\n\n`;
+          }
+          
+          if (gameData) {
+            errorMsg += `💡 Game Data:\n  Slug: ${gameData.slug}\n  Code available in database\n`;
+          }
+          
+          setActionMessage(errorMsg);
+          setTimeout(() => setActionMessage(''), 15000); // Show longer for instructions
+          return;
+        }
+        
         throw new Error(data.error || data.details || 'Failed to deploy');
       }
 
@@ -212,9 +237,15 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
       <div className="max-w-7xl mx-auto px-4 py-8">
         {actionMessage && (
           <div className={`p-4 rounded-lg mb-6 ${
-            actionMessage.startsWith('✅') ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+            actionMessage.startsWith('✅') || actionMessage.startsWith('🚀') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-900'
           }`}>
-            {actionMessage}
+            {actionMessage.includes('serverless') || actionMessage.includes('Local Deployment') ? (
+              <div className="whitespace-pre-line text-sm">
+                {actionMessage}
+              </div>
+            ) : (
+              <div>{actionMessage}</div>
+            )}
           </div>
         )}
 
