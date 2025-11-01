@@ -443,6 +443,11 @@
 
       function createCrocSVG(frame) {
         const legOffset = Math.sin(frame * 0.8) * 10;
+        // Animated snapping jaws - opens and closes
+        const jawOpen = Math.sin(frame * 1.5) * 0.5 + 0.5; // 0 to 1
+        const jawAngle = jawOpen * 0.3; // 0 to 0.3 radians
+        const jawOffset = jawOpen * 8; // 0 to 8 pixels
+        
         return 'data:image/svg+xml;base64,' + btoa(`
           <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 70">
             <defs>
@@ -467,11 +472,20 @@
             <circle cx="40" cy="32" r="2" fill="#000"/>
             <circle cx="100" cy="32" r="2" fill="#000"/>
             
-            <!-- Teeth -->
-            <path d="M 20 35 L 25 30 L 25 35 Z" fill="#fff"/>
-            <path d="M 115 35 L 120 30 L 120 35 Z" fill="#fff"/>
-            <path d="M 22 38 L 25 35 L 25 38 Z" fill="#fff"/>
-            <path d="M 118 38 L 120 35 L 120 38 Z" fill="#fff"/>
+            <!-- SNAPPING JAWS - Animated -->
+            <!-- Left jaw -->
+            <g transform="rotate(${-jawAngle * 57.3} 20 38)">
+              <path d="M 20 35 L 25 30 L 25 35 Z" fill="#fff"/>
+              <path d="M 22 38 L 25 35 L 25 38 Z" fill="#fff"/>
+              <path d="M 18 38 Q 25 ${35 - jawOffset} 35 38" stroke="#ff6347" stroke-width="4" fill="none" stroke-linecap="round"/>
+            </g>
+            
+            <!-- Right jaw -->
+            <g transform="rotate(${jawAngle * 57.3} 120 38)">
+              <path d="M 115 35 L 120 30 L 120 35 Z" fill="#fff"/>
+              <path d="M 118 38 L 120 35 L 120 38 Z" fill="#fff"/>
+              <path d="M 105 38 Q 115 ${35 - jawOffset} 122 38" stroke="#ff6347" stroke-width="4" fill="none" stroke-linecap="round"/>
+            </g>
             
             <!-- Scales -->
             <path d="M 30 45 Q 35 50 40 45 M 45 45 Q 50 50 55 45 M 60 45 Q 65 50 70 45 M 75 45 Q 80 50 85 45 M 90 45 Q 95 50 100 45" stroke="#228b22" stroke-width="3" fill="none"/>
@@ -481,10 +495,6 @@
             <ellipse cx="${55 - legOffset}" cy="62" rx="6" ry="8" fill="#228b22"/>
             <ellipse cx="${85 + legOffset}" cy="62" rx="6" ry="8" fill="#228b22"/>
             <ellipse cx="${105 - legOffset}" cy="62" rx="6" ry="8" fill="#228b22"/>
-            
-            <!-- Snapping jaw -->
-            <path d="M 18 38 Q 25 35 35 38" stroke="#ff6347" stroke-width="4" fill="none" stroke-linecap="round"/>
-            <path d="M 105 38 Q 115 35 122 38" stroke="#ff6347" stroke-width="4" fill="none" stroke-linecap="round"/>
           </svg>
         `);
       }
@@ -537,6 +547,7 @@
         canvasW: W,
         canvasH: H,
         groundY: GROUND_Y,
+        displayScore: 0, // Rolling score display
       };
 
       const keys = {};
@@ -851,6 +862,7 @@
         state.lastCrocTime = 0;
         state.lastComboTime = 0;
         state.gameSpeed = DIFFICULTY.baseGameSpeed;
+        state.displayScore = 0;
         
         startOverlay.classList.remove('hidden');
       });
@@ -904,6 +916,7 @@
           state.slowMotionTimer = 0;
           state.screenShake = 0;
           state.lastComboTime = 0;
+          state.displayScore = 0;
           
           // Reset parallax layers
           backgroundLayers.forEach(layer => layer.offset = 0);
@@ -984,6 +997,13 @@
         
         // Screen shake decay
         state.screenShake *= 0.9;
+        
+        // Update rolling score display
+        if (state.displayScore < state.score) {
+          const scoreDiff = state.score - state.displayScore;
+          const increment = Math.max(1, Math.ceil(scoreDiff / 10)); // Smooth increment
+          state.displayScore = Math.min(state.displayScore + increment, state.score);
+        }
 
         // Update power-ups
         if (state.shield) {
@@ -1132,11 +1152,13 @@
               if (b.powerUpType === 'shield') {
                 state.shield = true;
                 state.shieldTimer = DIFFICULTY.shieldDuration;
-                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '🛡️ SHIELD!', '#4169E1');
+                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '🛡️ SHIELD! Blocks one hit!', '#4169E1');
+                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y - 30, `Lasts ${DIFFICULTY.shieldDuration}s`, '#4169E1');
               } else if (b.powerUpType === 'slowmo') {
                 state.slowMotion = true;
                 state.slowMotionTimer = DIFFICULTY.slowMoDuration;
-                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '⏱️ SLOW MO!', '#FFD700');
+                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '⏱️ SLOW MOTION!', '#FFD700');
+                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y - 30, `Game slows down ${DIFFICULTY.slowMoDuration}s`, '#FFD700');
               }
               state.balloons.splice(i, 1);
               createParticles(b.x + b.size/2, b.y + b.size/2, b.color);
@@ -1150,6 +1172,7 @@
               if (state.combo > 1) {
                 state.multiplier = Math.min(5, 1 + Math.floor(state.combo / 3));
                 addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y - 20, `COMBO x${state.multiplier}!`, '#FF6B9D');
+                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y - 50, `Score multiplier active!`, '#FF6B9D');
               }
             } else {
               state.combo = 1;
@@ -1158,13 +1181,23 @@
             state.lastComboTime = now;
             
             // Calculate points
-            let points = b.isSpecial8 ? 2 : (b.isGolden ? 5 : 1);
-            points *= state.multiplier;
+            let basePoints = b.isSpecial8 ? 2 : (b.isGolden ? 5 : 1);
+            let points = basePoints * state.multiplier;
             state.score += points;
             
             createParticles(b.x + b.size/2, b.y + b.size/2, b.color);
-            if (points > 1) {
-              addEffect(b.x + b.size/2, b.y, `+${points}`, '#FFD700');
+            
+            // Show score breakdown
+            if (b.isSpecial8) {
+              addEffect(b.x + b.size/2, b.y, `+${basePoints} (Number 8!)`, '#FF6B9D');
+            } else if (b.isGolden) {
+              addEffect(b.x + b.size/2, b.y, `+${basePoints} (Golden!)`, '#FFD700');
+            } else {
+              addEffect(b.x + b.size/2, b.y, `+${basePoints}`, '#FFFFFF');
+            }
+            
+            if (state.multiplier > 1) {
+              addEffect(b.x + b.size/2, b.y - 25, `x${state.multiplier} = ${points} total!`, '#FFD700');
             }
             
             if (points >= 5) {
@@ -1186,49 +1219,75 @@
           const c = state.crocodiles[i];
           c.x += c.speed * 60 * dt * c.direction;
           c.walkFrame += dt * 10;
-
-          // TIGHTER JUMP CLEARANCE - must actually clear the crocodile
-          const monkeyBottom = state.monkey.y + state.monkey.height;
-          const crocTop = c.y;
           
-          if (monkeyBottom >= crocTop - DIFFICULTY.crocJumpBuffer) {
-            const crocRect = {
-              x: c.x + 20,
-              y: c.y + 15,
-              width: 100,
-              height: 40
-            };
-            const monkeyRect = {
-              x: state.monkey.x + state.monkey.width * 0.15,
-              y: state.monkey.y + state.monkey.height * 0.15,
-              width: state.monkey.width * 0.7,
-              height: state.monkey.height * 0.7
-            };
+          // Animate jaw snapping
+          if (!c.jawFrame) c.jawFrame = 0;
+          c.jawFrame += dt * 10;
 
-            if (checkCollision(crocRect, monkeyRect)) {
-              if (state.shield) {
-                state.shield = false;
-                state.shieldTimer = 0;
-                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, 'SHIELD!', '#00FF00');
-                state.crocodiles.splice(i, 1);
-                state.screenShake = 3;
-                continue;
-              }
-              
-              state.lives--;
+          // Check if monkey lands on croc's back (safe zone)
+          const monkeyBottom = state.monkey.y + state.monkey.height;
+          const crocBackTop = c.y;
+          const crocBackBottom = c.y + 25; // Back is top 25px of croc
+          const monkeyCenterX = state.monkey.x + state.monkey.width / 2;
+          const crocLeft = c.x + 30;
+          const crocRight = c.x + 110;
+          
+          // Safe back-jump detection
+          if (monkeyBottom >= crocBackTop && monkeyBottom <= crocBackBottom && 
+              monkeyCenterX >= crocLeft && monkeyCenterX <= crocRight &&
+              state.monkey.vy > 0) { // Falling down
+            // Monkey lands on back - boost upward!
+            state.monkey.vy = state.jumpPower * 0.8; // Boost jump
+            state.monkey.y = crocBackTop - state.monkey.height;
+            addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, 'BOOST!', '#00FF00');
+            state.screenShake = 3;
+            continue; // Skip jaw collision check
+          }
+
+          // JAW COLLISION - only jaws can hurt monkey
+          // Jaws are at front of croc (left or right depending on direction)
+          const jawLeft = c.direction > 0 ? c.x + 15 : c.x + 105;
+          const jawRight = c.direction > 0 ? c.x + 35 : c.x + 125;
+          const jawTop = c.y + 32;
+          const jawBottom = c.y + 42;
+          
+          const monkeyRect = {
+            x: state.monkey.x + state.monkey.width * 0.15,
+            y: state.monkey.y + state.monkey.height * 0.15,
+            width: state.monkey.width * 0.7,
+            height: state.monkey.height * 0.7
+          };
+          
+          const jawRect = {
+            x: jawLeft,
+            y: jawTop,
+            width: jawRight - jawLeft,
+            height: jawBottom - jawTop
+          };
+
+          if (checkCollision(jawRect, monkeyRect)) {
+            if (state.shield) {
+              state.shield = false;
+              state.shieldTimer = 0;
+              addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, 'SHIELD BLOCKED!', '#00FF00');
               state.crocodiles.splice(i, 1);
-              state.screenShake = 10;
-              addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, 'OUCH!', '#FF0000');
-              updateHud();
-              if (state.lives <= 0) {
-                gameOver();
-                return;
-              }
-              state.monkey.x = currentW / 2 - 30;
-              state.monkey.y = currentGroundY;
-              state.monkey.vy = 0;
+              state.screenShake = 3;
               continue;
             }
+            
+            state.lives--;
+            state.crocodiles.splice(i, 1);
+            state.screenShake = 10;
+            addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, 'OUCH!', '#FF0000');
+            updateHud();
+            if (state.lives <= 0) {
+              gameOver();
+              return;
+            }
+            state.monkey.x = currentW / 2 - 30;
+            state.monkey.y = currentGroundY;
+            state.monkey.vy = 0;
+            continue;
           }
 
           if ((c.direction > 0 && c.x > currentW + 140) || (c.direction < 0 && c.x < -140)) {
@@ -1596,16 +1655,29 @@
           ctx.fillText('💝', 20 + i * 42, 38);
         }
 
+        // Draw rolling score in top center
+        ctx.save();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.strokeStyle = '#FF6B9D';
+        ctx.lineWidth = 3;
+        ctx.font = 'bold 32px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        const scoreText = `Score: ${state.displayScore}`;
+        ctx.strokeText(scoreText, currentW / 2, 35);
+        ctx.fillText(scoreText, currentW / 2, 35);
+        ctx.restore();
+        
         // Draw title overlay
         ctx.save();
         ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
         ctx.strokeStyle = '#FF6B9D';
         ctx.lineWidth = 2;
-        ctx.font = 'bold 26px Arial';
+        ctx.font = 'bold 22px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.strokeText('Happy 8th Birthday Henry!', currentW / 2, 28);
-        ctx.fillText('Happy 8th Birthday Henry!', currentW / 2, 28);
+        ctx.strokeText('Happy 8th Birthday Henry!', currentW / 2, 65);
+        ctx.fillText('Happy 8th Birthday Henry!', currentW / 2, 65);
         ctx.restore();
       }
       
