@@ -47,6 +47,10 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
   const [reviewNotes, setReviewNotes] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
+  const [deploymentData, setDeploymentData] = useState<{
+    instructions: any;
+    gameData: any;
+  } | null>(null);
 
   useEffect(() => {
     const fetchSubmission = async () => {
@@ -137,26 +141,31 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
       if (!response.ok) {
         // Handle serverless deployment error with instructions
         if (data.error === 'File system deployment not available in serverless environment' && data.instructions) {
+          setDeploymentData({
+            instructions: data.instructions,
+            gameData: data.gameData,
+          });
+          
           const instructions = data.instructions;
           const gameData = data.gameData;
           
           // Create a detailed error message with instructions
-          let errorMsg = `❌ ${data.error}\n\n📝 ${data.details}\n\n`;
+          let errorMsg = `⚠️ ${data.error}\n\n📝 ${data.details}\n\n`;
           
           if (instructions.local) {
             errorMsg += `💻 Local Deployment:\n${instructions.local}\n\n`;
           }
           
           if (instructions.manual) {
-            errorMsg += `📋 Manual Deployment:\n${instructions.manual.map((step: string) => `  ${step}`).join('\n')}\n\n`;
+            errorMsg += `📋 Manual Deployment Steps:\n${instructions.manual.map((step: string) => `  ${step}`).join('\n')}\n\n`;
           }
           
           if (gameData) {
-            errorMsg += `💡 Game Data:\n  Slug: ${gameData.slug}\n  Code available in database\n`;
+            errorMsg += `💡 Game Information:\n  Slug: ${gameData.slug}\n  Title: ${gameData.gameEntry.title}\n  Code available below ↓\n`;
           }
           
           setActionMessage(errorMsg);
-          setTimeout(() => setActionMessage(''), 15000); // Show longer for instructions
+          setTimeout(() => setActionMessage(''), 20000); // Show longer for instructions
           return;
         }
         
@@ -183,6 +192,33 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
         setActionMessage('❌ Failed to copy code');
       }
     }
+  };
+
+  const downloadGameFiles = () => {
+    if (!deploymentData?.gameData) return;
+    
+    const { gameData } = deploymentData;
+    
+    // Download HTML file
+    const htmlBlob = new Blob([gameData.code], { type: 'text/html' });
+    const htmlUrl = URL.createObjectURL(htmlBlob);
+    const htmlLink = document.createElement('a');
+    htmlLink.href = htmlUrl;
+    htmlLink.download = `${gameData.slug}-index.html`;
+    htmlLink.click();
+    URL.revokeObjectURL(htmlUrl);
+    
+    // Download game entry JSON
+    const jsonBlob = new Blob([JSON.stringify(gameData.gameEntry, null, 2)], { type: 'application/json' });
+    const jsonUrl = URL.createObjectURL(jsonBlob);
+    const jsonLink = document.createElement('a');
+    jsonLink.href = jsonUrl;
+    jsonLink.download = `${gameData.slug}-game-entry.json`;
+    jsonLink.click();
+    URL.revokeObjectURL(jsonUrl);
+    
+    setActionMessage('✅ Game files downloaded! Check your downloads folder.');
+    setTimeout(() => setActionMessage(''), 3000);
   };
 
   if (loading) {
@@ -240,8 +276,24 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
             actionMessage.startsWith('✅') || actionMessage.startsWith('🚀') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-900'
           }`}>
             {actionMessage.includes('serverless') || actionMessage.includes('Local Deployment') ? (
-              <div className="whitespace-pre-line text-sm">
-                {actionMessage}
+              <div className="space-y-3">
+                <div className="whitespace-pre-line text-sm">
+                  {actionMessage}
+                </div>
+                {deploymentData && (
+                  <div className="mt-4 pt-4 border-t border-yellow-300">
+                    <p className="text-sm font-semibold mb-2">📦 Quick Deployment:</p>
+                    <button
+                      onClick={downloadGameFiles}
+                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
+                    >
+                      Download Game Files
+                    </button>
+                    <p className="text-xs text-yellow-800 mt-2">
+                      Downloads HTML file and game entry JSON. Place HTML in <code className="bg-yellow-200 px-1 rounded">public/demos/{deploymentData.gameData.slug}/index.html</code> and add JSON entry to <code className="bg-yellow-200 px-1 rounded">src/data/games.json</code>
+                    </p>
+                  </div>
+                )}
               </div>
             ) : (
               <div>{actionMessage}</div>
