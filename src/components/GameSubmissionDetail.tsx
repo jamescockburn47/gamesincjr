@@ -47,31 +47,6 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
   const [reviewNotes, setReviewNotes] = useState('');
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
-  const [deploymentData, setDeploymentData] = useState<{
-    instructions: {
-      local?: string;
-      manual?: string[];
-    };
-    gameData: {
-      slug: string;
-      code: string;
-      gameEntry: {
-        slug: string;
-        title: string;
-        tags: string[];
-        description: string;
-        description_it: string;
-        hero: string;
-        screenshots: string[];
-        demoPath: string;
-        gameType: string;
-        engine: string;
-        version: string;
-        status: string;
-        submissionId: string;
-      };
-    };
-  } | null>(null);
 
   useEffect(() => {
     const fetchSubmission = async () => {
@@ -294,31 +269,9 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
       <div className="max-w-7xl mx-auto px-4 py-8">
         {actionMessage && (
           <div className={`p-4 rounded-lg mb-6 ${
-            actionMessage.startsWith('✅') || actionMessage.startsWith('🚀') ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-900'
+            actionMessage.startsWith('✅') ? 'bg-green-100 text-green-800' : actionMessage.startsWith('❌') ? 'bg-red-100 text-red-800' : 'bg-yellow-100 text-yellow-900'
           }`}>
-            {actionMessage.includes('serverless') || actionMessage.includes('Local Deployment') ? (
-              <div className="space-y-3">
-                <div className="whitespace-pre-line text-sm">
-                  {actionMessage}
-                </div>
-                {deploymentData && (
-                  <div className="mt-4 pt-4 border-t border-yellow-300">
-                    <p className="text-sm font-semibold mb-2">📦 Quick Deployment:</p>
-                    <button
-                      onClick={downloadGameFiles}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium"
-                    >
-                      Download Game Files
-                    </button>
-                    <p className="text-xs text-yellow-800 mt-2">
-                      Downloads HTML file and game entry JSON. Place HTML in <code className="bg-yellow-200 px-1 rounded">public/demos/{deploymentData.gameData.slug}/index.html</code> and add JSON entry to <code className="bg-yellow-200 px-1 rounded">src/data/games.json</code>
-                    </p>
-                  </div>
-                )}
-              </div>
-            ) : (
-              <div>{actionMessage}</div>
-            )}
+            <div>{actionMessage}</div>
           </div>
         )}
 
@@ -467,19 +420,9 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
                   </Button>
                 )}
 
-                {canDeploy && (
-                  <Button
-                    onClick={handleDeploy}
-                    disabled={actionLoading}
-                    className="w-full bg-purple-600 hover:bg-purple-700"
-                  >
-                    {actionLoading ? 'Deploying...' : '🚀 Deploy to Production'}
-                  </Button>
-                )}
-
-                {submission.liveUrl && (
+                {submission.status === 'APPROVED' && submission.generatedCode && (
                   <Link
-                    href={submission.liveUrl}
+                    href={`/games/${submission.gameSlug}`}
                     target="_blank"
                     className="block w-full"
                   >

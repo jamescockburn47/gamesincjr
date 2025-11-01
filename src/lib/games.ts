@@ -26,6 +26,7 @@ const GameSchema = z.object({
   version: z.string().max(20).optional(),
   localPath: z.string().optional(),
   submissionId: z.string().optional(), // Track if game comes from database
+  creatorName: z.string().optional(), // Player who created the game
 });
 
 export type Game = z.infer<typeof GameSchema>;
@@ -51,6 +52,59 @@ const validatedGames: Game[] = gamesData.map((game, index) => {
 // Helper functions
 export function getGames(): Game[] {
   return [...validatedGames];
+}
+
+export async function getAllGames(): Promise<Game[]> {
+  const staticGames = [...validatedGames];
+  
+  // Also fetch approved user-generated games from database
+  try {
+    const { prisma } = await import('@/lib/tables/db/prisma');
+    const { SubmissionStatus } = await import('@prisma/client');
+    
+    const approvedSubmissions = await prisma.gameSubmission.findMany({
+      where: {
+        status: SubmissionStatus.APPROVED,
+        generatedCode: { not: null },
+      },
+      orderBy: {
+        approvedAt: 'desc',
+      },
+      select: {
+        id: true,
+        gameSlug: true,
+        gameTitle: true,
+        gameDescription: true,
+        gameType: true,
+        creatorName: true,
+      },
+    });
+    
+    const userGames: Game[] = approvedSubmissions.map((submission) => ({
+      slug: submission.gameSlug,
+      title: submission.gameTitle,
+      description: submission.gameDescription,
+      description_it: submission.gameDescription,
+      tags: [submission.gameType, 'user-generated'],
+      hero: `/games/${submission.gameSlug}/hero.svg`,
+      screenshots: [
+        `/games/${submission.gameSlug}/s1.svg`,
+        `/games/${submission.gameSlug}/s2.svg`,
+      ],
+      demoPath: `/api/games/${submission.gameSlug}/demo`,
+      gameType: 'html5',
+      engine: 'vanilla-js',
+      version: '1.0.0',
+      status: 'released',
+      submissionId: submission.id,
+      creatorName: submission.creatorName,
+    }));
+    
+    return [...staticGames, ...userGames];
+  } catch (error) {
+    console.error('[Games] Error fetching user-generated games:', error);
+    return staticGames; // Fallback to static games only
+  }
 }
 
 export async function getGameBySlug(slug: string): Promise<Game | null> {
@@ -99,6 +153,7 @@ export async function getGameBySlug(slug: string): Promise<Game | null> {
         version: '1.0.0',
         status: 'released',
         submissionId: submission.id,
+        creatorName: submission.creatorName,
       };
     }
   } catch (error) {
