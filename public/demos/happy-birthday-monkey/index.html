@@ -589,40 +589,62 @@
 
       restartBtn.addEventListener('click', () => {
         gameOverOverlay.classList.add('hidden');
+        // Reset all keys to prevent stuck controls
+        keys.left = false;
+        keys.right = false;
+        keys.jump = false;
+        // Reset game state
+        state.running = false;
+        state.score = 0;
+        state.lives = 3;
+        state.balloons = [];
+        state.crocodiles = [];
+        // Show start overlay
         startOverlay.classList.remove('hidden');
       });
 
       function startGame() {
+        // Stop any existing game loop first
+        state.running = false;
+        
+        // Reset all keys
+        keys.left = false;
+        keys.right = false;
+        keys.jump = false;
+        
         startOverlay.classList.add('hidden');
         
         // Ensure canvas is properly sized
         resizeCanvas();
         
-        // Recalculate dimensions in case canvas was resized
-        const currentW = canvas.width;
-        const currentH = canvas.height;
-        const currentGroundY = currentH - 100;
-        
-        state.running = true;
-        state.score = 0;
-        state.lives = 3;
-        state.monkey.x = currentW / 2 - 30;
-        state.monkey.y = currentGroundY;
-        state.monkey.vy = 0;
-        state.monkey.isJumping = false;
-        state.monkey.onGround = true;
-        state.monkey.walkFrame = 0;
-        state.balloons = [];
-        state.crocodiles = [];
-        state.lastBalloonTime = 0;
-        state.lastCrocTime = 0;
-        state.gameSpeed = 1;
-        createDecorations();
-        updateHud();
-        state.lastTime = performance.now();
-        
-        // Start game loop
-        loop(state.lastTime);
+        // Wait a frame to ensure canvas is ready
+        requestAnimationFrame(() => {
+          // Recalculate dimensions in case canvas was resized
+          const currentW = canvas.width;
+          const currentH = canvas.height;
+          const currentGroundY = currentH - 100;
+          
+          state.running = true;
+          state.score = 0;
+          state.lives = 3;
+          state.monkey.x = currentW / 2 - 30;
+          state.monkey.y = currentGroundY;
+          state.monkey.vy = 0;
+          state.monkey.isJumping = false;
+          state.monkey.onGround = true;
+          state.monkey.walkFrame = 0;
+          state.balloons = [];
+          state.crocodiles = [];
+          state.lastBalloonTime = 0;
+          state.lastCrocTime = 0;
+          state.gameSpeed = 1;
+          createDecorations();
+          updateHud();
+          state.lastTime = performance.now();
+          
+          // Start game loop
+          requestAnimationFrame(loop);
+        });
       }
 
       function updateHud() {
@@ -680,7 +702,7 @@
           state.monkey.vx = -state.monkey.speed;
           state.monkey.walkFrame += dt * 8;
         }
-        if (keys.right && state.monkey.x < W - state.monkey.width) {
+        if (keys.right && state.monkey.x < currentW - state.monkey.width) {
           state.monkey.vx = state.monkey.speed;
           state.monkey.walkFrame += dt * 8;
         }
@@ -718,14 +740,19 @@
         // Spawn balloons (more frequent as score increases)
         const balloonSpawnRate = Math.max(300, 800 - state.score * 8);
         if (now - state.lastBalloonTime > balloonSpawnRate + Math.random() * 500) {
+          const sideDrift = (Math.random() - 0.5) * 2; // Horizontal drift for challenge
+          const startX = 50 + Math.random() * (currentW - 100);
           state.balloons.push({
-            x: 50 + Math.random() * (currentW - 100),
+            x: startX,
             y: -80,
-            speed: (1.5 + Math.random() * 1.5) * state.gameSpeed,
+            speed: (2 + Math.random() * 2) * state.gameSpeed, // Faster balloons
             color: balloonColors[Math.floor(Math.random() * balloonColors.length)],
             rotation: (Math.random() - 0.5) * 0.1,
-            size: 50 + Math.random() * 30,
+            size: 45 + Math.random() * 25, // Slightly smaller for more challenge
             isSpecial8: Math.random() < 0.12,
+            driftSpeed: sideDrift, // Horizontal drift
+            startX: startX,
+            driftAmplitude: 30 + Math.random() * 40, // How far it drifts
           });
           state.lastBalloonTime = now;
         }
@@ -748,18 +775,24 @@
           const b = state.balloons[i];
           b.y += b.speed * 60 * dt;
           b.rotation += 0.03;
+          
+          // Add horizontal drift for challenge (sine wave pattern)
+          if (b.driftSpeed !== undefined) {
+            const progress = (b.y + 80) / (currentH + 80); // Normalize progress
+            b.x = b.startX + Math.sin(progress * Math.PI * 2) * b.driftAmplitude;
+          }
 
-          // Check collision with monkey
+          // Check collision with monkey (more precise for challenge)
           const balloonRect = {
-            x: b.x + b.size * 0.1,
-            y: b.y + b.size * 0.1,
-            width: b.size * 0.8,
-            height: b.size * 1.1 * 0.8
+            x: b.x + b.size * 0.15,
+            y: b.y + b.size * 0.15,
+            width: b.size * 0.7,
+            height: b.size * 1.1 * 0.7
           };
           const monkeyRect = {
-            x: state.monkey.x + state.monkey.width * 0.2,
-            y: state.monkey.y + state.monkey.height * 0.2,
-            width: state.monkey.width * 0.6,
+            x: state.monkey.x + state.monkey.width * 0.25,
+            y: state.monkey.y + state.monkey.height * 0.25,
+            width: state.monkey.width * 0.5,
             height: state.monkey.height * 0.6
           };
 
