@@ -193,10 +193,6 @@ export async function POST(
         const commitData = await commitResponse.json();
         const baseTreeSha = commitData.tree.sha;
 
-        // Create blobs for new files
-        const htmlContent = Buffer.from(submission.generatedCode).toString('base64');
-        const gamesContentBase64 = Buffer.from(JSON.stringify(gamesData, null, 2)).toString('base64');
-
         // Create tree with new files
         const treeResponse = await fetch(
           `https://api.github.com/repos/${repoOwner}/${repoName}/git/trees`,

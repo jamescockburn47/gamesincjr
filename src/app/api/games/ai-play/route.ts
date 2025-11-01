@@ -6,7 +6,7 @@ export async function POST(request: NextRequest) {
     const { gameSlug } = await request.json();
     
     // Validate game exists and is AI-powered
-    const game = getGameBySlug(gameSlug);
+    const game = await getGameBySlug(gameSlug);
     if (!game || game.gameType !== 'ai-powered') {
       return NextResponse.json(
         { error: 'Game not found or not AI-powered' },
