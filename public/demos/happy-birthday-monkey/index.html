@@ -134,44 +134,112 @@
 
     .controls {
       display: none;
-      gap: 12px;
       position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 16px 20px;
-      border-radius: 20px;
-      background: rgba(255, 255, 255, 0.95);
-      border: 2px solid rgba(255, 107, 157, 0.4);
-      backdrop-filter: blur(12px);
-      box-shadow: 0 8px 24px rgba(255, 107, 157, 0.3);
+      bottom: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      pointer-events: none;
       z-index: 1000;
     }
 
     .controls.visible {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
+      display: block;
     }
 
-    .controls button {
-      width: 70px;
-      height: 70px;
-      border-radius: 18px;
-      border: 2px solid rgba(255, 107, 157, 0.4);
-      background: rgba(255, 255, 255, 0.9);
-      color: #ff6b9d;
-      font-size: 1.8rem;
-      font-weight: 700;
-      cursor: pointer;
-      transition: all 0.2s;
+    /* Virtual Joystick */
+    .joystick-container {
+      position: absolute;
+      bottom: 40px;
+      left: 40px;
+      width: 140px;
+      height: 140px;
+      pointer-events: auto;
+      touch-action: none;
+    }
+
+    .joystick-base {
+      width: 100%;
+      height: 100%;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.15);
+      border: 3px solid rgba(255, 107, 157, 0.3);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      position: relative;
+    }
+
+    .joystick-knob {
+      width: 60px;
+      height: 60px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.4);
+      border: 2px solid rgba(255, 107, 157, 0.5);
+      backdrop-filter: blur(4px);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      transition: transform 0.1s ease-out;
+      pointer-events: none;
+    }
+
+    .joystick-knob.active {
+      background: rgba(255, 107, 157, 0.6);
+      border-color: rgba(255, 107, 157, 0.8);
+    }
+
+    /* Jump Button */
+    .jump-button {
+      position: absolute;
+      bottom: 40px;
+      right: 40px;
+      width: 100px;
+      height: 100px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.2);
+      border: 3px solid rgba(255, 107, 157, 0.4);
+      backdrop-filter: blur(8px);
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+      pointer-events: auto;
+      touch-action: none;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 2rem;
+      color: rgba(255, 255, 255, 0.9);
       user-select: none;
       -webkit-user-select: none;
+      transition: all 0.1s;
     }
 
-    .controls button:active {
+    .jump-button:active {
       transform: scale(0.9);
-      background: #ff6b9d;
-      color: white;
+      background: rgba(255, 107, 157, 0.5);
+      border-color: rgba(255, 107, 157, 0.8);
+    }
+
+    @media (max-width: 768px) {
+      .joystick-container {
+        bottom: 30px;
+        left: 30px;
+        width: 120px;
+        height: 120px;
+      }
+
+      .joystick-knob {
+        width: 50px;
+        height: 50px;
+      }
+
+      .jump-button {
+        bottom: 30px;
+        right: 30px;
+        width: 90px;
+        height: 90px;
+        font-size: 1.8rem;
+      }
     }
 
     .heart {
@@ -235,9 +303,12 @@
   </div>
 
   <div class="controls" id="controls" aria-hidden="true">
-    <button data-move="left">◄</button>
-    <button data-move="jump">⬆</button>
-    <button data-move="right">►</button>
+    <div class="joystick-container" id="joystickContainer">
+      <div class="joystick-base">
+        <div class="joystick-knob" id="joystickKnob"></div>
+      </div>
+    </div>
+    <div class="jump-button" id="jumpButton">⬆</div>
   </div>
 
   <script type="module">
@@ -263,15 +334,30 @@
       const H = canvas.height;
       const GROUND_Y = H - 100;
 
+      // DIFFICULTY CONFIGURATION FOR 10-YEAR-OLDS
+      const DIFFICULTY = {
+        gravity: 1.3,              // Increased from 0.85 - snappier jumps
+        jumpPower: -19,            // Reduced from -22 - less air time
+        balloonSpawnBase: 600,     // Reduced from 800 - faster spawning
+        balloonSpawnMin: 250,      // Reduced from 300 - increases challenge
+        balloonSpawnScaling: 10,   // Increased from 8 - faster difficulty ramp
+        crocSpawnBase: 2000,       // Reduced from 3500 - more threats
+        crocSpawnMin: 800,         // Reduced from 1500 - much more challenging
+        crocSpawnScaling: 40,      // Increased from 25 - aggressive scaling
+        shieldDuration: 5,         // Reduced from 10 - less safety net
+        slowMoDuration: 4,         // Reduced from 8 - less safety net
+        collisionTolerance: 0.85,  // Increased from 0.70 - tighter hitboxes
+        crocJumpBuffer: 5,         // Reduced from 20 - must actually clear crocs
+        monkeySpeed: 8,            // Increased from 7 - more responsive
+        baseGameSpeed: 1,
+        speedIncrease: 0.025,      // Increased from 0.02 - faster difficulty
+      };
+
       // Detect touch device
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
       if (isTouchDevice) {
         controls.classList.add('visible');
       }
-
-      // Animation frames for walking
-      let monkeyWalkFrame = 0;
-      let crocWalkFrame = 0;
 
       // SVG Images - animated monkey (multiple frames for walking)
       function createMonkeySVG(frame) {
@@ -403,6 +489,13 @@
         `);
       }
 
+      // PARALLAX BACKGROUND LAYERS FOR DEPTH
+      const backgroundLayers = [
+        { offset: 0, speed: 0.15, color: '#b0d4f0', yPos: 0, height: 0.25 },    // Far clouds
+        { offset: 0, speed: 0.35, color: '#d4e8f0', yPos: 0.25, height: 0.25 }, // Mid clouds
+        { offset: 0, speed: 0.6, color: '#ffd6e8', yPos: 0.5, height: 0.35 },   // Near sky
+      ];
+
       const state = {
         running: false,
         score: 0,
@@ -413,7 +506,7 @@
           y: GROUND_Y, 
           width: 60, 
           height: 100, 
-          speed: 7,
+          speed: DIFFICULTY.monkeySpeed,
           vx: 0,
           vy: 0,
           isJumping: false,
@@ -423,67 +516,194 @@
         balloons: [],
         crocodiles: [],
         decorations: [],
-        particles: [], // For particle effects
-        powerUps: [], // For special power-ups
-        effects: [], // For visual effects (text, animations)
+        particles: [],
+        powerUps: [],
+        effects: [],
         lastBalloonTime: 0,
         lastCrocTime: 0,
         lastTime: 0,
-        gravity: 0.85,
-        jumpPower: -22,
-        gameSpeed: 1,
-        combo: 0, // Combo counter
-        comboTimer: 0, // Time since last balloon catch
-        multiplier: 1, // Score multiplier
-        shield: false, // Shield power-up
+        gravity: DIFFICULTY.gravity,
+        jumpPower: DIFFICULTY.jumpPower,
+        gameSpeed: DIFFICULTY.baseGameSpeed,
+        combo: 0,
+        comboTimer: 0,
+        multiplier: 1,
+        shield: false,
         shieldTimer: 0,
-        slowMotion: false, // Slow motion power-up
+        slowMotion: false,
         slowMotionTimer: 0,
-        screenShake: 0, // Screen shake effect
+        screenShake: 0,
         lastComboTime: 0,
+        canvasW: W,
+        canvasH: H,
+        groundY: GROUND_Y,
       };
 
       const keys = {};
-      const images = {
-        monkey: new Image(),
-        balloons: balloonSVGs.map(src => { const img = new Image(); img.src = src; return img; }),
-        number8Balloon: new Image(),
-        croc: new Image(),
+      
+      // Virtual joystick state
+      const joystick = {
+        active: false,
+        x: 0,
+        y: 0,
+        maxDistance: 50, // Maximum distance from center
       };
 
-      images.number8Balloon.src = number8BalloonSVG;
+      const joystickContainer = document.getElementById('joystickContainer');
+      const joystickKnob = document.getElementById('joystickKnob');
+      const jumpButton = document.getElementById('jumpButton');
       
-      // Create cached monkey images for animation
-      const monkeyImages = [];
-      for (let i = 0; i < 8; i++) {
-        const img = new Image();
-        img.src = createMonkeySVG(i);
-        monkeyImages.push(img);
+      // Joystick touch handlers
+      function getJoystickPosition(e) {
+        const rect = joystickContainer.getBoundingClientRect();
+        const centerX = rect.left + rect.width / 2;
+        const centerY = rect.top + rect.height / 2;
+        const touch = e.touches ? e.touches[0] : e;
+        const clientX = touch.clientX || touch.pageX;
+        const clientY = touch.clientY || touch.pageY;
+        return { centerX, centerY, clientX, clientY };
       }
-      images.monkey = monkeyImages[0];
-      images.monkeyFrames = monkeyImages;
-      
-      // Create cached crocodile images for animation
-      const crocImages = [];
-      for (let i = 0; i < 8; i++) {
-        const img = new Image();
-        img.src = createCrocSVG(i);
-        crocImages.push(img);
+
+      function updateJoystick(e) {
+        const { centerX, centerY, clientX, clientY } = getJoystickPosition(e);
+        const dx = clientX - centerX;
+        const dy = clientY - centerY;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        
+        if (distance > joystick.maxDistance) {
+          joystick.x = (dx / distance) * joystick.maxDistance;
+          joystick.y = (dy / distance) * joystick.maxDistance;
+        } else {
+          joystick.x = dx;
+          joystick.y = dy;
+        }
+        
+        // Update visual position
+        joystickKnob.style.transform = `translate(calc(-50% + ${joystick.x}px), calc(-50% + ${joystick.y}px))`;
+        joystickKnob.classList.add('active');
+        
+        // Update keys based on joystick position
+        const threshold = 20; // Minimum distance to register movement
+        keys.left = joystick.x < -threshold;
+        keys.right = joystick.x > threshold;
+        
+        joystick.active = true;
       }
-      images.croc = crocImages[0];
-      images.crocFrames = crocImages;
+
+      function resetJoystick() {
+        joystick.x = 0;
+        joystick.y = 0;
+        joystick.active = false;
+        keys.left = false;
+        keys.right = false;
+        joystickKnob.style.transform = 'translate(-50%, -50%)';
+        joystickKnob.classList.remove('active');
+      }
+
+      // Touch events for joystick
+      joystickContainer.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        updateJoystick(e);
+      });
+
+      joystickContainer.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        updateJoystick(e);
+      });
+
+      joystickContainer.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        resetJoystick();
+      });
+
+      joystickContainer.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        resetJoystick();
+      });
+
+      // Mouse events for joystick (for desktop testing)
+      let joystickMouseDown = false;
+      joystickContainer.addEventListener('mousedown', (e) => {
+        if (!state.running) return;
+        joystickMouseDown = true;
+        updateJoystick(e);
+      });
+
+      document.addEventListener('mousemove', (e) => {
+        if (joystickMouseDown && state.running) {
+          updateJoystick(e);
+        }
+      });
+
+      document.addEventListener('mouseup', () => {
+        if (joystickMouseDown) {
+          joystickMouseDown = false;
+          resetJoystick();
+        }
+      });
+
+      // Jump button handlers
+      jumpButton.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        keys.jump = true;
+      });
+
+      jumpButton.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        keys.jump = false;
+      });
+
+      jumpButton.addEventListener('mousedown', (e) => {
+        if (state.running) {
+          e.preventDefault();
+          keys.jump = true;
+        }
+      });
+
+      jumpButton.addEventListener('mouseup', (e) => {
+        e.preventDefault();
+        keys.jump = false;
+      });
+
+      // PRE-CACHE ALL IMAGES - No regeneration in game loop
+      const imageCache = {
+        monkeyFrames: [],
+        crocFrames: [],
+        balloons: [],
+        number8Balloon: new Image(),
+      };
+
+      // Pre-generate all animation frames
+      for (let i = 0; i < 8; i++) {
+        const monkeyImg = new Image();
+        monkeyImg.src = createMonkeySVG(i);
+        imageCache.monkeyFrames.push(monkeyImg);
+        
+        const crocImg = new Image();
+        crocImg.src = createCrocSVG(i);
+        imageCache.crocFrames.push(crocImg);
+      }
+
+      imageCache.balloons = balloonSVGs.map(src => {
+        const img = new Image();
+        img.src = src;
+        return img;
+      });
+
+      imageCache.number8Balloon.src = number8BalloonSVG;
 
       // Create floating decorations
       function createDecorations() {
         state.decorations = [];
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 20; i++) { // Increased from 15
           state.decorations.push({
-            x: Math.random() * W,
-            y: Math.random() * H,
+            x: Math.random() * state.canvasW,
+            y: Math.random() * state.canvasH,
             type: Math.random() > 0.5 ? 'confetti' : 'star',
             rotation: Math.random() * Math.PI * 2,
             speed: 0.02 + Math.random() * 0.03,
             size: 8 + Math.random() * 12,
+            depth: Math.random(), // For parallax effect
           });
         }
       }
@@ -503,29 +723,31 @@
         return Promise.resolve();
       }
 
-      // Handle canvas resize for fullscreen
+      // MOVED OUT OF GAME LOOP - Only resize on actual resize events
       function resizeCanvas() {
         const rect = canvas.getBoundingClientRect();
         const displayWidth = rect.width;
         const displayHeight = rect.height;
         
-        // Set actual canvas size - use display size directly (no DPR scaling to avoid issues)
         if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
           canvas.width = displayWidth;
           canvas.height = displayHeight;
           
-          // Update game state if needed
+          // Update state dimensions
+          state.canvasW = displayWidth;
+          state.canvasH = displayHeight;
+          state.groundY = displayHeight - 100;
+          
           if (state.running) {
-            state.monkey.y = displayHeight - 100;
-            // Ensure monkey stays within bounds
-            state.monkey.x = Math.max(0, Math.min(displayWidth - state.monkey.width, state.monkey.x));
+            state.monkey.y = state.groundY;
+            state.monkey.x = Math.max(0, Math.min(state.canvasW - state.monkey.width, state.monkey.x));
           }
         }
       }
 
       // Listen for fullscreen changes
       document.addEventListener('fullscreenchange', () => {
-        setTimeout(resizeCanvas, 100); // Small delay to ensure fullscreen is complete
+        setTimeout(resizeCanvas, 100);
       });
       document.addEventListener('webkitfullscreenchange', () => {
         setTimeout(resizeCanvas, 100);
@@ -537,15 +759,27 @@
         setTimeout(resizeCanvas, 100);
       });
       
-      // Resize canvas on window resize
+      // Resize canvas on window resize ONLY
       window.addEventListener('resize', resizeCanvas);
 
       // Load images
       Promise.all([
-        ...images.monkeyFrames.map(img => new Promise(resolve => { img.onload = resolve; })),
-        ...images.balloons.map(img => new Promise(resolve => { img.onload = resolve; })),
-        new Promise(resolve => { images.number8Balloon.onload = resolve; }),
-        ...images.crocFrames.map(img => new Promise(resolve => { img.onload = resolve; })),
+        ...imageCache.monkeyFrames.map(img => new Promise(resolve => { 
+          img.onload = resolve; 
+          img.onerror = resolve; 
+        })),
+        ...imageCache.balloons.map(img => new Promise(resolve => { 
+          img.onload = resolve; 
+          img.onerror = resolve; 
+        })),
+        new Promise(resolve => { 
+          imageCache.number8Balloon.onload = resolve; 
+          imageCache.number8Balloon.onerror = resolve; 
+        }),
+        ...imageCache.crocFrames.map(img => new Promise(resolve => { 
+          img.onload = resolve; 
+          img.onerror = resolve; 
+        })),
       ]).then(() => {
         createDecorations();
         if (!state.running) draw();
@@ -574,26 +808,7 @@
         if (['arrowup', ' ', 'w'].includes(key)) keys.jump = false;
       });
 
-      document.querySelectorAll('[data-move]').forEach(btn => {
-        btn.addEventListener('touchstart', e => {
-          e.preventDefault();
-          keys[btn.dataset.move] = true;
-        });
-        btn.addEventListener('touchend', e => {
-          e.preventDefault();
-          keys[btn.dataset.move] = false;
-        });
-        btn.addEventListener('mousedown', e => {
-          e.preventDefault();
-          if (state.running) {
-            keys[btn.dataset.move] = true;
-          }
-        });
-        btn.addEventListener('mouseup', e => {
-          e.preventDefault();
-          keys[btn.dataset.move] = false;
-        });
-      });
+      // Remove old button-based controls - now using joystick
 
       tryBtn.addEventListener('click', () => {
         tryOverlay.classList.add('hidden');
@@ -602,30 +817,22 @@
 
       startBtn.addEventListener('click', () => {
         if (!state.running) {
-          // Start game first, then request fullscreen
           startGame();
-          // Try to enter fullscreen after a short delay (non-blocking)
           setTimeout(() => {
-            requestFullscreen().catch(() => {
-              // Fullscreen failed, but that's okay - game is already running
-            });
+            requestFullscreen().catch(() => {});
           }, 100);
         }
       });
 
       restartBtn.addEventListener('click', () => {
-        // Stop game loop
         state.running = false;
-        
-        // Reset all keys
         keys.left = false;
         keys.right = false;
         keys.jump = false;
-        
-        // Hide game over overlay
+        resetJoystick();
         gameOverOverlay.classList.add('hidden');
         
-        // Reset all game state
+        // Reset all state
         state.score = 0;
         state.lives = 3;
         state.balloons = [];
@@ -643,46 +850,27 @@
         state.lastBalloonTime = 0;
         state.lastCrocTime = 0;
         state.lastComboTime = 0;
-        state.gameSpeed = 1;
+        state.gameSpeed = DIFFICULTY.baseGameSpeed;
         
-        // Show start overlay
         startOverlay.classList.remove('hidden');
       });
 
       function startGame() {
-        // Stop any existing game loop first
         state.running = false;
-        
-        // Reset all keys
         keys.left = false;
         keys.right = false;
         keys.jump = false;
-        
+        resetJoystick();
         startOverlay.classList.add('hidden');
         
-        // Ensure canvas is properly sized
         resizeCanvas();
         
-        // Wait for next frame to ensure canvas is ready
         requestAnimationFrame(() => {
-          // Recalculate dimensions after canvas resize
-          const rect = canvas.getBoundingClientRect();
-          const currentW = rect.width || canvas.width || 900;
-          const currentH = rect.height || canvas.height || 506;
-          const currentGroundY = currentH - 100;
-          
-          // Ensure canvas has valid dimensions
-          if (canvas.width === 0 || canvas.height === 0) {
-            canvas.width = currentW;
-            canvas.height = currentH;
-          }
-          
-          // Initialize game state
           state.running = true;
           state.score = 0;
           state.lives = 3;
-          state.monkey.x = currentW / 2 - 30;
-          state.monkey.y = currentGroundY;
+          state.monkey.x = state.canvasW / 2 - 30;
+          state.monkey.y = state.groundY;
           state.monkey.vy = 0;
           state.monkey.isJumping = false;
           state.monkey.onGround = true;
@@ -693,7 +881,7 @@
           state.effects = [];
           state.lastBalloonTime = 0;
           state.lastCrocTime = 0;
-          state.gameSpeed = 1;
+          state.gameSpeed = DIFFICULTY.baseGameSpeed;
           state.combo = 0;
           state.multiplier = 1;
           state.comboTimer = 0;
@@ -703,11 +891,14 @@
           state.slowMotionTimer = 0;
           state.screenShake = 0;
           state.lastComboTime = 0;
+          
+          // Reset parallax layers
+          backgroundLayers.forEach(layer => layer.offset = 0);
+          
           createDecorations();
           updateHud();
           state.lastTime = performance.now();
           
-          // Start game loop
           requestAnimationFrame(loop);
         });
       }
@@ -717,7 +908,6 @@
         livesEl.textContent = state.lives;
         bestEl.textContent = state.best;
       }
-
 
       function checkCollision(rect1, rect2) {
         return rect1.x < rect2.x + rect2.width &&
@@ -746,40 +936,29 @@
           return;
         }
 
-        // Ensure we have valid time
         if (!now) now = performance.now();
         if (!state.lastTime) state.lastTime = now;
 
-        const dt = Math.min((now - state.lastTime) / 1000, 0.1);
+        // Calculate delta time - clamp to prevent large jumps (e.g., tab switching)
+        // Use max 0.033s (30fps) to prevent physics issues, but allow larger for frame skips
+        const rawDt = (now - state.lastTime) / 1000;
+        const dt = Math.min(rawDt, 0.033); // Cap at 30fps for physics calculations
         state.lastTime = now;
         
-        // Update canvas dimensions if needed (check every frame)
-        const rect = canvas.getBoundingClientRect();
-        // Ensure we have valid dimensions
-        if (rect.width > 0 && rect.height > 0 && (canvas.width !== rect.width || canvas.height !== rect.height)) {
-          canvas.width = rect.width;
-          canvas.height = rect.height;
-          if (state.running) {
-            state.monkey.y = rect.height - 100;
-            state.monkey.x = Math.max(0, Math.min(rect.width - state.monkey.width, state.monkey.x));
-          }
-        }
-        
-        // Use fallback dimensions if canvas is invalid
-        const currentW = canvas.width > 0 ? canvas.width : (rect.width > 0 ? rect.width : 900);
-        const currentH = canvas.height > 0 ? canvas.height : (rect.height > 0 ? rect.height : 506);
-        const currentGroundY = currentH - 100;
-        
-        // Safety check - if dimensions are invalid, don't continue
-        if (currentW <= 0 || currentH <= 0) {
+        // Skip frame if delta is too large (likely tab was inactive)
+        if (rawDt > 0.1) {
           requestAnimationFrame(loop);
           return;
         }
         
-        // Apply screen shake
-        const shakeX = state.screenShake > 0 ? (Math.random() - 0.5) * state.screenShake * 2 : 0;
-        const shakeY = state.screenShake > 0 ? (Math.random() - 0.5) * state.screenShake * 2 : 0;
-        state.screenShake *= 0.9; // Decay shake
+        // REMOVED: Canvas resize check from game loop - now only happens on window resize event
+        
+        const currentW = state.canvasW;
+        const currentH = state.canvasH;
+        const currentGroundY = state.groundY;
+        
+        // Screen shake decay
+        state.screenShake *= 0.9;
 
         // Update power-ups
         if (state.shield) {
@@ -802,22 +981,28 @@
           state.multiplier = 1;
         }
         
-        // Increase game speed over time (unless slow motion)
-        const baseSpeed = 1 + (state.score * 0.02);
+        // Progressive difficulty - increases with score
+        const baseSpeed = DIFFICULTY.baseGameSpeed + (state.score * DIFFICULTY.speedIncrease);
         state.gameSpeed = state.slowMotion ? baseSpeed * 0.5 : baseSpeed;
+
+        // Update parallax background layers - frame rate independent
+        backgroundLayers.forEach(layer => {
+          layer.offset += layer.speed * state.gameSpeed * dt * 60;
+          if (layer.offset > currentW) layer.offset = 0;
+        });
 
         // Monkey movement
         state.monkey.vx = 0;
         if (keys.left && state.monkey.x > 0) {
           state.monkey.vx = -state.monkey.speed;
-          state.monkey.walkFrame += dt * 8;
+          state.monkey.walkFrame += dt * 10;
         }
         if (keys.right && state.monkey.x < currentW - state.monkey.width) {
           state.monkey.vx = state.monkey.speed;
-          state.monkey.walkFrame += dt * 8;
+          state.monkey.walkFrame += dt * 10;
         }
 
-        // Jump mechanics - allow jump when on ground
+        // Jump mechanics
         if (keys.jump && state.monkey.onGround && !state.monkey.isJumping) {
           state.monkey.vy = state.jumpPower;
           state.monkey.onGround = false;
@@ -835,52 +1020,55 @@
           state.monkey.onGround = true;
           state.monkey.isJumping = false;
         }
-        
-        // Calculate jump height for collision detection
-        const jumpHeight = currentGroundY - state.monkey.y; // How high monkey is above ground
 
         // Apply horizontal movement
         state.monkey.x += state.monkey.vx * 60 * dt;
         state.monkey.x = Math.max(0, Math.min(currentW - state.monkey.width, state.monkey.x));
 
-        // Update decorations
+        // Update decorations with parallax - frame rate independent
         state.decorations.forEach(d => {
-          d.rotation += d.speed;
-          d.y += 0.5;
+          d.rotation += d.speed * dt;
+          d.y += (0.5 + d.depth * 0.5) * dt * 60;
           if (d.y > currentH) d.y = -20;
         });
 
-        // Spawn balloons (more frequent as score increases)
-        const balloonSpawnRate = Math.max(300, 800 - state.score * 8);
-        if (now - state.lastBalloonTime > balloonSpawnRate + Math.random() * 500) {
+        // Spawn balloons - INCREASED DIFFICULTY
+        const balloonSpawnRate = Math.max(
+          DIFFICULTY.balloonSpawnMin, 
+          DIFFICULTY.balloonSpawnBase - state.score * DIFFICULTY.balloonSpawnScaling
+        );
+        if (now - state.lastBalloonTime > balloonSpawnRate + Math.random() * 400) {
           const sideDrift = (Math.random() - 0.5) * 2;
           const startX = 50 + Math.random() * (currentW - 100);
           const rand = Math.random();
           state.balloons.push({
             x: startX,
             y: -80,
-            speed: (2 + Math.random() * 2) * state.gameSpeed,
+            speed: (2.5 + Math.random() * 2.5) * state.gameSpeed, // Increased from 2
             color: balloonColors[Math.floor(Math.random() * balloonColors.length)],
             rotation: (Math.random() - 0.5) * 0.1,
             size: 45 + Math.random() * 25,
             isSpecial8: rand < 0.12,
-            isGolden: rand >= 0.12 && rand < 0.20, // Golden balloon (8% chance)
-            isPowerUp: rand >= 0.92 && rand < 0.96, // Power-up balloon (4% chance)
+            isGolden: rand >= 0.12 && rand < 0.20,
+            isPowerUp: rand >= 0.92 && rand < 0.96,
             powerUpType: rand >= 0.92 && rand < 0.94 ? 'shield' : 'slowmo',
             driftSpeed: sideDrift,
             startX: startX,
-            driftAmplitude: 30 + Math.random() * 40,
+            driftAmplitude: 40 + Math.random() * 50, // Increased drift for challenge
           });
           state.lastBalloonTime = now;
         }
 
-        // Spawn crocodiles (more frequent as score increases - creates challenge)
-        const crocSpawnRate = Math.max(1500, 3500 - state.score * 25);
-        if (now - state.lastCrocTime > crocSpawnRate + Math.random() * 1000) {
+        // Spawn crocodiles - MUCH MORE AGGRESSIVE
+        const crocSpawnRate = Math.max(
+          DIFFICULTY.crocSpawnMin, 
+          DIFFICULTY.crocSpawnBase - state.score * DIFFICULTY.crocSpawnScaling
+        );
+        if (now - state.lastCrocTime > crocSpawnRate + Math.random() * 800) {
           state.crocodiles.push({
             x: Math.random() > 0.5 ? -140 : currentW + 140,
             y: currentGroundY + 10,
-            speed: (1.5 + Math.random() * 1.5) * state.gameSpeed,
+            speed: (2 + Math.random() * 2) * state.gameSpeed, // Increased from 1.5
             direction: Math.random() > 0.5 ? 1 : -1,
             walkFrame: 0,
           });
@@ -893,24 +1081,24 @@
           b.y += b.speed * 60 * dt;
           b.rotation += 0.03;
           
-          // Add horizontal drift for challenge (sine wave pattern)
+          // Horizontal drift pattern
           if (b.driftSpeed !== undefined) {
-            const progress = (b.y + 80) / (currentH + 80); // Normalize progress
-            b.x = b.startX + Math.sin(progress * Math.PI * 2) * b.driftAmplitude;
+            const progress = (b.y + 80) / (currentH + 80);
+            b.x = b.startX + Math.sin(progress * Math.PI * 2.5) * b.driftAmplitude; // More complex pattern
           }
 
-          // Check collision with monkey (more precise for challenge)
+          // TIGHTER COLLISION DETECTION for 10-year-olds
           const balloonRect = {
-            x: b.x + b.size * 0.15,
-            y: b.y + b.size * 0.15,
-            width: b.size * 0.7,
-            height: b.size * 1.1 * 0.7
+            x: b.x + b.size * (1 - DIFFICULTY.collisionTolerance) / 2,
+            y: b.y + b.size * (1 - DIFFICULTY.collisionTolerance) / 2,
+            width: b.size * DIFFICULTY.collisionTolerance,
+            height: b.size * 1.1 * DIFFICULTY.collisionTolerance
           };
           const monkeyRect = {
-            x: state.monkey.x + state.monkey.width * 0.25,
-            y: state.monkey.y + state.monkey.height * 0.25,
-            width: state.monkey.width * 0.5,
-            height: state.monkey.height * 0.6
+            x: state.monkey.x + state.monkey.width * (1 - DIFFICULTY.collisionTolerance) / 2,
+            y: state.monkey.y + state.monkey.height * (1 - DIFFICULTY.collisionTolerance) / 2,
+            width: state.monkey.width * DIFFICULTY.collisionTolerance,
+            height: state.monkey.height * DIFFICULTY.collisionTolerance
           };
 
           if (checkCollision(balloonRect, monkeyRect)) {
@@ -918,12 +1106,12 @@
             if (b.isPowerUp) {
               if (b.powerUpType === 'shield') {
                 state.shield = true;
-                state.shieldTimer = 10; // 10 seconds
+                state.shieldTimer = DIFFICULTY.shieldDuration;
                 addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '🛡️ SHIELD!', '#4169E1');
               } else if (b.powerUpType === 'slowmo') {
                 state.slowMotion = true;
-                state.slowMotionTimer = 8; // 8 seconds
-                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '⏱️ SLOW MOTION!', '#FFD700');
+                state.slowMotionTimer = DIFFICULTY.slowMoDuration;
+                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '⏱️ SLOW MO!', '#FFD700');
               }
               state.balloons.splice(i, 1);
               createParticles(b.x + b.size/2, b.y + b.size/2, b.color);
@@ -931,7 +1119,7 @@
             }
             
             // Update combo
-            if (now - state.lastComboTime < 1) {
+            if (now - state.lastComboTime < 1000) {
               state.combo++;
               state.comboTimer = 0;
               if (state.combo > 1) {
@@ -949,13 +1137,11 @@
             points *= state.multiplier;
             state.score += points;
             
-            // Create particles and effects
             createParticles(b.x + b.size/2, b.y + b.size/2, b.color);
             if (points > 1) {
               addEffect(b.x + b.size/2, b.y, `+${points}`, '#FFD700');
             }
             
-            // Screen shake on big catches
             if (points >= 5) {
               state.screenShake = 5;
             }
@@ -974,18 +1160,13 @@
         for (let i = state.crocodiles.length - 1; i >= 0; i--) {
           const c = state.crocodiles[i];
           c.x += c.speed * 60 * dt * c.direction;
-          c.walkFrame += dt * 8;
+          c.walkFrame += dt * 10;
 
-          // Calculate if monkey is high enough to jump over crocodile
-          // Crocodiles are 70px tall, positioned at currentGroundY + 10
-          // Monkey needs to clear the top of the crocodile (currentGroundY + 10 + 70 = currentGroundY + 80)
-          // But we check the monkey's bottom position, so monkey.y + monkey.height should be above croc.y + croc.height
+          // TIGHTER JUMP CLEARANCE - must actually clear the crocodile
           const monkeyBottom = state.monkey.y + state.monkey.height;
           const crocTop = c.y;
           
-          // Only check collision if monkey's bottom is below or near crocodile top
-          // This allows jumping over crocodiles
-          if (monkeyBottom >= crocTop - 20) {
+          if (monkeyBottom >= crocTop - DIFFICULTY.crocJumpBuffer) {
             const crocRect = {
               x: c.x + 20,
               y: c.y + 15,
@@ -1000,11 +1181,10 @@
             };
 
             if (checkCollision(crocRect, monkeyRect)) {
-              // Shield protects from one hit
               if (state.shield) {
                 state.shield = false;
                 state.shieldTimer = 0;
-                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, 'SHIELD BLOCKED!', '#00FF00');
+                addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, 'SHIELD!', '#00FF00');
                 state.crocodiles.splice(i, 1);
                 state.screenShake = 3;
                 continue;
@@ -1012,14 +1192,13 @@
               
               state.lives--;
               state.crocodiles.splice(i, 1);
-              state.screenShake = 8; // Big shake on hit
+              state.screenShake = 10;
               addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, 'OUCH!', '#FF0000');
               updateHud();
               if (state.lives <= 0) {
                 gameOver();
                 return;
               }
-              // Brief invincibility - move monkey to center
               state.monkey.x = currentW / 2 - 30;
               state.monkey.y = currentGroundY;
               state.monkey.vy = 0;
@@ -1031,18 +1210,13 @@
             state.crocodiles.splice(i, 1);
           }
         }
-
-        // Update monkey walk frame for animation
-        if (state.monkey.vx !== 0 && state.monkey.onGround) {
-          state.monkey.walkFrame += dt * 8;
-        }
         
-        // Update particles
+        // Update particles - frame rate independent
         for (let i = state.particles.length - 1; i >= 0; i--) {
           const p = state.particles[i];
-          p.x += p.vx * dt * 60;
-          p.y += p.vy * dt * 60;
-          p.vy += 0.3 * dt * 60; // Gravity
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
+          p.vy += 0.3 * dt * 60; // Gravity in pixels per second
           p.life -= dt;
           p.alpha = Math.max(0, p.life / p.maxLife);
           if (p.life <= 0) {
@@ -1050,10 +1224,10 @@
           }
         }
         
-        // Update visual effects
+        // Update visual effects - frame rate independent
         for (let i = state.effects.length - 1; i >= 0; i--) {
           const e = state.effects[i];
-          e.y -= 50 * dt;
+          e.y -= 50 * dt * 60; // Pixels per second
           e.life -= dt;
           e.alpha = Math.min(1, e.life / e.maxLife);
           if (e.life <= 0) {
@@ -1065,24 +1239,22 @@
         requestAnimationFrame(loop);
       }
       
-      // Create particle explosion
       function createParticles(x, y, color) {
-        for (let i = 0; i < 15; i++) {
+        for (let i = 0; i < 20; i++) { // Increased from 15
           state.particles.push({
             x: x,
             y: y,
-            vx: (Math.random() - 0.5) * 200,
-            vy: (Math.random() - 0.5) * 200,
+            vx: (Math.random() - 0.5) * 250,
+            vy: (Math.random() - 0.5) * 250,
             color: color,
-            size: 3 + Math.random() * 4,
-            life: 0.5 + Math.random() * 0.5,
-            maxLife: 0.5 + Math.random() * 0.5,
+            size: 3 + Math.random() * 5,
+            life: 0.6 + Math.random() * 0.6,
+            maxLife: 0.6 + Math.random() * 0.6,
             alpha: 1,
           });
         }
       }
       
-      // Add visual text effect
       function addEffect(x, y, text, color) {
         state.effects.push({
           x: x,
@@ -1092,14 +1264,14 @@
           life: 1.5,
           maxLife: 1.5,
           alpha: 1,
-          size: 24,
+          size: 28, // Increased from 24
         });
       }
 
       function draw() {
-        const currentW = canvas.width;
-        const currentH = canvas.height;
-        const currentGroundY = currentH - 100;
+        const currentW = state.canvasW;
+        const currentH = state.canvasH;
+        const currentGroundY = state.groundY;
         
         // Apply screen shake
         const shakeX = state.screenShake > 0 ? (Math.random() - 0.5) * state.screenShake : 0;
@@ -1108,36 +1280,73 @@
         ctx.save();
         ctx.translate(shakeX, shakeY);
         
-        // Clear canvas
-        ctx.fillRect(-shakeX, -shakeY, currentW, currentH);
+        ctx.clearRect(-shakeX, -shakeY, currentW, currentH);
 
-        // Draw background gradient
-        const bgGradient = ctx.createLinearGradient(0, 0, 0, currentH);
-        bgGradient.addColorStop(0, '#87ceeb');
-        bgGradient.addColorStop(0.6, '#ffd6e8');
+        // Draw parallax background layers
+        backgroundLayers.forEach((layer, index) => {
+          const yStart = currentH * layer.yPos;
+          const layerHeight = currentH * layer.height;
+          
+          ctx.fillStyle = layer.color;
+          ctx.fillRect(0, yStart, currentW, layerHeight);
+          
+          // Add some depth with moving elements
+          if (index < 2) {
+            ctx.save();
+            ctx.globalAlpha = 0.4 - (index * 0.15);
+            for (let i = 0; i < 3; i++) {
+              const x = ((layer.offset * (i + 1)) % (currentW + 200)) - 100;
+              const y = yStart + 20 + (i * 40);
+              // Simple cloud shapes
+              ctx.fillStyle = '#fff';
+              ctx.beginPath();
+              ctx.ellipse(x, y, 40, 25, 0, 0, Math.PI * 2);
+              ctx.ellipse(x + 30, y - 10, 35, 20, 0, 0, Math.PI * 2);
+              ctx.ellipse(x + 50, y, 40, 25, 0, 0, Math.PI * 2);
+              ctx.fill();
+            }
+            ctx.restore();
+          }
+        });
+
+        // Draw final sky gradient
+        const bgGradient = ctx.createLinearGradient(0, currentH * 0.6, 0, currentH);
+        bgGradient.addColorStop(0, '#ffd6e8');
         bgGradient.addColorStop(1, '#ffb3d9');
         ctx.fillStyle = bgGradient;
-        ctx.fillRect(0, 0, currentW, currentH);
+        ctx.fillRect(0, currentH * 0.6, currentW, currentH * 0.4);
 
-        // Draw ground
+        // Draw ground with texture
         ctx.fillStyle = '#ffb3d9';
         ctx.fillRect(0, currentGroundY + 100, currentW, currentH - currentGroundY - 100);
+        
+        // Ground texture details
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = '#ff8fb3';
+        for (let i = 0; i < currentW; i += 80) {
+          ctx.fillRect(i, currentGroundY + 100, 40, currentH - currentGroundY - 100);
+        }
+        ctx.restore();
 
-        // Draw floating decorations
+        // Draw floating decorations with depth
         state.decorations.forEach(d => {
           ctx.save();
+          ctx.globalAlpha = 0.5 + d.depth * 0.5;
           ctx.translate(d.x, d.y);
           ctx.rotate(d.rotation);
+          const size = d.size * (0.6 + d.depth * 0.4);
+          
           if (d.type === 'confetti') {
             ctx.fillStyle = balloonColors[Math.floor(Math.random() * balloonColors.length)];
-            ctx.fillRect(-d.size/2, -d.size/2, d.size, d.size);
+            ctx.fillRect(-size/2, -size/2, size, size);
           } else {
             ctx.fillStyle = '#ffd700';
             ctx.beginPath();
             for (let i = 0; i < 5; i++) {
               const angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
-              const x = Math.cos(angle) * d.size;
-              const y = Math.sin(angle) * d.size;
+              const x = Math.cos(angle) * size;
+              const y = Math.sin(angle) * size;
               if (i === 0) ctx.moveTo(x, y);
               else ctx.lineTo(x, y);
             }
@@ -1147,22 +1356,36 @@
           ctx.restore();
         });
 
-        // Draw balloons
+        // Draw balloons with shadows
         state.balloons.forEach(b => {
+          // Draw balloon shadow
+          ctx.save();
+          ctx.globalAlpha = 0.2;
+          ctx.fillStyle = '#000';
+          ctx.beginPath();
+          ctx.ellipse(
+            b.x + b.size / 2, 
+            currentGroundY + 95,
+            b.size * 0.3,
+            b.size * 0.1,
+            0, 0, Math.PI * 2
+          );
+          ctx.fill();
+          ctx.restore();
+          
+          // Draw balloon
           ctx.save();
           ctx.translate(b.x + b.size / 2, b.y + b.size / 2);
           ctx.rotate(b.rotation);
           
-          // Golden balloon glow effect
           if (b.isGolden) {
             ctx.shadowBlur = 20;
             ctx.shadowColor = '#FFD700';
           }
           
-          if (b.isSpecial8 && images.number8Balloon.complete) {
-            ctx.drawImage(images.number8Balloon, -b.size / 2, -b.size / 2, b.size, b.size * 1.3);
+          if (b.isSpecial8 && imageCache.number8Balloon.complete) {
+            ctx.drawImage(imageCache.number8Balloon, -b.size / 2, -b.size / 2, b.size, b.size * 1.3);
           } else if (b.isGolden) {
-            // Draw golden balloon
             ctx.fillStyle = '#FFD700';
             ctx.beginPath();
             ctx.ellipse(0, 0, b.size / 2, b.size / 2 * 0.75, 0, 0, Math.PI * 2);
@@ -1177,7 +1400,6 @@
             ctx.textBaseline = 'middle';
             ctx.fillText('⭐', 0, 0);
           } else if (b.isPowerUp) {
-            // Draw power-up balloon
             ctx.fillStyle = b.powerUpType === 'shield' ? '#4169E1' : '#FF6347';
             ctx.beginPath();
             ctx.ellipse(0, 0, b.size / 2, b.size / 2 * 0.75, 0, 0, Math.PI * 2);
@@ -1188,7 +1410,7 @@
             ctx.textBaseline = 'middle';
             ctx.fillText(b.powerUpType === 'shield' ? '🛡️' : '⏱️', 0, 0);
           } else {
-            const balloonImg = images.balloons[balloonColors.indexOf(b.color) % images.balloons.length];
+            const balloonImg = imageCache.balloons[balloonColors.indexOf(b.color) % imageCache.balloons.length];
             if (balloonImg.complete) {
               ctx.drawImage(balloonImg, -b.size / 2, -b.size / 2, b.size, b.size * 1.3);
             } else {
@@ -1213,13 +1435,13 @@
           ctx.restore();
         });
         
-        // Draw visual effects (text)
+        // Draw visual effects
         state.effects.forEach(e => {
           ctx.save();
           ctx.globalAlpha = e.alpha;
           ctx.fillStyle = e.color;
           ctx.strokeStyle = '#FFFFFF';
-          ctx.lineWidth = 3;
+          ctx.lineWidth = 4;
           ctx.font = `bold ${e.size}px Arial`;
           ctx.textAlign = 'center';
           ctx.textBaseline = 'middle';
@@ -1228,77 +1450,115 @@
           ctx.restore();
         });
 
-        // Draw crocodiles (with walking animation)
+        // Draw crocodiles with shadows
         state.crocodiles.forEach(c => {
+          // Draw crocodile shadow
+          ctx.save();
+          ctx.globalAlpha = 0.3;
+          ctx.fillStyle = '#000';
+          ctx.beginPath();
+          ctx.ellipse(
+            c.x + 70, 
+            c.y + 75,
+            60,
+            15,
+            0, 0, Math.PI * 2
+          );
+          ctx.fill();
+          ctx.restore();
+          
+          // Draw crocodile
           ctx.save();
           ctx.scale(c.direction, 1);
-          const frameIndex = Math.floor(c.walkFrame) % images.crocFrames.length;
-          const crocImg = images.crocFrames[frameIndex];
+          const frameIndex = Math.floor(c.walkFrame) % imageCache.crocFrames.length;
+          const crocImg = imageCache.crocFrames[frameIndex];
           if (crocImg.complete && crocImg.naturalWidth > 0) {
             ctx.drawImage(crocImg, c.direction > 0 ? c.x : -c.x - 140, c.y, 140, 70);
           } else {
-            // Fallback: draw simple crocodile shape
             ctx.fillStyle = '#228b22';
             ctx.fillRect(c.direction > 0 ? c.x : -c.x - 140, c.y, 140, 70);
-            ctx.fillStyle = '#ffd700';
-            ctx.beginPath();
-            ctx.arc((c.direction > 0 ? c.x : -c.x - 140) + 50, c.y + 30, 8, 0, Math.PI * 2);
-            ctx.arc((c.direction > 0 ? c.x : -c.x - 140) + 90, c.y + 30, 8, 0, Math.PI * 2);
-            ctx.fill();
           }
           ctx.restore();
         });
 
-        // Draw monkey shield effect
+        // Draw monkey shadow
+        ctx.save();
+        ctx.globalAlpha = 0.3;
+        ctx.fillStyle = '#000';
+        ctx.beginPath();
+        ctx.ellipse(
+          state.monkey.x + state.monkey.width / 2, 
+          currentGroundY + 95,
+          state.monkey.width * 0.4,
+          state.monkey.width * 0.12,
+          0, 0, Math.PI * 2
+        );
+        ctx.fill();
+        ctx.restore();
+
+        // Draw monkey shield
         if (state.shield) {
           ctx.save();
           ctx.strokeStyle = '#4169E1';
-          ctx.lineWidth = 4;
+          ctx.lineWidth = 5;
           ctx.globalAlpha = 0.6 + Math.sin(Date.now() / 100) * 0.4;
           ctx.beginPath();
-          ctx.arc(state.monkey.x + state.monkey.width / 2, state.monkey.y + state.monkey.height / 2, state.monkey.width / 2 + 10, 0, Math.PI * 2);
+          ctx.arc(state.monkey.x + state.monkey.width / 2, state.monkey.y + state.monkey.height / 2, state.monkey.width / 2 + 12, 0, Math.PI * 2);
           ctx.stroke();
           ctx.restore();
         }
         
-        // Draw monkey (with walking animation)
-        const monkeyFrameIndex = Math.floor(state.monkey.walkFrame) % images.monkeyFrames.length;
-        const monkeyImg = images.monkeyFrames[monkeyFrameIndex];
+        // Draw monkey
+        const monkeyFrameIndex = Math.floor(state.monkey.walkFrame) % imageCache.monkeyFrames.length;
+        const monkeyImg = imageCache.monkeyFrames[monkeyFrameIndex];
         if (monkeyImg.complete && monkeyImg.naturalWidth > 0) {
           ctx.drawImage(monkeyImg, state.monkey.x, state.monkey.y, state.monkey.width, state.monkey.height);
         } else {
-          // Fallback: draw simple monkey shape
           ctx.fillStyle = '#d4a574';
           ctx.beginPath();
           ctx.arc(state.monkey.x + state.monkey.width / 2, state.monkey.y + state.monkey.height / 2, state.monkey.width / 2, 0, Math.PI * 2);
           ctx.fill();
         }
         
-        // Draw combo multiplier indicator
+        // Draw combo multiplier
         if (state.multiplier > 1) {
           ctx.save();
           ctx.fillStyle = '#FF6B9D';
-          ctx.font = 'bold 18px Arial';
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 3;
+          ctx.font = 'bold 22px Arial';
           ctx.textAlign = 'left';
-          ctx.fillText(`x${state.multiplier} COMBO!`, 10, currentH - 20);
+          const comboText = `x${state.multiplier} COMBO!`;
+          ctx.strokeText(comboText, 10, currentH - 25);
+          ctx.fillText(comboText, 10, currentH - 25);
           ctx.restore();
         }
         
         // Draw power-up timers
+        let timerY = 35;
         if (state.shield) {
           ctx.save();
           ctx.fillStyle = '#4169E1';
-          ctx.font = 'bold 16px Arial';
-          ctx.textAlign = 'left';
-          ctx.fillText(`🛡️ ${Math.ceil(state.shieldTimer)}s`, currentW - 100, 35);
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 2;
+          ctx.font = 'bold 18px Arial';
+          ctx.textAlign = 'right';
+          const shieldText = `🛡️ ${Math.ceil(state.shieldTimer)}s`;
+          ctx.strokeText(shieldText, currentW - 15, timerY);
+          ctx.fillText(shieldText, currentW - 15, timerY);
           ctx.restore();
+          timerY += 25;
         }
         if (state.slowMotion) {
           ctx.save();
           ctx.fillStyle = '#FFD700';
-          ctx.font = 'bold 16px Arial';
-          ctx.textAlign = 'left';
-          ctx.fillText(`⏱️ ${Math.ceil(state.slowMotionTimer)}s`, currentW - 100, state.shield ? 55 : 35);
+          ctx.strokeStyle = '#FFFFFF';
+          ctx.lineWidth = 2;
+          ctx.font = 'bold 18px Arial';
+          ctx.textAlign = 'right';
+          const slowText = `⏱️ ${Math.ceil(state.slowMotionTimer)}s`;
+          ctx.strokeText(slowText, currentW - 15, timerY);
+          ctx.fillText(slowText, currentW - 15, timerY);
           ctx.restore();
         }
         
@@ -1307,24 +1567,25 @@
         // Draw lives hearts
         for (let i = 0; i < state.lives; i++) {
           ctx.fillStyle = '#ff6b9d';
-          ctx.font = 'bold 28px Arial';
-          ctx.fillText('💝', 20 + i * 40, 35);
+          ctx.font = 'bold 32px Arial';
+          ctx.fillText('💝', 20 + i * 42, 38);
         }
 
-        // Draw "Happy 8th Birthday Henry!" text overlay
+        // Draw title overlay
         ctx.save();
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        ctx.font = 'bold 24px Arial';
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
+        ctx.strokeStyle = '#FF6B9D';
+        ctx.lineWidth = 2;
+        ctx.font = 'bold 26px Arial';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
-        ctx.fillText('Happy 8th Birthday Henry!', currentW / 2, 25);
+        ctx.strokeText('Happy 8th Birthday Henry!', currentW / 2, 28);
+        ctx.fillText('Happy 8th Birthday Henry!', currentW / 2, 28);
         ctx.restore();
       }
       
-      // Initial canvas setup
+      // Initial setup
       resizeCanvas();
-
-      // Initial draw
       draw();
     })();
   </script>
