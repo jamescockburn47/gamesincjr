@@ -48,8 +48,29 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
   const [actionLoading, setActionLoading] = useState(false);
   const [actionMessage, setActionMessage] = useState('');
   const [deploymentData, setDeploymentData] = useState<{
-    instructions: any;
-    gameData: any;
+    instructions: {
+      local?: string;
+      manual?: string[];
+    };
+    gameData: {
+      slug: string;
+      code: string;
+      gameEntry: {
+        slug: string;
+        title: string;
+        tags: string[];
+        description: string;
+        description_it: string;
+        hero: string;
+        screenshots: string[];
+        demoPath: string;
+        gameType: string;
+        engine: string;
+        version: string;
+        status: string;
+        submissionId: string;
+      };
+    };
   } | null>(null);
 
   useEffect(() => {
