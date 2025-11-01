@@ -14,22 +14,6 @@ const GameSchema = z.object({
   tags: z.array(z.string().max(20)).max(10).optional(),
   hero: z.string().regex(/^\/games\/[a-z0-9-]+\/[a-z0-9.-]+$/).optional(),
   screenshots: z.array(z.string().regex(/^\/games\/[a-z0-9-]+\/[a-z0-9.-]+$/)).max(10).optional(),
-import { z } from 'zod';
-import gamesData from '@/data/games.json';
-
-// Zod schema for runtime validation - prevents XSS, path traversal, malformed data
-const GameSchema = z.object({
-  slug: z.string()
-    .regex(/^[a-z0-9-]+$/, 'Slug must be lowercase alphanumeric with hyphens only')
-    .min(1)
-    .max(50),
-  title: z.string().min(1).max(60),
-  description: z.string().max(200).optional(),
-  description_it: z.string().max(200).optional(),
-  price: z.number().nonnegative().optional(),
-  tags: z.array(z.string().max(20)).max(10).optional(),
-  hero: z.string().regex(/^\/games\/[a-z0-9-]+\/[a-z0-9.-]+$/).optional(),
-  screenshots: z.array(z.string().regex(/^\/games\/[a-z0-9-]+\/[a-z0-9.-]+$/)).max(10).optional(),
   demoPath: z.string().optional(), // Made optional to support API-served games
   status: z.enum(['released', 'coming-soon']).optional(),
   gameType: z.enum(['html5', 'video-preview', 'download', 'ai-powered']).optional(),
@@ -42,19 +26,6 @@ const GameSchema = z.object({
   version: z.string().max(20).optional(),
   localPath: z.string().optional(),
   submissionId: z.string().optional(), // Track if game comes from database
-});
-
-export type Game = z.infer<typeof GameSchema>;
-  status: z.enum(['released', 'coming-soon']).optional(),
-  gameType: z.enum(['html5', 'video-preview', 'download', 'ai-powered']).optional(),
-  videoPreview: z.string().url().optional(),
-  downloadUrl: z.string().url().optional(),
-  downloadSize: z.string().max(20).optional(),
-  aiProvider: z.enum(['openai', 'anthropic', 'custom']).optional(),
-  apiCostPerPlay: z.number().nonnegative().optional(),
-  engine: z.enum(['unity', 'godot', 'phaser', 'vanilla-js', 'react', 'vue']).optional(),
-  version: z.string().max(20).optional(),
-  localPath: z.string().optional(),
 });
 
 export type Game = z.infer<typeof GameSchema>;
