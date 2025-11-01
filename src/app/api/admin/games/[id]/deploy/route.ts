@@ -5,6 +5,9 @@ import { SubmissionStatus } from '@prisma/client';
 import { promises as fs } from 'fs';
 import path from 'path';
 
+// Check if we're in a serverless environment (read-only filesystem)
+const IS_SERVERLESS = process.env.VERCEL === '1' || process.env.AWS_REGION || process.env.NEXT_RUNTIME === 'edge';
+
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
@@ -41,6 +44,56 @@ export async function POST(
     if (!submission.generatedCode) {
       return NextResponse.json(
         { error: 'No generated code available' },
+        { status: 400 }
+      );
+    }
+
+    // On Vercel/serverless, filesystem is read-only - provide deployment instructions
+    if (IS_SERVERLESS) {
+      const updated = await prisma.gameSubmission.update({
+        where: { id: params.id },
+        data: {
+          status: SubmissionStatus.APPROVED, // Keep as approved
+          reviewNotes: `[DEPLOYMENT_REQUIRED] Files need to be deployed locally. Vercel filesystem is read-only. Use the deployment scripts or manual git deployment.`,
+        },
+      });
+
+      return NextResponse.json(
+        {
+          error: 'File system deployment not available in serverless environment',
+          details: 'Vercel has a read-only filesystem. To deploy this game, you need to run the deployment locally or use git.',
+          instructions: {
+            local: `Run locally: pnpm run deploy:make-your-game ${submission.gameSlug}`,
+            manual: [
+              `1. Create: public/demos/${submission.gameSlug}/index.html`,
+              `2. Add game entry to src/data/games.json`,
+              `3. Commit and push: git add . && git commit -m "Deploy game: ${submission.gameTitle}" && git push`,
+            ],
+          },
+          submission: updated,
+          gameData: {
+            slug: submission.gameSlug,
+            code: submission.generatedCode,
+            gameEntry: {
+              slug: submission.gameSlug,
+              title: submission.gameTitle,
+              tags: [submission.gameType, 'user-generated'],
+              description: submission.gameDescription,
+              description_it: submission.gameDescription,
+              hero: `/games/${submission.gameSlug}/hero.svg`,
+              screenshots: [
+                `/games/${submission.gameSlug}/s1.svg`,
+                `/games/${submission.gameSlug}/s2.svg`,
+              ],
+              demoPath: `/demos/${submission.gameSlug}/index.html`,
+              gameType: 'html5',
+              engine: 'vanilla-js',
+              version: '1.0.0',
+              status: 'released',
+              submissionId: submission.id,
+            },
+          },
+        },
         { status: 400 }
       );
     }
