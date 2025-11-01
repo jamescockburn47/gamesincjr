@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
+  <title>Happy 8th Birthday Henry! - Monkey Game</title>
+  <style>
+    :root {
+      color-scheme: light;
+      font-family: 'Nunito', 'Segoe UI', Tahoma, sans-serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 16px;
+      padding: 32px 16px 64px;
+      background: linear-gradient(180deg, #ffd6e8 0%, #ffe0f0 50%, #fff4f8 100%);
+      color: #5a2d4a;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: clamp(2rem, 5vw, 3.5rem);
+      letter-spacing: 0.05em;
+      color: #ff6b9d;
+      text-shadow: 0 4px 12px rgba(255, 107, 157, 0.3);
+      font-weight: 800;
+      text-align: center;
+    }
+
+    .tagline {
+      margin: 0;
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      color: #8b4a6b;
+      text-align: center;
+      max-width: 700px;
+      font-weight: 600;
+    }
+
+    .hud {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: clamp(20px, 4vw, 40px);
+      font-size: clamp(1rem, 2vw, 1.3rem);
+      font-weight: 700;
+    }
+
+    .hud span {
+      color: #ff6b9d;
+      margin-left: 8px;
+      font-size: 1.2em;
+    }
+
+    .stage {
+      position: relative;
+      width: min(92vw, 900px);
+      aspect-ratio: 16 / 9;
+      border-radius: 28px;
+      overflow: hidden;
+      border: 4px solid rgba(255, 107, 157, 0.4);
+      box-shadow: 0 20px 60px rgba(255, 107, 157, 0.3);
+      background: linear-gradient(180deg, #87ceeb 0%, #ffd6e8 60%, #ffb3d9 100%);
+    }
+
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      touch-action: none;
+    }
+
+    .overlay {
+      position: absolute;
+      inset: 0;
+      background: rgba(255, 255, 255, 0.98);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      padding: 24px;
+      text-align: center;
+      z-index: 10;
+    }
+
+    .overlay.hidden {
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+
+    .overlay h2 {
+      margin: 0;
+      font-size: clamp(2rem, 4vw, 3rem);
+      color: #ff6b9d;
+      font-weight: 800;
+    }
+
+    .overlay p {
+      margin: 0;
+      color: #5a2d4a;
+      line-height: 1.6;
+      font-size: clamp(1rem, 2vw, 1.2rem);
+    }
+
+    .overlay button {
+      padding: 18px 36px;
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(135deg, #ff6b9d 0%, #ff8fb3 100%);
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(255, 107, 157, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+
+    .overlay button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(255, 107, 157, 0.5);
+    }
+
+    .overlay button:active {
+      transform: translateY(0);
+    }
+
+    .controls {
+      display: none;
+      gap: 12px;
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%);
+      padding: 16px 20px;
+      border-radius: 20px;
+      background: rgba(255, 255, 255, 0.95);
+      border: 2px solid rgba(255, 107, 157, 0.4);
+      backdrop-filter: blur(12px);
+      box-shadow: 0 8px 24px rgba(255, 107, 157, 0.3);
+    }
+
+    .controls button {
+      width: 70px;
+      height: 70px;
+      border-radius: 18px;
+      border: 2px solid rgba(255, 107, 157, 0.4);
+      background: rgba(255, 255, 255, 0.9);
+      color: #ff6b9d;
+      font-size: 1.8rem;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .controls button:active {
+      transform: scale(0.9);
+      background: #ff6b9d;
+      color: white;
+    }
+
+    @media (max-width: 900px) {
+      .controls { display: grid; grid-template-columns: repeat(3, 1fr); }
+    }
+
+    .heart {
+      display: inline-block;
+      color: #ff6b9d;
+      animation: float 2s ease-in-out infinite;
+    }
+
+    @keyframes float {
+      0%, 100% { transform: translateY(0); }
+      50% { transform: translateY(-10px); }
+    }
+  </style>
+</head>
+<body>
+  <h1>🎉 Happy 8th Birthday Henry! 🎉</h1>
+  <p class="tagline">Help Monkey catch balloons while avoiding snapping crocodiles! <span class="heart">💝</span></p>
+
+  <div class="hud" role="status" aria-live="polite">
+    <div>Balloons:<span id="score">0</span></div>
+    <div>Lives:<span id="lives">3</span></div>
+    <div>Best:<span id="best">0</span></div>
+  </div>
+
+  <div class="stage">
+    <canvas id="game" width="900" height="506" aria-label="Happy 8th Birthday Henry Monkey game"></canvas>
+    <div id="tryOverlay" class="overlay">
+      <h2>🎂 Happy 8th Birthday Henry! 🎂</h2>
+      <p>A special game just for you!<br>Help Monkey catch colorful balloons while avoiding the snapping crocodiles!</p>
+      <button id="tryBtn">Play Now!</button>
+    </div>
+    <div id="startOverlay" class="overlay hidden">
+      <h2>Ready to Play?</h2>
+      <p>Use arrow keys (← →) or touch controls to move left and right.<br>Catch balloons for points, avoid crocodiles!</p>
+      <button id="startBtn">Start Game</button>
+    </div>
+    <div id="gameOverOverlay" class="overlay hidden">
+      <h2 id="gameOverTitle">Game Over!</h2>
+      <p id="gameOverText">You caught <span id="finalScore">0</span> balloons!</p>
+      <button id="restartBtn">Play Again</button>
+    </div>
+  </div>
+
+  <div class="controls" aria-hidden="true">
+    <div></div>
+    <button data-move="left">◄</button>
+    <div></div>
+    <button data-move="right">►</button>
+    <div></div>
+  </div>
+
+  <script type="module">
+    (() => {
+      const canvas = document.getElementById('game');
+      const ctx = canvas.getContext('2d');
+      const tryOverlay = document.getElementById('tryOverlay');
+      const startOverlay = document.getElementById('startOverlay');
+      const gameOverOverlay = document.getElementById('gameOverOverlay');
+      const tryBtn = document.getElementById('tryBtn');
+      const startBtn = document.getElementById('startBtn');
+      const restartBtn = document.getElementById('restartBtn');
+      const scoreEl = document.getElementById('score');
+      const livesEl = document.getElementById('lives');
+      const bestEl = document.getElementById('best');
+      const finalScoreEl = document.getElementById('finalScore');
+      const gameOverTitle = document.getElementById('gameOverTitle');
+      const gameOverText = document.getElementById('gameOverText');
+
+      const W = canvas.width;
+      const H = canvas.height;
+
+      // Enhanced SVG Images with better graphics
+      const monkeySVG = 'data:image/svg+xml;base64,' + btoa(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+          <!-- Monkey body with party hat -->
+          <ellipse cx="50" cy="58" rx="22" ry="28" fill="#d4a574"/>
+          <ellipse cx="50" cy="68" rx="20" ry="24" fill="#c89664"/>
+          
+          <!-- Party hat -->
+          <path d="M 45 20 L 50 8 L 55 20" fill="#ff6b9d"/>
+          <circle cx="50" cy="8" r="3" fill="#ffd700"/>
+          <rect x="44" y="20" width="12" height="8" fill="#ff6b9d"/>
+          
+          <!-- Head -->
+          <circle cx="50" cy="35" r="20" fill="#d4a574"/>
+          <ellipse cx="50" cy="32" rx="18" ry="19" fill="#e6b884"/>
+          
+          <!-- Eyes -->
+          <ellipse cx="44" cy="30" rx="5" ry="6" fill="#000"/>
+          <ellipse cx="56" cy="30" rx="5" ry="6" fill="#000"/>
+          <circle cx="45" cy="30" r="2" fill="#fff"/>
+          <circle cx="57" cy="30" r="2" fill="#fff"/>
+          
+          <!-- Nose -->
+          <ellipse cx="50" cy="38" rx="3" ry="2" fill="#000"/>
+          
+          <!-- Mouth -->
+          <path d="M 48 42 Q 50 46 52 42" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round"/>
+          
+          <!-- Ears -->
+          <circle cx="32" cy="32" r="12" fill="#d4a574"/>
+          <circle cx="68" cy="32" r="12" fill="#d4a574"/>
+          <circle cx="32" cy="32" r="8" fill="#c89664"/>
+          <circle cx="68" cy="32" r="8" fill="#c89664"/>
+          
+          <!-- Arms -->
+          <circle cx="30" cy="52" r="10" fill="#d4a574"/>
+          <circle cx="70" cy="52" r="10" fill="#d4a574"/>
+          <ellipse cx="26" cy="58" rx="6" ry="8" fill="#c89664"/>
+          <ellipse cx="74" cy="58" rx="6" ry="8" fill="#c89664"/>
+          
+          <!-- Legs -->
+          <ellipse cx="42" cy="85" rx="8" ry="10" fill="#c89664"/>
+          <ellipse cx="58" cy="85" rx="8" ry="10" fill="#c89664"/>
+          
+          <!-- Belly -->
+          <ellipse cx="50" cy="60" rx="12" ry="16" fill="#e6b884"/>
+        </svg>
+      `);
+
+      const balloonColors = ['#ff6b9d', '#ffb347', '#87ceeb', '#ffd700', '#ff69b4', '#32cd32', '#ff1493', '#ff6347'];
+      
+      // Special number 8 balloon
+      const number8BalloonSVG = 'data:image/svg+xml;base64,' + btoa(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 80">
+          <ellipse cx="30" cy="35" rx="25" ry="30" fill="#ff6b9d"/>
+          <ellipse cx="30" cy="30" rx="18" ry="20" fill="#ff8fb3" opacity="0.8"/>
+          <text x="30" y="40" font-family="Arial Black" font-size="24" font-weight="900" fill="#fff" text-anchor="middle">8</text>
+          <line x1="30" y1="60" x2="30" y2="75" stroke="#654321" stroke-width="2"/>
+          <path d="M 15 30 Q 30 20 45 30" stroke="#fff" stroke-width="2" fill="none" opacity="0.6"/>
+        </svg>
+      `);
+
+      const balloonSVGs = balloonColors.map(color => 
+        'data:image/svg+xml;base64,' + btoa(`
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 80">
+            <defs>
+              <linearGradient id="balloonGrad${color.replace('#', '')}" x1="0%" y1="0%" x2="0%" y2="100%">
+                <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
+                <stop offset="100%" style="stop-color:${color};stop-opacity:0.7" />
+              </linearGradient>
+            </defs>
+            <ellipse cx="30" cy="35" rx="25" ry="30" fill="url(#balloonGrad${color.replace('#', '')})"/>
+            <ellipse cx="30" cy="28" rx="18" ry="22" fill="#fff" opacity="0.4"/>
+            <line x1="30" y1="60" x2="30" y2="75" stroke="#654321" stroke-width="2"/>
+            <path d="M 15 30 Q 30 18 45 30" stroke="#fff" stroke-width="2.5" fill="none" opacity="0.5"/>
+          </svg>
+        `)
+      );
+
+      const crocSVG = 'data:image/svg+xml;base64,' + btoa(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 70">
+          <defs>
+            <linearGradient id="crocGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+              <stop offset="0%" style="stop-color:#32cd32;stop-opacity:1" />
+              <stop offset="100%" style="stop-color:#228b22;stop-opacity:1" />
+            </linearGradient>
+          </defs>
+          <!-- Body -->
+          <ellipse cx="70" cy="35" rx="60" ry="30" fill="url(#crocGrad)"/>
+          <rect x="25" y="25" width="90" height="22" rx="10" fill="#228b22"/>
+          
+          <!-- Eyes -->
+          <circle cx="50" cy="30" r="8" fill="#ffd700"/>
+          <circle cx="90" cy="30" r="8" fill="#ffd700"/>
+          <circle cx="52" cy="30" r="4" fill="#000"/>
+          <circle cx="92" cy="30" r="4" fill="#000"/>
+          <circle cx="53" cy="29" r="1.5" fill="#fff"/>
+          <circle cx="93" cy="29" r="1.5" fill="#fff"/>
+          
+          <!-- Nostrils -->
+          <circle cx="40" cy="32" r="2" fill="#000"/>
+          <circle cx="100" cy="32" r="2" fill="#000"/>
+          
+          <!-- Teeth -->
+          <path d="M 20 35 L 25 30 L 25 35 Z" fill="#fff"/>
+          <path d="M 115 35 L 120 30 L 120 35 Z" fill="#fff"/>
+          <path d="M 22 38 L 25 35 L 25 38 Z" fill="#fff"/>
+          <path d="M 118 38 L 120 35 L 120 38 Z" fill="#fff"/>
+          
+          <!-- Scales -->
+          <path d="M 30 45 Q 35 50 40 45 M 45 45 Q 50 50 55 45 M 60 45 Q 65 50 70 45 M 75 45 Q 80 50 85 45 M 90 45 Q 95 50 100 45" stroke="#228b22" stroke-width="3" fill="none"/>
+          
+          <!-- Snapping jaw (animated) -->
+          <path d="M 18 38 Q 25 35 35 38" stroke="#ff6347" stroke-width="4" fill="none" stroke-linecap="round"/>
+          <path d="M 105 38 Q 115 35 122 38" stroke="#ff6347" stroke-width="4" fill="none" stroke-linecap="round"/>
+        </svg>
+      `);
+
+      const state = {
+        running: false,
+        score: 0,
+        lives: 3,
+        best: parseInt(localStorage.getItem('henryMonkeyBest') || '0'),
+        monkey: { x: W / 2 - 30, y: H - 100, width: 60, height: 100, speed: 6 },
+        balloons: [],
+        crocodiles: [],
+        decorations: [],
+        lastBalloonTime: 0,
+        lastCrocTime: 0,
+        lastTime: 0,
+      };
+
+      const keys = {};
+      const images = {
+        monkey: new Image(),
+        balloons: balloonSVGs.map(src => { const img = new Image(); img.src = src; return img; }),
+        number8Balloon: new Image(),
+        croc: new Image(),
+      };
+
+      images.monkey.src = monkeySVG;
+      images.number8Balloon.src = number8BalloonSVG;
+      images.croc.src = crocSVG;
+
+      // Create floating decorations
+      function createDecorations() {
+        state.decorations = [];
+        for (let i = 0; i < 15; i++) {
+          state.decorations.push({
+            x: Math.random() * W,
+            y: Math.random() * H,
+            type: Math.random() > 0.5 ? 'confetti' : 'star',
+            rotation: Math.random() * Math.PI * 2,
+            speed: 0.02 + Math.random() * 0.03,
+            size: 8 + Math.random() * 12,
+          });
+        }
+      }
+
+      // Load images
+      Promise.all([
+        new Promise(resolve => { images.monkey.onload = resolve; }),
+        ...images.balloons.map(img => new Promise(resolve => { img.onload = resolve; })),
+        new Promise(resolve => { images.number8Balloon.onload = resolve; }),
+        new Promise(resolve => { images.croc.onload = resolve; }),
+      ]).then(() => {
+        createDecorations();
+        if (!state.running) draw();
+      });
+
+      window.addEventListener('keydown', e => {
+        const key = e.key.toLowerCase();
+        if (['arrowleft', 'a'].includes(key)) {
+          e.preventDefault();
+          keys.left = true;
+        }
+        if (['arrowright', 'd'].includes(key)) {
+          e.preventDefault();
+          keys.right = true;
+        }
+      });
+
+      window.addEventListener('keyup', e => {
+        const key = e.key.toLowerCase();
+        if (['arrowleft', 'a'].includes(key)) keys.left = false;
+        if (['arrowright', 'd'].includes(key)) keys.right = false;
+      });
+
+      document.querySelectorAll('[data-move]').forEach(btn => {
+        btn.addEventListener('touchstart', e => {
+          e.preventDefault();
+          keys[btn.dataset.move] = true;
+        });
+        btn.addEventListener('touchend', e => {
+          e.preventDefault();
+          keys[btn.dataset.move] = false;
+        });
+        btn.addEventListener('mousedown', e => {
+          e.preventDefault();
+          keys[btn.dataset.move] = true;
+        });
+        btn.addEventListener('mouseup', e => {
+          e.preventDefault();
+          keys[btn.dataset.move] = false;
+        });
+      });
+
+      tryBtn.addEventListener('click', () => {
+        tryOverlay.classList.add('hidden');
+        startOverlay.classList.remove('hidden');
+      });
+
+      startBtn.addEventListener('click', () => {
+        if (!state.running) startGame();
+      });
+
+      restartBtn.addEventListener('click', () => {
+        gameOverOverlay.classList.add('hidden');
+        startOverlay.classList.remove('hidden');
+      });
+
+      function startGame() {
+        startOverlay.classList.add('hidden');
+        state.running = true;
+        state.score = 0;
+        state.lives = 3;
+        state.monkey.x = W / 2 - 30;
+        state.balloons = [];
+        state.crocodiles = [];
+        state.lastBalloonTime = 0;
+        state.lastCrocTime = 0;
+        createDecorations();
+        updateHud();
+        state.lastTime = performance.now();
+        requestAnimationFrame(loop);
+      }
+
+      function updateHud() {
+        scoreEl.textContent = state.score;
+        livesEl.textContent = state.lives;
+        bestEl.textContent = state.best;
+      }
+
+      function spawnBalloon() {
+        const colors = balloonColors;
+        const isSpecial8 = Math.random() < 0.15; // 15% chance of number 8 balloon
+        
+        state.balloons.push({
+          x: 50 + Math.random() * (W - 100),
+          y: -80,
+          speed: 1.5 + Math.random() * 1.5,
+          color: colors[Math.floor(Math.random() * colors.length)],
+          rotation: (Math.random() - 0.5) * 0.1,
+          size: 50 + Math.random() * 30,
+          isSpecial8: isSpecial8,
+        });
+      }
+
+      function spawnCrocodile() {
+        state.crocodiles.push({
+          x: Math.random() > 0.5 ? -140 : W + 140,
+          y: H - 70,
+          speed: 1.5 + Math.random() * 2,
+          direction: Math.random() > 0.5 ? 1 : -1,
+          snapTimer: 0,
+        });
+      }
+
+      function checkCollision(rect1, rect2) {
+        return rect1.x < rect2.x + rect2.width &&
+               rect1.x + rect1.width > rect2.x &&
+               rect1.y < rect2.y + rect2.height &&
+               rect1.y + rect1.height > rect2.y;
+      }
+
+      function gameOver() {
+        state.running = false;
+        if (state.score > state.best) {
+          state.best = state.score;
+          localStorage.setItem('henryMonkeyBest', state.best.toString());
+          gameOverTitle.textContent = '🎉 New Best Score Henry! 🎉';
+          gameOverText.innerHTML = `Amazing! You caught <strong>${state.score}</strong> balloons! Happy 8th Birthday!`;
+        } else {
+          gameOverTitle.textContent = 'Game Over!';
+          gameOverText.innerHTML = `You caught <strong>${state.score}</strong> balloons! Happy 8th Birthday Henry!`;
+        }
+        finalScoreEl.textContent = state.score;
+        gameOverOverlay.classList.remove('hidden');
+      }
+
+      function loop(now) {
+        if (!state.running) return;
+
+        const dt = Math.min((now - state.lastTime) / 1000, 0.1);
+        state.lastTime = now;
+
+        // Move monkey
+        if (keys.left && state.monkey.x > 0) {
+          state.monkey.x -= state.monkey.speed * 60 * dt;
+        }
+        if (keys.right && state.monkey.x < W - state.monkey.width) {
+          state.monkey.x += state.monkey.speed * 60 * dt;
+        }
+
+        // Update decorations
+        state.decorations.forEach(d => {
+          d.rotation += d.speed;
+          d.y += 0.5;
+          if (d.y > H) d.y = -20;
+        });
+
+        // Spawn balloons
+        if (now - state.lastBalloonTime > 800 + Math.random() * 1200) {
+          spawnBalloon();
+          state.lastBalloonTime = now;
+        }
+
+        // Spawn crocodiles
+        if (now - state.lastCrocTime > 3500 + Math.random() * 2000) {
+          spawnCrocodile();
+          state.lastCrocTime = now;
+        }
+
+        // Update balloons
+        for (let i = state.balloons.length - 1; i >= 0; i--) {
+          const b = state.balloons[i];
+          b.y += b.speed * 60 * dt;
+          b.rotation += 0.03;
+
+          // Check collision with monkey (more forgiving)
+          const balloonRect = {
+            x: b.x + b.size * 0.1,
+            y: b.y + b.size * 0.1,
+            width: b.size * 0.8,
+            height: b.size * 1.1 * 0.8
+          };
+          const monkeyRect = {
+            x: state.monkey.x + state.monkey.width * 0.2,
+            y: state.monkey.y + state.monkey.height * 0.2,
+            width: state.monkey.width * 0.6,
+            height: state.monkey.height * 0.6
+          };
+
+          if (checkCollision(balloonRect, monkeyRect)) {
+            state.score += b.isSpecial8 ? 2 : 1; // Special 8 balloon worth 2 points!
+            state.balloons.splice(i, 1);
+            updateHud();
+            continue;
+          }
+
+          // Remove if off screen
+          if (b.y > H) {
+            state.balloons.splice(i, 1);
+          }
+        }
+
+        // Update crocodiles
+        for (let i = state.crocodiles.length - 1; i >= 0; i--) {
+          const c = state.crocodiles[i];
+          c.x += c.speed * 60 * dt * c.direction;
+          c.snapTimer += dt;
+
+          // Check collision with monkey
+          const crocRect = {
+            x: c.x + 20,
+            y: c.y + 15,
+            width: 100,
+            height: 40
+          };
+          const monkeyRect = {
+            x: state.monkey.x + state.monkey.width * 0.15,
+            y: state.monkey.y + state.monkey.height * 0.15,
+            width: state.monkey.width * 0.7,
+            height: state.monkey.height * 0.7
+          };
+
+          if (checkCollision(crocRect, monkeyRect)) {
+            state.lives--;
+            state.crocodiles.splice(i, 1);
+            updateHud();
+            if (state.lives <= 0) {
+              gameOver();
+              return;
+            }
+            // Brief invincibility - move monkey to center
+            state.monkey.x = W / 2 - 30;
+            continue;
+          }
+
+          // Remove if off screen
+          if ((c.direction > 0 && c.x > W + 140) || (c.direction < 0 && c.x < -140)) {
+            state.crocodiles.splice(i, 1);
+          }
+        }
+
+        draw();
+        requestAnimationFrame(loop);
+      }
+
+      function draw() {
+        // Clear canvas
+        ctx.fillRect(0, 0, W, H);
+
+        // Draw background gradient
+        const bgGradient = ctx.createLinearGradient(0, 0, 0, H);
+        bgGradient.addColorStop(0, '#87ceeb');
+        bgGradient.addColorStop(0.6, '#ffd6e8');
+        bgGradient.addColorStop(1, '#ffb3d9');
+        ctx.fillStyle = bgGradient;
+        ctx.fillRect(0, 0, W, H);
+
+        // Draw floating decorations
+        state.decorations.forEach(d => {
+          ctx.save();
+          ctx.translate(d.x, d.y);
+          ctx.rotate(d.rotation);
+          if (d.type === 'confetti') {
+            ctx.fillStyle = balloonColors[Math.floor(Math.random() * balloonColors.length)];
+            ctx.fillRect(-d.size/2, -d.size/2, d.size, d.size);
+          } else {
+            ctx.fillStyle = '#ffd700';
+            ctx.beginPath();
+            for (let i = 0; i < 5; i++) {
+              const angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
+              const x = Math.cos(angle) * d.size;
+              const y = Math.sin(angle) * d.size;
+              if (i === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+          }
+          ctx.restore();
+        });
+
+        // Draw balloons
+        state.balloons.forEach(b => {
+          ctx.save();
+          ctx.translate(b.x + b.size / 2, b.y + b.size / 2);
+          ctx.rotate(b.rotation);
+          
+          if (b.isSpecial8 && images.number8Balloon.complete) {
+            ctx.drawImage(images.number8Balloon, -b.size / 2, -b.size / 2, b.size, b.size * 1.3);
+          } else {
+            const balloonImg = images.balloons[balloonColors.indexOf(b.color) % images.balloons.length];
+            if (balloonImg.complete) {
+              ctx.drawImage(balloonImg, -b.size / 2, -b.size / 2, b.size, b.size * 1.3);
+            } else {
+              ctx.fillStyle = b.color;
+              ctx.beginPath();
+              ctx.ellipse(0, 0, b.size / 2, b.size / 2 * 0.75, 0, 0, Math.PI * 2);
+              ctx.fill();
+            }
+          }
+          ctx.restore();
+        });
+
+        // Draw crocodiles
+        state.crocodiles.forEach(c => {
+          ctx.save();
+          ctx.scale(c.direction, 1);
+          if (images.croc.complete) {
+            ctx.drawImage(images.croc, c.direction > 0 ? c.x : -c.x - 140, c.y, 140, 70);
+          } else {
+            ctx.fillStyle = '#228b22';
+            ctx.fillRect(c.direction > 0 ? c.x : -c.x - 140, c.y, 140, 70);
+          }
+          ctx.restore();
+        });
+
+        // Draw monkey
+        if (images.monkey.complete) {
+          ctx.drawImage(images.monkey, state.monkey.x, state.monkey.y, state.monkey.width, state.monkey.height);
+        } else {
+          ctx.fillStyle = '#d4a574';
+          ctx.beginPath();
+          ctx.arc(state.monkey.x + state.monkey.width / 2, state.monkey.y + state.monkey.height / 2, state.monkey.width / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }
+
+        // Draw lives hearts
+        for (let i = 0; i < state.lives; i++) {
+          ctx.fillStyle = '#ff6b9d';
+          ctx.font = 'bold 28px Arial';
+          ctx.fillText('💝', 20 + i * 40, 35);
+        }
+
+        // Draw "Happy 8th Birthday Henry!" text overlay
+        ctx.save();
+        ctx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('Happy 8th Birthday Henry!', W / 2, 25);
+        ctx.restore();
+      }
+
+      // Initial draw
+      draw();
+    })();
+  </script>
+</body>
+</html>
