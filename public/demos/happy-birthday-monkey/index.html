@@ -524,10 +524,18 @@
       }
 
       // Listen for fullscreen changes
-      document.addEventListener('fullscreenchange', resizeCanvas);
-      document.addEventListener('webkitfullscreenchange', resizeCanvas);
-      document.addEventListener('mozfullscreenchange', resizeCanvas);
-      document.addEventListener('MSFullscreenChange', resizeCanvas);
+      document.addEventListener('fullscreenchange', () => {
+        setTimeout(resizeCanvas, 100); // Small delay to ensure fullscreen is complete
+      });
+      document.addEventListener('webkitfullscreenchange', () => {
+        setTimeout(resizeCanvas, 100);
+      });
+      document.addEventListener('mozfullscreenchange', () => {
+        setTimeout(resizeCanvas, 100);
+      });
+      document.addEventListener('MSFullscreenChange', () => {
+        setTimeout(resizeCanvas, 100);
+      });
       
       // Resize canvas on window resize
       window.addEventListener('resize', resizeCanvas);
@@ -594,12 +602,14 @@
 
       startBtn.addEventListener('click', () => {
         if (!state.running) {
-          // Try to enter fullscreen, but don't wait for it
-          requestFullscreen().catch(() => {
-            // Fullscreen failed, but that's okay - start game anyway
-          });
-          // Start game immediately
+          // Start game first, then request fullscreen
           startGame();
+          // Try to enter fullscreen after a short delay (non-blocking)
+          setTimeout(() => {
+            requestFullscreen().catch(() => {
+              // Fullscreen failed, but that's okay - game is already running
+            });
+          }, 100);
         }
       });
 
@@ -633,45 +643,43 @@
         // Ensure canvas is properly sized
         resizeCanvas();
         
-        // Wait a frame to ensure canvas is ready
-        requestAnimationFrame(() => {
-          // Recalculate dimensions in case canvas was resized
-          const currentW = canvas.width;
-          const currentH = canvas.height;
-          const currentGroundY = currentH - 100;
-          
-          state.running = true;
-          state.score = 0;
-          state.lives = 3;
-          state.monkey.x = currentW / 2 - 30;
-          state.monkey.y = currentGroundY;
-          state.monkey.vy = 0;
-          state.monkey.isJumping = false;
-          state.monkey.onGround = true;
-          state.monkey.walkFrame = 0;
-          state.balloons = [];
-          state.crocodiles = [];
-          state.particles = [];
-          state.effects = [];
-          state.lastBalloonTime = 0;
-          state.lastCrocTime = 0;
-          state.gameSpeed = 1;
-          state.combo = 0;
-          state.multiplier = 1;
-          state.comboTimer = 0;
-          state.shield = false;
-          state.shieldTimer = 0;
-          state.slowMotion = false;
-          state.slowMotionTimer = 0;
-          state.screenShake = 0;
-          state.lastComboTime = 0;
-          createDecorations();
-          updateHud();
-          state.lastTime = performance.now();
-          
-          // Start game loop
-          requestAnimationFrame(loop);
-        });
+        // Recalculate dimensions
+        const currentW = canvas.width || 900;
+        const currentH = canvas.height || 506;
+        const currentGroundY = currentH - 100;
+        
+        // Initialize game state immediately
+        state.running = true;
+        state.score = 0;
+        state.lives = 3;
+        state.monkey.x = currentW / 2 - 30;
+        state.monkey.y = currentGroundY;
+        state.monkey.vy = 0;
+        state.monkey.isJumping = false;
+        state.monkey.onGround = true;
+        state.monkey.walkFrame = 0;
+        state.balloons = [];
+        state.crocodiles = [];
+        state.particles = [];
+        state.effects = [];
+        state.lastBalloonTime = 0;
+        state.lastCrocTime = 0;
+        state.gameSpeed = 1;
+        state.combo = 0;
+        state.multiplier = 1;
+        state.comboTimer = 0;
+        state.shield = false;
+        state.shieldTimer = 0;
+        state.slowMotion = false;
+        state.slowMotionTimer = 0;
+        state.screenShake = 0;
+        state.lastComboTime = 0;
+        createDecorations();
+        updateHud();
+        state.lastTime = performance.now();
+        
+        // Start game loop immediately
+        loop(state.lastTime);
       }
 
       function updateHud() {
@@ -715,7 +723,17 @@
         const dt = Math.min((now - state.lastTime) / 1000, 0.1);
         state.lastTime = now;
         
-        // Update canvas dimensions if needed
+        // Update canvas dimensions if needed (check every frame)
+        const rect = canvas.getBoundingClientRect();
+        if (canvas.width !== rect.width || canvas.height !== rect.height) {
+          canvas.width = rect.width;
+          canvas.height = rect.height;
+          if (state.running) {
+            state.monkey.y = rect.height - 100;
+            state.monkey.x = Math.max(0, Math.min(rect.width - state.monkey.width, state.monkey.x));
+          }
+        }
+        
         const currentW = canvas.width;
         const currentH = canvas.height;
         const currentGroundY = currentH - 100;
