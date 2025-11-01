@@ -121,63 +121,6 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
     }
   };
 
-  const handleDeploy = async () => {
-    if (!submission) return;
-    setActionLoading(true);
-    setActionMessage('');
-
-    try {
-      const response = await fetch(`/api/admin/games/${submissionId}/deploy`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        // Handle serverless deployment error with instructions
-        if (data.error === 'File system deployment not available in serverless environment' && data.instructions) {
-          setDeploymentData({
-            instructions: data.instructions,
-            gameData: data.gameData,
-          });
-          
-          const instructions = data.instructions;
-          const gameData = data.gameData;
-          
-          // Create a detailed error message with instructions
-          let errorMsg = `⚠️ ${data.error}\n\n📝 ${data.details}\n\n`;
-          
-          if (instructions.local) {
-            errorMsg += `💻 Local Deployment:\n${instructions.local}\n\n`;
-          }
-          
-          if (instructions.manual) {
-            errorMsg += `📋 Manual Deployment Steps:\n${instructions.manual.map((step: string) => `  ${step}`).join('\n')}\n\n`;
-          }
-          
-          if (gameData) {
-            errorMsg += `💡 Game Information:\n  Slug: ${gameData.slug}\n  Title: ${gameData.gameEntry.title}\n  Code available below ↓\n`;
-          }
-          
-          setActionMessage(errorMsg);
-          setTimeout(() => setActionMessage(''), 20000); // Show longer for instructions
-          return;
-        }
-        
-        throw new Error(data.error || data.details || 'Failed to deploy');
-      }
-
-      setSubmission(data.submission);
-      setActionMessage('🚀 Game deployed successfully! Commit changes to git.');
-      setTimeout(() => setActionMessage(''), 5000);
-    } catch (err) {
-      setActionMessage('❌ ' + (err instanceof Error ? err.message : 'Deployment failed'));
-    } finally {
-      setActionLoading(false);
-    }
-  };
-
   const copyCode = async () => {
     if (submission?.generatedCode) {
       try {
@@ -190,7 +133,7 @@ export default function GameSubmissionDetail({ submissionId }: GameSubmissionDet
     }
   };
 
-  const copyCode = async () => {
+  if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
         <div className="text-gray-600">Loading submission...</div>
