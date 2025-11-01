@@ -726,22 +726,22 @@
       // MOVED OUT OF GAME LOOP - Only resize on actual resize events
       function resizeCanvas() {
         const rect = canvas.getBoundingClientRect();
-        const displayWidth = rect.width;
-        const displayHeight = rect.height;
+        const displayWidth = Math.max(rect.width || 900, 100); // Ensure minimum width
+        const displayHeight = Math.max(rect.height || 506, 100); // Ensure minimum height
         
-        if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
-          canvas.width = displayWidth;
-          canvas.height = displayHeight;
-          
-          // Update state dimensions
-          state.canvasW = displayWidth;
-          state.canvasH = displayHeight;
-          state.groundY = displayHeight - 100;
-          
-          if (state.running) {
-            state.monkey.y = state.groundY;
-            state.monkey.x = Math.max(0, Math.min(state.canvasW - state.monkey.width, state.monkey.x));
-          }
+        // Always update state dimensions, even if canvas size hasn't changed
+        // This ensures state is always in sync
+        canvas.width = displayWidth;
+        canvas.height = displayHeight;
+        
+        // Update state dimensions
+        state.canvasW = displayWidth;
+        state.canvasH = displayHeight;
+        state.groundY = displayHeight - 100;
+        
+        if (state.running) {
+          state.monkey.y = state.groundY;
+          state.monkey.x = Math.max(0, Math.min(state.canvasW - state.monkey.width, state.monkey.x));
         }
       }
 
@@ -863,7 +863,20 @@
         resetJoystick();
         startOverlay.classList.add('hidden');
         
+        // Ensure canvas is properly sized before starting
         resizeCanvas();
+        
+        // Validate dimensions before starting
+        if (state.canvasW <= 0 || state.canvasH <= 0) {
+          console.warn('Invalid canvas dimensions, retrying...');
+          setTimeout(() => {
+            resizeCanvas();
+            if (state.canvasW > 0 && state.canvasH > 0) {
+              startGame();
+            }
+          }, 100);
+          return;
+        }
         
         requestAnimationFrame(() => {
           state.running = true;
@@ -899,6 +912,7 @@
           updateHud();
           state.lastTime = performance.now();
           
+          // Start game loop immediately
           requestAnimationFrame(loop);
         });
       }
