@@ -29,24 +29,30 @@ export async function GET(
     });
 
     if (!submission || !submission.generatedCode) {
-      return NextResponse.json(
-        { error: 'Game not found or not approved' },
-        { status: 404 }
-      );
+      return new NextResponse('Game not found or not approved', {
+        status: 404,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+        },
+      });
     }
 
-    // Serve the HTML code
+    // Serve the HTML code with proper headers for iframe embedding
     return new NextResponse(submission.generatedCode, {
       headers: {
         'Content-Type': 'text/html; charset=utf-8',
         'Cache-Control': 'public, s-maxage=3600, stale-while-revalidate=86400',
+        'X-Frame-Options': 'SAMEORIGIN',
+        'X-Content-Type-Options': 'nosniff',
       },
     });
   } catch (error) {
     console.error('[API] Game demo error:', error);
-    return NextResponse.json(
-      { error: 'Failed to load game' },
-      { status: 500 }
-    );
+    return new NextResponse('Failed to load game', {
+      status: 500,
+      headers: {
+        'Content-Type': 'text/html; charset=utf-8',
+      },
+    });
   }
 }
