@@ -954,18 +954,29 @@
         if (!state.lastTime) state.lastTime = now;
 
         // Calculate delta time - clamp to prevent large jumps (e.g., tab switching)
-        // Use max 0.033s (30fps) to prevent physics issues, but allow larger for frame skips
         const rawDt = (now - state.lastTime) / 1000;
-        const dt = Math.min(rawDt, 0.033); // Cap at 30fps for physics calculations
-        state.lastTime = now;
         
-        // Skip frame if delta is too large (likely tab was inactive)
-        if (rawDt > 0.1) {
+        // On first frame, dt might be 0 or very small - use a small default
+        let dt = rawDt;
+        if (dt <= 0 || dt > 0.1) {
+          // If delta is too large (tab was inactive) or invalid, skip frame
+          state.lastTime = now;
           requestAnimationFrame(loop);
           return;
         }
         
-        // REMOVED: Canvas resize check from game loop - now only happens on window resize event
+        // Clamp dt to reasonable values for physics
+        dt = Math.min(dt, 0.033); // Cap at 30fps for physics calculations
+        state.lastTime = now;
+        
+        // Ensure canvas dimensions are valid
+        if (state.canvasW <= 0 || state.canvasH <= 0) {
+          resizeCanvas();
+          if (state.canvasW <= 0 || state.canvasH <= 0) {
+            requestAnimationFrame(loop);
+            return;
+          }
+        }
         
         const currentW = state.canvasW;
         const currentH = state.canvasH;
