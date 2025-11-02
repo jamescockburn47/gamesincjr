@@ -67,6 +67,7 @@
       border: 4px solid rgba(255, 107, 157, 0.4);
       box-shadow: 0 20px 60px rgba(255, 107, 157, 0.3);
       background: linear-gradient(180deg, #87ceeb 0%, #ffd6e8 60%, #ffb3d9 100%);
+      touch-action: none; /* Prevent default touch behaviors */
     }
 
     canvas {
@@ -396,9 +397,9 @@
       // NEW DRAG-TO-MOVE & TAP-TO-JUMP TOUCH SYSTEM
       const touches = new Map(); // touchId -> { startX, startY, currentX, currentY, startTime, isDrag }
       let dragVelocity = 0; // Current horizontal drag velocity (-1 to 1)
-      const DRAG_THRESHOLD = 10; // Pixels of movement to count as drag vs tap
-      const TAP_TIME_THRESHOLD = 250; // Max ms for a tap
-      const DRAG_SENSITIVITY = 0.02; // How responsive dragging is
+      const DRAG_THRESHOLD = 15; // Pixels of movement to count as drag vs tap (increased for better detection)
+      const TAP_TIME_THRESHOLD = 300; // Max ms for a tap (increased for easier taps)
+      const DRAG_SENSITIVITY = 0.04; // How responsive dragging is (doubled for better responsiveness)
 
       // PRE-CACHE ALL IMAGES
       const imageCache = {
@@ -525,7 +526,14 @@
       function handleTouchStart(e) {
         e.preventDefault();
         e.stopPropagation();
-        if (!state.running) return;
+        // Allow touch even when game not running (for testing/starting)
+        const wasRunning = state.running;
+        if (!state.running && touches.size === 0) {
+          // First touch when not running - could start game
+          // But don't start automatically - let user click button
+          return;
+        }
+        if (!state.running && touches.size > 0) return;
 
         Array.from(e.changedTouches).forEach(touch => {
           const pos = getTouchPosition(touch);
@@ -577,11 +585,11 @@
         if (dragTouches > 0) {
           dragVelocity = Math.max(-1, Math.min(1, totalDrag * DRAG_SENSITIVITY));
           
-          // Set keyboard keys based on drag direction
-          if (dragVelocity < -0.1) {
+          // Set keyboard keys based on drag direction with lower threshold for responsiveness
+          if (dragVelocity < -0.05) {
             keys.left = true;
             keys.right = false;
-          } else if (dragVelocity > 0.1) {
+          } else if (dragVelocity > 0.05) {
             keys.right = true;
             keys.left = false;
           } else {
@@ -660,15 +668,21 @@
       }
 
       // Attach to both canvas and stage for maximum compatibility
-      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-      canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-      canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-      canvas.addEventListener('touchcancel', handleTouchCancel, { passive: false });
+      // Also attach to document body for when game is in iframe
+      const attachTouchListeners = (element) => {
+        element.addEventListener('touchstart', handleTouchStart, { passive: false });
+        element.addEventListener('touchmove', handleTouchMove, { passive: false });
+        element.addEventListener('touchend', handleTouchEnd, { passive: false });
+        element.addEventListener('touchcancel', handleTouchCancel, { passive: false });
+      };
+
+      attachTouchListeners(canvas);
+      attachTouchListeners(stage);
       
-      stage.addEventListener('touchstart', handleTouchStart, { passive: false });
-      stage.addEventListener('touchmove', handleTouchMove, { passive: false });
-      stage.addEventListener('touchend', handleTouchEnd, { passive: false });
-      stage.addEventListener('touchcancel', handleTouchCancel, { passive: false });
+      // Also attach to body for better coverage (some mobile browsers need this)
+      if (isTouchDevice) {
+        attachTouchListeners(document.body);
+      }
 
       // Keyboard controls
       window.addEventListener('keydown', e => {
