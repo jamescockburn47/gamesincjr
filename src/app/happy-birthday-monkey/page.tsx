@@ -1,5 +1,6 @@
 import PageHeader from "@/components/PageHeader";
 import PageShell from "@/components/PageShell";
+import GameEmbed from "@/components/GameEmbed";
 
 export const metadata = {
   title: "Happy 8th Birthday Henry! • Games Inc Jr",
@@ -25,19 +26,10 @@ export default function HappyBirthdayMonkeyPage() {
             </p>
           </div>
 
-          {/* Game iframe */}
+          {/* Game embedded directly */}
           <div className="relative w-full rounded-xl overflow-hidden border-2 border-pink-200 bg-gradient-to-br from-pink-50 to-purple-50">
-            <div className="aspect-video">
-              <iframe
-                src="/demos/happy-birthday-monkey/index.html"
-                className="absolute inset-0 h-full w-full"
-                title="Happy 8th Birthday Henry Monkey Game"
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                sandbox="allow-scripts allow-same-origin"
-                allow="fullscreen"
-                allowFullScreen
-              />
+            <div className="aspect-video bg-black">
+              <GameEmbed gamePath="/demos/happy-birthday-monkey/index.html" />
             </div>
           </div>
         </section>

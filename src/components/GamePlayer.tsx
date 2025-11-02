@@ -23,11 +23,12 @@ interface GamePlayerProps {
 }
 
 export default function GamePlayer({ game }: GamePlayerProps) {
-  const [isLoading, setIsLoading] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [gameHtml, setGameHtml] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const iframeRef = useRef<HTMLIFrameElement | null>(null);
+  const gameContentRef = useRef<HTMLDivElement | null>(null);
   const isClient = useMemo(() => typeof window !== 'undefined', []);
 
   useEffect(() => {
@@ -41,16 +42,35 @@ export default function GamePlayer({ game }: GamePlayerProps) {
     return () => window.removeEventListener('resize', setVh);
   }, [isClient]);
 
+  // Load game HTML
   useEffect(() => {
-    if (!isClient) return;
-    
-    // Listen for fullscreen requests from iframe content
-    const handleMessage = (event: MessageEvent) => {
-      if (event.data?.type === 'REQUEST_FULLSCREEN' && event.data?.source === 'happy-birthday-monkey') {
-        enterFullscreen();
+    if (!isClient || !game.demoPath) return;
+
+    const loadGame = async () => {
+      try {
+        setIsLoading(true);
+        setError(null);
+        
+        const response = await fetch(game.demoPath);
+        if (!response.ok) {
+          throw new Error(`Failed to load game: ${response.status}`);
+        }
+        
+        const html = await response.text();
+        setGameHtml(html);
+      } catch (err) {
+        setError(err instanceof Error ? err.message : 'Failed to load game');
+        console.error('Game load error:', err);
+      } finally {
+        setIsLoading(false);
       }
     };
-    window.addEventListener('message', handleMessage);
+
+    loadGame();
+  }, [isClient, game.demoPath]);
+
+  useEffect(() => {
+    if (!isClient) return;
     
     const onFsChange = () => {
       const fsDoc = document as FullscreenDocument;
@@ -62,7 +82,6 @@ export default function GamePlayer({ game }: GamePlayerProps) {
     const vendorDoc = document as Document & Partial<WebkitFullscreenEvents>;
     try { vendorDoc.addEventListener?.('webkitfullscreenchange', onFsChange as EventListener); } catch {}
     return () => {
-      window.removeEventListener('message', handleMessage);
       document.removeEventListener('fullscreenchange', onFsChange);
       try { vendorDoc.removeEventListener?.('webkitfullscreenchange', onFsChange as EventListener); } catch {}
     };
@@ -70,25 +89,16 @@ export default function GamePlayer({ game }: GamePlayerProps) {
 
   const enterFullscreen = async () => {
     try {
-      // Try to fullscreen the iframe first (better for embedded games)
-      if (iframeRef.current) {
-        const iframe = iframeRef.current as FullscreenElement;
-        if (iframe.requestFullscreen) {
-          await iframe.requestFullscreen();
-          return;
-        } else if (iframe.webkitRequestFullscreen) {
-          await iframe.webkitRequestFullscreen();
-          return;
-        }
-      }
-      
-      // Fallback to container fullscreen
       const target = containerRef.current;
       if (!target) return;
       const el = target as FullscreenElement;
       if (el.requestFullscreen) await el.requestFullscreen();
       else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
-    } catch {}
+      else if ((el as any).mozRequestFullScreen) await (el as any).mozRequestFullScreen();
+      else if ((el as any).msRequestFullscreen) await (el as any).msRequestFullscreen();
+    } catch (err) {
+      console.error('Fullscreen error:', err);
+    }
   };
 
   const exitFullscreen = async () => {
@@ -122,19 +132,30 @@ export default function GamePlayer({ game }: GamePlayerProps) {
               )}
             </div>
 
-            {/* Viewport container: aspect ratio by default; fills screen in fullscreen via CSS */}
-            <div className="relative w-full aspect-video game-viewport">
-              <iframe
-                ref={iframeRef}
-                src={game.demoPath}
-                className="absolute inset-0 h-full w-full"
-                title={`${game.title} Demo`}
-                loading="lazy"
-                referrerPolicy="no-referrer"
-                sandbox="allow-scripts allow-same-origin"
-                allow="fullscreen"
-                allowFullScreen
-              />
+            {/* Game content container */}
+            <div className="relative w-full aspect-video game-viewport bg-black">
+              {isLoading && (
+                <div className="absolute inset-0 flex items-center justify-center text-white">
+                  <div className="text-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+                    <p className="text-sm">Loading game...</p>
+                  </div>
+                </div>
+              )}
+              
+              {error && (
+                <div className="absolute inset-0 flex items-center justify-center text-red-400 p-4">
+                  <p className="text-center">{error}</p>
+                </div>
+              )}
+              
+              {gameHtml && !isLoading && !error && (
+                <div 
+                  ref={gameContentRef}
+                  className="w-full h-full"
+                  dangerouslySetInnerHTML={{ __html: gameHtml }}
+                />
+              )}
             </div>
           </div>
         );
