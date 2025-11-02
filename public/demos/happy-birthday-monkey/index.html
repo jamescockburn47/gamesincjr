@@ -954,7 +954,8 @@
         keys.jump = false;
         touches.clear();
         dragVelocity = 0;
-        startOverlay.classList.add('hidden');
+        // Description page is already hidden, gameOverOverlay should be hidden
+        gameOverOverlay.classList.add('hidden');
         
         resizeCanvas();
         
