@@ -58,73 +58,29 @@
       font-size: 1.2em;
     }
 
-    /* Description Page Styles */
-    .description-page {
-      width: 100%;
-      max-width: 900px;
-      margin: 0 auto;
+    /* Start Screen Styles */
+    .start-screen {
+      position: fixed;
+      inset: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: linear-gradient(180deg, #ffd6e8 0%, #ffe0f0 50%, #fff4f8 100%);
+      z-index: 10000;
     }
 
-    .description-content {
-      background: white;
-      border-radius: 28px;
-      padding: 40px;
-      box-shadow: 0 20px 60px rgba(255, 107, 157, 0.3);
-    }
-
-    .description-content h2 {
+    .start-content {
       text-align: center;
-      font-size: clamp(2rem, 5vw, 3rem);
-      color: #ff6b9d;
-      margin-bottom: 30px;
+      padding: 40px;
     }
 
-    .game-preview {
-      margin: 30px 0;
-      border-radius: 20px;
-      overflow: hidden;
-      border: 4px solid rgba(255, 107, 157, 0.4);
+    .start-screen h1 {
+      margin-bottom: 20px;
     }
 
-    .preview-image {
-      position: relative;
-      width: 100%;
-      aspect-ratio: 16 / 9;
-      background: linear-gradient(180deg, #87ceeb 0%, #ffd6e8 60%, #ffb3d9 100%);
-    }
-
-    #previewCanvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    .game-info {
-      margin-top: 30px;
-    }
-
-    .game-info h3 {
-      font-size: 1.5rem;
-      color: #ff6b9d;
-      margin-bottom: 15px;
-    }
-
-    .game-info ul {
-      list-style: none;
-      padding: 0;
-      margin: 0 0 30px 0;
-    }
-
-    .game-info li {
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(255, 107, 157, 0.2);
-      color: #5a2d4a;
-      font-size: 1rem;
-      line-height: 1.6;
-    }
-
-    .game-info li:last-child {
-      border-bottom: none;
+    .start-screen .tagline {
+      margin-bottom: 40px;
+      font-size: clamp(1.2rem, 3vw, 1.5rem);
     }
 
     .start-button {
@@ -166,14 +122,6 @@
       z-index: 9999;
     }
     
-    /* When embedded, use relative positioning instead of fixed */
-    .stage.embedded {
-      position: relative;
-      width: 100%;
-      height: 100%;
-      min-height: 400px;
-      aspect-ratio: 16 / 9;
-    }
 
     canvas {
       display: block;
@@ -285,36 +233,12 @@
   </style>
 </head>
 <body>
-  <h1>🎉 Happy 8th Birthday Henry! 🎉</h1>
-  <p class="tagline">Jump and catch balloons while avoiding snapping crocodiles! <span class="heart">💝</span></p>
-
-  <div class="hud" role="status" aria-live="polite">
-    <div>Balloons:<span id="score">0</span></div>
-    <div>Lives:<span id="lives">3</span></div>
-    <div>Best:<span id="best">0</span></div>
-  </div>
-
-  <!-- Game Description Page (shown before fullscreen) -->
-  <div id="descriptionPage" class="description-page">
-    <div class="description-content">
-      <h2>🎂 Happy 8th Birthday Henry! 🎂</h2>
-      <div class="game-preview">
-        <div class="preview-image">
-          <canvas id="previewCanvas" width="900" height="506"></canvas>
-        </div>
-      </div>
-      <div class="game-info">
-        <h3>How to Play</h3>
-        <ul>
-          <li><strong>Desktop:</strong> Use arrow keys (← →) to move, SPACE or ↑ to jump</li>
-          <li><strong>Mobile/Touch:</strong> Drag anywhere to move, tap anywhere to jump</li>
-          <li>Catch colorful balloons to earn points</li>
-          <li>Avoid the snapping crocodiles - they'll take a life!</li>
-          <li>Jump on a crocodile's back for a boost (if you're brave!)</li>
-          <li>Special balloons give you power-ups like shields and slow motion</li>
-        </ul>
-        <button id="startBtn" class="start-button">Start Game (Fullscreen)</button>
-      </div>
+  <!-- Simple start screen -->
+  <div id="startScreen" class="start-screen">
+    <div class="start-content">
+      <h1>🎉 Happy 8th Birthday Henry! 🎉</h1>
+      <p class="tagline">Jump and catch balloons while avoiding snapping crocodiles! <span class="heart">💝</span></p>
+      <button id="startBtn" class="start-button">Start Now</button>
     </div>
   </div>
 
@@ -336,23 +260,6 @@
   <script type="module">
     (() => {
       // ============================================================================
-      // EMBEDDED DETECTION - Single, immediate check (no race conditions)
-      // ============================================================================
-      const isEmbedded = (() => {
-        // Check if in iframe
-        try {
-          if (window.self !== window.top) return true;
-        } catch (e) {
-          return true;
-        }
-        
-        // Check for embedding container classes
-        return !!document.querySelector('.game-embed-container, .aspect-video, .game-content-ref, .game-viewport');
-      })();
-      
-      console.log('[Happy Birthday Monkey] Embedded mode:', isEmbedded);
-      
-      // ============================================================================
       // ERROR LOGGING
       // ============================================================================
       const ERROR_LOG = [];
@@ -365,8 +272,7 @@
           userAgent: navigator.userAgent,
           touchDevice: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
           fullscreen: !!document.fullscreenElement,
-          windowSize: { w: window.innerWidth, h: window.innerHeight },
-          embedded: isEmbedded
+          windowSize: { w: window.innerWidth, h: window.innerHeight }
         };
         ERROR_LOG.push(entry);
         console.log(`[${category}]`, message, error || '');
@@ -391,10 +297,8 @@
       // ============================================================================
       const canvas = document.getElementById('game');
       const ctx = canvas?.getContext('2d');
-      const previewCanvas = document.getElementById('previewCanvas');
-      const previewCtx = previewCanvas?.getContext('2d');
       const stage = document.getElementById('stage');
-      const descriptionPage = document.getElementById('descriptionPage');
+      const startScreen = document.getElementById('startScreen');
       const gameOverOverlay = document.getElementById('gameOverOverlay');
       const startBtn = document.getElementById('startBtn');
       const fullscreenBtn = document.getElementById('fullscreenBtn');
@@ -646,7 +550,7 @@
       // FULLSCREEN HANDLING
       // ============================================================================
       function requestFullscreen() {
-        // Always try fullscreen - even when embedded, it may work (e.g., user gesture)
+        // Request fullscreen
         const elem = stage;
         
         if (elem.requestFullscreen) {
@@ -778,10 +682,6 @@
       ]).then(() => {
         logError('INIT', 'All images loaded');
         createDecorations();
-        if (!state.running) {
-          drawPreview();
-          draw();
-        }
       });
 
       // ============================================================================
@@ -961,42 +861,6 @@
         if (['arrowup', ' ', 'w'].includes(key)) keys.jump = false;
       });
 
-      // ============================================================================
-      // PREVIEW DRAWING (on description page)
-      // ============================================================================
-      function drawPreview() {
-        if (!previewCtx || !previewCanvas) return;
-        
-        const w = previewCanvas.width;
-        const h = previewCanvas.height;
-        const groundY = h - 100;
-        
-        const bgGradient = previewCtx.createLinearGradient(0, 0, 0, h);
-        bgGradient.addColorStop(0, '#b0d4f0');
-        bgGradient.addColorStop(0.5, '#ffd6e8');
-        bgGradient.addColorStop(1, '#ffb3d9');
-        previewCtx.fillStyle = bgGradient;
-        previewCtx.fillRect(0, 0, w, h);
-        
-        previewCtx.fillStyle = '#ffb3d9';
-        previewCtx.fillRect(0, groundY + 100, w, h - groundY - 100);
-        
-        const monkeyFrame = imageCache.monkeyFrames[0];
-        if (monkeyFrame.complete && monkeyFrame.naturalWidth > 0) {
-          previewCtx.drawImage(monkeyFrame, w/2 - 30, groundY, 60, 100);
-        }
-        
-        const balloonImg = imageCache.balloons[0];
-        if (balloonImg.complete && balloonImg.naturalWidth > 0) {
-          previewCtx.drawImage(balloonImg, w/4, groundY - 100, 50, 65);
-          previewCtx.drawImage(balloonImg, w/4 * 3, groundY - 150, 50, 65);
-        }
-        
-        previewCtx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-        previewCtx.font = 'bold 32px Arial';
-        previewCtx.textAlign = 'center';
-        previewCtx.fillText('Happy 8th Birthday Henry!', w/2, 50);
-      }
 
       // ============================================================================
       // START GAME FLOW - Simplified, no race conditions
@@ -1007,61 +871,51 @@
           return;
         }
         
-        logError('START', 'Starting game flow (embedded: ' + isEmbedded + ')');
+        logError('START', 'Starting game flow');
         
-        // Hide description page
-        if (descriptionPage) descriptionPage.classList.add('hidden');
+        // Hide start screen
+        if (startScreen) {
+          startScreen.style.display = 'none';
+        }
         
         // Show stage
         if (stage) {
           stage.classList.remove('hidden');
-          if (isEmbedded) {
-            stage.classList.add('embedded');
-          }
         }
         
-        // Show fullscreen button when game starts
+        // Show fullscreen button
         if (fullscreenBtn) {
           fullscreenBtn.style.display = 'block';
         }
         
-        // Add running class to body (only if not embedded)
-        if (!isEmbedded) {
-          document.body.classList.add('game-running');
-        }
+        // Lock body scroll
+        document.body.classList.add('game-running');
         
-        // Always try to request fullscreen (even when embedded, browser may allow it)
+        // Always go fullscreen and start game
         try {
           await requestFullscreen();
           logError('START', 'Fullscreen requested');
           
-          if (!isEmbedded) {
-            // Standalone mode: wait for fullscreen event before starting
-            document.addEventListener('fullscreenchange', function onFullscreen() {
-              if (document.fullscreenElement === stage) {
-                document.removeEventListener('fullscreenchange', onFullscreen);
-                setTimeout(() => {
-                  resizeCanvas();
-                  startGame();
-                }, 100);
-              }
-            });
-            
-            // Fallback if fullscreen event doesn't fire
-            setTimeout(() => {
-              if (!state.running) {
-                logError('START', 'Fullscreen event timeout, starting anyway');
+          // Wait for fullscreen event before starting
+          const onFullscreen = () => {
+            if (document.fullscreenElement === stage) {
+              document.removeEventListener('fullscreenchange', onFullscreen);
+              setTimeout(() => {
                 resizeCanvas();
                 startGame();
-              }
-            }, 500);
-          } else {
-            // Embedded mode: try fullscreen but don't wait - start immediately
-            setTimeout(() => {
+              }, 100);
+            }
+          };
+          document.addEventListener('fullscreenchange', onFullscreen);
+          
+          // Fallback if fullscreen event doesn't fire
+          setTimeout(() => {
+            if (!state.running) {
+              logError('START', 'Fullscreen event timeout, starting anyway');
               resizeCanvas();
               startGame();
-            }, 100);
-          }
+            }
+          }, 500);
           
         } catch (err) {
           logError('START', 'Fullscreen failed, starting anyway', err);
@@ -1163,7 +1017,7 @@
         
         setTimeout(() => {
           stage.classList.add('hidden');
-          descriptionPage.classList.remove('hidden');
+          if (startScreen) startScreen.style.display = 'flex';
           document.body.classList.remove('game-running');
           gameOverOverlay.classList.add('hidden');
           
@@ -1175,41 +1029,9 @@
           state.crocodiles = [];
           state.particles = [];
           state.effects = [];
-          drawPreview();
         }, 300);
       });
 
-      // ============================================================================
-      // AUTO-START FOR EMBEDDED MODE (single attempt, no spam)
-      // ============================================================================
-      if (isEmbedded) {
-        logError('INIT', 'Embedded mode detected, will auto-start');
-        
-        // Wait for images to load
-        Promise.all([
-          ...imageCache.monkeyFrames.map(img => new Promise(resolve => { 
-            if (img.complete) resolve();
-            else { img.onload = resolve; img.onerror = resolve; }
-          })),
-          ...imageCache.balloons.map(img => new Promise(resolve => { 
-            if (img.complete) resolve();
-            else { img.onload = resolve; img.onerror = resolve; }
-          })),
-          new Promise(resolve => { 
-            if (imageCache.number8Balloon.complete) resolve();
-            else { imageCache.number8Balloon.onload = resolve; imageCache.number8Balloon.onerror = resolve; }
-          }),
-          ...imageCache.crocFrames.map(img => new Promise(resolve => { 
-            if (img.complete) resolve();
-            else { img.onload = resolve; img.onerror = resolve; }
-          })),
-        ]).then(() => {
-          logError('INIT', 'Images loaded, auto-starting embedded game');
-          setTimeout(() => {
-            startGameFlow();
-          }, 200);
-        });
-      }
 
       // ============================================================================
       // GAME LOGIC
