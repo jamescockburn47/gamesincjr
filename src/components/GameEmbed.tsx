@@ -80,7 +80,7 @@ export default function GameEmbed({ gamePath }: GameEmbedProps) {
 
   return (
     <>
-      <div ref={containerRef} className="absolute inset-0 w-full h-full" />
+      <div ref={containerRef} className="absolute inset-0 w-full h-full game-embed-container" />
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center text-white">
           <div className="text-center">

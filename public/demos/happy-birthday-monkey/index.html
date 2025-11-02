@@ -318,6 +318,10 @@
         if (document.querySelector('.game-viewport') || document.querySelector('.game-content-ref')) {
           return true;
         }
+        // Check for GameEmbed's container class
+        if (document.querySelector('.game-embed-container') || document.body?.closest('.game-embed-container')) {
+          return true;
+        }
         return false;
       })();
       
@@ -329,7 +333,11 @@
             const bodyParent = document.body?.parentElement;
             if (bodyParent && bodyParent !== document.documentElement) {
               const parentClasses = bodyParent.className || '';
-              if (parentClasses.includes('game-viewport') || parentClasses.includes('game-content')) {
+              if (parentClasses.includes('game-viewport') || parentClasses.includes('game-content') || parentClasses.includes('game-embed-container')) {
+                isEmbedded = true;
+              }
+              // Also check if any ancestor has the class
+              if (bodyParent.closest('.game-embed-container') || bodyParent.closest('.aspect-video')) {
                 isEmbedded = true;
               }
             }
@@ -345,7 +353,11 @@
         const bodyParent = document.body?.parentElement;
         if (bodyParent && bodyParent !== document.documentElement) {
           const parentClasses = bodyParent.className || '';
-          if (parentClasses.includes('game-viewport') || parentClasses.includes('game-content')) {
+          if (parentClasses.includes('game-viewport') || parentClasses.includes('game-content') || parentClasses.includes('game-embed-container')) {
+            isEmbedded = true;
+          }
+          // Also check if any ancestor has the class
+          if (bodyParent.closest('.game-embed-container') || bodyParent.closest('.aspect-video')) {
             isEmbedded = true;
           }
         }
@@ -997,12 +1009,17 @@
 
       startBtn?.addEventListener('click', startGameFlow);
       
-      // Helper function to check if element is inside game-viewport container
+      // Helper function to check if element is inside game container
       function isInGameViewport(element) {
         if (!element) return false;
         let current = element;
         while (current && current !== document.body) {
-          if (current.classList && (current.classList.contains('game-viewport') || current.classList.contains('game-content-ref'))) {
+          if (current.classList && (
+            current.classList.contains('game-viewport') || 
+            current.classList.contains('game-content-ref') ||
+            current.classList.contains('game-embed-container') ||
+            current.classList.contains('aspect-video')
+          )) {
             return true;
           }
           current = current.parentElement;
@@ -1016,7 +1033,16 @@
       function checkEmbeddedAndStart() {
         // Final check for embedded state by looking at DOM tree
         const h1 = document.querySelector('h1');
-        if (h1 && isInGameViewport(h1)) {
+        if (h1) {
+          // Check if h1 is inside game-embed-container or aspect-video
+          if (isInGameViewport(h1) || h1.closest('.game-embed-container') || h1.closest('.aspect-video')) {
+            isEmbedded = true;
+          }
+        }
+        
+        // Also check if we're inside a container that suggests embedding
+        const stage = document.getElementById('stage');
+        if (stage && (stage.closest('.game-embed-container') || stage.closest('.aspect-video'))) {
           isEmbedded = true;
         }
         
@@ -1058,9 +1084,24 @@
         }
       }
       
-      // Check immediately and also after a short delay
+      // Check immediately and also after delays to ensure we catch it
       checkEmbeddedAndStart();
       setTimeout(checkEmbeddedAndStart, 150);
+      setTimeout(checkEmbeddedAndStart, 500);
+      setTimeout(checkEmbeddedAndStart, 1000);
+      
+      // Fallback: If game hasn't started after 1.5 seconds and we're clearly in a container, force start
+      setTimeout(() => {
+        if (!autoStartInitiated && !state.running) {
+          const h1 = document.querySelector('h1');
+          const stage = document.getElementById('stage');
+          // If we have game elements but they're in a container, definitely embedded
+          if ((h1 && h1.closest('.game-embed-container')) || (h1 && h1.closest('.aspect-video'))) {
+            isEmbedded = true;
+            checkEmbeddedAndStart();
+          }
+        }
+      }, 1500);
 
       restartBtn.addEventListener('click', () => {
         state.running = false;
