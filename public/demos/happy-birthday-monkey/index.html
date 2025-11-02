@@ -74,6 +74,7 @@
       width: 100%;
       height: 100%;
       touch-action: none;
+      cursor: pointer;
     }
 
     .overlay {
@@ -132,72 +133,6 @@
       transform: translateY(0);
     }
 
-    /* Touch controls - positioned inside stage for fullscreen compatibility */
-    .touch-controls {
-      display: none;
-      position: absolute;
-      bottom: 20px;
-      left: 20px;
-      right: 20px;
-      z-index: 100;
-      pointer-events: none;
-    }
-
-    .touch-controls.visible {
-      display: flex;
-      justify-content: space-between;
-      align-items: flex-end;
-    }
-
-    .control-group {
-      display: flex;
-      gap: 10px;
-      pointer-events: auto;
-    }
-
-    .control-btn {
-      width: 70px;
-      height: 70px;
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.25);
-      border: 3px solid rgba(255, 107, 157, 0.5);
-      backdrop-filter: blur(10px);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 2rem;
-      color: rgba(255, 255, 255, 0.9);
-      user-select: none;
-      -webkit-user-select: none;
-      touch-action: none;
-      transition: all 0.1s;
-      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
-    }
-
-    .control-btn:active {
-      transform: scale(0.9);
-      background: rgba(255, 107, 157, 0.6);
-      border-color: rgba(255, 107, 157, 0.9);
-    }
-
-    .control-btn.jump {
-      width: 80px;
-      height: 80px;
-    }
-
-    @media (max-width: 768px) {
-      .control-btn {
-        width: 60px;
-        height: 60px;
-        font-size: 1.6rem;
-      }
-      
-      .control-btn.jump {
-        width: 70px;
-        height: 70px;
-      }
-    }
-
     .heart {
       display: inline-block;
       color: #ff6b9d;
@@ -227,35 +162,6 @@
       width: 100vw;
       height: 100vh;
     }
-
-    /* Ensure touch controls scale properly in fullscreen */
-    :fullscreen .touch-controls,
-    :-webkit-full-screen .touch-controls,
-    :-moz-full-screen .touch-controls,
-    :-ms-fullscreen .touch-controls {
-      bottom: 30px;
-      left: 30px;
-      right: 30px;
-      display: flex !important; /* Force visibility in fullscreen */
-      visibility: visible !important;
-    }
-
-    :fullscreen .control-btn,
-    :-webkit-full-screen .control-btn,
-    :-moz-full-screen .control-btn,
-    :-ms-fullscreen .control-btn {
-      width: 80px;
-      height: 80px;
-      font-size: 2.2rem;
-    }
-
-    :fullscreen .control-btn.jump,
-    :-webkit-full-screen .control-btn.jump,
-    :-moz-full-screen .control-btn.jump,
-    :-ms-fullscreen .control-btn.jump {
-      width: 90px;
-      height: 90px;
-    }
   </style>
 </head>
 <body>
@@ -279,7 +185,7 @@
     
     <div id="startOverlay" class="overlay hidden">
       <h2>Ready to Play?</h2>
-      <p>Use arrow keys (← →) to move, SPACE or ↑ to jump.<br>Or use touch controls on mobile!<br>Catch balloons for points, avoid crocodiles!</p>
+      <p id="controlText">Use arrow keys (← →) to move, SPACE or ↑ to jump.<br>Catch balloons for points, avoid crocodiles!</p>
       <button id="startBtn">Start Game</button>
     </div>
     
@@ -288,17 +194,6 @@
       <p id="gameOverText">You caught <span id="finalScore">0</span> balloons!</p>
       <button id="restartBtn">Play Again</button>
     </div>
-
-    <!-- Touch controls inside stage for fullscreen compatibility -->
-    <div class="touch-controls" id="touchControls">
-      <div class="control-group">
-        <button class="control-btn" id="leftBtn" data-key="left">◄</button>
-        <button class="control-btn" id="rightBtn" data-key="right">►</button>
-      </div>
-      <div class="control-group">
-        <button class="control-btn jump" id="jumpBtn" data-key="jump">⬆</button>
-      </div>
-    </div>
   </div>
 
   <script type="module">
@@ -306,7 +201,6 @@
       const canvas = document.getElementById('game');
       const ctx = canvas.getContext('2d');
       const stage = document.getElementById('stage');
-      const touchControls = document.getElementById('touchControls');
       const tryOverlay = document.getElementById('tryOverlay');
       const startOverlay = document.getElementById('startOverlay');
       const gameOverOverlay = document.getElementById('gameOverOverlay');
@@ -319,10 +213,7 @@
       const finalScoreEl = document.getElementById('finalScore');
       const gameOverTitle = document.getElementById('gameOverTitle');
       const gameOverText = document.getElementById('gameOverText');
-
-      const leftBtn = document.getElementById('leftBtn');
-      const rightBtn = document.getElementById('rightBtn');
-      const jumpBtn = document.getElementById('jumpBtn');
+      const controlText = document.getElementById('controlText');
 
       const W = canvas.width;
       const H = canvas.height;
@@ -349,8 +240,9 @@
 
       // Detect touch device
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      
       if (isTouchDevice) {
-        touchControls.classList.add('visible');
+        controlText.innerHTML = '<strong>Drag anywhere to move, Tap anywhere to jump!</strong><br>Catch balloons for points, avoid crocodiles!';
       }
 
       // SVG Images
@@ -451,7 +343,6 @@
         `);
       }
 
-      // PARALLAX BACKGROUND LAYERS FOR DEPTH
       const backgroundLayers = [
         { offset: 0, speed: 0.15, color: '#b0d4f0', yPos: 0, height: 0.25 },
         { offset: 0, speed: 0.35, color: '#d4e8f0', yPos: 0.25, height: 0.25 },
@@ -502,6 +393,13 @@
 
       const keys = {};
       
+      // NEW DRAG-TO-MOVE & TAP-TO-JUMP TOUCH SYSTEM
+      const touches = new Map(); // touchId -> { startX, startY, currentX, currentY, startTime, isDrag }
+      let dragVelocity = 0; // Current horizontal drag velocity (-1 to 1)
+      const DRAG_THRESHOLD = 10; // Pixels of movement to count as drag vs tap
+      const TAP_TIME_THRESHOLD = 250; // Max ms for a tap
+      const DRAG_SENSITIVITY = 0.02; // How responsive dragging is
+
       // PRE-CACHE ALL IMAGES
       const imageCache = {
         monkeyFrames: [],
@@ -577,31 +475,18 @@
         }
       }
 
-      // Helper to check if fullscreen
-      function isFullscreen() {
-        return !!(document.fullscreenElement || 
-                 (document as any).webkitFullscreenElement || 
-                 (document as any).mozFullScreenElement || 
-                 (document as any).msFullscreenElement);
-      }
-
-      // Listen for fullscreen changes - ensure controls are visible
-      function handleFullscreenChange() {
-        setTimeout(() => {
-          resizeCanvas();
-          // Force controls to be visible in fullscreen on touch devices
-          if (isTouchDevice && isFullscreen()) {
-            touchControls.classList.add('visible');
-            touchControls.style.display = 'flex';
-            touchControls.style.visibility = 'visible';
-          }
-        }, 100);
-      }
-
-      document.addEventListener('fullscreenchange', handleFullscreenChange);
-      document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
-      document.addEventListener('mozfullscreenchange', handleFullscreenChange);
-      document.addEventListener('MSFullscreenChange', handleFullscreenChange);
+      document.addEventListener('fullscreenchange', () => {
+        setTimeout(resizeCanvas, 100);
+      });
+      document.addEventListener('webkitfullscreenchange', () => {
+        setTimeout(resizeCanvas, 100);
+      });
+      document.addEventListener('mozfullscreenchange', () => {
+        setTimeout(resizeCanvas, 100);
+      });
+      document.addEventListener('MSFullscreenChange', () => {
+        setTimeout(resizeCanvas, 100);
+      });
       
       window.addEventListener('resize', resizeCanvas);
 
@@ -625,6 +510,148 @@
       ]).then(() => {
         createDecorations();
         if (!state.running) draw();
+      });
+
+      // INTUITIVE DRAG-TO-MOVE & TAP-TO-JUMP TOUCH CONTROLS
+      function getTouchPosition(touch) {
+        const rect = canvas.getBoundingClientRect();
+        return {
+          x: touch.clientX - rect.left,
+          y: touch.clientY - rect.top
+        };
+      }
+
+      canvas.addEventListener('touchstart', (e) => {
+        e.preventDefault();
+        if (!state.running) return;
+
+        Array.from(e.changedTouches).forEach(touch => {
+          const pos = getTouchPosition(touch);
+          touches.set(touch.identifier, {
+            startX: pos.x,
+            startY: pos.y,
+            currentX: pos.x,
+            currentY: pos.y,
+            startTime: performance.now(),
+            isDrag: false
+          });
+        });
+      });
+
+      canvas.addEventListener('touchmove', (e) => {
+        e.preventDefault();
+        if (!state.running) return;
+
+        Array.from(e.changedTouches).forEach(touch => {
+          const data = touches.get(touch.identifier);
+          if (!data) return;
+
+          const pos = getTouchPosition(touch);
+          data.currentX = pos.x;
+          data.currentY = pos.y;
+
+          // Calculate horizontal drag distance
+          const dragDistX = data.currentX - data.startX;
+          const dragDistY = Math.abs(data.currentY - data.startY);
+
+          // Mark as drag if moved beyond threshold
+          if (!data.isDrag && (Math.abs(dragDistX) > DRAG_THRESHOLD || dragDistY > DRAG_THRESHOLD)) {
+            data.isDrag = true;
+          }
+        });
+
+        // Calculate drag velocity from all active touches
+        let totalDrag = 0;
+        let dragTouches = 0;
+        touches.forEach(data => {
+          if (data.isDrag) {
+            const dragDist = data.currentX - data.startX;
+            totalDrag += dragDist;
+            dragTouches++;
+          }
+        });
+
+        if (dragTouches > 0) {
+          dragVelocity = Math.max(-1, Math.min(1, totalDrag * DRAG_SENSITIVITY));
+          
+          // Set keyboard keys based on drag direction
+          if (dragVelocity < -0.1) {
+            keys.left = true;
+            keys.right = false;
+          } else if (dragVelocity > 0.1) {
+            keys.right = true;
+            keys.left = false;
+          } else {
+            keys.left = false;
+            keys.right = false;
+          }
+        }
+      });
+
+      canvas.addEventListener('touchend', (e) => {
+        e.preventDefault();
+        if (!state.running) return;
+
+        Array.from(e.changedTouches).forEach(touch => {
+          const data = touches.get(touch.identifier);
+          if (!data) return;
+
+          const touchDuration = performance.now() - data.startTime;
+          const dragDistX = Math.abs(data.currentX - data.startX);
+          const dragDistY = Math.abs(data.currentY - data.startY);
+          const totalDist = Math.sqrt(dragDistX * dragDistX + dragDistY * dragDistY);
+
+          // It's a TAP if: quick duration AND minimal movement
+          if (touchDuration < TAP_TIME_THRESHOLD && totalDist < DRAG_THRESHOLD) {
+            keys.jump = true;
+            // Reset jump after delay to allow repeated taps
+            setTimeout(() => {
+              keys.jump = false;
+            }, 100);
+          }
+
+          touches.delete(touch.identifier);
+        });
+
+        // If no more touches, clear drag velocity and movement
+        if (touches.size === 0) {
+          dragVelocity = 0;
+          keys.left = false;
+          keys.right = false;
+        } else {
+          // Recalculate drag from remaining touches
+          let totalDrag = 0;
+          let dragTouches = 0;
+          touches.forEach(data => {
+            if (data.isDrag) {
+              const dragDist = data.currentX - data.startX;
+              totalDrag += dragDist;
+              dragTouches++;
+            }
+          });
+
+          if (dragTouches > 0) {
+            dragVelocity = Math.max(-1, Math.min(1, totalDrag * DRAG_SENSITIVITY));
+          } else {
+            dragVelocity = 0;
+            keys.left = false;
+            keys.right = false;
+          }
+        }
+      });
+
+      canvas.addEventListener('touchcancel', (e) => {
+        e.preventDefault();
+        Array.from(e.changedTouches).forEach(touch => {
+          touches.delete(touch.identifier);
+        });
+        
+        if (touches.size === 0) {
+          dragVelocity = 0;
+          keys.left = false;
+          keys.right = false;
+          keys.jump = false;
+        }
       });
 
       // Keyboard controls
@@ -651,46 +678,6 @@
         if (['arrowup', ' ', 'w'].includes(key)) keys.jump = false;
       });
 
-      // Touch controls
-      function setupTouchButton(btn, keyName) {
-        btn.addEventListener('touchstart', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          if (state.running) {
-            keys[keyName] = true;
-          }
-        });
-        
-        btn.addEventListener('touchend', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          keys[keyName] = false;
-        });
-        
-        btn.addEventListener('touchcancel', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          keys[keyName] = false;
-        });
-
-        // Mouse support for desktop testing
-        btn.addEventListener('mousedown', (e) => {
-          e.preventDefault();
-          if (state.running) {
-            keys[keyName] = true;
-          }
-        });
-        
-        btn.addEventListener('mouseup', (e) => {
-          e.preventDefault();
-          keys[keyName] = false;
-        });
-      }
-
-      setupTouchButton(leftBtn, 'left');
-      setupTouchButton(rightBtn, 'right');
-      setupTouchButton(jumpBtn, 'jump');
-
       tryBtn.addEventListener('click', () => {
         tryOverlay.classList.add('hidden');
         startOverlay.classList.remove('hidden');
@@ -701,14 +688,6 @@
           startGame();
           setTimeout(() => {
             requestFullscreen().catch(() => {});
-            // Explicitly show controls after fullscreen (even if fullscreen fails)
-            if (isTouchDevice) {
-              setTimeout(() => {
-                touchControls.classList.add('visible');
-                touchControls.style.display = 'flex';
-                touchControls.style.visibility = 'visible';
-              }, 200);
-            }
           }, 100);
         }
       });
@@ -718,6 +697,8 @@
         keys.left = false;
         keys.right = false;
         keys.jump = false;
+        touches.clear();
+        dragVelocity = 0;
         gameOverOverlay.classList.add('hidden');
         
         state.score = 0;
@@ -747,6 +728,8 @@
         keys.left = false;
         keys.right = false;
         keys.jump = false;
+        touches.clear();
+        dragVelocity = 0;
         startOverlay.classList.add('hidden');
         
         resizeCanvas();
@@ -803,6 +786,8 @@
 
       function gameOver() {
         state.running = false;
+        touches.clear();
+        dragVelocity = 0;
         if (state.score > state.best) {
           state.best = state.score;
           localStorage.setItem('henryMonkeyBest', state.best.toString());
@@ -822,19 +807,7 @@
         if (!now) now = performance.now();
         if (!state.lastTime) state.lastTime = now;
 
-        // Calculate delta time with proper handling for inactive tabs
-        const rawDt = (now - state.lastTime) / 1000;
-        
-        // Skip if delta is too large (tab was inactive) or invalid
-        if (rawDt <= 0 || rawDt > 0.1) {
-          state.lastTime = now;
-          requestAnimationFrame(loop);
-          return;
-        }
-        
-        // Clamp delta time to prevent huge jumps and ensure consistent speed
-        // Cap at 33ms (30fps) for physics stability
-        const dt = Math.min(rawDt, 0.033);
+        const dt = Math.min((now - state.lastTime) / 1000, 0.1);
         state.lastTime = now;
         
         const currentW = state.canvasW;
@@ -896,8 +869,8 @@
         state.monkey.x = Math.max(0, Math.min(currentW - state.monkey.width, state.monkey.x));
 
         state.decorations.forEach(d => {
-          d.rotation += d.speed * dt * 60;
-          d.y += (0.5 + d.depth * 0.5) * dt * 60;
+          d.rotation += d.speed;
+          d.y += (0.5 + d.depth * 0.5);
           if (d.y > currentH) d.y = -20;
         });
 
@@ -942,6 +915,7 @@
           state.lastCrocTime = now;
         }
 
+        // Balloon updates
         for (let i = state.balloons.length - 1; i >= 0; i--) {
           const b = state.balloons[i];
           b.y += b.speed * 60 * dt;
@@ -1017,6 +991,7 @@
           }
         }
 
+        // Crocodile updates
         for (let i = state.crocodiles.length - 1; i >= 0; i--) {
           const c = state.crocodiles[i];
           c.x += c.speed * 60 * dt * c.direction;
@@ -1070,10 +1045,11 @@
           }
         }
         
+        // Particle updates
         for (let i = state.particles.length - 1; i >= 0; i--) {
           const p = state.particles[i];
-          p.x += p.vx * dt;
-          p.y += p.vy * dt;
+          p.x += p.vx * dt * 60;
+          p.y += p.vy * dt * 60;
           p.vy += 0.3 * dt * 60;
           p.life -= dt;
           p.alpha = Math.max(0, p.life / p.maxLife);
@@ -1082,9 +1058,10 @@
           }
         }
         
+        // Effect updates
         for (let i = state.effects.length - 1; i >= 0; i--) {
           const e = state.effects[i];
-          e.y -= 50 * dt * 60;
+          e.y -= 50 * dt;
           e.life -= dt;
           e.alpha = Math.min(1, e.life / e.maxLife);
           if (e.life <= 0) {
@@ -1138,6 +1115,7 @@
         
         ctx.clearRect(-shakeX, -shakeY, currentW, currentH);
 
+        // Draw parallax background
         backgroundLayers.forEach((layer, index) => {
           const yStart = currentH * layer.yPos;
           const layerHeight = currentH * layer.height;
@@ -1179,6 +1157,7 @@
         }
         ctx.restore();
 
+        // Draw decorations
         state.decorations.forEach(d => {
           ctx.save();
           ctx.globalAlpha = 0.5 + d.depth * 0.5;
@@ -1205,18 +1184,13 @@
           ctx.restore();
         });
 
+        // Draw balloons with shadows
         state.balloons.forEach(b => {
           ctx.save();
           ctx.globalAlpha = 0.2;
           ctx.fillStyle = '#000';
           ctx.beginPath();
-          ctx.ellipse(
-            b.x + b.size / 2, 
-            currentGroundY + 95,
-            b.size * 0.3,
-            b.size * 0.1,
-            0, 0, Math.PI * 2
-          );
+          ctx.ellipse(b.x + b.size / 2, currentGroundY + 95, b.size * 0.3, b.size * 0.1, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
           
@@ -1270,6 +1244,7 @@
           ctx.restore();
         });
         
+        // Draw particles
         state.particles.forEach(p => {
           ctx.save();
           ctx.globalAlpha = p.alpha;
@@ -1280,6 +1255,7 @@
           ctx.restore();
         });
         
+        // Draw effects
         state.effects.forEach(e => {
           ctx.save();
           ctx.globalAlpha = e.alpha;
@@ -1294,18 +1270,13 @@
           ctx.restore();
         });
 
+        // Draw crocodiles with shadows
         state.crocodiles.forEach(c => {
           ctx.save();
           ctx.globalAlpha = 0.3;
           ctx.fillStyle = '#000';
           ctx.beginPath();
-          ctx.ellipse(
-            c.x + 70, 
-            c.y + 75,
-            60,
-            15,
-            0, 0, Math.PI * 2
-          );
+          ctx.ellipse(c.x + 70, c.y + 75, 60, 15, 0, 0, Math.PI * 2);
           ctx.fill();
           ctx.restore();
           
@@ -1322,20 +1293,16 @@
           ctx.restore();
         });
 
+        // Draw monkey shadow
         ctx.save();
         ctx.globalAlpha = 0.3;
         ctx.fillStyle = '#000';
         ctx.beginPath();
-        ctx.ellipse(
-          state.monkey.x + state.monkey.width / 2, 
-          currentGroundY + 95,
-          state.monkey.width * 0.4,
-          state.monkey.width * 0.12,
-          0, 0, Math.PI * 2
-        );
+        ctx.ellipse(state.monkey.x + state.monkey.width / 2, currentGroundY + 95, state.monkey.width * 0.4, state.monkey.width * 0.12, 0, 0, Math.PI * 2);
         ctx.fill();
         ctx.restore();
 
+        // Draw monkey shield
         if (state.shield) {
           ctx.save();
           ctx.strokeStyle = '#4169E1';
@@ -1347,6 +1314,7 @@
           ctx.restore();
         }
         
+        // Draw monkey
         const monkeyFrameIndex = Math.floor(state.monkey.walkFrame) % imageCache.monkeyFrames.length;
         const monkeyImg = imageCache.monkeyFrames[monkeyFrameIndex];
         if (monkeyImg.complete && monkeyImg.naturalWidth > 0) {
@@ -1358,6 +1326,7 @@
           ctx.fill();
         }
         
+        // Draw combo multiplier
         if (state.multiplier > 1) {
           ctx.save();
           ctx.fillStyle = '#FF6B9D';
@@ -1371,6 +1340,7 @@
           ctx.restore();
         }
         
+        // Draw power-up timers
         let timerY = 35;
         if (state.shield) {
           ctx.save();
@@ -1400,12 +1370,14 @@
         
         ctx.restore();
 
+        // Draw lives
         for (let i = 0; i < state.lives; i++) {
           ctx.fillStyle = '#ff6b9d';
           ctx.font = 'bold 32px Arial';
           ctx.fillText('💝', 20 + i * 42, 38);
         }
 
+        // Draw title
         ctx.save();
         ctx.fillStyle = 'rgba(255, 255, 255, 0.95)';
         ctx.strokeStyle = '#FF6B9D';
