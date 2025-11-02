@@ -47,7 +47,7 @@ export default function GamePlayer({ game }: GamePlayerProps) {
   // Load game HTML
   useEffect(() => {
     if (!isClient) return;
-    
+
     const demoPath = game.demoPath;
     if (!demoPath) {
       setError('No demo path available');
@@ -59,12 +59,12 @@ export default function GamePlayer({ game }: GamePlayerProps) {
       try {
         setIsLoading(true);
         setError(null);
-        
+
         const response = await fetch(demoPath);
         if (!response.ok) {
           throw new Error(`Failed to load game: ${response.status}`);
         }
-        
+
         const html = await response.text();
         setGameHtml(html);
       } catch (err) {
@@ -77,6 +77,52 @@ export default function GamePlayer({ game }: GamePlayerProps) {
 
     loadGame();
   }, [isClient, game.demoPath]);
+
+  useEffect(() => {
+    if (!isClient) return;
+    const container = gameContentRef.current;
+    if (!container) return;
+
+    container.innerHTML = '';
+
+    if (!gameHtml) return;
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(gameHtml, 'text/html');
+    const fragment = document.createDocumentFragment();
+
+    const headNodes = doc.head ? Array.from(doc.head.children) : [];
+    headNodes.forEach((node) => {
+      const tag = node.tagName.toLowerCase();
+      if (tag === 'style' || (tag === 'link' && (node as HTMLLinkElement).rel === 'stylesheet')) {
+        fragment.appendChild(node.cloneNode(true));
+      }
+    });
+
+    const bodyNodes = doc.body ? Array.from(doc.body.childNodes) : [];
+    bodyNodes.forEach((node) => {
+      fragment.appendChild(node.cloneNode(true));
+    });
+
+    container.appendChild(fragment);
+
+    // Execute scripts - need to do this after a small delay to ensure DOM is ready
+    setTimeout(() => {
+      const scripts = Array.from(container.querySelectorAll('script'));
+      scripts.forEach((oldScript) => {
+        const newScript = document.createElement('script');
+        Array.from(oldScript.attributes).forEach((attr) => {
+          newScript.setAttribute(attr.name, attr.value);
+        });
+        newScript.textContent = oldScript.textContent;
+        oldScript.replaceWith(newScript);
+      });
+    }, 50);
+
+    return () => {
+      container.innerHTML = '';
+    };
+  }, [gameHtml, isClient]);
 
   useEffect(() => {
     if (!isClient) return;
@@ -143,6 +189,8 @@ export default function GamePlayer({ game }: GamePlayerProps) {
 
             {/* Game content container */}
             <div className="relative w-full aspect-video game-viewport bg-black">
+              <div ref={gameContentRef} className="absolute inset-0 w-full h-full" />
+
               {isLoading && (
                 <div className="absolute inset-0 flex items-center justify-center text-white">
                   <div className="text-center">
@@ -151,19 +199,11 @@ export default function GamePlayer({ game }: GamePlayerProps) {
                   </div>
                 </div>
               )}
-              
+
               {error && (
                 <div className="absolute inset-0 flex items-center justify-center text-red-400 p-4">
                   <p className="text-center">{error}</p>
                 </div>
-              )}
-              
-              {gameHtml && !isLoading && !error && (
-                <div 
-                  ref={gameContentRef}
-                  className="w-full h-full"
-                  dangerouslySetInnerHTML={{ __html: gameHtml }}
-                />
               )}
             </div>
           </div>

@@ -1106,13 +1106,31 @@
 
               function loop(now) {
                 try {
-                  if (!state.running) return;
+                  if (!state.running) {
+                    requestAnimationFrame(loop);
+                    return;
+                  }
 
                   if (!now) now = performance.now();
-                  if (!state.lastTime) state.lastTime = now;
+                  if (!state.lastTime) {
+                    state.lastTime = now;
+                    requestAnimationFrame(loop);
+                    return;
+                  }
 
-        const dt = Math.min((now - state.lastTime) / 1000, 0.1);
-        state.lastTime = now;
+                  // Calculate delta time with proper clamping for frame-rate independence
+                  const rawDt = (now - state.lastTime) / 1000;
+                  
+                  // Skip if delta is too large (tab was inactive) or invalid
+                  if (rawDt <= 0 || rawDt > 0.1) {
+                    state.lastTime = now;
+                    requestAnimationFrame(loop);
+                    return;
+                  }
+                  
+                  // Clamp delta time to prevent huge jumps (cap at 33ms = 30fps for stability)
+                  const dt = Math.min(rawDt, 0.033);
+                  state.lastTime = now;
         
         const currentW = state.canvasW;
         const currentH = state.canvasH;

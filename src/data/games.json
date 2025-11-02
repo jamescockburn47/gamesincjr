@@ -341,5 +341,27 @@
     "engine": "vanilla-js",
     "version": "0.1.0",
     "status": "released"
+  },
+  {
+    "slug": "happy-birthday-monkey",
+    "title": "Happy 8th Birthday Henry!",
+    "tags": [
+      "birthday",
+      "arcade",
+      "collection"
+    ],
+    "description": "Jump and catch balloons while avoiding snapping crocodiles! A special birthday game just for Henry.",
+    "description_it": "Salta e afferra i palloncini mentre eviti i coccodrilli che scattano! Un gioco speciale di compleanno solo per Henry.",
+    "hero": "/games/happy-birthday-monkey/hero.svg",
+    "screenshots": [
+      "/games/happy-birthday-monkey/s1.svg"
+    ],
+    "demoPath": "/demos/happy-birthday-monkey/index.html",
+    "gameType": "html5",
+    "engine": "vanilla-js",
+    "version": "1.0.0",
+    "status": "released",
+    "internal": true,
+    "birthday": "Henry"
   }
 ]
