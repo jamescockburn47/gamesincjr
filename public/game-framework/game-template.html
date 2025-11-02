@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>{{GAME_TITLE}}</title>
+  <link rel="stylesheet" href="/game-framework/overlay-styles.css">
+</head>
+<body>
+  <div id="tryNowOverlay" class="overlay">
+    <div class="modal">
+      <h1>{{GAME_TITLE}}</h1>
+      <p>{{GAME_DESCRIPTION}}</p>
+      <button onclick="startGame()">Try Now</button>
+    </div>
+  </div>
+
+  <div id="instructionsOverlay" class="overlay hidden">
+    <div class="modal">
+      <h1>How to Play</h1>
+      <p>{{GAME_GOAL}}</p>
+      <ul class="instructions-list">
+        <li><strong>Desktop:</strong> {{GAME_CONTROLS}}</li>
+        <li><strong>Mobile:</strong> Use on-screen buttons</li>
+      </ul>
+      <button onclick="hideInstructions()">Got It!</button>
+    </div>
+  </div>
+
+  <div id="gameOverOverlay" class="overlay hidden">
+    <div class="modal">
+      <h1>Game Over!</h1>
+      <p id="finalScore">Score: 0</p>
+      <button onclick="restartGame()">Play Again</button>
+    </div>
+  </div>
+
+  <div id="gameContainer">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+  </div>
+
+  <div class="hud">
+    <div id="scoreDisplay">Score: 0</div>
+    <div id="livesDisplay">Lives: 3</div>
+  </div>
+
+  <div class="mobile-controls" id="mobileControls">
+  </div>
+
+  <script src="/game-framework/game-engine.js"></script>
+  <script src="/game-framework/game-utils.js"></script>
+  <script src="/game-framework/drawing-library.js"></script>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const game = new GameEngine(canvas);
+    const input = new InputManager();
+    
+    let score = 0;
+    let lives = 3;
+    let gameState = 'waiting';
+    
+    const player = {
+      x: 400,
+      y: 500,
+      width: 40,
+      height: 40,
+      vx: 0,
+      vy: 0,
+      speed: 300
+    };
+    
+    const enemies = [];
+    let enemySpawnTimer = 0;
+    const ENEMY_SPAWN_INTERVAL = 2.0;
+    
+    function startGame() {
+      document.getElementById('tryNowOverlay').classList.add('hidden');
+      document.getElementById('instructionsOverlay').classList.remove('hidden');
+    }
+    
+    function hideInstructions() {
+      document.getElementById('instructionsOverlay').classList.add('hidden');
+      gameState = 'playing';
+      game.start();
+      setupMobileControls();
+    }
+    
+    function restartGame() {
+      score = 0;
+      lives = 3;
+      enemies.length = 0;
+      enemySpawnTimer = 0;
+      player.x = 400;
+      player.y = 500;
+      player.vx = 0;
+      player.vy = 0;
+      
+      document.getElementById('gameOverOverlay').classList.add('hidden');
+      gameState = 'playing';
+      game.resume();
+    }
+    
+    function gameOver() {
+      gameState = 'gameOver';
+      game.pause();
+      document.getElementById('finalScore').textContent = `Score: ${score}`;
+      document.getElementById('gameOverOverlay').classList.remove('hidden');
+    }
+    
+    function setupMobileControls() {
+      const isMobile = 'ontouchstart' in window;
+      if (!isMobile) return;
+      
+      const controls = document.getElementById('mobileControls');
+      const buttons = [
+        { label: '←', action: 'left' },
+        { label: '↑', action: 'up' },
+        { label: '↓', action: 'down' },
+        { label: '→', action: 'right' },
+        { label: '⚡', action: 'space' }
+      ];
+      
+      buttons.forEach(btn => {
+        const button = document.createElement('button');
+        button.textContent = btn.label;
+        button.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          input.addTouch(btn.action);
+        });
+        button.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          input.removeTouch(btn.action);
+        });
+        controls.appendChild(button);
+      });
+    }
+    
+    game.onUpdate((dt) => {
+      if (gameState !== 'playing') return;
+      
+      player.vx = 0;
+      
+      if (input.isPressed('left')) {
+        player.vx = -player.speed;
+      }
+      if (input.isPressed('right')) {
+        player.vx = player.speed;
+      }
+      
+      GameUtils.applyVelocity(player, dt);
+      
+      player.x = GameUtils.clamp(player.x, 0, canvas.width - player.width);
+      player.y = GameUtils.clamp(player.y, 0, canvas.height - player.height);
+      
+      enemySpawnTimer += dt;
+      if (enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
+        enemySpawnTimer = 0;
+        enemies.push({
+          x: Math.random() * (canvas.width - 40),
+          y: -40,
+          width: 40,
+          height: 40,
+          vy: 150
+        });
+      }
+      
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
+        GameUtils.applyVelocity(enemy, dt);
+        
+        if (GameUtils.checkCollision(player, enemy, 0.7)) {
+          enemies.splice(i, 1);
+          lives--;
+          if (lives <= 0) {
+            gameOver();
+          }
+        } else if (enemy.y > canvas.height) {
+          enemies.splice(i, 1);
+          score += 10;
+        }
+      }
+      
+      document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
+      document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
+    });
+    
+    game.onRender((ctx) => {
+      ctx.fillStyle = '#001122';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      
+      drawPlayer(ctx, player.x, player.y);
+      
+      enemies.forEach(enemy => {
+        drawEnemy(ctx, enemy.x, enemy.y);
+      });
+    });
+    
+    function drawPlayer(ctx, x, y) {
+      ctx.fillStyle = '#00ff00';
+      ctx.fillRect(x, y, player.width, player.height);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 10, y + 10, 5, 5);
+      ctx.fillRect(x + 25, y + 10, 5, 5);
+    }
+    
+    function drawEnemy(ctx, x, y) {
+      ctx.fillStyle = '#ff0000';
+      ctx.fillRect(x, y, 40, 40);
+      
+      ctx.fillStyle = '#ffffff';
+      ctx.fillRect(x + 10, y + 15, 5, 5);
+      ctx.fillRect(x + 25, y + 15, 5, 5);
+    }
+  </script>
+</body>
+</html>

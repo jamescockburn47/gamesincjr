@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Framework Test Game</title>
+  <link rel="stylesheet" href="/game-framework/overlay-styles.css">
+</head>
+<body>
+  <div id="tryNowOverlay" class="overlay">
+    <div class="modal">
+      <h1>Framework Test</h1>
+      <p>Testing all framework utilities: delta-time physics, collision detection, input management, and particle effects.</p>
+      <button onclick="startGame()">Try Now</button>
+    </div>
+  </div>
+
+  <div id="instructionsOverlay" class="overlay hidden">
+    <div class="modal">
+      <h1>How to Play</h1>
+      <p>Test all framework features!</p>
+      <ul class="instructions-list">
+        <li><strong>Arrow Keys / WASD:</strong> Move player</li>
+        <li><strong>Space:</strong> Create particles</li>
+        <li><strong>Goal:</strong> Avoid red enemies, collect green coins</li>
+      </ul>
+      <button onclick="hideInstructions()">Got It!</button>
+    </div>
+  </div>
+
+  <div id="gameOverOverlay" class="overlay hidden">
+    <div class="modal">
+      <h1>Test Complete!</h1>
+      <p id="finalScore">Score: 0</p>
+      <button onclick="restartGame()">Test Again</button>
+    </div>
+  </div>
+
+  <div id="gameContainer">
+    <canvas id="gameCanvas" width="800" height="600"></canvas>
+  </div>
+
+  <div class="hud">
+    <div id="scoreDisplay">Score: 0</div>
+    <div id="livesDisplay">Lives: 3</div>
+    <div id="fpsDisplay">FPS: 60</div>
+  </div>
+
+  <div class="mobile-controls" id="mobileControls"></div>
+
+  <script src="/game-framework/game-engine.js"></script>
+  <script src="/game-framework/game-utils.js"></script>
+  <script src="/game-framework/drawing-library.js"></script>
+
+  <script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    
+    const game = new GameEngine(canvas);
+    const input = new InputManager();
+    
+    let score = 0;
+    let lives = 3;
+    let gameState = 'waiting';
+    
+    const player = {
+      x: 400,
+      y: 300,
+      width: 40,
+      height: 40,
+      vx: 0,
+      vy: 0,
+      speed: 250
+    };
+    
+    const enemies = [];
+    const coins = [];
+    const particles = [];
+    
+    let enemySpawnTimer = 0;
+    let coinSpawnTimer = 0;
+    const ENEMY_SPAWN_INTERVAL = 1.5;
+    const COIN_SPAWN_INTERVAL = 2.0;
+    
+    const background = DrawingLibrary.createBackground({
+      type: 'space',
+      colors: ['#000033', '#000066'],
+      scrollSpeed: 30,
+      starCount: 150
+    });
+    
+    let frameCount = 0;
+    let fpsTimer = 0;
+    let currentFPS = 60;
+    
+    function startGame() {
+      document.getElementById('tryNowOverlay').classList.add('hidden');
+      document.getElementById('instructionsOverlay').classList.remove('hidden');
+    }
+    
+    function hideInstructions() {
+      document.getElementById('instructionsOverlay').classList.add('hidden');
+      gameState = 'playing';
+      game.start();
+      setupMobileControls();
+    }
+    
+    function restartGame() {
+      score = 0;
+      lives = 3;
+      enemies.length = 0;
+      coins.length = 0;
+      particles.length = 0;
+      enemySpawnTimer = 0;
+      coinSpawnTimer = 0;
+      player.x = 400;
+      player.y = 300;
+      player.vx = 0;
+      player.vy = 0;
+      
+      document.getElementById('gameOverOverlay').classList.add('hidden');
+      gameState = 'playing';
+      game.resume();
+    }
+    
+    function gameOver() {
+      gameState = 'gameOver';
+      game.pause();
+      document.getElementById('finalScore').textContent = `Score: ${score}`;
+      document.getElementById('gameOverOverlay').classList.remove('hidden');
+    }
+    
+    function setupMobileControls() {
+      const isMobile = 'ontouchstart' in window;
+      if (!isMobile) return;
+      
+      const controls = document.getElementById('mobileControls');
+      const buttons = [
+        { label: '←', action: 'left' },
+        { label: '↑', action: 'up' },
+        { label: '↓', action: 'down' },
+        { label: '→', action: 'right' },
+        { label: '⚡', action: 'space' }
+      ];
+      
+      buttons.forEach(btn => {
+        const button = document.createElement('button');
+        button.textContent = btn.label;
+        button.addEventListener('touchstart', (e) => {
+          e.preventDefault();
+          input.addTouch(btn.action);
+        });
+        button.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          input.removeTouch(btn.action);
+        });
+        controls.appendChild(button);
+      });
+    }
+    
+    let spaceWasPressed = false;
+    
+    game.onUpdate((dt) => {
+      if (gameState !== 'playing') return;
+      
+      background.update(dt);
+      
+      player.vx = 0;
+      player.vy = 0;
+      
+      if (input.isPressed('left')) player.vx = -player.speed;
+      if (input.isPressed('right')) player.vx = player.speed;
+      if (input.isPressed('up')) player.vy = -player.speed;
+      if (input.isPressed('down')) player.vy = player.speed;
+      
+      if (input.isPressed('space') && !spaceWasPressed) {
+        const newParticles = DrawingLibrary.createParticles(
+          player.x + player.width / 2,
+          player.y + player.height / 2,
+          20,
+          {
+            colors: ['#ffff00', '#ff8800', '#ff0000'],
+            minSpeed: 100,
+            maxSpeed: 300,
+            minSize: 3,
+            maxSize: 8,
+            lifetime: 0.8,
+            gravity: 200
+          }
+        );
+        particles.push(...newParticles);
+        spaceWasPressed = true;
+      }
+      if (!input.isPressed('space')) {
+        spaceWasPressed = false;
+      }
+      
+      GameUtils.applyVelocity(player, dt);
+      player.x = GameUtils.clamp(player.x, 0, canvas.width - player.width);
+      player.y = GameUtils.clamp(player.y, 0, canvas.height - player.height);
+      
+      enemySpawnTimer += dt;
+      if (enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
+        enemySpawnTimer = 0;
+        enemies.push({
+          x: Math.random() * (canvas.width - 30),
+          y: Math.random() * (canvas.height - 30),
+          width: 30,
+          height: 30,
+          vx: GameUtils.randomRange(-100, 100),
+          vy: GameUtils.randomRange(-100, 100)
+        });
+      }
+      
+      coinSpawnTimer += dt;
+      if (coinSpawnTimer >= COIN_SPAWN_INTERVAL) {
+        coinSpawnTimer = 0;
+        coins.push({
+          x: Math.random() * (canvas.width - 20),
+          y: Math.random() * (canvas.height - 20),
+          width: 20,
+          height: 20,
+          rotation: 0
+        });
+      }
+      
+      for (let i = enemies.length - 1; i >= 0; i--) {
+        const enemy = enemies[i];
+        GameUtils.applyVelocity(enemy, dt);
+        
+        if (enemy.x < 0 || enemy.x > canvas.width - enemy.width) enemy.vx *= -1;
+        if (enemy.y < 0 || enemy.y > canvas.height - enemy.height) enemy.vy *= -1;
+        
+        if (GameUtils.checkCollision(player, enemy, 0.7)) {
+          enemies.splice(i, 1);
+          lives--;
+          
+          const hitParticles = DrawingLibrary.createParticles(
+            enemy.x + enemy.width / 2,
+            enemy.y + enemy.height / 2,
+            15,
+            { colors: ['#ff0000', '#ff4444'], minSpeed: 50, maxSpeed: 150, lifetime: 0.5 }
+          );
+          particles.push(...hitParticles);
+          
+          if (lives <= 0) {
+            gameOver();
+          }
+        }
+      }
+      
+      for (let i = coins.length - 1; i >= 0; i--) {
+        const coin = coins[i];
+        coin.rotation += dt * 3;
+        
+        if (GameUtils.checkCollision(player, coin, 0.7)) {
+          coins.splice(i, 1);
+          score += 100;
+          
+          const coinParticles = DrawingLibrary.createParticles(
+            coin.x + coin.width / 2,
+            coin.y + coin.height / 2,
+            10,
+            { colors: ['#00ff00', '#00ff88'], minSpeed: 50, maxSpeed: 120, lifetime: 0.6 }
+          );
+          particles.push(...coinParticles);
+        }
+      }
+      
+      for (let i = particles.length - 1; i >= 0; i--) {
+        particles[i].update(dt);
+        if (particles[i].isDead()) {
+          particles.splice(i, 1);
+        }
+      }
+      
+      frameCount++;
+      fpsTimer += dt;
+      if (fpsTimer >= 1.0) {
+        currentFPS = frameCount;
+        frameCount = 0;
+        fpsTimer = 0;
+      }
+      
+      document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
+      document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
+      document.getElementById('fpsDisplay').textContent = `FPS: ${currentFPS}`;
+    });
+    
+    game.onRender((ctx) => {
+      background.draw(ctx);
+      
+      coins.forEach(coin => {
+        ctx.save();
+        ctx.translate(coin.x + coin.width / 2, coin.y + coin.height / 2);
+        ctx.rotate(coin.rotation);
+        
+        DrawingLibrary.drawWithGlow(ctx, (ctx) => {
+          ctx.fillStyle = '#00ff00';
+          ctx.beginPath();
+          ctx.arc(0, 0, coin.width / 2, 0, Math.PI * 2);
+          ctx.fill();
+        }, '#00ff00', 8);
+        
+        ctx.restore();
+      });
+      
+      enemies.forEach(enemy => {
+        DrawingLibrary.drawWithShadow(ctx, (ctx) => {
+          ctx.fillStyle = '#ff0000';
+          ctx.fillRect(enemy.x, enemy.y, enemy.width, enemy.height);
+          
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(enemy.x + 8, enemy.y + 8, 4, 4);
+          ctx.fillRect(enemy.x + 18, enemy.y + 8, 4, 4);
+          
+          ctx.fillStyle = '#ff0000';
+          ctx.fillRect(enemy.x + 10, enemy.y + 20, 10, 3);
+        }, 3, 3, 6);
+      });
+      
+      DrawingLibrary.drawWithGlow(ctx, (ctx) => {
+        const gradient = DrawingLibrary.createRadialGradient(
+          ctx,
+          player.x + player.width / 2,
+          player.y + player.height / 2,
+          0,
+          player.width / 2,
+          ['#00ffff', '#0088ff']
+        );
+        ctx.fillStyle = gradient;
+        ctx.fillRect(player.x, player.y, player.width, player.height);
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(player.x + 10, player.y + 10, 5, 5);
+        ctx.fillRect(player.x + 25, player.y + 10, 5, 5);
+        
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(player.x + 15, player.y + 25, 10, 3);
+      }, '#00ffff', 10);
+      
+      particles.forEach(particle => {
+        particle.draw(ctx);
+      });
+    });
+  </script>
+</body>
+</html>

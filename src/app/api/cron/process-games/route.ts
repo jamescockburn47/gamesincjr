@@ -273,7 +273,6 @@ Return complete HTML (<!DOCTYPE html> to </html>).`;
 function analyzeGameplayMechanics(code: string): GameplayIssue[] {
   const issues: GameplayIssue[] = [];
 
-  // Check 1: Player object/variables exist
   const hasPlayerVar = /\bplayer\s*=|let\s+player|const\s+player|var\s+player/.test(code);
   const hasPlayerXY = /player\s*\.x|player\s*\.y|playerX|playerY/.test(code);
 
@@ -285,18 +284,16 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
     });
   }
 
-  // Check 2: Hazards array
-  const hasHazardArray = /\bhazards\s*=\s*\[|let\s+hazards|const\s+hazards/.test(code);
+  const hasHazardArray = /\bhazards\s*=\s*\[|let\s+hazards|const\s+hazards|enemies\s*=\s*\[|let\s+enemies|const\s+enemies/.test(code);
   if (!hasHazardArray) {
     issues.push({
       severity: 'critical',
-      issue: 'Missing hazards array',
-      fix: 'Create: const hazards = [];'
+      issue: 'Missing hazards/enemies array',
+      fix: 'Create: const enemies = [];'
     });
   }
 
-  // Check 3: Collectibles array
-  const hasCollectArray = /\bcollectibles\s*=\s*\[|let\s+collectibles|const\s+collectibles/.test(code);
+  const hasCollectArray = /\bcollectibles\s*=\s*\[|let\s+collectibles|const\s+collectibles|coins\s*=\s*\[|let\s+coins|const\s+coins/.test(code);
   if (!hasCollectArray) {
     issues.push({
       severity: 'critical',
@@ -305,19 +302,15 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
     });
   }
 
-  // Check 4: Collision detection
-  const hasDistance = /hypot|sqrt|pow|distance|collision/.test(code);
-  const hasCollisionCheck = /if\s*\(.*distance|if\s*\(.*collision|if\s*\(.*dx.*dy/.test(code);
-
-  if (!hasDistance || !hasCollisionCheck) {
+  const hasCollisionCheck = /GameUtils\.checkCollision|checkCollision/.test(code);
+  if (!hasCollisionCheck) {
     issues.push({
       severity: 'critical',
-      issue: 'Missing collision detection',
-      fix: 'Add: if (Math.hypot(dx, dy) < hitbox) { ... }'
+      issue: 'Missing collision detection using GameUtils.checkCollision',
+      fix: 'Add: GameUtils.checkCollision(player, object, 0.7)'
     });
   }
 
-  // Check 5: Score increment
   const scoreIncrement = /score\s*\+=|score\s*=\s*score\s*\+|points\s*\+=/.test(code);
   if (!scoreIncrement) {
     issues.push({
@@ -327,7 +320,6 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
     });
   }
 
-  // Check 6: Lives decrement
   const livesDecrement = /lives\s*--|-=|lives\s*=\s*lives\s*-/.test(code);
   if (!livesDecrement) {
     issues.push({
@@ -339,6 +331,7 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
 
   return issues;
 }
+
 
 // 80s Arcade Flavor - Simple version for cron job
 function getArcadeFlavorForType(gameType: string): string {
@@ -358,12 +351,10 @@ function getArcadeFlavorForType(gameType: string): string {
 
 // Helper functions (copied from main generation route)
 function buildGamePrompt(submission: GameSubmission): string {
-  // Safe access to JSON fields with explicit type assertions
   const difficulty = (submission.difficulty as Record<string, unknown> | null) || {};
   const visualStyle = (submission.visualStyle as Record<string, unknown> | null) || {};
   const controls = (submission.controls as Record<string, unknown> | null) || {};
 
-  // Extract values with safe fallbacks
   const difficultyOverall = typeof difficulty === 'object' && difficulty !== null && 'overall' in difficulty ? Number(difficulty.overall) || 3 : 3;
   const difficultySpeed = typeof difficulty === 'object' && difficulty !== null && 'speed' in difficulty ? Number(difficulty.speed) || 3 : 3;
   const lives = typeof difficulty === 'object' && difficulty !== null && 'lives' in difficulty ? Number(difficulty.lives) || 3 : 3;
@@ -373,55 +364,68 @@ function buildGamePrompt(submission: GameSubmission): string {
   const movement = typeof controls === 'object' && controls !== null && 'movement' in controls ? String(controls.movement) : 'four-way';
   const specialAction = typeof controls === 'object' && controls !== null && 'specialAction' in controls ? String(controls.specialAction) : 'shoot';
 
-  return `You are creating a complete, production-ready HTML5 game for Games Inc Jr.
+  return `You are creating an HTML5 game for Games Inc Jr using our centralized framework utilities.
 
-GAME IDENTITY
+GAME IDENTITY:
 - Title: "${submission.gameTitle}"
 - Slug: ${submission.gameSlug}
 - Description: "${submission.gameDescription}"
 - Type: ${submission.gameType}
 
-MANDATORY: Must be complete single-file HTML with embedded CSS and JavaScript.
+FRAMEWORK STRUCTURE (MANDATORY):
+Include these script tags in the <head>:
+<script src="/game-framework/game-engine.js"></script>
+<script src="/game-framework/game-utils.js"></script>
+<script src="/game-framework/drawing-library.js"></script>
 
-REQUIREMENTS:
-✅ Complete working game code
-✅ Animated sprites (3+ frames, NOT static rectangles)
-✅ Particle effects on collect/damage/death
-✅ Sound effects using Web Audio API
-✅ Smooth 60 FPS gameplay
-✅ Forgiving hitboxes (70% of visual size)
-✅ Both keyboard and touch controls
-✅ localStorage for high scores
-✅ First 30s tutorial-easy (90% success rate)
+CRITICAL DELTA TIME RULES:
+⚠️ ALL movement MUST multiply by dt (delta time in seconds)
+⚠️ Constants are "per second" (not per frame)
+✅ player.x += 300 * dt; (CORRECT)
+❌ player.x += 5; (WRONG - frame-dependent)
 
-DIFFICULTY: ${difficultyOverall}/5
-SPEED: ${difficultySpeed}/5
+FRAMEWORK USAGE:
+- const game = new GameEngine(canvas);
+- const input = new InputManager();
+- game.onUpdate((dt) => { /* game logic */ });
+- game.onRender((ctx) => { /* drawing */ });
+- GameUtils.checkCollision(obj1, obj2, 0.7) for forgiving hitboxes
+- GameUtils.applyGravity(object, 600, dt)
+- GameUtils.applyVelocity(object, dt)
 
 VISUAL STYLE:
-- Colors: ${colors}
-- Art: ${artStyle}
+- Color Scheme: ${colors}
+- Art Style: ${artStyle}
 - Background: ${background}
+- Draw CUSTOM sprites matching art style (NOT rectangles)
+- Use colors from chosen palette
 
 CONTROLS:
 - Movement: ${movement}
-- Action: ${specialAction}
+- Special Action: ${specialAction}
+- Use input.isPressed('left/right/up/down/space')
 
-80S ARCADE FLAVOR (Your Choices Respected):
-Game Type Pattern: ${getArcadeFlavorForType(submission.gameType)}
-- Implement wave/level progression
-- Score multipliers on combos (1x, 1.5x, 2x)
-- Visible progression counter (waves, levels, distance)
-- Escalating difficulty: +5-10% per wave
-- First 30s very easy, then ramp difficulty
-- Arcade-style point values: 10, 25, 50, 100, 500, 1000
-- Lives counter visible (${lives} lives)
-- Clear visual feedback on every action
+DIFFICULTY:
+- Overall: ${difficultyOverall}/5
+- Speed: ${difficultySpeed}/5
+- Lives: ${lives}
 
-OUTPUT: Return ONLY the complete HTML file, nothing else.
-Start with <!DOCTYPE html> and end with </html>`;
+REQUIREMENTS:
+✅ Single HTML file with inline JavaScript
+✅ Custom sprites matching art style
+✅ Delta-time physics (all movement uses * dt)
+✅ Forgiving hitboxes (GameUtils.checkCollision with 0.7)
+✅ Collision detection with state changes (score++, lives--)
+✅ Varied spawn positions (Math.random() * canvas.width/height)
+✅ Mobile controls support
+✅ At least 300 lines of code
+
+OUTPUT: Return ONLY the complete HTML file.
+Start with <!DOCTYPE html> and end with </html>.`;
 }
 
 function extractHTMLFromResponse(text: string): string {
+
   let html = text;
   html = html.replace(/```html\n?/g, '').replace(/```\n?/g, '');
   const doctypeIndex = html.indexOf('<!DOCTYPE html>');
@@ -436,13 +440,16 @@ function extractHTMLFromResponse(text: string): string {
 }
 
 function validateGeneratedCode(code: string): boolean {
-  if (!code.includes('<!DOCTYPE html>')) return false;
+  if (!code.includes('<!DOCTYPE html>') && !code.includes('<html')) return false;
   if (!code.includes('<canvas')) return false;
-  if (!code.includes('requestAnimationFrame')) return false;
-  if (!code.includes('function') && !code.includes('=>')) return false;
+  if (!code.includes('/game-framework/game-engine.js')) return false;
+  if (!code.includes('new GameEngine(')) return false;
+  if (!code.includes('game.onUpdate') || !code.includes('game.onRender')) return false;
+  if (!code.includes('* dt')) return false;
   if (code.length < MIN_VALID_CODE_LENGTH) return false;
   return true;
 }
+
 
 function generatePlaceholderAssets(title: string): { hero: string; screenshots: string[] } {
   const hero = `<svg viewBox="0 0 800 450" xmlns="http://www.w3.org/2000/svg">

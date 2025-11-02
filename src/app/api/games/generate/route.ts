@@ -520,9 +520,14 @@ the addictive, simple, skill-based gameplay that made 80s arcades legendary.`;
 }
 
 function buildEnhancedGamePrompt(gameSlug: string, submission: GameSubmission): string {
-  return `You are creating a complete, production-ready HTML5 game for Games Inc Jr. This game MUST work perfectly with ZERO manual fixes required.
+  const pascalCaseSlug = gameSlug
+    .split('-')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join('');
 
-CRITICAL: Use the standard Games Inc Jr template structure shown below.
+  return `You are creating an HTML5 game for Games Inc Jr using our centralized framework utilities. This game MUST work perfectly with ZERO manual fixes required.
+
+CRITICAL: Create a SINGLE HTML FILE with inline JavaScript. Do NOT create TypeScript or React components.
 
 ===========================================
 GAME IDENTITY
@@ -534,161 +539,325 @@ GAME IDENTITY
 - Type: ${submission.gameType}
 
 ===========================================
-MANDATORY TEMPLATE STRUCTURE
+FRAMEWORK STRUCTURE (MANDATORY)
 ===========================================
-Your game MUST follow this EXACT structure:
+Your HTML file MUST include these framework scripts in the <head>:
 
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-    <title>${submission.gameTitle} - Games Inc Jr</title>
-    <style>
-        /* RESET & BASE */
-        * { margin: 0; padding: 0; box-sizing: border-box; }
-        body {
-            font-family: 'Arial', sans-serif;
-            background: linear-gradient(180deg, #1a1a2e 0%, #0f0f1e 100%);
-            color: #ffffff;
-            overflow: hidden;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            touch-action: none;
-        }
+\`\`\`html
+<script src="/game-framework/game-engine.js"></script>
+<script src="/game-framework/game-utils.js"></script>
+<script src="/game-framework/drawing-library.js"></script>
+\`\`\`
 
-        /* CANVAS */
-        #gameCanvas {
-            border: 2px solid #00ffff;
-            background: #1a1a2e;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
-            display: block;
-            max-width: 100%;
-            max-height: 100%;
-        }
+Your game script MUST follow this EXACT pattern:
 
-        /* UI OVERLAY */
-        .ui-overlay {
-            position: fixed;
-            top: 20px;
-            left: 20px;
-            background: rgba(0, 0, 0, 0.8);
-            padding: 12px;
-            border-radius: 8px;
-            border: 1px solid rgba(0, 255, 255, 0.3);
-            font-size: 14px;
-            z-index: 100;
-        }
+\`\`\`javascript
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
 
-        /* MOBILE CONTROLS */
-        .mobile-controls {
-            position: fixed;
-            bottom: 20px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: none;
-            gap: 12px;
-            z-index: 100;
-        }
-        .mobile-controls button {
-            width: 64px;
-            height: 64px;
-            border-radius: 12px;
-            border: 2px solid #00ffff;
-            background: rgba(0, 100, 150, 0.8);
-            color: #ffffff;
-            font-size: 24px;
-            cursor: pointer;
-            touch-action: manipulation;
-        }
-        @media (hover: none) and (pointer: coarse) {
-            .mobile-controls { display: flex; }
-        }
+const game = new GameEngine(canvas);
+const input = new InputManager();
 
-        /* MODAL OVERLAYS */
-        .overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.9);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            z-index: 1000;
-        }
-        .overlay.hidden { display: none; }
-        .modal {
-            background: linear-gradient(135deg, #1a2a4e, #0f1a3a);
-            padding: 40px;
-            border-radius: 15px;
-            border: 3px solid #00ffff;
-            text-align: center;
-            max-width: 600px;
-        }
-        .modal h2 { color: #00ffff; margin: 0 0 20px; font-size: 32px; }
-        .modal button {
-            padding: 14px 28px;
-            font-size: 18px;
-            color: #ffffff;
-            background: linear-gradient(135deg, #00ffff, #0088aa);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-    </style>
-</head>
-<body>
-    <div id="tryOverlay" class="overlay">
-        <div class="modal">
-            <h2>${submission.gameTitle}</h2>
-            <p>${submission.gameDescription}</p>
-            <button id="tryBtn">Try Now</button>
-        </div>
-    </div>
+let score = 0;
+let lives = ${submission.lives === 999 ? 999 : submission.lives};
+let gameState = 'waiting';
 
-    <div id="startOverlay" class="overlay hidden">
-        <div class="modal">
-            <h2>How to Play</h2>
-            <p><strong>Goal:</strong> [Write clear goal]</p>
-            <p><strong>Controls:</strong> [List controls based on movement type]</p>
-            <button id="startBtn">Start Game</button>
-        </div>
-    </div>
+const player = {
+  x: 400,
+  y: 300,
+  width: 40,
+  height: 40,
+  vx: 0,
+  vy: 0,
+  speed: 300  // pixels per second (CRITICAL)
+};
 
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
+const enemies = [];
+const collectibles = [];
+const particles = [];
 
-    <div class="ui-overlay">
-        <div class="stat">Score: <span id="score">0</span></div>
-        <div class="stat">Lives: <span id="lives">${submission.lives === 999 ? '∞' : submission.lives}</span></div>
-    </div>
+// Constants in "per second" units (CRITICAL)
+const PLAYER_SPEED = 300;  // pixels per second
+const GRAVITY = 600;  // pixels per second²
+const ENEMY_SPEED = 150;  // pixels per second
 
-    <div class="mobile-controls">
-        [Add buttons based on movement type]
-    </div>
+game.onUpdate((dt) => {
+  if (gameState !== 'playing') return;
+  
+  // dt is in SECONDS (e.g., 0.016667)
+  // ALL movement MUST multiply by dt
+  
+  // Input handling
+  player.vx = 0;
+  if (input.isPressed('left')) {
+    player.vx = -PLAYER_SPEED;
+  }
+  if (input.isPressed('right')) {
+    player.vx = PLAYER_SPEED;
+  }
+  
+  // Physics (using framework utilities)
+  GameUtils.applyVelocity(player, dt);
+  
+  // Collision detection (using framework utilities)
+  enemies.forEach((enemy, index) => {
+    GameUtils.applyVelocity(enemy, dt);
+    
+    if (GameUtils.checkCollision(player, enemy, 0.7)) {
+      enemies.splice(index, 1);
+      lives--;
+      if (lives <= 0) {
+        gameOver();
+      }
+    }
+  });
+  
+  collectibles.forEach((coin, index) => {
+    if (GameUtils.checkCollision(player, coin, 0.7)) {
+      collectibles.splice(index, 1);
+      score += 100;
+    }
+  });
+});
 
-    <script>
-        // IMPLEMENT COMPLETE GAME HERE
-        // Follow the requirements below...
-    </script>
-</body>
-</html>
+game.onRender((ctx) => {
+  // Clear canvas
+  ctx.fillStyle = '#001122';
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
+  
+  // Draw custom sprites (MUST match user's art style)
+  drawPlayer(ctx, player.x, player.y);
+  
+  enemies.forEach(enemy => {
+    drawEnemy(ctx, enemy.x, enemy.y);
+  });
+  
+  collectibles.forEach(coin => {
+    drawCoin(ctx, coin.x, coin.y);
+  });
+});
 
-${buildArcadeFlavorAddition(submission)}
+game.start();
+\`\`\`
+
+===========================================
+CRITICAL DELTA TIME RULES
+===========================================
+⚠️ MANDATORY: ALL velocity and position calculations MUST multiply by dt
+⚠️ Constants are "per second" (not per frame)
+⚠️ Example: \`player.x += 200 * dt\` NOT \`player.x += 5\`
+
+CORRECT PHYSICS PATTERNS:
+✅ const SPEED = 300; // pixels per second
+✅ player.x += SPEED * dt;
+✅ GameUtils.applyGravity(player, 600, dt);
+✅ GameUtils.applyVelocity(player, dt);
+
+WRONG PATTERNS (DO NOT USE):
+❌ player.x += 5; // Frame-dependent
+❌ velocity.y += 0.5; // Frame-dependent
+❌ position += speed; // Missing dt
+
+CONVERSION FORMULA:
+If you think "5 pixels per frame" at 60fps:
+→ 5 * 60 = 300 pixels per second
+→ Use: player.x += 300 * dt
+
+===========================================
+AVAILABLE FRAMEWORK UTILITIES
+===========================================
+
+GAME ENGINE (GameEngine class):
+- game.onUpdate(callback) - Register update callback, receives dt in seconds
+- game.onRender(callback) - Register render callback, receives ctx
+- game.start() - Start game loop
+- game.pause() - Pause game
+- game.resume() - Resume game
+- game.stop() - Stop game completely
+
+INPUT MANAGER (InputManager class):
+- input.isPressed('left') - Check if left is pressed (Arrow Left or A)
+- input.isPressed('right') - Check if right is pressed (Arrow Right or D)
+- input.isPressed('up') - Check if up is pressed (Arrow Up or W)
+- input.isPressed('down') - Check if down is pressed (Arrow Down or S)
+- input.isPressed('space') - Check if space is pressed
+- input.addTouch(action) - Add touch input (for mobile buttons)
+- input.removeTouch(action) - Remove touch input
+- Automatically handles both keyboard and touch
+
+PHYSICS HELPERS (GameUtils object):
+- GameUtils.applyGravity(object, gravityConstant, dt) - Apply gravity to object.vy
+- GameUtils.applyVelocity(object, dt) - Apply object.vx and object.vy to position
+- GameUtils.checkCollision(obj1, obj2, forgiveness) - AABB collision (default 0.7 for kids)
+- GameUtils.clamp(value, min, max) - Clamp value between min/max
+- GameUtils.randomRange(min, max) - Random float between min and max
+- GameUtils.randomInt(min, max) - Random integer between min and max
+- GameUtils.randomChoice(array) - Random element from array
+- GameUtils.distance(x1, y1, x2, y2) - Distance between points
+- GameUtils.lerp(start, end, t) - Linear interpolation
+- GameUtils.easeInOut(t) - Easing function
+
+DRAWING LIBRARY (DrawingLibrary object - OPTIONAL):
+- DrawingLibrary.createParticles(x, y, count, config) - Create particle system
+- DrawingLibrary.createBackground(config) - Create animated background
+- DrawingLibrary.createRadialGradient(ctx, x, y, innerR, outerR, colors) - Gradient helper
+- DrawingLibrary.drawWithShadow(ctx, drawFunc, offsetX, offsetY, blur, color) - Shadow helper
+- DrawingLibrary.drawWithGlow(ctx, drawFunc, glowColor, glowSize) - Glow helper
+- DrawingLibrary.drawText(ctx, text, x, y, config) - Text with effects
+
+===========================================
+CRITICAL: MATCH USER'S STYLE CHOICES
+===========================================
+
+USER'S SELECTIONS:
+- Color Scheme: ${submission.colors}
+- Art Style: ${submission.artStyle}
+- Background: ${submission.background}
+- Game Type: ${submission.gameType}
+
+STYLE REQUIREMENTS:
+✅ Draw CUSTOM sprites matching the art style (NOT generic rectangles)
+✅ Use the specified color palette throughout
+✅ Create background matching the theme
+✅ Visual style must be DISTINCTIVE and match user choices
+✅ Each game should look UNIQUE - no two games should look identical
+
+ART STYLE GUIDELINES:
+
+${submission.artStyle === 'geometric' ? `
+GEOMETRIC STYLE:
+- Sharp angles, clean lines, bold solid colors
+- Use triangles, hexagons, diamonds
+- Minimal gradients, focus on flat colors
+- Example player: Triangle pointing up with sharp edges
+- Example enemy: Hexagon with angular features
+- Colors: Bold, high contrast
+` : ''}
+
+${submission.artStyle === 'cartoon' ? `
+CARTOON STYLE:
+- Rounded shapes, gradients, expressive features
+- Use circles, ovals, curved paths
+- Add eyes, mouths, bouncy animations
+- Example player: Round character with big eyes
+- Example enemy: Blob-like creature with expression
+- Colors: Vibrant, with shading gradients
+` : ''}
+
+${submission.artStyle === 'pixel' ? `
+PIXEL ART STYLE:
+- 8-bit/16-bit aesthetic, pixel grid aligned
+- Use fillRect for pixel-perfect squares
+- Limited color palette (4-8 colors)
+- Example player: 16x16 pixel sprite with clear silhouette
+- Example enemy: 12x12 pixel creature
+- Colors: Retro palette, dithering optional
+` : ''}
+
+${submission.artStyle === 'fancy' ? `
+FANCY STYLE:
+- Detailed gradients, glow effects, particles
+- Use shadows, glows, and DrawingLibrary helpers
+- Polished, modern look
+- Example player: Gradient-filled shape with glow
+- Example enemy: Shadowed sprite with particle trail
+- Colors: Rich gradients, atmospheric effects
+` : ''}
+
+COLOR PALETTE GUIDELINES:
+
+${submission.colors === 'colorful' ? `
+COLORFUL PALETTE:
+- Primary: #FF0066 (vibrant pink)
+- Secondary: #00CCFF (bright cyan)
+- Accent: #FFFF00 (sunny yellow)
+- Background: #6600FF (deep purple) to #FF0066 (pink) gradient
+- Collectibles: #00FF00 (lime green), #FFAA00 (orange)
+- Hazards: #FF0000 (red), #FF6600 (orange-red)
+` : ''}
+
+${submission.colors === 'dark-neon' ? `
+DARK-NEON PALETTE:
+- Background: #000000 (black) to #001122 (dark blue) gradient
+- Player: #00FFFF (cyan) with glow
+- Enemies: #FF00FF (magenta) with glow
+- Collectibles: #FFFF00 (yellow) with glow
+- Accents: #00FF00 (neon green)
+- Use DrawingLibrary.drawWithGlow for neon effect
+` : ''}
+
+${submission.colors === 'bright' ? `
+BRIGHT PALETTE:
+- Background: #87CEEB (sky blue) to #FFFFFF (white) gradient
+- Player: #FFD700 (gold), #FF6347 (tomato)
+- Enemies: #FF1493 (deep pink), #FF69B4 (hot pink)
+- Collectibles: #32CD32 (lime green), #FFA500 (orange)
+- Accents: #FFFFFF (white), #FFFF00 (yellow)
+` : ''}
+
+${submission.colors === 'retro' ? `
+RETRO PALETTE:
+- Background: #2C1810 (dark brown) to #1A0F0A (darker brown) gradient
+- Player: #FFB000 (amber), #FF8800 (orange)
+- Enemies: #00FF00 (CRT green), #00FFAA (cyan-green)
+- Collectibles: #FFFF00 (yellow), #FF00FF (magenta)
+- Limited palette: 4-6 colors max
+` : ''}
+
+BACKGROUND THEME:
+
+${submission.background === 'space' ? `
+SPACE BACKGROUND:
+- Use DrawingLibrary.createBackground({ type: 'space', colors: [...], scrollSpeed: 30 })
+- Or draw custom: stars, planets, nebulae
+- Dark background with bright stars
+- Optional: scrolling starfield
+` : ''}
+
+${submission.background === 'city' ? `
+CITY BACKGROUND:
+- Draw building silhouettes at bottom
+- Use rectangles for windows (lit/unlit)
+- Optional: scrolling cityscape
+- Colors: dark buildings, bright windows
+` : ''}
+
+${submission.background === 'forest' ? `
+FOREST BACKGROUND:
+- Use DrawingLibrary.createBackground({ type: 'forest', colors: [...] })
+- Or draw custom: trees, bushes, grass
+- Green tones, organic shapes
+- Optional: parallax layers
+` : ''}
+
+${submission.background === 'ocean' ? `
+OCEAN BACKGROUND:
+- Use DrawingLibrary.createBackground({ type: 'ocean', colors: [...] })
+- Or draw custom: waves, bubbles, fish
+- Blue gradient, wave patterns
+- Optional: animated waves
+` : ''}
+
+${submission.background === 'sky' ? `
+SKY BACKGROUND:
+- Gradient from light to darker blue
+- Add clouds (white ovals with transparency)
+- Optional: sun/moon, birds
+- Bright, airy feel
+` : ''}
 
 ===========================================
 GAME REQUIREMENTS (Age 10 Players)
 ===========================================
-✅ Complete single-file HTML with embedded CSS and JavaScript
+✅ Single HTML file with inline JavaScript
 ✅ Fun and exciting for 10-year-olds
-✅ Animated sprites with 3+ frames (NOT static rectangles)
-✅ Particle effects on collect, damage, death
-✅ Sound effects using Web Audio API (simple beeps/tones)
-✅ Smooth 60 FPS gameplay
-✅ Forgiving hitboxes (70% of visual size)
+✅ Smooth gameplay at any frame rate (delta time physics)
+✅ Forgiving hitboxes (70% of visual size - use GameUtils.checkCollision)
 ✅ Tutorial-easy first 30 seconds (90% success rate)
-✅ Both keyboard (WASD + Arrow Keys) and touch controls
-✅ localStorage for high scores
+✅ Input handled by InputManager (keyboard + touch automatic)
+✅ Custom sprites matching art style (NOT rectangles/circles)
+✅ Colors from user's chosen palette
+✅ Background matching user's theme
 
 ===========================================
 CRITICAL GAMEPLAY MECHANICS (MUST DO)
@@ -701,11 +870,10 @@ SPATIAL DISTRIBUTION:
 - Visual confirmation: Objects are spread across the play area, not clustered
 
 COLLISION DETECTION & INTERACTION:
-- Check distance between player sprite and each game object (hazard/collectible)
-- If distance < (player_size + object_size) * 0.7 (forgiving hitbox):
-  - If HAZARD: lose 1 life, play hurt sound, spawn particles
-  - If COLLECTIBLE: gain 10+ points, play pickup sound, spawn particles
-- Collision detection must be ACTIVE in game update loop
+- Use GameUtils.checkCollision(player, object, 0.7) for forgiving hitboxes
+- If HAZARD collision: lose 1 life, respawn hazard at new position
+- If COLLECTIBLE collision: gain points, remove collectible
+- Collision detection must be ACTIVE in update loop
 - State changes MUST occur: score increments, lives decrement on hazard
 
 SPAWN LOGIC:
@@ -713,15 +881,6 @@ SPAWN LOGIC:
 - Objects spawn at varied X positions: Math.random() * canvas.width
 - Spawn rate increases with difficulty over time
 - New objects appear throughout game, not just at start
-
-PROOF OF WORKING GAMEPLAY:
-Your code will be analyzed. It MUST contain:
-- Variable for player x,y position: player = { x: ..., y: ... }
-- Variable for game objects array: hazards = [...], collectibles = [...]
-- Distance calculation function: Math.hypot(dx, dy) or similar
-- Score variable that INCREASES on collectible hit
-- Lives variable that DECREASES on hazard hit
-- Spawn function with randomized positions
 
 DIFFICULTY SETTINGS:
 - Overall Difficulty: ${submission.difficulty}/5
@@ -735,33 +894,106 @@ VISUAL STYLE:
 
 CONTROLS:
 - Movement: ${submission.movement}
-  ${submission.movement === 'left-right' ? '  → Left/Right arrows or A/D keys' : ''}
-  ${submission.movement === 'four-way' ? '  → Arrow keys or WASD' : ''}
-  ${submission.movement === 'mouse' ? '  → Mouse position or touch' : ''}
+  ${submission.movement === 'left-right' ? '  → Use input.isPressed("left") and input.isPressed("right")' : ''}
+  ${submission.movement === 'four-way' ? '  → Use input.isPressed("left/right/up/down")' : ''}
+  ${submission.movement === 'mouse' ? '  → Track mouse position (add mouse event listeners)' : ''}
   ${submission.movement === 'auto-move' ? '  → Auto-movement, player controls actions' : ''}
 - Special Action: ${submission.specialAction}
-  ${submission.specialAction === 'shoot' ? '  → Spacebar to shoot' : ''}
-  ${submission.specialAction === 'jump' ? '  → Spacebar to jump' : ''}
-  ${submission.specialAction === 'powerup' ? '  → Spacebar to activate power-up' : ''}
+  ${submission.specialAction === 'shoot' ? '  → Use input.isPressed("space") to shoot' : ''}
+  ${submission.specialAction === 'jump' ? '  → Use input.isPressed("space") to jump' : ''}
+  ${submission.specialAction === 'powerup' ? '  → Use input.isPressed("space") to activate power-up' : ''}
 
 GAME ELEMENTS:
 ${submission.collectibles.length > 0 ? `- Collectibles: ${submission.collectibles.join(', ')}` : ''}
 ${submission.hazards.length > 0 ? `- Hazards to Avoid: ${submission.hazards.join(', ')}` : ''}
 ${submission.features.length > 0 ? `- Special Features: ${submission.features.join(', ')}` : ''}
 
+${buildArcadeFlavorAddition(submission)}
+
+===========================================
+HTML STRUCTURE REQUIREMENTS
+===========================================
+Your HTML file MUST include:
+
+1. Standard overlays (Try Now, Instructions, Game Over)
+2. Canvas element (800x600)
+3. HUD div for score/lives
+4. Mobile controls div (auto-populated by script)
+5. Framework script includes in <head>
+6. Inline <style> with overlay styles
+7. Inline <script> with game logic
+
+Use this structure:
+
+\`\`\`html
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>${submission.gameTitle}</title>
+  <link rel="stylesheet" href="/game-framework/overlay-styles.css">
+</head>
+<body>
+  <!-- Overlays: Try Now, Instructions, Game Over -->
+  <!-- Canvas -->
+  <!-- HUD -->
+  <!-- Mobile Controls -->
+  
+  <script src="/game-framework/game-engine.js"></script>
+  <script src="/game-framework/game-utils.js"></script>
+  <script src="/game-framework/drawing-library.js"></script>
+  
+  <script>
+    // Game code here
+  </script>
+</body>
+</html>
+\`\`\`
+
+===========================================
+CUSTOM SPRITE DRAWING REQUIREMENTS
+===========================================
+You MUST create custom drawing functions for each sprite type:
+
+\`\`\`javascript
+function drawPlayer(ctx, x, y) {
+  // Draw player matching art style
+  // Use colors from palette
+  // Make it distinctive and recognizable
+  // NOT just a rectangle or circle
+}
+
+function drawEnemy(ctx, x, y) {
+  // Draw enemy matching art style
+  // Different from player
+  // Clearly identifiable as threat
+}
+
+function drawCollectible(ctx, x, y) {
+  // Draw collectible matching art style
+  // Appealing, worth collecting
+  // Different from player and enemies
+}
+\`\`\`
+
 ===========================================
 IMPLEMENTATION CHECKLIST
 ===========================================
-1. ✅ Use requestAnimationFrame for game loop
-2. ✅ Implement proper collision detection with 70% hitboxes
-3. ✅ Add particle system for visual feedback
-4. ✅ Create simple Web Audio synth for sounds
-5. ✅ Handle both keyboard and touch input
-6. ✅ Show "Try Now" overlay on load
-7. ✅ Show "How to Play" after Try click
-8. ✅ Start game after "Start Game" click
-9. ✅ Display score and lives in UI overlay
-10. ✅ Save high score to localStorage
+1. ✅ Include framework scripts in <head>
+2. ✅ Create GameEngine instance
+3. ✅ Create InputManager instance
+4. ✅ Use game.onUpdate(dt) for game logic
+5. ✅ Use game.onRender(ctx) for drawing
+6. ✅ ALL movement multiplied by dt (delta time in seconds)
+7. ✅ Use GameUtils.checkCollision for forgiving hitboxes (0.7)
+8. ✅ Custom sprite drawing functions matching art style
+9. ✅ Colors from user's chosen palette
+10. ✅ Background matching user's theme
+11. ✅ Varied spawn positions for objects
+12. ✅ Active collision detection in update loop
+13. ✅ Mobile controls setup (setupMobileControls function)
+14. ✅ Overlays for Try Now, Instructions, Game Over
 
 ===========================================
 OUTPUT FORMAT & CODE QUALITY
@@ -770,90 +1002,88 @@ Return ONLY the complete HTML file, nothing else.
 Do NOT include markdown code blocks or explanations.
 Start with <!DOCTYPE html> and end with </html>.
 
-CODE LENGTH REQUIREMENT: Your HTML file MUST be at least 8000 characters.
+CODE LENGTH REQUIREMENT: Your HTML file MUST be at least 300 lines.
 This ensures sufficient detail in:
-- Sprite animations (3+ frames per sprite)
-- Particle effect patterns
-- Visual polish and effects
-- Sound synthesis code
-- Game balance and gameplay depth
+- Game mechanics and logic
+- Collision detection
+- Spawn systems
+- Visual polish (custom sprites)
+- Gameplay depth
+- Mobile controls
+- Overlay management
 
 Create a polished, fun, child-friendly game that works perfectly on first load.`;
 }
 
+
 function extractHTMLFromResponse(text: string): string {
-  let html = text;
+  let code = text;
   
-  // Remove markdown code blocks if present
-  html = html.replace(/```html\n?/g, '').replace(/```\n?/g, '');
+  code = code.replace(/```html\n?/g, '').replace(/```\n?/g, '');
   
-  // Find <!DOCTYPE html> and take everything from there
-  const doctypeIndex = html.indexOf('<!DOCTYPE html>');
+  const doctypeIndex = code.indexOf('<!DOCTYPE');
   if (doctypeIndex !== -1) {
-    html = html.substring(doctypeIndex);
+    code = code.substring(doctypeIndex);
+  } else {
+    const htmlIndex = code.indexOf('<html');
+    if (htmlIndex !== -1) {
+      code = code.substring(htmlIndex);
+    }
   }
   
-  // Remove any text after closing </html>
-  const htmlEndIndex = html.lastIndexOf('</html>');
+  const htmlEndIndex = code.lastIndexOf('</html>');
   if (htmlEndIndex !== -1) {
-    html = html.substring(0, htmlEndIndex + 7);
+    code = code.substring(0, htmlEndIndex + 7);
   }
   
-  return html.trim();
+  return code.trim();
 }
 
 function validateGeneratedCode(code: string): boolean {
-  // Required HTML structure
-  if (!code.includes('<!DOCTYPE html>')) {
-    console.error('[Validation] Missing DOCTYPE');
+  if (!code.includes('<!DOCTYPE html') && !code.includes('<html')) {
+    console.error('[Validation] Missing HTML document structure');
     return false;
   }
-  if (!code.includes('<canvas')) {
-    console.error('[Validation] Missing canvas element');
+  
+  if (!code.includes('/game-framework/game-engine.js')) {
+    console.error('[Validation] Missing GameEngine script include');
     return false;
   }
-
-  // Required game loop
-  if (!code.includes('requestAnimationFrame')) {
-    console.error('[Validation] Missing requestAnimationFrame');
-    return false;
-  }
-
-  // Check for JavaScript presence (function or arrow function)
-  if (!code.includes('function') && !code.includes('=>')) {
-    console.error('[Validation] No JavaScript functions found');
+  
+  if (!code.includes('/game-framework/game-utils.js')) {
+    console.error('[Validation] Missing GameUtils script include');
     return false;
   }
 
-  // Minimum viable game size
-  if (code.length < MIN_VALID_CODE_LENGTH) {
-    console.error(`[Validation] Code too short: ${code.length} bytes (min ${MIN_VALID_CODE_LENGTH})`);
+  if (!code.includes('new GameEngine(')) {
+    console.error('[Validation] Missing GameEngine instantiation');
     return false;
   }
 
-  // Check for error patterns
-  if (code.match(/\b(undefined|null)\s*;/)) {
-    console.error('[Validation] Contains undefined/null statements');
+  if (!code.includes('game.onUpdate') || !code.includes('game.onRender')) {
+    console.error('[Validation] Missing game.onUpdate or game.onRender callbacks');
     return false;
   }
 
-  // Check for unrendered template variables
+  if (!code.includes('* dt')) {
+    console.error('[Validation] Missing delta time multiplication (must use * dt for frame-rate independence)');
+    return false;
+  }
+
+  if (code.length < 5000) {
+    console.error(`[Validation] Code too short: ${code.length} bytes (min 5000)`);
+    return false;
+  }
+
   if (code.includes('{{') && code.includes('}}')) {
     console.error('[Validation] Contains unrendered template variables');
-    return false;
-  }
-
-  // Validate balanced HTML tags for canvas
-  const canvasOpen = (code.match(/<canvas/g) || []).length;
-  const canvasClose = (code.match(/<\/canvas>/g) || []).length;
-  if (canvasOpen !== canvasClose) {
-    console.error('[Validation] Unbalanced canvas tags');
     return false;
   }
 
   console.log('[Validation] ✓ Code passed all validation checks');
   return true;
 }
+
 
 interface GameplayIssue {
   severity: 'critical' | 'warning';
@@ -862,9 +1092,9 @@ interface GameplayIssue {
 }
 
 function analyzeGameplayMechanics(code: string): GameplayIssue[] {
+
   const issues: GameplayIssue[] = [];
 
-  // Check 1: Player object/variables exist
   const hasPlayerVar = /\bplayer\s*=|let\s+player|const\s+player|var\s+player/.test(code);
   const hasPlayerXY = /player\s*\.x|player\s*\.y|playerX|playerY/.test(code);
 
@@ -876,19 +1106,17 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
     });
   }
 
-  // Check 2: Hazards array exists and is used
-  const hasHazardArray = /\bhazards\s*=\s*\[|let\s+hazards|const\s+hazards/.test(code);
+  const hasHazardArray = /\bhazards\s*=\s*\[|let\s+hazards|const\s+hazards|enemies\s*=\s*\[|let\s+enemies|const\s+enemies/.test(code);
 
   if (!hasHazardArray) {
     issues.push({
       severity: 'critical',
-      issue: 'Missing hazards array to track obstacles',
-      fix: 'Create a hazards array to store all hazard objects: const hazards = [];'
+      issue: 'Missing hazards/enemies array to track obstacles',
+      fix: 'Create a hazards or enemies array to store all hazard objects: const enemies = [];'
     });
   }
 
-  // Check 3: Collectibles array exists
-  const hasCollectArray = /\bcollectibles\s*=\s*\[|let\s+collectibles|const\s+collectibles/.test(code);
+  const hasCollectArray = /\bcollectibles\s*=\s*\[|let\s+collectibles|const\s+collectibles|coins\s*=\s*\[|let\s+coins|const\s+coins/.test(code);
 
   if (!hasCollectArray) {
     issues.push({
@@ -898,19 +1126,16 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
     });
   }
 
-  // Check 4: Distance/collision calculation
-  const hasDistance = /hypot|sqrt|pow|distance|collision/.test(code);
-  const hasCollisionCheck = /if\s*\(.*distance|if\s*\(.*collision|if\s*\(.*dx.*dy/.test(code);
+  const hasCollisionCheck = /GameUtils\.checkCollision|checkCollision/.test(code);
 
-  if (!hasDistance || !hasCollisionCheck) {
+  if (!hasCollisionCheck) {
     issues.push({
       severity: 'critical',
-      issue: 'Missing collision detection logic',
-      fix: 'Add distance calculation: Math.hypot(obj.x - player.x, obj.y - player.y) and check if < hitbox distance'
+      issue: 'Missing collision detection using GameUtils.checkCollision',
+      fix: 'Add collision detection: GameUtils.checkCollision(player, object, 0.7)'
     });
   }
 
-  // Check 5: Score changes on collection
   const scoreIncrement = /score\s*\+=|score\s*=\s*score\s*\+|points\s*\+=/.test(code);
 
   if (!scoreIncrement) {
@@ -921,7 +1146,6 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
     });
   }
 
-  // Check 6: Lives decrease on hazard hit
   const livesDecrement = /lives\s*--|-=|lives\s*=\s*lives\s*-/.test(code);
 
   if (!livesDecrement) {
@@ -932,9 +1156,8 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
     });
   }
 
-  // Check 7: Spawn with randomization
   const hasRandom = /Math\.random/.test(code);
-  const hasSpawn = /spawn|create|new.*object|push.*hazard|push.*collectible/.test(code);
+  const hasSpawn = /spawn|create|new.*object|push.*hazard|push.*collectible|push.*enemy|push.*coin/.test(code);
 
   if (!hasRandom && hasSpawn) {
     issues.push({
@@ -944,8 +1167,6 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
     });
   }
 
-  // Check 8: Objects should be at different Y positions
-  // Look for evidence of varied Y spawning
   const yVariation = /Math\.random\(\)\s*\*\s*(?:canvas\.height|height|600)/.test(code);
 
   if (!yVariation) {
@@ -956,14 +1177,13 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
     });
   }
 
-  // Check 9: Meaningful hazards vs collectibles
-  const distinguishable = /if.*hazard|if.*collectible|type.*hazard|type.*collectible/.test(code);
+  const distinguishable = /if.*hazard|if.*collectible|if.*enemy|if.*coin|type.*hazard|type.*collectible/.test(code);
 
   if (!distinguishable) {
     issues.push({
       severity: 'warning',
       issue: 'Hazards and collectibles may not be treated differently',
-      fix: 'Add type checking: if (obj.type === "hazard") { lives-- } else if (obj.type === "collectible") { score++ }'
+      fix: 'Add type checking or use separate arrays for hazards and collectibles'
     });
   }
 
@@ -971,6 +1191,7 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
 }
 
 function buildIterationFeedbackPrompt(originalPrompt: string, issues: GameplayIssue[]): string {
+
   const criticalIssues = issues.filter(i => i.severity === 'critical');
 
   return `${originalPrompt}

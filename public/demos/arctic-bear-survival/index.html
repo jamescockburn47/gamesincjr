@@ -245,8 +245,12 @@
                 bearTraps: 0,
                 inIgloo: false,
                 hasWarmCoat: false,
-                combo: 0, // NEW: Combo system
-                lastAction: 0
+                combo: 0,
+                lastAction: 0,
+                captured: false,  // NEW: Capture state
+                capturedBy: null,  // NEW: Which bear captured player
+                dragProgress: 0,   // NEW: Progress of drag to den
+                escapeAttempts: 0  // NEW: Track escape attempts
             },
             trees: [],
             rabbits: [],
@@ -340,7 +344,8 @@
                     trapped: false,
                     trapTime: 0,
                     hasRoared: false,
-                    alertRadius: 150 // NEW: Dynamic alert radius
+                    alertRadius: 150, // Dynamic alert radius
+                    hasCaptured: false // NEW: Track if bear has captured player
                 });
             }
             
@@ -372,6 +377,11 @@
                 if (game.player.bearTraps > 0) placeBearTrap();
                 else craftBearTrap();
             }
+            // NEW: Space bar for escaping capture
+            if (e.key === ' ' && game.player.captured) {
+                attemptEscape();
+                e.preventDefault();
+            }
         });
         window.addEventListener('keyup', e => game.keys[e.key.toLowerCase()] = false);
 
@@ -381,6 +391,81 @@
             div.textContent = text;
             document.getElementById('messages').appendChild(div);
             setTimeout(() => div.remove(), 3000);
+        }
+        
+        // ESCAPE MECHANIC: Strength-based with clear feedback
+        function attemptEscape() {
+            const p = game.player;
+            if (!p.captured || !p.capturedBy) return;
+            
+            p.escapeAttempts++;
+            
+            // Calculate escape chance based on player's CURRENT condition
+            const playerStrength = (p.health + p.warmth + p.hunger) / 300;
+            const isFreezing = p.warmth < 30;
+            
+            // Freezing players have VERY low escape chance (5-20%)
+            // Normal weak players: 10-30%
+            // Strong players: 30-50%
+            let baseEscapeChance;
+            if (isFreezing) {
+                baseEscapeChance = 0.05 + (playerStrength * 0.15);
+            } else if (playerStrength < 0.5) {
+                baseEscapeChance = 0.10 + (playerStrength * 0.40);
+            } else {
+                baseEscapeChance = 0.30 + ((playerStrength - 0.5) * 0.40);
+            }
+            
+            // Rapid button mashing adds significant bonus
+            const rapidBonus = Math.min(0.20, p.escapeAttempts * 0.04);
+            
+            const totalEscapeChance = Math.min(0.7, baseEscapeChance + rapidBonus);
+            
+            if (Math.random() < totalEscapeChance) {
+                // ESCAPED!
+                p.captured = false;
+                const bear = p.capturedBy;
+                bear.hasCaptured = false;
+                bear.state = 'stunned';
+                bear.stunnedTime = 3;
+                p.capturedBy = null;
+                p.escapeAttempts = 0;
+                
+                // Push player away from bear
+                const dx = p.x - bear.x;
+                const dy = p.y - bear.y;
+                const dist = Math.hypot(dx, dy) || 1;
+                p.x += (dx / dist) * 50;
+                p.y += (dy / dist) * 50;
+                
+                // Bonus points for strong escapes
+                const escapeBonus = isFreezing ? 500 : (playerStrength < 0.5 ? 300 : 200);
+                game.score += escapeBonus;
+                
+                if (isFreezing) {
+                    showMessage(`❄️✨ MIRACLE ESCAPE! +${escapeBonus} (you were freezing!)`);
+                } else {
+                    showMessage(`✨ ESCAPED! +${escapeBonus} score`);
+                }
+                createParticles(p.x, p.y, '#00ff00', 15);
+            } else {
+                // Failed escape - damage increases with each failed attempt
+                const struggleDamage = 2 + p.escapeAttempts * 0.5;
+                p.health -= struggleDamage;
+                
+                if (p.escapeAttempts === 1) {
+                    // Show exact probability on first attempt
+                    if (isFreezing) {
+                        showMessage(`TOO COLD TO ESCAPE! (${Math.floor(totalEscapeChance * 100)}% chance)`);
+                    } else {
+                        showMessage(`Struggling... ${Math.floor(totalEscapeChance * 100)}% chance. Keep mashing!`);
+                    }
+                } else if (p.escapeAttempts % 3 === 0) {
+                    // Update every 3 attempts
+                    showMessage(`Escape chance rising: ${Math.floor(totalEscapeChance * 100)}%`);
+                }
+                createParticles(p.x, p.y, '#ff8800', 2);
+            }
         }
 
         // NEW: Particle system for visual feedback
@@ -735,6 +820,13 @@
             const p = game.player;
             const distToPlayer = Math.hypot(p.x - bear.x, p.y - bear.y);
             
+            // NEW: Calculate player's effective strength (0-1)
+            const playerStrength = (p.health + p.warmth + p.hunger) / 300;
+            const playerWeak = playerStrength < 0.5; // Under 50% average
+            
+            // NEW: Dynamic alert radius based on player condition
+            bear.alertRadius = 150 + (playerWeak ? 50 : 0) - (p.hasWarmCoat ? 30 : 0);
+            
             // Check traps
             if (bear.trapped) {
                 bear.trapTime -= dt;
@@ -848,12 +940,39 @@
                     const dy = p.y - bear.y;
                     const dist = Math.hypot(dx, dy) || 1;
                     
-                    bear.vx = (dx / dist) * 60 * 0.8;
-                    bear.vy = (dy / dist) * 60 * 0.8;
+                    // NEW: Chase speed increases if player is weak/cold
+                    const chaseMultiplier = 0.8 + (playerWeak ? 0.3 : 0);
+                    bear.vx = (dx / dist) * 60 * chaseMultiplier;
+                    bear.vy = (dy / dist) * 60 * chaseMultiplier;
                     
                     if (distToPlayer < 30) {
-                        p.health -= dt * 15; // Original damage
-                        createParticles(p.x, p.y, '#ff0000', 2);
+                        // DYNAMIC CAPTURE: Based on overall condition, not just health
+                        // Capture if weak (<50% average) OR freezing (<30 warmth regardless of other stats)
+                        const isFreezing = p.warmth < 30;
+                        const canCapture = (playerWeak || isFreezing) && !p.captured;
+                        
+                        if (canCapture) {
+                            // Capture probability increases with weakness
+                            const captureChance = isFreezing ? 0.6 : (0.3 + (0.5 - playerStrength) * 0.8);
+                            
+                            if (Math.random() < captureChance * dt * 10) {
+                                p.captured = true;
+                                p.capturedBy = bear;
+                                bear.hasCaptured = true;
+                                bear.state = 'dragging';
+                                
+                                if (isFreezing) {
+                                    showMessage('❄️🐻 TOO COLD! CAPTURED! Press SPACE to escape!');
+                                } else {
+                                    showMessage(`🐻 CAPTURED! (Strength: ${Math.floor(playerStrength * 100)}%) Press SPACE!`);
+                                }
+                            }
+                        } else if (!p.captured) {
+                            // Normal damage - MORE damage if weak/cold
+                            const damageMultiplier = isFreezing ? 2.0 : (playerWeak ? 1.5 : 1.0);
+                            p.health -= dt * 15 * damageMultiplier;
+                            createParticles(p.x, p.y, '#ff0000', 2);
+                        }
                     }
                 }
                 
@@ -876,12 +995,38 @@
                     const dy = p.y - bear.y;
                     const dist = Math.hypot(dx, dy) || 1;
                     
-                    bear.vx = (dx / dist) * 60 * 2;
-                    bear.vy = (dy / dist) * 60 * 2;
+                    // NEW: Charging is more effective against weak players
+                    const chargeMultiplier = 2 + (playerWeak ? 0.5 : 0);
+                    bear.vx = (dx / dist) * 60 * chargeMultiplier;
+                    bear.vy = (dy / dist) * 60 * chargeMultiplier;
                     
                     if (distToPlayer < 30) {
-                        p.health -= dt * 30; // Original damage
-                        createParticles(p.x, p.y, '#ff0000', 3);
+                        // CHARGING CAPTURE: Much higher probability than normal chase
+                        const isFreezing = p.warmth < 30;
+                        const canCapture = (playerWeak || isFreezing) && !p.captured;
+                        
+                        if (canCapture) {
+                            // Charging = 70-95% capture chance per second depending on condition
+                            const captureChance = isFreezing ? 0.95 : (0.7 + (0.5 - playerStrength) * 0.5);
+                            
+                            if (Math.random() < captureChance * dt * 10) {
+                                p.captured = true;
+                                p.capturedBy = bear;
+                                bear.hasCaptured = true;
+                                bear.state = 'dragging';
+                                
+                                if (isFreezing) {
+                                    showMessage('❄️🐻 FROZEN & CAPTURED! Press SPACE!');
+                                } else {
+                                    showMessage(`🐻 CHARGING CAPTURE! (${Math.floor(playerStrength * 100)}% strength) Press SPACE!`);
+                                }
+                            }
+                        } else if (!p.captured) {
+                            // Massive damage from charge - even worse if cold/weak
+                            const damageMultiplier = isFreezing ? 3.0 : (playerWeak ? 2.0 : 1.5);
+                            p.health -= dt * 30 * damageMultiplier;
+                            createParticles(p.x, p.y, '#ff0000', 3);
+                        }
                     }
                 }
                 
@@ -899,6 +1044,53 @@
                     bear.vx = (dx / dist) * 60 * 0.5;
                     bear.vy = (dy / dist) * 60 * 0.5;
                 }
+                
+            } else if (bear.state === 'dragging') {
+                // NEW: Dragging captured player to den
+                const distToCave = Math.hypot(bear.x - bear.caveX, bear.y - bear.caveY);
+                
+                if (distToCave < 40) {
+                    // Reached den - massive damage or instant death
+                    p.health -= 60;
+                    p.captured = false;
+                    p.capturedBy = null;
+                    bear.hasCaptured = false;
+                    bear.state = 'in_cave';
+                    bear.caveTime = 20;
+                    showMessage('💀 Dragged to den! -60 HP!');
+                    createParticles(bear.caveX, bear.caveY, '#8B0000', 15);
+                } else {
+                    // Drag toward cave
+                    const dx = bear.caveX - bear.x;
+                    const dy = bear.caveY - bear.y;
+                    const dist = Math.hypot(dx, dy) || 1;
+                    
+                    bear.vx = (dx / dist) * 60 * 0.9;
+                    bear.vy = (dy / dist) * 60 * 0.9;
+                    
+                    // Drag player along
+                    p.x = bear.x;
+                    p.y = bear.y;
+                    
+                    // Small continuous damage while being dragged
+                    p.health -= dt * 5;
+                    
+                    if (Math.random() < 0.02) {
+                        createParticles(p.x, p.y, '#ff0000', 1);
+                    }
+                }
+                
+            } else if (bear.state === 'stunned') {
+                // NEW: Stunned state after player escapes
+                bear.stunnedTime -= dt;
+                bear.vx = 0;
+                bear.vy = 0;
+                
+                if (bear.stunnedTime <= 0) {
+                    bear.state = 'returning';
+                    showMessage('🐻 Bear recovering...');
+                }
+                return;
                 
             } else if (bear.state === 'in_cave') {
                 bear.caveTime -= dt;
@@ -1422,6 +1614,13 @@
                     ctx.fillStyle = '#ff0000';
                     ctx.font = 'bold 14px Arial';
                     ctx.fillText('!!!', 0, -28);
+                } else if (bear.state === 'stunned') {
+                    ctx.fillStyle = '#ffff00';
+                    ctx.font = 'bold 16px Arial';
+                    ctx.fillText('⭐', 0, -28);
+                    ctx.font = 'bold 10px Arial';
+                    ctx.fillStyle = '#ffaa00';
+                    ctx.fillText(`Stunned ${Math.ceil(bear.stunnedTime)}s`, 0, -40);
                 } else if (bear.trapped) {
                     ctx.fillStyle = '#ffaa00';
                     ctx.font = 'bold 14px Arial';
