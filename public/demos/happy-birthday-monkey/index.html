@@ -290,7 +290,7 @@
     <div class="start-content">
       <h1>🎉 Happy 8th Birthday Henry! 🎉</h1>
       <p class="tagline">Jump and catch balloons while avoiding snapping crocodiles! <span class="heart">💝</span></p>
-      <button id="startBtn" class="start-button">Start Now</button>
+      <button id="startBtn" class="start-button" onclick="window.startHenryGame()">Start Now</button>
     </div>
   </div>
 
@@ -915,69 +915,56 @@
 
 
       // ============================================================================
-      // START GAME FLOW - Simplified, no race conditions
+      // GLOBAL START FUNCTION - Simple, reliable launch
       // ============================================================================
-      async function startGameFlow() {
+      window.startHenryGame = async function() {
+        console.log('[Henry Game] Start button clicked');
+        
         if (state.running) {
-          logError('START', 'Game already running, ignoring start request');
+          console.log('[Henry Game] Already running');
           return;
         }
         
-        logError('START', 'Starting game flow');
+        // Hide start screen immediately
+        const screen = document.getElementById('startScreen');
+        if (screen) screen.style.display = 'none';
         
-        // Hide start screen
-        if (startScreen) {
-          startScreen.style.display = 'none';
-        }
-        
-        // Show stage
-        if (stage) {
-          stage.classList.remove('hidden');
+        // Show game stage
+        const gameStage = document.getElementById('stage');
+        if (gameStage) {
+          gameStage.classList.remove('hidden');
         }
         
         // Show fullscreen button
-        if (fullscreenBtn) {
-          fullscreenBtn.style.display = 'block';
-        }
+        const fsBtn = document.getElementById('fullscreenBtn');
+        if (fsBtn) fsBtn.style.display = 'block';
         
-        // Lock body scroll
+        // Lock body
         document.body.classList.add('game-running');
         
-        // Always go fullscreen and start game
+        // Go fullscreen
         try {
-          await requestFullscreen();
-          logError('START', 'Fullscreen requested');
-          
-          // Wait for fullscreen event before starting
-          const onFullscreen = () => {
-            if (document.fullscreenElement === stage) {
-              document.removeEventListener('fullscreenchange', onFullscreen);
-              setTimeout(() => {
-                resizeCanvas();
-                startGame();
-              }, 100);
+          if (gameStage) {
+            if (gameStage.requestFullscreen) {
+              await gameStage.requestFullscreen();
+            } else if (gameStage.webkitRequestFullscreen) {
+              await gameStage.webkitRequestFullscreen();
+            } else if (gameStage.mozRequestFullScreen) {
+              await gameStage.mozRequestFullScreen();
+            } else if (gameStage.msRequestFullscreen) {
+              await gameStage.msRequestFullscreen();
             }
-          };
-          document.addEventListener('fullscreenchange', onFullscreen);
-          
-          // Fallback if fullscreen event doesn't fire
-          setTimeout(() => {
-            if (!state.running) {
-              logError('START', 'Fullscreen event timeout, starting anyway');
-              resizeCanvas();
-              startGame();
-            }
-          }, 500);
-          
+          }
         } catch (err) {
-          logError('START', 'Fullscreen failed, starting anyway', err);
-          // Start game even if fullscreen fails
-          setTimeout(() => {
-            resizeCanvas();
-            startGame();
-          }, 100);
+          console.log('[Henry Game] Fullscreen request failed:', err);
         }
-      }
+        
+        // Wait a moment for fullscreen, then start
+        setTimeout(() => {
+          resizeCanvas();
+          startGame();
+        }, 200);
+      };
 
       // ============================================================================
       // START GAME - Clean initialization (no nested rAF)
@@ -1042,66 +1029,18 @@
       }
 
       // ============================================================================
-      // BUTTON EVENT HANDLERS
+      // BUTTON EVENT HANDLERS (for restart/exit)
       // ============================================================================
-      // Button event handlers - attach directly to button
-      const actualStartBtn = document.getElementById('startBtn');
-      
-      if (actualStartBtn) {
-        console.log('[Happy Birthday Monkey] Found start button, attaching handlers');
-        
-        actualStartBtn.onclick = async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('[Happy Birthday Monkey] Start button clicked!');
-          logError('USER_ACTION', 'Start button clicked');
-          try {
-            await startGameFlow();
-          } catch (err) {
-            console.error('[Happy Birthday Monkey] Error in startGameFlow:', err);
-            logError('CRITICAL', 'Error starting game', err);
-          }
-          return false;
-        };
-        
-        actualStartBtn.addEventListener('click', async (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('[Happy Birthday Monkey] Start button clicked (addEventListener)!');
-          await startGameFlow();
-        }, true);
-        
-        // Touch support
-        actualStartBtn.addEventListener('touchend', (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          console.log('[Happy Birthday Monkey] Start button touchend');
-          actualStartBtn.click();
-        }, true);
-      } else {
-        console.error('[Happy Birthday Monkey] Start button not found in DOM!');
-        logError('CRITICAL', 'Start button not found');
-        
-        // Try again after DOM updates
-        setTimeout(() => {
-          const retryBtn = document.getElementById('startBtn');
-          if (retryBtn) {
-            console.log('[Happy Birthday Monkey] Found start button on retry');
-            retryBtn.onclick = async () => {
-              console.log('[Happy Birthday Monkey] Start button clicked (retry)!');
-              await startGameFlow();
-            };
-          }
-        }, 500);
+      if (restartBtn) {
+        restartBtn.addEventListener('click', () => {
+          logError('USER_ACTION', 'Restart button clicked');
+          if (gameOverOverlay) gameOverOverlay.classList.add('hidden');
+          startGame();
+        });
       }
-      
-      restartBtn.addEventListener('click', () => {
-        logError('USER_ACTION', 'Restart button clicked');
-        gameOverOverlay.classList.add('hidden');
-        startGame();
-      });
 
-      exitFullscreenBtn.addEventListener('click', () => {
+      if (exitFullscreenBtn) {
+        exitFullscreenBtn.addEventListener('click', () => {
         logError('USER_ACTION', 'Exit fullscreen button clicked');
         
         state.running = false;
@@ -1128,7 +1067,8 @@
           state.particles = [];
           state.effects = [];
         }, 300);
-      });
+        });
+      }
 
 
       // ============================================================================
