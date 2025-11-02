@@ -878,6 +878,12 @@
         
         state.score = 0;
         state.lives = 3;
+        state.monkey.x = state.canvasW / 2 - 30;
+        state.monkey.y = state.groundY;
+        state.monkey.vx = 0;
+        state.monkey.vy = 0;
+        state.monkey.isJumping = false;
+        state.monkey.onGround = true;
         state.balloons = [];
         state.crocodiles = [];
         state.particles = [];
@@ -894,8 +900,51 @@
         state.lastCrocTime = 0;
         state.lastComboTime = 0;
         state.gameSpeed = DIFFICULTY.baseGameSpeed;
+        state.displayScore = 0;
         
-        startOverlay.classList.remove('hidden');
+        // Restart game
+        setTimeout(() => {
+          startGame();
+        }, 300);
+      });
+
+      exitFullscreenBtn.addEventListener('click', () => {
+        state.running = false;
+        keys.left = false;
+        keys.right = false;
+        keys.jump = false;
+        touches.clear();
+        dragVelocity = 0;
+        
+        // Exit fullscreen
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
+        
+        // Return to description page
+        setTimeout(() => {
+          stage.classList.add('hidden');
+          descriptionPage.classList.remove('hidden');
+          document.body.classList.remove('game-running');
+          gameOverOverlay.classList.add('hidden');
+          
+          // Reset game state
+          state.score = 0;
+          state.lives = 3;
+          state.monkey.x = W / 2 - 30;
+          state.monkey.y = GROUND_Y;
+          state.balloons = [];
+          state.crocodiles = [];
+          state.particles = [];
+          state.effects = [];
+          drawPreview();
+        }, 300);
       });
 
       function startGame() {
