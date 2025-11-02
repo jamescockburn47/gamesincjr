@@ -13,88 +13,47 @@
 
     body {
       font-family: 'Nunito', 'Segoe UI', Tahoma, sans-serif;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+
+    /* Start Screen */
+    #startScreen {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
       background: linear-gradient(180deg, #ffd6e8 0%, #ffe0f0 50%, #fff4f8 100%);
-      min-height: 100vh;
-      overflow-x: hidden;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
     }
 
-    /* Description page styles */
-    #descriptionPage {
-      padding: 32px 16px;
-      max-width: 900px;
-      margin: 0 auto;
-    }
-
-    #descriptionPage h1 {
-      font-size: clamp(2rem, 5vw, 3.5rem);
-      color: #ff6b9d;
+    .start-content {
       text-align: center;
-      margin-bottom: 16px;
+      padding: 40px;
+      max-width: 600px;
+    }
+
+    .start-content h1 {
+      font-size: clamp(2.5rem, 8vw, 4.5rem);
+      color: #ff6b9d;
+      margin-bottom: 20px;
       font-weight: 800;
     }
 
-    #descriptionPage .tagline {
-      text-align: center;
-      font-size: clamp(1rem, 2vw, 1.3rem);
+    .start-content .tagline {
+      font-size: clamp(1.2rem, 4vw, 1.8rem);
       color: #8b4a6b;
-      margin-bottom: 32px;
+      margin-bottom: 40px;
     }
 
-    .description-content {
-      background: white;
-      border-radius: 28px;
-      padding: 40px;
-      box-shadow: 0 20px 60px rgba(255, 107, 157, 0.3);
-    }
-
-    .description-content h2 {
-      text-align: center;
-      font-size: clamp(2rem, 5vw, 3rem);
-      color: #ff6b9d;
-      margin-bottom: 30px;
-    }
-
-    .game-preview {
-      margin: 30px 0;
-      border-radius: 20px;
-      overflow: hidden;
-      border: 4px solid rgba(255, 107, 157, 0.4);
-      aspect-ratio: 16 / 9;
-      background: linear-gradient(180deg, #87ceeb 0%, #ffd6e8 60%, #ffb3d9 100%);
-    }
-
-    #previewCanvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-    }
-
-    .game-info h3 {
-      font-size: 1.5rem;
-      color: #ff6b9d;
-      margin: 30px 0 15px 0;
-    }
-
-    .game-info ul {
-      list-style: none;
-      margin-bottom: 30px;
-    }
-
-    .game-info li {
-      padding: 10px 0;
-      border-bottom: 1px solid rgba(255, 107, 157, 0.2);
-      color: #5a2d4a;
-      line-height: 1.6;
-    }
-
-    .game-info li:last-child {
-      border-bottom: none;
-    }
-
-    .start-button {
-      width: 100%;
-      padding: 24px;
-      font-size: 1.5rem;
+    #startBtn {
+      padding: 20px 50px;
+      font-size: clamp(1.5rem, 5vw, 2rem);
       font-weight: 700;
       color: white;
       background: linear-gradient(135deg, #ff6b9d 0%, #ff8fb3 100%);
@@ -105,15 +64,15 @@
       transition: transform 0.2s;
     }
 
-    .start-button:hover {
+    #startBtn:hover {
       transform: translateY(-2px);
     }
 
-    .start-button:active {
+    #startBtn:active {
       transform: translateY(0);
     }
 
-    /* Game stage styles */
+    /* Game Stage */
     #gameStage {
       position: fixed;
       top: 0;
@@ -121,7 +80,8 @@
       width: 100vw;
       height: 100vh;
       background: linear-gradient(180deg, #87ceeb 0%, #ffd6e8 60%, #ffb3d9 100%);
-      display: none; /* Hidden by default */
+      display: none;
+      z-index: 100;
     }
 
     #gameStage.active {
@@ -135,7 +95,7 @@
       touch-action: none;
     }
 
-    /* HUD - positioned over canvas */
+    /* HUD */
     .hud {
       position: absolute;
       top: 20px;
@@ -155,7 +115,7 @@
       margin-left: 8px;
     }
 
-    /* Game over overlay */
+    /* Game Over Overlay */
     .overlay {
       position: absolute;
       inset: 0;
@@ -206,37 +166,15 @@
     .overlay button:active {
       transform: translateY(0);
     }
-
-    .hidden {
-      display: none !important;
-    }
   </style>
 </head>
 <body>
-  <!-- Description Page -->
-  <div id="descriptionPage">
-    <h1>🎉 Happy 8th Birthday Henry! 🎉</h1>
-    <p class="tagline">Jump and catch balloons while avoiding snapping crocodiles! 💝</p>
-
-    <div class="description-content">
-      <h2>🎂 Happy 8th Birthday Henry! 🎂</h2>
-      
-      <div class="game-preview">
-        <canvas id="previewCanvas" width="900" height="506"></canvas>
-      </div>
-
-      <div class="game-info">
-        <h3>How to Play</h3>
-        <ul>
-          <li><strong>Desktop:</strong> Use arrow keys (← →) to move, SPACE or ↑ to jump</li>
-          <li><strong>Mobile/Touch:</strong> Drag anywhere to move, tap anywhere to jump</li>
-          <li>Catch colorful balloons to earn points</li>
-          <li>Avoid the snapping crocodiles - they'll take a life!</li>
-          <li>Special balloons give you power-ups like shields and slow motion</li>
-        </ul>
-        
-        <button id="startBtn" class="start-button">🎮 Start Game!</button>
-      </div>
+  <!-- Start Screen -->
+  <div id="startScreen">
+    <div class="start-content">
+      <h1>🎉 Happy 8th Birthday Henry! 🎉</h1>
+      <p class="tagline">Jump and catch balloons while avoiding snapping crocodiles! 💝</p>
+      <button id="startBtn">Start Now</button>
     </div>
   </div>
 
@@ -262,10 +200,11 @@
 
   <script>
     // ============================================================================
-    // SIMPLE LAUNCH SYSTEM - No embedded detection, no fullscreen complexity
+    // SIMPLE LAUNCH SYSTEM - Direct and reliable
     // ============================================================================
+    console.log('[Launch] Initializing...');
     
-    const descriptionPage = document.getElementById('descriptionPage');
+    const startScreen = document.getElementById('startScreen');
     const gameStage = document.getElementById('gameStage');
     const startBtn = document.getElementById('startBtn');
     const restartBtn = document.getElementById('restartBtn');
@@ -274,8 +213,6 @@
     
     const canvas = document.getElementById('gameCanvas');
     const ctx = canvas.getContext('2d');
-    const previewCanvas = document.getElementById('previewCanvas');
-    const previewCtx = previewCanvas.getContext('2d');
     
     const scoreEl = document.getElementById('score');
     const livesEl = document.getElementById('lives');
@@ -283,6 +220,51 @@
     const finalScoreEl = document.getElementById('finalScore');
     const gameOverTitle = document.getElementById('gameOverTitle');
     const gameOverText = document.getElementById('gameOverText');
+
+    // ============================================================================
+    // START BUTTON HANDLER - Simple and direct
+    // ============================================================================
+    function handleStart() {
+      console.log('[Launch] Start button clicked!');
+      
+      // Hide start screen
+      startScreen.style.display = 'none';
+      
+      // Show game stage
+      gameStage.classList.add('active');
+      
+      // Start the game
+      setTimeout(() => {
+        resizeCanvas();
+        startGame();
+      }, 100);
+    }
+
+    // Attach handler
+    startBtn.addEventListener('click', handleStart);
+    startBtn.addEventListener('touchend', (e) => {
+      e.preventDefault();
+      handleStart();
+    });
+
+    // Restart button
+    restartBtn.addEventListener('click', () => {
+      gameOverOverlay.classList.remove('active');
+      startGame();
+    });
+
+    // Exit button
+    exitBtn.addEventListener('click', () => {
+      state.running = false;
+      gameStage.classList.remove('active');
+      gameOverOverlay.classList.remove('active');
+      startScreen.style.display = 'flex';
+      keys.left = false;
+      keys.right = false;
+      keys.jump = false;
+      touches.clear();
+      dragVelocity = 0;
+    });
 
     // ============================================================================
     // GAME CONSTANTS
@@ -328,12 +310,8 @@
           <circle cx="57" cy="30" r="2" fill="#fff"/>
           <ellipse cx="50" cy="38" rx="3" ry="2" fill="#000"/>
           <path d="M 48 42 Q 50 46 52 42" stroke="#000" stroke-width="2" fill="none" stroke-linecap="round"/>
-          <circle cx="32" cy="32" r="12" fill="#d4a574"/>
-          <circle cx="68" cy="32" r="12" fill="#d4a574"/>
-          <circle cx="32" cy="32" r="8" fill="#c89664"/>
-          <circle cx="68" cy="32" r="8" fill="#c89664"/>
-          <circle cx="${30 + armOffset}" cy="52" r="10" fill="#d4a574"/>
-          <circle cx="${70 - armOffset}" cy="52" r="10" fill="#d4a574"/>
+          <circle cx="${30 + armOffset}" cy="52" r="12" fill="#d4a574"/>
+          <circle cx="${70 - armOffset}" cy="52" r="12" fill="#d4a574"/>
           <ellipse cx="${26 + armOffset}" cy="58" rx="6" ry="8" fill="#c89664"/>
           <ellipse cx="${74 - armOffset}" cy="58" rx="6" ry="8" fill="#c89664"/>
           <ellipse cx="${42 + legOffset}" cy="85" rx="8" ry="10" fill="#c89664"/>
@@ -342,6 +320,34 @@
         </svg>
       `);
     }
+
+    function createCrocSVG(frame) {
+      const jawOffset = Math.sin(frame * 0.8) * 3;
+      return 'data:image/svg+xml;base64,' + btoa(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 60">
+          <ellipse cx="50" cy="30" rx="40" ry="20" fill="#32cd32"/>
+          <ellipse cx="35" cy="20" rx="8" ry="10" fill="#fff"/>
+          <ellipse cx="35" cy="20" rx="4" ry="5" fill="#000"/>
+          <ellipse cx="65" cy="20" rx="8" ry="10" fill="#fff"/>
+          <ellipse cx="65" cy="20" rx="4" ry="5" fill="#000"/>
+          <rect x="20" y="28" width="60" height="8" fill="#228b22"/>
+          <path d="M 25 36 Q 30 ${36 + jawOffset} 35 36" stroke="#228b22" stroke-width="2" fill="none"/>
+          <path d="M 65 36 Q 70 ${36 + jawOffset} 75 36" stroke="#228b22" stroke-width="2" fill="none"/>
+          <ellipse cx="30" cy="15" rx="3" ry="2" fill="#ff6347"/>
+          <ellipse cx="70" cy="15" rx="3" ry="2" fill="#ff6347"/>
+        </svg>
+      `);
+    }
+
+    const balloonSVGs = balloonColors.map(color => {
+      return 'data:image/svg+xml;base64,' + btoa(`
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 50 65">
+          <ellipse cx="25" cy="30" rx="20" ry="25" fill="${color}"/>
+          <ellipse cx="25" cy="25" rx="15" ry="18" fill="${color}" opacity="0.7"/>
+          <line x1="25" y1="50" x2="25" y2="65" stroke="#654321" stroke-width="2"/>
+        </svg>
+      `);
+    });
 
     const number8BalloonSVG = 'data:image/svg+xml;base64,' + btoa(`
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 80">
@@ -352,51 +358,6 @@
         <path d="M 15 30 Q 30 20 45 30" stroke="#fff" stroke-width="2" fill="none" opacity="0.6"/>
       </svg>
     `);
-
-    const balloonSVGs = balloonColors.map(color => 
-      'data:image/svg+xml;base64,' + btoa(`
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 60 80">
-          <defs>
-            <linearGradient id="balloonGrad${color.replace('#', '')}" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style="stop-color:${color};stop-opacity:1" />
-              <stop offset="100%" style="stop-color:${color};stop-opacity:0.7" />
-            </linearGradient>
-          </defs>
-          <ellipse cx="30" cy="35" rx="25" ry="30" fill="url(#balloonGrad${color.replace('#', '')})"/>
-          <ellipse cx="30" cy="28" rx="18" ry="22" fill="#fff" opacity="0.4"/>
-          <line x1="30" y1="60" x2="30" y2="75" stroke="#654321" stroke-width="2"/>
-          <path d="M 15 30 Q 30 18 45 30" stroke="#fff" stroke-width="2.5" fill="none" opacity="0.5"/>
-        </svg>
-      `)
-    );
-
-    function createCrocSVG(frame) {
-      const legOffset = Math.sin(frame * 0.8) * 10;
-      return 'data:image/svg+xml;base64,' + btoa(`
-        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 140 70">
-          <defs>
-            <linearGradient id="crocGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" style="stop-color:#32cd32;stop-opacity:1" />
-              <stop offset="100%" style="stop-color:#228b22;stop-opacity:1" />
-            </linearGradient>
-          </defs>
-          <ellipse cx="70" cy="35" rx="60" ry="30" fill="url(#crocGrad)"/>
-          <rect x="25" y="25" width="90" height="22" rx="10" fill="#228b22"/>
-          <circle cx="50" cy="30" r="8" fill="#ffd700"/>
-          <circle cx="90" cy="30" r="8" fill="#ffd700"/>
-          <circle cx="52" cy="30" r="4" fill="#000"/>
-          <circle cx="92" cy="30" r="4" fill="#000"/>
-          <circle cx="53" cy="29" r="1.5" fill="#fff"/>
-          <circle cx="93" cy="29" r="1.5" fill="#fff"/>
-          <path d="M 20 35 L 25 30 L 25 35 Z" fill="#fff"/>
-          <path d="M 115 35 L 120 30 L 120 35 Z" fill="#fff"/>
-          <ellipse cx="${35 + legOffset}" cy="62" rx="6" ry="8" fill="#228b22"/>
-          <ellipse cx="${55 - legOffset}" cy="62" rx="6" ry="8" fill="#228b22"/>
-          <ellipse cx="${85 + legOffset}" cy="62" rx="6" ry="8" fill="#228b22"/>
-          <ellipse cx="${105 - legOffset}" cy="62" rx="6" ry="8" fill="#228b22"/>
-        </svg>
-      `);
-    }
 
     // ============================================================================
     // IMAGE CACHE
@@ -487,148 +448,30 @@
     // ============================================================================
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
-      canvas.width = rect.width;
-      canvas.height = rect.height;
+      const displayWidth = rect.width;
+      const displayHeight = rect.height;
       
-      state.canvasW = canvas.width;
-      state.canvasH = canvas.height;
-      state.groundY = canvas.height - 100;
-      
-      if (state.running) {
-        state.monkey.y = state.groundY;
-        state.monkey.x = Math.max(0, Math.min(state.canvasW - state.monkey.width, state.monkey.x));
+      if (canvas.width !== displayWidth || canvas.height !== displayHeight) {
+        canvas.width = displayWidth;
+        canvas.height = displayHeight;
+        
+        state.canvasW = displayWidth;
+        state.canvasH = displayHeight;
+        state.groundY = displayHeight - 100;
+        
+        if (state.running) {
+          state.monkey.y = state.groundY;
+          state.monkey.x = Math.max(0, Math.min(state.canvasW - state.monkey.width, state.monkey.x));
+        }
       }
     }
 
     window.addEventListener('resize', resizeCanvas);
 
     // ============================================================================
-    // DECORATIONS
+    // INPUT HANDLING
     // ============================================================================
-    function createDecorations() {
-      state.decorations = [];
-      for (let i = 0; i < 20; i++) {
-        state.decorations.push({
-          x: Math.random() * state.canvasW,
-          y: Math.random() * state.canvasH,
-          type: Math.random() > 0.5 ? 'confetti' : 'star',
-          rotation: Math.random() * Math.PI * 2,
-          speed: 0.02 + Math.random() * 0.03,
-          size: 8 + Math.random() * 12,
-          depth: Math.random(),
-        });
-      }
-    }
-
-    // ============================================================================
-    // TOUCH CONTROLS
-    // ============================================================================
-    function getTouchPosition(touch) {
-      const rect = canvas.getBoundingClientRect();
-      return {
-        x: touch.clientX - rect.left,
-        y: touch.clientY - rect.top
-      };
-    }
-
-    function handleTouchStart(e) {
-      if (!state.running) return;
-      e.preventDefault();
-
-      Array.from(e.changedTouches).forEach(touch => {
-        const pos = getTouchPosition(touch);
-        touches.set(touch.identifier, {
-          startX: pos.x,
-          startY: pos.y,
-          currentX: pos.x,
-          currentY: pos.y,
-          startTime: performance.now(),
-          isDrag: false
-        });
-      });
-    }
-
-    function handleTouchMove(e) {
-      e.preventDefault();
-      if (!state.running) return;
-
-      Array.from(e.changedTouches).forEach(touch => {
-        const data = touches.get(touch.identifier);
-        if (!data) return;
-
-        const pos = getTouchPosition(touch);
-        data.currentX = pos.x;
-        data.currentY = pos.y;
-
-        const dragDistX = data.currentX - data.startX;
-        const dragDistY = Math.abs(data.currentY - data.startY);
-
-        if (!data.isDrag && (Math.abs(dragDistX) > DRAG_THRESHOLD || dragDistY > DRAG_THRESHOLD)) {
-          data.isDrag = true;
-        }
-      });
-
-      let totalDrag = 0;
-      let dragTouches = 0;
-      touches.forEach(data => {
-        if (data.isDrag) {
-          totalDrag += data.currentX - data.startX;
-          dragTouches++;
-        }
-      });
-
-      if (dragTouches > 0) {
-        dragVelocity = Math.max(-1, Math.min(1, totalDrag * DRAG_SENSITIVITY));
-        
-        if (dragVelocity < -0.05) {
-          keys.left = true;
-          keys.right = false;
-        } else if (dragVelocity > 0.05) {
-          keys.right = true;
-          keys.left = false;
-        } else {
-          keys.left = false;
-          keys.right = false;
-        }
-      }
-    }
-
-    function handleTouchEnd(e) {
-      e.preventDefault();
-      if (!state.running) return;
-
-      Array.from(e.changedTouches).forEach(touch => {
-        const data = touches.get(touch.identifier);
-        if (!data) return;
-
-        const touchDuration = performance.now() - data.startTime;
-        const dragDistX = Math.abs(data.currentX - data.startX);
-        const dragDistY = Math.abs(data.currentY - data.startY);
-        const totalDist = Math.sqrt(dragDistX * dragDistX + dragDistY * dragDistY);
-
-        if (touchDuration < TAP_TIME_THRESHOLD && totalDist < DRAG_THRESHOLD) {
-          keys.jump = true;
-          setTimeout(() => { keys.jump = false; }, 100);
-        }
-
-        touches.delete(touch.identifier);
-      });
-
-      if (touches.size === 0) {
-        dragVelocity = 0;
-        keys.left = false;
-        keys.right = false;
-      }
-    }
-
-    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
-    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
-    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
-    canvas.addEventListener('touchcancel', handleTouchEnd, { passive: false });
-
-    // ============================================================================
-    // KEYBOARD CONTROLS
-    // ============================================================================
+    // Keyboard
     window.addEventListener('keydown', e => {
       const key = e.key.toLowerCase();
       if (['arrowleft', 'a'].includes(key)) {
@@ -652,78 +495,81 @@
       if (['arrowup', ' ', 'w'].includes(key)) keys.jump = false;
     });
 
-    // ============================================================================
-    // PREVIEW DRAWING
-    // ============================================================================
-    function drawPreview() {
-      if (!previewCtx) return;
-      
-      const w = previewCanvas.width;
-      const h = previewCanvas.height;
-      const groundY = h - 100;
-      
-      const bgGradient = previewCtx.createLinearGradient(0, 0, 0, h);
-      bgGradient.addColorStop(0, '#b0d4f0');
-      bgGradient.addColorStop(0.5, '#ffd6e8');
-      bgGradient.addColorStop(1, '#ffb3d9');
-      previewCtx.fillStyle = bgGradient;
-      previewCtx.fillRect(0, 0, w, h);
-      
-      previewCtx.fillStyle = '#ffb3d9';
-      previewCtx.fillRect(0, groundY + 100, w, h - groundY - 100);
-      
-      const monkeyFrame = imageCache.monkeyFrames[0];
-      if (monkeyFrame.complete) {
-        previewCtx.drawImage(monkeyFrame, w/2 - 30, groundY, 60, 100);
-      }
-      
-      const balloonImg = imageCache.balloons[0];
-      if (balloonImg.complete) {
-        previewCtx.drawImage(balloonImg, w/4, groundY - 100, 50, 65);
-        previewCtx.drawImage(balloonImg, w/4 * 3, groundY - 150, 50, 65);
-      }
-      
-      previewCtx.fillStyle = 'rgba(255, 255, 255, 0.9)';
-      previewCtx.font = 'bold 32px Arial';
-      previewCtx.textAlign = 'center';
-      previewCtx.fillText('Happy 8th Birthday Henry!', w/2, 50);
+    // Touch
+    function handleTouchStart(e) {
+      e.preventDefault();
+      Array.from(e.touches).forEach(touch => {
+        touches.set(touch.identifier, {
+          startX: touch.clientX,
+          startY: touch.clientY,
+          currentX: touch.clientX,
+          currentY: touch.clientY,
+          startTime: Date.now(),
+          isDrag: false
+        });
+      });
     }
 
-    // ============================================================================
-    // LAUNCH SYSTEM - BRUTALLY SIMPLE
-    // ============================================================================
-    
-    // Start button click
-    startBtn.addEventListener('click', () => {
-      console.log('[Game] Start button clicked');
-      descriptionPage.classList.add('hidden');
-      gameStage.classList.add('active');
-      setTimeout(() => {
-        resizeCanvas();
-        startGame();
-      }, 100);
-    });
+    function handleTouchMove(e) {
+      e.preventDefault();
+      Array.from(e.changedTouches).forEach(touch => {
+        const data = touches.get(touch.identifier);
+        if (data) {
+          data.currentX = touch.clientX;
+          data.currentY = touch.clientY;
+          const dist = Math.abs(data.currentX - data.startX) + Math.abs(data.currentY - data.startY);
+          if (dist > DRAG_THRESHOLD) {
+            data.isDrag = true;
+          }
+        }
+      });
+    }
 
-    // Restart button click
-    restartBtn.addEventListener('click', () => {
-      console.log('[Game] Restart button clicked');
-      gameOverOverlay.classList.remove('active');
-      startGame();
-    });
+    function handleTouchEnd(e) {
+      e.preventDefault();
+      Array.from(e.changedTouches).forEach(touch => {
+        const data = touches.get(touch.identifier);
+        if (data) {
+          const time = Date.now() - data.startTime;
+          const dist = Math.abs(data.currentX - data.startX) + Math.abs(data.currentY - data.startY);
+          
+          if (dist < DRAG_THRESHOLD && time < TAP_TIME_THRESHOLD) {
+            keys.jump = true;
+            setTimeout(() => { keys.jump = false; }, 100);
+          }
+          
+          touches.delete(touch.identifier);
+        }
+      });
+      
+      if (touches.size === 0) {
+        dragVelocity = 0;
+        keys.left = false;
+        keys.right = false;
+      } else {
+        let totalDrag = 0;
+        let dragTouches = 0;
+        touches.forEach(data => {
+          if (data.isDrag) {
+            const dragDist = data.currentX - data.startX;
+            totalDrag += dragDist;
+            dragTouches++;
+          }
+        });
 
-    // Exit button click
-    exitBtn.addEventListener('click', () => {
-      console.log('[Game] Exit button clicked');
-      state.running = false;
-      gameStage.classList.remove('active');
-      gameOverOverlay.classList.remove('active');
-      descriptionPage.classList.remove('hidden');
-      keys.left = false;
-      keys.right = false;
-      keys.jump = false;
-      touches.clear();
-      dragVelocity = 0;
-    });
+        if (dragTouches > 0) {
+          dragVelocity = Math.max(-1, Math.min(1, totalDrag * DRAG_SENSITIVITY));
+        } else {
+          dragVelocity = 0;
+          keys.left = false;
+          keys.right = false;
+        }
+      }
+    }
+
+    canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+    canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+    canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
 
     // ============================================================================
     // GAME INITIALIZATION
@@ -797,14 +643,27 @@
       if (state.score > state.best) {
         state.best = state.score;
         localStorage.setItem('henryMonkeyBest', state.best.toString());
-        gameOverTitle.textContent = '🎉 New Best Score Henry! 🎉';
-        gameOverText.innerHTML = `Amazing! You caught <strong>${state.score}</strong> balloons! Happy 8th Birthday!`;
+        if (gameOverTitle) gameOverTitle.textContent = 'New Best! 🎉';
+        if (gameOverText) gameOverText.innerHTML = `You caught <strong>${state.score}</strong> balloons! Happy 8th Birthday Henry!`;
       } else {
-        gameOverTitle.textContent = 'Game Over!';
-        gameOverText.innerHTML = `You caught <strong>${state.score}</strong> balloons! Happy 8th Birthday Henry!`;
+        if (gameOverTitle) gameOverTitle.textContent = 'Game Over!';
+        if (gameOverText) gameOverText.innerHTML = `You caught <strong>${state.score}</strong> balloons! Happy 8th Birthday Henry!`;
       }
-      finalScoreEl.textContent = state.score;
-      gameOverOverlay.classList.add('active');
+      if (finalScoreEl) finalScoreEl.textContent = state.score;
+      if (gameOverOverlay) gameOverOverlay.classList.add('active');
+    }
+
+    function createDecorations() {
+      state.decorations = [];
+      for (let i = 0; i < 15; i++) {
+        state.decorations.push({
+          x: Math.random() * state.canvasW * 2,
+          y: Math.random() * state.canvasH * 0.5,
+          size: 20 + Math.random() * 30,
+          speed: 0.3 + Math.random() * 0.4,
+          color: balloonColors[Math.floor(Math.random() * balloonColors.length)]
+        });
+      }
     }
 
     function createParticles(x, y, color) {
@@ -831,8 +690,7 @@
         color: color,
         life: 1.5,
         maxLife: 1.5,
-        alpha: 1,
-        size: 28,
+        alpha: 1
       });
     }
 
@@ -893,11 +751,11 @@
       });
 
       state.monkey.vx = 0;
-      if (keys.left && state.monkey.x > 0) {
+      if ((keys.left || dragVelocity < -0.1) && state.monkey.x > 0) {
         state.monkey.vx = -state.monkey.speed;
         state.monkey.walkFrame += dt * 10;
       }
-      if (keys.right && state.monkey.x < currentW - state.monkey.width) {
+      if ((keys.right || dragVelocity > 0.1) && state.monkey.x < currentW - state.monkey.width) {
         state.monkey.vx = state.monkey.speed;
         state.monkey.walkFrame += dt * 10;
       }
@@ -908,8 +766,9 @@
         state.monkey.isJumping = true;
       }
 
-      state.monkey.vy += DIFFICULTY.gravity * 60 * dt;
-      state.monkey.y += state.monkey.vy * 60 * dt;
+      state.monkey.x += state.monkey.vx * dt * 60;
+      state.monkey.y += state.monkey.vy * dt * 60;
+      state.monkey.vy += DIFFICULTY.gravity * dt * 60;
 
       if (state.monkey.y >= currentGroundY) {
         state.monkey.y = currentGroundY;
@@ -918,182 +777,109 @@
         state.monkey.isJumping = false;
       }
 
-      state.monkey.x += state.monkey.vx * 60 * dt;
-      state.monkey.x = Math.max(0, Math.min(currentW - state.monkey.width, state.monkey.x));
+      if (state.monkey.y < 0) state.monkey.y = 0;
+      if (state.monkey.x < 0) state.monkey.x = 0;
+      if (state.monkey.x > currentW - state.monkey.width) state.monkey.x = currentW - state.monkey.width;
 
-      state.decorations.forEach(d => {
-        d.rotation += d.speed;
-        d.y += (0.5 + d.depth * 0.5);
-        if (d.y > currentH) d.y = -20;
-      });
-
-      const balloonSpawnRate = Math.max(
-        DIFFICULTY.balloonSpawnMin, 
-        DIFFICULTY.balloonSpawnBase - state.score * DIFFICULTY.balloonSpawnScaling
-      );
-      if (now - state.lastBalloonTime > balloonSpawnRate + Math.random() * 400) {
-        const startX = 50 + Math.random() * (currentW - 100);
-        const rand = Math.random();
+      // Spawn balloons
+      const nowTime = performance.now();
+      if (nowTime - state.lastBalloonTime > (DIFFICULTY.balloonSpawnBase - state.score * DIFFICULTY.balloonSpawnScaling)) {
+        const is8Balloon = Math.random() < 0.15;
         state.balloons.push({
-          x: startX,
-          y: -80,
-          speed: (2.5 + Math.random() * 2.5) * state.gameSpeed,
+          x: Math.random() * (currentW - 40),
+          y: -50,
+          vy: 80 + Math.random() * 40,
           color: balloonColors[Math.floor(Math.random() * balloonColors.length)],
-          rotation: (Math.random() - 0.5) * 0.1,
-          size: 45 + Math.random() * 25,
-          isSpecial8: rand < 0.12,
-          isGolden: rand >= 0.12 && rand < 0.20,
-          isPowerUp: rand >= 0.92 && rand < 0.96,
-          powerUpType: rand >= 0.92 && rand < 0.94 ? 'shield' : 'slowmo',
-          startX: startX,
-          driftAmplitude: 40 + Math.random() * 50,
+          is8Balloon: is8Balloon,
+          width: 40,
+          height: 50
         });
-        state.lastBalloonTime = now;
+        state.lastBalloonTime = nowTime;
       }
 
-      const crocSpawnRate = Math.max(
-        DIFFICULTY.crocSpawnMin, 
-        DIFFICULTY.crocSpawnBase - state.score * DIFFICULTY.crocSpawnScaling
-      );
-      if (now - state.lastCrocTime > crocSpawnRate + Math.random() * 800) {
+      // Spawn crocodiles
+      if (nowTime - state.lastCrocTime > (DIFFICULTY.crocSpawnBase - state.score * DIFFICULTY.crocSpawnScaling)) {
         state.crocodiles.push({
-          x: Math.random() > 0.5 ? -140 : currentW + 140,
-          y: currentGroundY + 10,
-          speed: (2 + Math.random() * 2) * state.gameSpeed,
-          direction: Math.random() > 0.5 ? 1 : -1,
-          walkFrame: 0,
+          x: Math.random() * (currentW - 60),
+          y: currentGroundY + 5,
+          vx: (Math.random() > 0.5 ? 1 : -1) * (30 + Math.random() * 20),
+          width: 60,
+          height: 40,
+          frame: 0,
+          jumpTimer: 0,
+          isJumping: false,
+          vy: 0
         });
-        state.lastCrocTime = now;
+        state.lastCrocTime = nowTime;
       }
 
-      // Balloon updates
+      // Update balloons
       for (let i = state.balloons.length - 1; i >= 0; i--) {
         const b = state.balloons[i];
-        b.y += b.speed * 60 * dt;
-        b.rotation += 0.03;
-        
-        const progress = (b.y + 80) / (currentH + 80);
-        b.x = b.startX + Math.sin(progress * Math.PI * 2.5) * b.driftAmplitude;
+        b.y += b.vy * state.gameSpeed * dt * 60;
+        b.x += Math.sin(b.y * 0.1) * 2;
 
-        const balloonRect = {
-          x: b.x + b.size * (1 - DIFFICULTY.collisionTolerance) / 2,
-          y: b.y + b.size * (1 - DIFFICULTY.collisionTolerance) / 2,
-          width: b.size * DIFFICULTY.collisionTolerance,
-          height: b.size * 1.1 * DIFFICULTY.collisionTolerance
-        };
-        const monkeyRect = {
-          x: state.monkey.x + state.monkey.width * (1 - DIFFICULTY.collisionTolerance) / 2,
-          y: state.monkey.y + state.monkey.height * (1 - DIFFICULTY.collisionTolerance) / 2,
-          width: state.monkey.width * DIFFICULTY.collisionTolerance,
-          height: state.monkey.height * DIFFICULTY.collisionTolerance
-        };
-
-        if (checkCollision(balloonRect, monkeyRect)) {
-          if (b.isPowerUp) {
-            if (b.powerUpType === 'shield') {
-              state.shield = true;
-              state.shieldTimer = DIFFICULTY.shieldDuration;
-              addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '🛡️ SHIELD!', '#4169E1');
-            } else {
-              state.slowMotion = true;
-              state.slowMotionTimer = DIFFICULTY.slowMoDuration;
-              addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, '⏱️ SLOW MO!', '#FFD700');
-            }
-            state.balloons.splice(i, 1);
-            createParticles(b.x + b.size/2, b.y + b.size/2, b.color);
-            continue;
-          }
-          
-          if (now - state.lastComboTime < 1000) {
-            state.combo++;
-            state.comboTimer = 0;
-            if (state.combo > 1) {
-              state.multiplier = Math.min(5, 1 + Math.floor(state.combo / 3));
-              addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y - 20, `COMBO x${state.multiplier}!`, '#FF6B9D');
-            }
+        if (checkCollision(state.monkey, b)) {
+          if (b.is8Balloon) {
+            state.score += 2;
+            addEffect(b.x, b.y, '+2', '#ffd700');
           } else {
-            state.combo = 1;
-            state.multiplier = 1;
+            state.score += 1;
+            addEffect(b.x, b.y, '+1', b.color);
           }
-          state.lastComboTime = now;
-          
-          let points = b.isSpecial8 ? 2 : (b.isGolden ? 5 : 1);
-          points *= state.multiplier;
-          state.score += points;
-          
-          createParticles(b.x + b.size/2, b.y + b.size/2, b.color);
-          if (points > 1) {
-            addEffect(b.x + b.size/2, b.y, `+${points}`, '#FFD700');
-          }
-          
-          if (points >= 5) {
-            state.screenShake = 5;
-          }
-          
+          state.combo++;
+          state.comboTimer = 0;
+          state.multiplier = Math.min(3, 1 + state.combo * 0.1);
+          createParticles(b.x, b.y, b.color);
           state.balloons.splice(i, 1);
-          updateHud();
+        } else if (b.y > currentH) {
+          state.balloons.splice(i, 1);
+        }
+      }
+
+      // Update crocodiles
+      for (let i = state.crocodiles.length - 1; i >= 0; i--) {
+        const c = state.crocodiles[i];
+        c.x += c.vx * state.gameSpeed * dt * 60;
+        c.frame += dt * 8;
+        
+        c.jumpTimer += dt;
+        if (c.jumpTimer > 2 && !c.isJumping) {
+          c.isJumping = true;
+          c.vy = -15;
+          c.jumpTimer = 0;
+        }
+
+        if (c.isJumping) {
+          c.y += c.vy * dt * 60;
+          c.vy += DIFFICULTY.gravity * dt * 60;
+          if (c.y >= currentGroundY + 5) {
+            c.y = currentGroundY + 5;
+            c.vy = 0;
+            c.isJumping = false;
+          }
+        }
+
+        if (c.x < -60 || c.x > currentW) {
+          state.crocodiles.splice(i, 1);
           continue;
         }
 
-        if (b.y > currentH) {
-          state.balloons.splice(i, 1);
-        }
-      }
-
-      // Crocodile updates
-      for (let i = state.crocodiles.length - 1; i >= 0; i--) {
-        const c = state.crocodiles[i];
-        c.x += c.speed * 60 * dt * c.direction;
-        c.walkFrame += dt * 10;
-
-        const monkeyBottom = state.monkey.y + state.monkey.height;
-        const crocTop = c.y;
-        
-        if (monkeyBottom >= crocTop - DIFFICULTY.crocJumpBuffer) {
-          const crocRect = {
-            x: c.x + 20,
-            y: c.y + 15,
-            width: 100,
-            height: 40
-          };
-          const monkeyRect = {
-            x: state.monkey.x + state.monkey.width * 0.15,
-            y: state.monkey.y + state.monkey.height * 0.15,
-            width: state.monkey.width * 0.7,
-            height: state.monkey.height * 0.7
-          };
-
-          if (checkCollision(crocRect, monkeyRect)) {
-            if (state.shield) {
-              state.shield = false;
-              state.shieldTimer = 0;
-              addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, 'SHIELD!', '#00FF00');
-              state.crocodiles.splice(i, 1);
-              state.screenShake = 3;
-              continue;
-            }
-            
+        if (checkCollision(state.monkey, c)) {
+          if (!state.shield) {
             state.lives--;
-            state.crocodiles.splice(i, 1);
-            state.screenShake = 10;
-            addEffect(state.monkey.x + state.monkey.width/2, state.monkey.y, 'OUCH!', '#FF0000');
-            updateHud();
+            state.screenShake = 0.5;
+            createParticles(c.x, c.y, '#32cd32');
             if (state.lives <= 0) {
               gameOver();
-              return;
+              state.crocodiles.splice(i, 1);
+              continue;
             }
-            state.monkey.x = currentW / 2 - 30;
-            state.monkey.y = currentGroundY;
-            state.monkey.vy = 0;
-            continue;
           }
-        }
-
-        if ((c.direction > 0 && c.x > currentW + 140) || (c.direction < 0 && c.x < -140)) {
           state.crocodiles.splice(i, 1);
         }
       }
-      
+
       // Particle updates
       for (let i = state.particles.length - 1; i >= 0; i--) {
         const p = state.particles[i];
@@ -1118,6 +904,7 @@
         }
       }
 
+      updateHud();
       draw();
       requestAnimationFrame(loop);
     }
@@ -1130,104 +917,71 @@
       const currentH = state.canvasH;
       const currentGroundY = state.groundY;
       
-      const shakeX = state.screenShake > 0 ? (Math.random() - 0.5) * state.screenShake : 0;
-      const shakeY = state.screenShake > 0 ? (Math.random() - 0.5) * state.screenShake : 0;
-      
+      ctx.clearRect(0, 0, currentW, currentH);
       ctx.save();
-      ctx.translate(shakeX, shakeY);
-      ctx.clearRect(-shakeX, -shakeY, currentW, currentH);
+      
+      if (state.screenShake > 0) {
+        ctx.translate(
+          (Math.random() - 0.5) * state.screenShake * 20,
+          (Math.random() - 0.5) * state.screenShake * 20
+        );
+      }
 
       // Background layers
-      backgroundLayers.forEach((layer, index) => {
-        const yStart = currentH * layer.yPos;
-        const layerHeight = currentH * layer.height;
-        
+      backgroundLayers.forEach(layer => {
         ctx.fillStyle = layer.color;
-        ctx.fillRect(0, yStart, currentW, layerHeight);
+        ctx.fillRect(0, currentH * layer.yPos, currentW, currentH * layer.height);
         
-        if (index < 2) {
-          ctx.save();
-          ctx.globalAlpha = 0.4 - (index * 0.15);
-          for (let i = 0; i < 3; i++) {
-            const x = ((layer.offset * (i + 1)) % (currentW + 200)) - 100;
-            const y = yStart + 20 + (i * 40);
-            ctx.fillStyle = '#fff';
-            ctx.beginPath();
-            ctx.ellipse(x, y, 40, 25, 0, 0, Math.PI * 2);
-            ctx.ellipse(x + 30, y - 10, 35, 20, 0, 0, Math.PI * 2);
-            ctx.ellipse(x + 50, y, 40, 25, 0, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          ctx.restore();
+        for (let x = -layer.offset; x < currentW + 100; x += 100) {
+          ctx.fillRect(x, currentH * layer.yPos, 100, currentH * layer.height);
         }
       });
 
-      const bgGradient = ctx.createLinearGradient(0, currentH * 0.6, 0, currentH);
-      bgGradient.addColorStop(0, '#ffd6e8');
-      bgGradient.addColorStop(1, '#ffb3d9');
-      ctx.fillStyle = bgGradient;
-      ctx.fillRect(0, currentH * 0.6, currentW, currentH * 0.4);
-
+      // Ground
       ctx.fillStyle = '#ffb3d9';
-      ctx.fillRect(0, currentGroundY + 100, currentW, currentH - currentGroundY - 100);
-
+      ctx.fillRect(0, currentGroundY, currentW, currentH - currentGroundY);
+      
       // Decorations
-      state.decorations.forEach(d => {
-        ctx.save();
-        ctx.globalAlpha = 0.5 + d.depth * 0.5;
-        ctx.translate(d.x, d.y);
-        ctx.rotate(d.rotation);
-        const size = d.size * (0.6 + d.depth * 0.4);
-        
-        if (d.type === 'confetti') {
-          ctx.fillStyle = balloonColors[Math.floor(Math.random() * balloonColors.length)];
-          ctx.fillRect(-size/2, -size/2, size, size);
-        } else {
-          ctx.fillStyle = '#ffd700';
-          ctx.beginPath();
-          for (let i = 0; i < 5; i++) {
-            const angle = (i * 4 * Math.PI / 5) - Math.PI / 2;
-            const x = Math.cos(angle) * size;
-            const y = Math.sin(angle) * size;
-            if (i === 0) ctx.moveTo(x, y);
-            else ctx.lineTo(x, y);
-          }
-          ctx.closePath();
-          ctx.fill();
-        }
-        ctx.restore();
+      state.decorations.forEach(dec => {
+        ctx.fillStyle = dec.color;
+        ctx.globalAlpha = 0.3;
+        ctx.beginPath();
+        ctx.arc(dec.x - state.monkey.x * 0.1, dec.y, dec.size, 0, Math.PI * 2);
+        ctx.fill();
       });
+      ctx.globalAlpha = 1;
 
       // Balloons
       state.balloons.forEach(b => {
-        ctx.save();
-        ctx.translate(b.x + b.size / 2, b.y + b.size / 2);
-        ctx.rotate(b.rotation);
-        
-        if (b.isSpecial8 && imageCache.number8Balloon.complete) {
-          ctx.drawImage(imageCache.number8Balloon, -b.size / 2, -b.size / 2, b.size, b.size * 1.3);
-        } else if (b.isGolden) {
-          ctx.fillStyle = '#FFD700';
-          ctx.shadowBlur = 20;
-          ctx.shadowColor = '#FFD700';
-          ctx.beginPath();
-          ctx.ellipse(0, 0, b.size / 2, b.size / 2 * 0.75, 0, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-        } else if (b.isPowerUp) {
-          ctx.fillStyle = b.powerUpType === 'shield' ? '#4169E1' : '#FF6347';
-          ctx.beginPath();
-          ctx.ellipse(0, 0, b.size / 2, b.size / 2 * 0.75, 0, 0, Math.PI * 2);
-          ctx.fill();
-        } else {
-          const balloonImg = imageCache.balloons[balloonColors.indexOf(b.color)];
-          if (balloonImg && balloonImg.complete) {
-            ctx.drawImage(balloonImg, -b.size / 2, -b.size / 2, b.size, b.size * 1.3);
-          }
+        const balloonImg = b.is8Balloon ? imageCache.number8Balloon : imageCache.balloons[balloonColors.indexOf(b.color)];
+        if (balloonImg && balloonImg.complete) {
+          ctx.drawImage(balloonImg, b.x - 20, b.y - 25, 40, 50);
         }
-        ctx.restore();
       });
-      
+
+      // Crocodiles
+      state.crocodiles.forEach(c => {
+        const frame = Math.floor(c.frame) % 8;
+        const crocImg = imageCache.crocFrames[frame];
+        if (crocImg && crocImg.complete) {
+          ctx.drawImage(crocImg, c.x, c.y - 40, 60, 40);
+        }
+      });
+
+      // Monkey
+      const monkeyFrame = Math.floor(state.monkey.walkFrame) % 8;
+      const monkeyImg = imageCache.monkeyFrames[monkeyFrame];
+      if (monkeyImg && monkeyImg.complete) {
+        ctx.save();
+        if (state.shield) {
+          ctx.globalAlpha = 0.7;
+          ctx.shadowColor = '#4169E1';
+          ctx.shadowBlur = 20;
+        }
+        ctx.drawImage(monkeyImg, state.monkey.x, state.monkey.y - 100, state.monkey.width, state.monkey.height);
+        ctx.restore();
+      }
+
       // Particles
       state.particles.forEach(p => {
         ctx.save();
@@ -1238,63 +992,31 @@
         ctx.fill();
         ctx.restore();
       });
-      
+
       // Effects
       state.effects.forEach(e => {
         ctx.save();
         ctx.globalAlpha = e.alpha;
         ctx.fillStyle = e.color;
-        ctx.strokeStyle = '#FFFFFF';
-        ctx.lineWidth = 4;
-        ctx.font = `bold ${e.size}px Arial`;
+        ctx.strokeStyle = '#fff';
+        ctx.lineWidth = 3;
+        ctx.font = 'bold 30px Arial';
         ctx.textAlign = 'center';
         ctx.strokeText(e.text, e.x, e.y);
         ctx.fillText(e.text, e.x, e.y);
         ctx.restore();
       });
 
-      // Crocodiles
-      state.crocodiles.forEach(c => {
+      // Combo text
+      if (state.combo > 0) {
         ctx.save();
-        ctx.scale(c.direction, 1);
-        const frameIndex = Math.floor(c.walkFrame) % imageCache.crocFrames.length;
-        const crocImg = imageCache.crocFrames[frameIndex];
-        if (crocImg.complete) {
-          ctx.drawImage(crocImg, c.direction > 0 ? c.x : -c.x - 140, c.y, 140, 70);
-        }
-        ctx.restore();
-      });
-
-      // Monkey shield
-      if (state.shield) {
-        ctx.save();
-        ctx.strokeStyle = '#4169E1';
-        ctx.lineWidth = 5;
-        ctx.globalAlpha = 0.6 + Math.sin(Date.now() / 100) * 0.4;
-        ctx.beginPath();
-        ctx.arc(state.monkey.x + state.monkey.width / 2, state.monkey.y + state.monkey.height / 2, state.monkey.width / 2 + 12, 0, Math.PI * 2);
-        ctx.stroke();
-        ctx.restore();
-      }
-      
-      // Monkey
-      const monkeyFrameIndex = Math.floor(state.monkey.walkFrame) % imageCache.monkeyFrames.length;
-      const monkeyImg = imageCache.monkeyFrames[monkeyFrameIndex];
-      if (monkeyImg.complete) {
-        ctx.drawImage(monkeyImg, state.monkey.x, state.monkey.y, state.monkey.width, state.monkey.height);
-      }
-      
-      // Combo
-      if (state.multiplier > 1) {
-        ctx.save();
-        ctx.fillStyle = '#FF6B9D';
-        ctx.strokeStyle = '#FFFFFF';
+        ctx.fillStyle = '#ffd700';
+        ctx.strokeStyle = '#fff';
         ctx.lineWidth = 3;
-        ctx.font = 'bold 22px Arial';
-        ctx.textAlign = 'left';
-        const comboText = `x${state.multiplier} COMBO!`;
-        ctx.strokeText(comboText, 10, currentH - 25);
-        ctx.fillText(comboText, 10, currentH - 25);
+        ctx.font = 'bold 24px Arial';
+        ctx.textAlign = 'center';
+        ctx.strokeText(`Combo x${state.multiplier.toFixed(1)}!`, currentW / 2, 60);
+        ctx.fillText(`Combo x${state.multiplier.toFixed(1)}!`, currentW / 2, 60);
         ctx.restore();
       }
       
@@ -1348,10 +1070,11 @@
         else { img.onload = resolve; img.onerror = resolve; }
       })),
     ]).then(() => {
-      console.log('[Game] All images loaded');
-      createDecorations();
-      drawPreview();
+      console.log('[Game] All images loaded, ready to play');
+      resizeCanvas();
     });
+
+    console.log('[Launch] System ready');
   </script>
 </body>
 </html>
