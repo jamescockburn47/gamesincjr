@@ -360,21 +360,23 @@
         console.log('[Henry Game] Fullscreen request failed:', err);
       }
       
-      // Call the game's start function if it exists
-      if (window.startHenryGameInternal) {
-        setTimeout(() => {
+      // Call the game's start function - wait a bit for module to load if needed
+      const tryStart = () => {
+        if (window.startHenryGameInternal) {
+          console.log('[Henry Game] Calling internal start function');
           window.startHenryGameInternal();
-        }, 200);
-      } else {
-        console.error('[Henry Game] Internal start function not found!');
-        // Fallback: try to trigger resize and find start function
-        setTimeout(() => {
-          const resizeFn = window.resizeHenryCanvas;
-          const startFn = window.startHenryGameStart;
-          if (resizeFn) resizeFn();
-          if (startFn) startFn();
-        }, 200);
-      }
+        } else if (window.startHenryGameStart && window.resizeHenryCanvas) {
+          console.log('[Henry Game] Using fallback functions');
+          window.resizeHenryCanvas();
+          window.startHenryGameStart();
+        } else {
+          console.error('[Henry Game] Game functions not ready yet, retrying...');
+          setTimeout(tryStart, 100);
+        }
+      };
+      
+      // Give module time to load and expose functions
+      setTimeout(tryStart, 300);
     };
     
     console.log('[Henry Game] Global start function defined on window');
@@ -984,17 +986,6 @@
         if (['arrowup', ' ', 'w'].includes(key)) keys.jump = false;
       });
 
-
-      // ============================================================================
-      // EXPOSE FUNCTIONS TO WINDOW FOR GLOBAL START FUNCTION
-      // ============================================================================
-      // Expose resizeCanvas and startGame to window so global function can call them
-      window.resizeHenryCanvas = resizeCanvas;
-      window.startHenryGameStart = startGame;
-      window.startHenryGameInternal = function() {
-        resizeCanvas();
-        startGame();
-      };
 
       // ============================================================================
       // START GAME - Clean initialization (no nested rAF)
@@ -1744,6 +1735,24 @@
         ctx.fillText('Happy 8th Birthday Henry!', currentW / 2, 28);
         ctx.restore();
       }
+      
+      // ============================================================================
+      // EXPOSE FUNCTIONS TO WINDOW FOR GLOBAL START FUNCTION
+      // ============================================================================
+      // Expose functions AFTER they're all defined
+      window.resizeHenryCanvas = resizeCanvas;
+      window.startHenryGameStart = startGame;
+      window.startHenryGameInternal = function() {
+        console.log('[Henry Game] Internal start function called');
+        resizeCanvas();
+        startGame();
+      };
+      
+      console.log('[Henry Game] Functions exposed to window:', {
+        hasResize: !!window.resizeHenryCanvas,
+        hasStart: !!window.startHenryGameStart,
+        hasInternal: !!window.startHenryGameInternal
+      });
       
       // Initial setup
       resizeCanvas();
