@@ -1044,27 +1044,13 @@
       // ============================================================================
       // BUTTON EVENT HANDLERS
       // ============================================================================
-      // Button event handlers - ensure they're attached
-      function attachButtonHandlers() {
-        if (!startBtn) {
-          console.error('[Happy Birthday Monkey] Start button not found!');
-          logError('CRITICAL', 'Start button not found');
-          return;
-        }
+      // Button event handlers - attach directly to button
+      const actualStartBtn = document.getElementById('startBtn');
+      
+      if (actualStartBtn) {
+        console.log('[Happy Birthday Monkey] Found start button, attaching handlers');
         
-        console.log('[Happy Birthday Monkey] Attaching start button handler');
-        
-        // Remove any existing listeners
-        const newStartBtn = startBtn.cloneNode(true);
-        startBtn.parentNode?.replaceChild(newStartBtn, startBtn);
-        const actualStartBtn = document.getElementById('startBtn');
-        
-        if (!actualStartBtn) {
-          console.error('[Happy Birthday Monkey] Could not find start button after clone');
-          return;
-        }
-        
-        actualStartBtn.addEventListener('click', async (e) => {
+        actualStartBtn.onclick = async (e) => {
           e.preventDefault();
           e.stopPropagation();
           console.log('[Happy Birthday Monkey] Start button clicked!');
@@ -1075,42 +1061,39 @@
             console.error('[Happy Birthday Monkey] Error in startGameFlow:', err);
             logError('CRITICAL', 'Error starting game', err);
           }
-        });
+          return false;
+        };
         
-        // Also handle mouseup/touchend
-        actualStartBtn.addEventListener('mouseup', (e) => {
+        actualStartBtn.addEventListener('click', async (e) => {
           e.preventDefault();
           e.stopPropagation();
-          console.log('[Happy Birthday Monkey] Start button mouseup');
-          actualStartBtn.click();
-        });
+          console.log('[Happy Birthday Monkey] Start button clicked (addEventListener)!');
+          await startGameFlow();
+        }, true);
         
+        // Touch support
         actualStartBtn.addEventListener('touchend', (e) => {
           e.preventDefault();
           e.stopPropagation();
           console.log('[Happy Birthday Monkey] Start button touchend');
           actualStartBtn.click();
-        });
-        
-        // Keyboard support
-        actualStartBtn.addEventListener('keydown', (e) => {
-          if (e.key === 'Enter' || e.key === ' ') {
-            e.preventDefault();
-            actualStartBtn.click();
-          }
-        });
-      }
-      
-      // Attach handlers when DOM is ready
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', attachButtonHandlers);
+        }, true);
       } else {
-        attachButtonHandlers();
+        console.error('[Happy Birthday Monkey] Start button not found in DOM!');
+        logError('CRITICAL', 'Start button not found');
+        
+        // Try again after DOM updates
+        setTimeout(() => {
+          const retryBtn = document.getElementById('startBtn');
+          if (retryBtn) {
+            console.log('[Happy Birthday Monkey] Found start button on retry');
+            retryBtn.onclick = async () => {
+              console.log('[Happy Birthday Monkey] Start button clicked (retry)!');
+              await startGameFlow();
+            };
+          }
+        }, 500);
       }
-      
-      // Fallback - try again after a short delay
-      setTimeout(attachButtonHandlers, 100);
-      setTimeout(attachButtonHandlers, 500);
       
       restartBtn.addEventListener('click', () => {
         logError('USER_ACTION', 'Restart button clicked');
