@@ -58,22 +58,118 @@
       font-size: 1.2em;
     }
 
-    .stage {
-      position: relative;
-      width: min(92vw, 900px);
-      aspect-ratio: 16 / 9;
+    /* Description Page Styles */
+    .description-page {
+      width: 100%;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+
+    .description-content {
+      background: white;
       border-radius: 28px;
+      padding: 40px;
+      box-shadow: 0 20px 60px rgba(255, 107, 157, 0.3);
+    }
+
+    .description-content h2 {
+      text-align: center;
+      font-size: clamp(2rem, 5vw, 3rem);
+      color: #ff6b9d;
+      margin-bottom: 30px;
+    }
+
+    .game-preview {
+      margin: 30px 0;
+      border-radius: 20px;
       overflow: hidden;
       border: 4px solid rgba(255, 107, 157, 0.4);
-      box-shadow: 0 20px 60px rgba(255, 107, 157, 0.3);
+    }
+
+    .preview-image {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
       background: linear-gradient(180deg, #87ceeb 0%, #ffd6e8 60%, #ffb3d9 100%);
-      touch-action: none; /* Prevent default touch behaviors */
+    }
+
+    #previewCanvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+
+    .game-info {
+      margin-top: 30px;
+    }
+
+    .game-info h3 {
+      font-size: 1.5rem;
+      color: #ff6b9d;
+      margin-bottom: 15px;
+    }
+
+    .game-info ul {
+      list-style: none;
+      padding: 0;
+      margin: 0 0 30px 0;
+    }
+
+    .game-info li {
+      padding: 10px 0;
+      border-bottom: 1px solid rgba(255, 107, 157, 0.2);
+      color: #5a2d4a;
+      font-size: 1rem;
+      line-height: 1.6;
+    }
+
+    .game-info li:last-child {
+      border-bottom: none;
+    }
+
+    .start-button {
+      width: 100%;
+      padding: 24px;
+      font-size: 1.5rem;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(135deg, #ff6b9d 0%, #ff8fb3 100%);
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      box-shadow: 0 8px 24px rgba(255, 107, 157, 0.4);
+      transition: transform 0.2s, box-shadow 0.2s;
+      touch-action: manipulation; /* Allow button clicks on touch */
+    }
+
+    .start-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 32px rgba(255, 107, 157, 0.5);
+    }
+
+    .start-button:active {
+      transform: translateY(0);
+    }
+
+    .hidden {
+      display: none !important;
+    }
+
+    .stage {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background: linear-gradient(180deg, #87ceeb 0%, #ffd6e8 60%, #ffb3d9 100%);
+      touch-action: none; /* Prevent default touch behaviors when game is running */
+      z-index: 9999;
     }
 
     canvas {
       display: block;
-      width: 100%;
-      height: 100%;
+      width: 100vw;
+      height: 100vh;
       touch-action: none;
       cursor: pointer;
     }
@@ -145,23 +241,9 @@
       50% { transform: translateY(-10px); }
     }
 
-    /* Fullscreen styles */
-    :fullscreen .stage,
-    :-webkit-full-screen .stage,
-    :-moz-full-screen .stage,
-    :-ms-fullscreen .stage {
-      width: 100vw;
-      height: 100vh;
-      max-width: none;
-      border-radius: 0;
-    }
-
-    :fullscreen canvas,
-    :-webkit-full-screen canvas,
-    :-moz-full-screen canvas,
-    :-ms-fullscreen canvas {
-      width: 100vw;
-      height: 100vh;
+    /* Hide body scroll when in game */
+    body.game-running {
+      overflow: hidden;
     }
   </style>
 </head>
@@ -175,25 +257,39 @@
     <div>Best:<span id="best">0</span></div>
   </div>
 
-  <div class="stage" id="stage">
-    <canvas id="game" width="900" height="506" aria-label="Happy 8th Birthday Henry Monkey game"></canvas>
-    
-    <div id="tryOverlay" class="overlay">
+  <!-- Game Description Page (shown before fullscreen) -->
+  <div id="descriptionPage" class="description-page">
+    <div class="description-content">
       <h2>🎂 Happy 8th Birthday Henry! 🎂</h2>
-      <p>A special game just for you!<br>Help Monkey catch colorful balloons while avoiding the snapping crocodiles!</p>
-      <button id="tryBtn">Play Now!</button>
+      <div class="game-preview">
+        <div class="preview-image">
+          <canvas id="previewCanvas" width="900" height="506"></canvas>
+        </div>
+      </div>
+      <div class="game-info">
+        <h3>How to Play</h3>
+        <ul>
+          <li><strong>Desktop:</strong> Use arrow keys (← →) to move, SPACE or ↑ to jump</li>
+          <li><strong>Mobile/Touch:</strong> Drag anywhere to move, tap anywhere to jump</li>
+          <li>Catch colorful balloons to earn points</li>
+          <li>Avoid the snapping crocodiles - they'll take a life!</li>
+          <li>Jump on a crocodile's back for a boost (if you're brave!)</li>
+          <li>Special balloons give you power-ups like shields and slow motion</li>
+        </ul>
+        <button id="startBtn" class="start-button">Start Game (Fullscreen)</button>
+      </div>
     </div>
-    
-    <div id="startOverlay" class="overlay hidden">
-      <h2>Ready to Play?</h2>
-      <p id="controlText">Use arrow keys (← →) to move, SPACE or ↑ to jump.<br>Catch balloons for points, avoid crocodiles!</p>
-      <button id="startBtn">Start Game</button>
-    </div>
+  </div>
+
+  <!-- Fullscreen Game Stage (hidden until game starts) -->
+  <div class="stage hidden" id="stage">
+    <canvas id="game" width="900" height="506" aria-label="Happy 8th Birthday Henry Monkey game"></canvas>
     
     <div id="gameOverOverlay" class="overlay hidden">
       <h2 id="gameOverTitle">Game Over!</h2>
       <p id="gameOverText">You caught <span id="finalScore">0</span> balloons!</p>
       <button id="restartBtn">Play Again</button>
+      <button id="exitFullscreenBtn">Exit Fullscreen</button>
     </div>
   </div>
 
@@ -201,20 +297,20 @@
     (() => {
       const canvas = document.getElementById('game');
       const ctx = canvas.getContext('2d');
+      const previewCanvas = document.getElementById('previewCanvas');
+      const previewCtx = previewCanvas?.getContext('2d');
       const stage = document.getElementById('stage');
-      const tryOverlay = document.getElementById('tryOverlay');
-      const startOverlay = document.getElementById('startOverlay');
+      const descriptionPage = document.getElementById('descriptionPage');
       const gameOverOverlay = document.getElementById('gameOverOverlay');
-      const tryBtn = document.getElementById('tryBtn');
       const startBtn = document.getElementById('startBtn');
       const restartBtn = document.getElementById('restartBtn');
+      const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
       const scoreEl = document.getElementById('score');
       const livesEl = document.getElementById('lives');
       const bestEl = document.getElementById('best');
       const finalScoreEl = document.getElementById('finalScore');
       const gameOverTitle = document.getElementById('gameOverTitle');
       const gameOverText = document.getElementById('gameOverText');
-      const controlText = document.getElementById('controlText');
 
       const W = canvas.width;
       const H = canvas.height;
@@ -241,10 +337,6 @@
 
       // Detect touch device
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
-      
-      if (isTouchDevice) {
-        controlText.innerHTML = '<strong>Drag anywhere to move, Tap anywhere to jump!</strong><br>Catch balloons for points, avoid crocodiles!';
-      }
 
       // SVG Images
       function createMonkeySVG(frame) {
@@ -510,7 +602,10 @@
         })),
       ]).then(() => {
         createDecorations();
-        if (!state.running) draw();
+        if (!state.running) {
+          drawPreview(); // Draw preview on description page
+          draw(); // Also draw on main canvas (will be hidden)
+        }
       });
 
       // INTUITIVE DRAG-TO-MOVE & TAP-TO-JUMP TOUCH CONTROLS
@@ -523,17 +618,12 @@
       }
 
       // Attach touch events to both canvas AND stage (for better compatibility)
+      // NOTE: Touch events only work when game is running (after fullscreen starts)
       function handleTouchStart(e) {
+        if (!state.running) return; // Don't process touches before game starts
+        
         e.preventDefault();
         e.stopPropagation();
-        // Allow touch even when game not running (for testing/starting)
-        const wasRunning = state.running;
-        if (!state.running && touches.size === 0) {
-          // First touch when not running - could start game
-          // But don't start automatically - let user click button
-          return;
-        }
-        if (!state.running && touches.size > 0) return;
 
         Array.from(e.changedTouches).forEach(touch => {
           const pos = getTouchPosition(touch);
@@ -667,22 +757,18 @@
         }
       }
 
-      // Attach to both canvas and stage for maximum compatibility
-      // Also attach to document body for when game is in iframe
-      const attachTouchListeners = (element) => {
-        element.addEventListener('touchstart', handleTouchStart, { passive: false });
-        element.addEventListener('touchmove', handleTouchMove, { passive: false });
-        element.addEventListener('touchend', handleTouchEnd, { passive: false });
-        element.addEventListener('touchcancel', handleTouchCancel, { passive: false });
-      };
-
-      attachTouchListeners(canvas);
-      attachTouchListeners(stage);
+      // Attach touch listeners ONLY to canvas and stage
+      // (NOT to body - that would interfere with buttons)
+      // Touch controls only work when game is running
+      canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
+      canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
+      canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
+      canvas.addEventListener('touchcancel', handleTouchCancel, { passive: false });
       
-      // Also attach to body for better coverage (some mobile browsers need this)
-      if (isTouchDevice) {
-        attachTouchListeners(document.body);
-      }
+      stage.addEventListener('touchstart', handleTouchStart, { passive: false });
+      stage.addEventListener('touchmove', handleTouchMove, { passive: false });
+      stage.addEventListener('touchend', handleTouchEnd, { passive: false });
+      stage.addEventListener('touchcancel', handleTouchCancel, { passive: false });
 
       // Keyboard controls
       window.addEventListener('keydown', e => {
@@ -708,18 +794,77 @@
         if (['arrowup', ' ', 'w'].includes(key)) keys.jump = false;
       });
 
-      tryBtn.addEventListener('click', () => {
-        tryOverlay.classList.add('hidden');
-        startOverlay.classList.remove('hidden');
-      });
-
-      startBtn.addEventListener('click', () => {
-        if (!state.running) {
-          startGame();
-          setTimeout(() => {
-            requestFullscreen().catch(() => {});
-          }, 100);
+      // Draw static preview on description page
+      function drawPreview() {
+        if (!previewCtx || !previewCanvas) return;
+        
+        const w = previewCanvas.width;
+        const h = previewCanvas.height;
+        const groundY = h - 100;
+        
+        // Background
+        const bgGradient = previewCtx.createLinearGradient(0, 0, 0, h);
+        bgGradient.addColorStop(0, '#b0d4f0');
+        bgGradient.addColorStop(0.5, '#ffd6e8');
+        bgGradient.addColorStop(1, '#ffb3d9');
+        previewCtx.fillStyle = bgGradient;
+        previewCtx.fillRect(0, 0, w, h);
+        
+        // Ground
+        previewCtx.fillStyle = '#ffb3d9';
+        previewCtx.fillRect(0, groundY + 100, w, h - groundY - 100);
+        
+        // Monkey (centered)
+        const monkeyFrame = imageCache.monkeyFrames[0];
+        if (monkeyFrame.complete && monkeyFrame.naturalWidth > 0) {
+          previewCtx.drawImage(monkeyFrame, w/2 - 30, groundY, 60, 100);
         }
+        
+        // Some balloons
+        const balloonImg = imageCache.balloons[0];
+        if (balloonImg.complete && balloonImg.naturalWidth > 0) {
+          previewCtx.drawImage(balloonImg, w/4, groundY - 100, 50, 65);
+          previewCtx.drawImage(balloonImg, w/4 * 3, groundY - 150, 50, 65);
+        }
+        
+        // Text
+        previewCtx.fillStyle = 'rgba(255, 255, 255, 0.9)';
+        previewCtx.font = 'bold 32px Arial';
+        previewCtx.textAlign = 'center';
+        previewCtx.fillText('Happy 8th Birthday Henry!', w/2, 50);
+      }
+
+      startBtn.addEventListener('click', async () => {
+        if (state.running) return;
+        
+        // Hide description page
+        descriptionPage.classList.add('hidden');
+        
+        // Show game stage
+        stage.classList.remove('hidden');
+        
+        // Add class to body to prevent scrolling
+        document.body.classList.add('game-running');
+        
+        // Request fullscreen
+        try {
+          if (stage.requestFullscreen) {
+            await stage.requestFullscreen();
+          } else if (stage.webkitRequestFullscreen) {
+            await stage.webkitRequestFullscreen();
+          } else if (stage.mozRequestFullScreen) {
+            await stage.mozRequestFullScreen();
+          } else if (stage.msRequestFullscreen) {
+            await stage.msRequestFullscreen();
+          }
+        } catch (err) {
+          console.log('Fullscreen not available, continuing anyway');
+        }
+        
+        // Start game after a brief delay to ensure fullscreen is ready
+        setTimeout(() => {
+          startGame();
+        }, 300);
       });
 
       restartBtn.addEventListener('click', () => {
