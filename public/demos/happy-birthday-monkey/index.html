@@ -139,7 +139,7 @@
       cursor: pointer;
       box-shadow: 0 8px 24px rgba(255, 107, 157, 0.4);
       transition: transform 0.2s, box-shadow 0.2s;
-      touch-action: manipulation; /* Allow button clicks on touch */
+      touch-action: manipulation;
     }
 
     .start-button:hover {
@@ -162,7 +162,7 @@
       width: 100vw;
       height: 100vh;
       background: linear-gradient(180deg, #87ceeb 0%, #ffd6e8 60%, #ffb3d9 100%);
-      touch-action: none; /* Prevent default touch behaviors when game is running */
+      touch-action: none;
       z-index: 9999;
     }
     
@@ -228,6 +228,7 @@
       cursor: pointer;
       box-shadow: 0 8px 24px rgba(255, 107, 157, 0.4);
       transition: transform 0.2s, box-shadow 0.2s;
+      touch-action: manipulation;
     }
 
     .overlay button:hover {
@@ -304,23 +305,10 @@
 
   <script type="module">
     (() => {
-      // Simple embedded detection - check if we're in a container
-      let isEmbedded = false;
-      
-      function checkEmbedded() {
-        // Check for container classes that indicate embedding
-        if (document.querySelector('.game-embed-container') || 
-            document.querySelector('.game-viewport') || 
-            document.querySelector('.game-content-ref')) {
-          return true;
-        }
-        
-        // Check if any game element is inside a container
-        const h1 = document.querySelector('h1');
-        if (h1 && (h1.closest('.game-embed-container') || h1.closest('.aspect-video'))) {
-          return true;
-        }
-        
+      // ============================================================================
+      // EMBEDDED DETECTION - Single, immediate check (no race conditions)
+      // ============================================================================
+      const isEmbedded = (() => {
         // Check if in iframe
         try {
           if (window.self !== window.top) return true;
@@ -328,24 +316,15 @@
           return true;
         }
         
-        return false;
-      }
+        // Check for embedding container classes
+        return !!document.querySelector('.game-embed-container, .aspect-video, .game-content-ref, .game-viewport');
+      })();
       
-      // Check embedded state after DOM is ready
-      function checkEmbeddedAfterDelay() {
-        isEmbedded = checkEmbedded();
-      }
+      console.log('[Happy Birthday Monkey] Embedded mode:', isEmbedded);
       
-      // Check multiple times to catch it
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', checkEmbeddedAfterDelay);
-      } else {
-        checkEmbeddedAfterDelay();
-      }
-      setTimeout(checkEmbeddedAfterDelay, 100);
-      setTimeout(checkEmbeddedAfterDelay, 300);
-      
-      // ERROR HANDLING AND LOGGING
+      // ============================================================================
+      // ERROR LOGGING
+      // ============================================================================
       const ERROR_LOG = [];
       function logError(category, message, error = null) {
         const entry = {
@@ -360,9 +339,8 @@
           embedded: isEmbedded
         };
         ERROR_LOG.push(entry);
-        console.error(`[${category}]`, message, error || '');
+        console.log(`[${category}]`, message, error || '');
         
-        // Show critical errors to user
         if (category === 'CRITICAL') {
           alert(`Game Error: ${message}\n\nCheck console for details.`);
         }
@@ -376,53 +354,40 @@
         logError('PROMISE_REJECTION', e.reason?.message || String(e.reason), e.reason);
       });
 
-      // Export for testing
       window.GAME_ERROR_LOG = ERROR_LOG;
 
-      try {
-        const canvas = document.getElementById('game');
-        if (!canvas) {
-          logError('CRITICAL', 'Canvas element not found', null);
-          return;
-        }
-        const ctx = canvas.getContext('2d');
-        if (!ctx) {
-          logError('CRITICAL', 'Could not get canvas 2d context', null);
-          return;
-        }
-        
-        const previewCanvas = document.getElementById('previewCanvas');
-        const previewCtx = previewCanvas?.getContext('2d');
-        const stage = document.getElementById('stage');
-        if (!stage) {
-          logError('CRITICAL', 'Stage element not found', null);
-          return;
-        }
-        const descriptionPage = document.getElementById('descriptionPage');
-        if (!descriptionPage) {
-          logError('CRITICAL', 'Description page element not found', null);
-          return;
-        }
-        const gameOverOverlay = document.getElementById('gameOverOverlay');
-        const startBtn = document.getElementById('startBtn');
-        if (!startBtn) {
-          logError('CRITICAL', 'Start button not found', null);
-          return;
-        }
-        const restartBtn = document.getElementById('restartBtn');
-        const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
-        const scoreEl = document.getElementById('score');
-        const livesEl = document.getElementById('lives');
-        const bestEl = document.getElementById('best');
-        const finalScoreEl = document.getElementById('finalScore');
-        const gameOverTitle = document.getElementById('gameOverTitle');
-        const gameOverText = document.getElementById('gameOverText');
+      // ============================================================================
+      // DOM ELEMENTS
+      // ============================================================================
+      const canvas = document.getElementById('game');
+      const ctx = canvas?.getContext('2d');
+      const previewCanvas = document.getElementById('previewCanvas');
+      const previewCtx = previewCanvas?.getContext('2d');
+      const stage = document.getElementById('stage');
+      const descriptionPage = document.getElementById('descriptionPage');
+      const gameOverOverlay = document.getElementById('gameOverOverlay');
+      const startBtn = document.getElementById('startBtn');
+      const restartBtn = document.getElementById('restartBtn');
+      const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+      const scoreEl = document.getElementById('score');
+      const livesEl = document.getElementById('lives');
+      const bestEl = document.getElementById('best');
+      const finalScoreEl = document.getElementById('finalScore');
+      const gameOverTitle = document.getElementById('gameOverTitle');
+      const gameOverText = document.getElementById('gameOverText');
 
+      if (!canvas || !ctx) {
+        logError('CRITICAL', 'Canvas or context not found');
+        return;
+      }
+
+      // ============================================================================
+      // GAME CONSTANTS
+      // ============================================================================
       const W = canvas.width;
       const H = canvas.height;
       const GROUND_Y = H - 100;
 
-      // DIFFICULTY CONFIGURATION FOR 10-YEAR-OLDS
       const DIFFICULTY = {
         gravity: 1.3,
         jumpPower: -19,
@@ -441,10 +406,11 @@
         speedIncrease: 0.025,
       };
 
-      // Detect touch device
       const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
 
-      // SVG Images
+      // ============================================================================
+      // IMAGE CACHE - Pre-load all SVG images
+      // ============================================================================
       function createMonkeySVG(frame) {
         const legOffset = Math.sin(frame * 0.5) * 8;
         const armOffset = Math.sin(frame * 0.5 + Math.PI) * 6;
@@ -548,6 +514,34 @@
         { offset: 0, speed: 0.6, color: '#ffd6e8', yPos: 0.5, height: 0.35 },
       ];
 
+      const imageCache = {
+        monkeyFrames: [],
+        crocFrames: [],
+        balloons: [],
+        number8Balloon: new Image(),
+      };
+
+      for (let i = 0; i < 8; i++) {
+        const monkeyImg = new Image();
+        monkeyImg.src = createMonkeySVG(i);
+        imageCache.monkeyFrames.push(monkeyImg);
+        
+        const crocImg = new Image();
+        crocImg.src = createCrocSVG(i);
+        imageCache.crocFrames.push(crocImg);
+      }
+
+      imageCache.balloons = balloonSVGs.map(src => {
+        const img = new Image();
+        img.src = src;
+        return img;
+      });
+
+      imageCache.number8Balloon.src = number8BalloonSVG;
+
+      // ============================================================================
+      // GAME STATE
+      // ============================================================================
       const state = {
         running: false,
         score: 0,
@@ -592,39 +586,16 @@
 
       const keys = {};
       
-      // NEW DRAG-TO-MOVE & TAP-TO-JUMP TOUCH SYSTEM
-      const touches = new Map(); // touchId -> { startX, startY, currentX, currentY, startTime, isDrag }
-      let dragVelocity = 0; // Current horizontal drag velocity (-1 to 1)
-      const DRAG_THRESHOLD = 15; // Pixels of movement to count as drag vs tap (increased for better detection)
-      const TAP_TIME_THRESHOLD = 300; // Max ms for a tap (increased for easier taps)
-      const DRAG_SENSITIVITY = 0.04; // How responsive dragging is (doubled for better responsiveness)
+      // Touch control state
+      const touches = new Map();
+      let dragVelocity = 0;
+      const DRAG_THRESHOLD = 15;
+      const TAP_TIME_THRESHOLD = 300;
+      const DRAG_SENSITIVITY = 0.04;
 
-      // PRE-CACHE ALL IMAGES
-      const imageCache = {
-        monkeyFrames: [],
-        crocFrames: [],
-        balloons: [],
-        number8Balloon: new Image(),
-      };
-
-      for (let i = 0; i < 8; i++) {
-        const monkeyImg = new Image();
-        monkeyImg.src = createMonkeySVG(i);
-        imageCache.monkeyFrames.push(monkeyImg);
-        
-        const crocImg = new Image();
-        crocImg.src = createCrocSVG(i);
-        imageCache.crocFrames.push(crocImg);
-      }
-
-      imageCache.balloons = balloonSVGs.map(src => {
-        const img = new Image();
-        img.src = src;
-        return img;
-      });
-
-      imageCache.number8Balloon.src = number8BalloonSVG;
-
+      // ============================================================================
+      // DECORATION INITIALIZATION
+      // ============================================================================
       function createDecorations() {
         state.decorations = [];
         for (let i = 0; i < 20; i++) {
@@ -640,20 +611,54 @@
         }
       }
 
+      // ============================================================================
+      // FULLSCREEN HANDLING
+      // ============================================================================
       function requestFullscreen() {
-        const elem = stage;
-        if (elem.requestFullscreen) {
-          return elem.requestFullscreen().catch(() => {});
-        } else if (elem.webkitRequestFullscreen) {
-          return Promise.resolve(elem.webkitRequestFullscreen());
-        } else if (elem.msRequestFullscreen) {
-          return Promise.resolve(elem.msRequestFullscreen());
-        } else if (elem.mozRequestFullScreen) {
-          return Promise.resolve(elem.mozRequestFullScreen());
+        if (isEmbedded) {
+          logError('FULLSCREEN', 'Skipping fullscreen (embedded mode)');
+          return Promise.resolve();
         }
-        return Promise.resolve();
+
+        const elem = stage;
+        
+        if (elem.requestFullscreen) {
+          return elem.requestFullscreen().catch(err => {
+            logError('FULLSCREEN', 'Standard fullscreen failed: ' + err.message, err);
+          });
+        } else if (elem.webkitRequestFullscreen) {
+          return Promise.resolve(elem.webkitRequestFullscreen()).catch(err => {
+            logError('FULLSCREEN', 'Webkit fullscreen failed: ' + err.message, err);
+          });
+        } else if (elem.msRequestFullscreen) {
+          return Promise.resolve(elem.msRequestFullscreen()).catch(err => {
+            logError('FULLSCREEN', 'MS fullscreen failed: ' + err.message, err);
+          });
+        } else if (elem.mozRequestFullScreen) {
+          return Promise.resolve(elem.mozRequestFullScreen()).catch(err => {
+            logError('FULLSCREEN', 'Moz fullscreen failed: ' + err.message, err);
+          });
+        } else {
+          logError('FULLSCREEN', 'Fullscreen API not available');
+          return Promise.resolve();
+        }
       }
 
+      function exitFullscreen() {
+        if (document.exitFullscreen) {
+          document.exitFullscreen();
+        } else if (document.webkitExitFullscreen) {
+          document.webkitExitFullscreen();
+        } else if (document.mozCancelFullScreen) {
+          document.mozCancelFullScreen();
+        } else if (document.msExitFullscreen) {
+          document.msExitFullscreen();
+        }
+      }
+
+      // ============================================================================
+      // CANVAS RESIZE HANDLING
+      // ============================================================================
       function resizeCanvas() {
         const rect = canvas.getBoundingClientRect();
         const displayWidth = rect.width;
@@ -674,6 +679,7 @@
         }
       }
 
+      // Listen for fullscreen changes
       document.addEventListener('fullscreenchange', () => {
         setTimeout(resizeCanvas, 100);
       });
@@ -689,6 +695,9 @@
       
       window.addEventListener('resize', resizeCanvas);
 
+      // ============================================================================
+      // LOAD IMAGES
+      // ============================================================================
       Promise.all([
         ...imageCache.monkeyFrames.map(img => new Promise(resolve => { 
           img.onload = resolve; 
@@ -707,14 +716,17 @@
           img.onerror = resolve; 
         })),
       ]).then(() => {
+        logError('INIT', 'All images loaded');
         createDecorations();
         if (!state.running) {
-          drawPreview(); // Draw preview on description page
-          draw(); // Also draw on main canvas (will be hidden)
+          drawPreview();
+          draw();
         }
       });
 
-      // INTUITIVE DRAG-TO-MOVE & TAP-TO-JUMP TOUCH CONTROLS
+      // ============================================================================
+      // TOUCH CONTROLS - Drag to move, tap to jump
+      // ============================================================================
       function getTouchPosition(touch) {
         const rect = canvas.getBoundingClientRect();
         return {
@@ -723,10 +735,8 @@
         };
       }
 
-      // Attach touch events to both canvas AND stage (for better compatibility)
-      // NOTE: Touch events only work when game is running (after fullscreen starts)
       function handleTouchStart(e) {
-        if (!state.running) return; // Don't process touches before game starts
+        if (!state.running) return;
         
         e.preventDefault();
         e.stopPropagation();
@@ -757,17 +767,14 @@
           data.currentX = pos.x;
           data.currentY = pos.y;
 
-          // Calculate horizontal drag distance
           const dragDistX = data.currentX - data.startX;
           const dragDistY = Math.abs(data.currentY - data.startY);
 
-          // Mark as drag if moved beyond threshold
           if (!data.isDrag && (Math.abs(dragDistX) > DRAG_THRESHOLD || dragDistY > DRAG_THRESHOLD)) {
             data.isDrag = true;
           }
         });
 
-        // Calculate drag velocity from all active touches
         let totalDrag = 0;
         let dragTouches = 0;
         touches.forEach(data => {
@@ -781,7 +788,6 @@
         if (dragTouches > 0) {
           dragVelocity = Math.max(-1, Math.min(1, totalDrag * DRAG_SENSITIVITY));
           
-          // Set keyboard keys based on drag direction with lower threshold for responsiveness
           if (dragVelocity < -0.05) {
             keys.left = true;
             keys.right = false;
@@ -809,10 +815,8 @@
           const dragDistY = Math.abs(data.currentY - data.startY);
           const totalDist = Math.sqrt(dragDistX * dragDistX + dragDistY * dragDistY);
 
-          // It's a TAP if: quick duration AND minimal movement
           if (touchDuration < TAP_TIME_THRESHOLD && totalDist < DRAG_THRESHOLD) {
             keys.jump = true;
-            // Reset jump after delay to allow repeated taps
             setTimeout(() => {
               keys.jump = false;
             }, 100);
@@ -821,13 +825,11 @@
           touches.delete(touch.identifier);
         });
 
-        // If no more touches, clear drag velocity and movement
         if (touches.size === 0) {
           dragVelocity = 0;
           keys.left = false;
           keys.right = false;
         } else {
-          // Recalculate drag from remaining touches
           let totalDrag = 0;
           let dragTouches = 0;
           touches.forEach(data => {
@@ -863,9 +865,6 @@
         }
       }
 
-      // Attach touch listeners ONLY to canvas and stage
-      // (NOT to body - that would interfere with buttons)
-      // Touch controls only work when game is running
       canvas.addEventListener('touchstart', handleTouchStart, { passive: false });
       canvas.addEventListener('touchmove', handleTouchMove, { passive: false });
       canvas.addEventListener('touchend', handleTouchEnd, { passive: false });
@@ -876,7 +875,9 @@
       stage.addEventListener('touchend', handleTouchEnd, { passive: false });
       stage.addEventListener('touchcancel', handleTouchCancel, { passive: false });
 
-      // Keyboard controls
+      // ============================================================================
+      // KEYBOARD CONTROLS
+      // ============================================================================
       window.addEventListener('keydown', e => {
         const key = e.key.toLowerCase();
         if (['arrowleft', 'a'].includes(key)) {
@@ -900,7 +901,9 @@
         if (['arrowup', ' ', 'w'].includes(key)) keys.jump = false;
       });
 
-      // Draw static preview on description page
+      // ============================================================================
+      // PREVIEW DRAWING (on description page)
+      // ============================================================================
       function drawPreview() {
         if (!previewCtx || !previewCanvas) return;
         
@@ -908,7 +911,6 @@
         const h = previewCanvas.height;
         const groundY = h - 100;
         
-        // Background
         const bgGradient = previewCtx.createLinearGradient(0, 0, 0, h);
         bgGradient.addColorStop(0, '#b0d4f0');
         bgGradient.addColorStop(0.5, '#ffd6e8');
@@ -916,178 +918,119 @@
         previewCtx.fillStyle = bgGradient;
         previewCtx.fillRect(0, 0, w, h);
         
-        // Ground
         previewCtx.fillStyle = '#ffb3d9';
         previewCtx.fillRect(0, groundY + 100, w, h - groundY - 100);
         
-        // Monkey (centered)
         const monkeyFrame = imageCache.monkeyFrames[0];
         if (monkeyFrame.complete && monkeyFrame.naturalWidth > 0) {
           previewCtx.drawImage(monkeyFrame, w/2 - 30, groundY, 60, 100);
         }
         
-        // Some balloons
         const balloonImg = imageCache.balloons[0];
         if (balloonImg.complete && balloonImg.naturalWidth > 0) {
           previewCtx.drawImage(balloonImg, w/4, groundY - 100, 50, 65);
           previewCtx.drawImage(balloonImg, w/4 * 3, groundY - 150, 50, 65);
         }
         
-        // Text
         previewCtx.fillStyle = 'rgba(255, 255, 255, 0.9)';
         previewCtx.font = 'bold 32px Arial';
         previewCtx.textAlign = 'center';
         previewCtx.fillText('Happy 8th Birthday Henry!', w/2, 50);
       }
 
+      // ============================================================================
+      // START GAME FLOW - Simplified, no race conditions
+      // ============================================================================
       async function startGameFlow() {
-        try {
-          if (state.running) return;
-          
-          logError('USER_ACTION', isEmbedded ? 'Auto-starting embedded game' : 'Start button clicked');
-          
-          // Hide description page
-          if (descriptionPage) descriptionPage.classList.add('hidden');
-          
-          // Show game stage
-          if (stage) stage.classList.remove('hidden');
-          
-          // Add class to body to prevent scrolling (only if not embedded)
-          if (!isEmbedded) {
-            document.body.classList.add('game-running');
-          }
-          
-          // Request fullscreen on stage element (only if not embedded)
-          if (!isEmbedded) {
-            try {
-              if (stage.requestFullscreen) {
-                await stage.requestFullscreen();
-                logError('FULLSCREEN', 'Fullscreen entered (standard)');
-              } else if (stage.webkitRequestFullscreen) {
-                await stage.webkitRequestFullscreen();
-                logError('FULLSCREEN', 'Fullscreen entered (webkit)');
-              } else if ((stage as any).mozRequestFullScreen) {
-                await (stage as any).mozRequestFullScreen();
-                logError('FULLSCREEN', 'Fullscreen entered (moz)');
-              } else if ((stage as any).msRequestFullscreen) {
-                await (stage as any).msRequestFullscreen();
-                logError('FULLSCREEN', 'Fullscreen entered (ms)');
-              } else {
-                logError('FULLSCREEN', 'Fullscreen API not available');
-              }
-            } catch (err) {
-              logError('FULLSCREEN', 'Fullscreen request failed', err);
-            }
-          }
-          
-          // Start game after a brief delay to ensure viewport is ready
-          setTimeout(() => {
-            startGame();
-          }, isEmbedded ? 100 : 300);
-        } catch (err) {
-          logError('CRITICAL', 'Error in start game flow', err);
+        if (state.running) {
+          logError('START', 'Game already running, ignoring start request');
+          return;
         }
-      }
-
-      startBtn?.addEventListener('click', startGameFlow);
-      
-      // Helper function to check if element is inside game container
-      function isInGameViewport(element) {
-        if (!element) return false;
-        let current = element;
-        while (current && current !== document.body) {
-          if (current.classList && (
-            current.classList.contains('game-viewport') || 
-            current.classList.contains('game-content-ref') ||
-            current.classList.contains('game-embed-container') ||
-            current.classList.contains('aspect-video')
-          )) {
-            return true;
-          }
-          current = current.parentElement;
-        }
-        return false;
-      }
-      
-      let autoStartInitiated = false;
-      
-      // Function to auto-start game when embedded
-      function tryAutoStart() {
-        // Update embedded check
-        checkEmbeddedAfterDelay();
         
-        // If embedded and not already started, start the game
-        if (isEmbedded && !autoStartInitiated && !state.running) {
-          autoStartInitiated = true;
-          console.log('[Happy Birthday Monkey] Auto-starting embedded game');
-          
-          const stage = document.getElementById('stage');
-          if (stage) {
+        logError('START', 'Starting game flow (embedded: ' + isEmbedded + ')');
+        
+        // Hide description page
+        if (descriptionPage) descriptionPage.classList.add('hidden');
+        
+        // Show stage
+        if (stage) {
+          stage.classList.remove('hidden');
+          if (isEmbedded) {
             stage.classList.add('embedded');
           }
-          
-          // Hide description page immediately
-          if (descriptionPage) {
-            descriptionPage.style.display = 'none';
-          }
-          
-          // Show stage
-          if (stage) {
-            stage.classList.remove('hidden');
-          }
-          
-          // Wait for images to load, then start game
-          Promise.all([
-            ...imageCache.monkeyFrames.map(img => new Promise(resolve => { 
-              if (img.complete) resolve();
-              else { img.onload = resolve; img.onerror = resolve; }
-            })),
-            ...imageCache.balloons.map(img => new Promise(resolve => { 
-              if (img.complete) resolve();
-              else { img.onload = resolve; img.onerror = resolve; }
-            })),
-            new Promise(resolve => { 
-              if (imageCache.number8Balloon.complete) resolve();
-              else { imageCache.number8Balloon.onload = resolve; imageCache.number8Balloon.onerror = resolve; }
-            }),
-            ...imageCache.crocFrames.map(img => new Promise(resolve => { 
-              if (img.complete) resolve();
-              else { img.onload = resolve; img.onerror = resolve; }
-            })),
-          ]).then(() => {
+        }
+        
+        // Add running class to body (only if not embedded)
+        if (!isEmbedded) {
+          document.body.classList.add('game-running');
+        }
+        
+        // Request fullscreen (only if not embedded)
+        if (!isEmbedded) {
+          try {
+            await requestFullscreen();
+            logError('START', 'Fullscreen requested');
+            
+            // Wait for fullscreen event before starting
+            document.addEventListener('fullscreenchange', function onFullscreen() {
+              if (document.fullscreenElement === stage) {
+                document.removeEventListener('fullscreenchange', onFullscreen);
+                setTimeout(() => {
+                  resizeCanvas();
+                  startGame();
+                }, 100);
+              }
+            });
+            
+            // Fallback if fullscreen event doesn't fire
             setTimeout(() => {
-              startGameFlow();
-            }, 100);
-          });
+              if (!state.running) {
+                logError('START', 'Fullscreen event timeout, starting anyway');
+                resizeCanvas();
+                startGame();
+              }
+            }, 500);
+            
+          } catch (err) {
+            logError('START', 'Fullscreen failed, starting anyway', err);
+            resizeCanvas();
+            startGame();
+          }
+        } else {
+          // Embedded mode: start immediately
+          setTimeout(() => {
+            resizeCanvas();
+            startGame();
+          }, 100);
         }
       }
-      
-      // Try to auto-start multiple times
-      setTimeout(tryAutoStart, 200);
-      setTimeout(tryAutoStart, 500);
-      setTimeout(tryAutoStart, 1000);
-      
-      // Final fallback
-      setTimeout(() => {
-        if (!autoStartInitiated && !state.running) {
-          const container = document.querySelector('.game-embed-container') || document.querySelector('.aspect-video');
-          if (container) {
-            console.log('[Happy Birthday Monkey] Force-starting: container detected');
-            isEmbedded = true;
-            tryAutoStart();
-          }
-        }
-      }, 1500);
 
-      restartBtn.addEventListener('click', () => {
-        state.running = false;
+      // ============================================================================
+      // START GAME - Clean initialization (no nested rAF)
+      // ============================================================================
+      function startGame() {
+        if (state.running) {
+          logError('START', 'Game already running, skipping initialization');
+          return;
+        }
+        
+        logError('START', 'Initializing game state');
+        
+        // Clear all input state
         keys.left = false;
         keys.right = false;
         keys.jump = false;
         touches.clear();
         dragVelocity = 0;
-        gameOverOverlay.classList.add('hidden');
         
+        // Hide game over overlay
+        if (gameOverOverlay) gameOverOverlay.classList.add('hidden');
+        
+        // Resize canvas one final time
+        resizeCanvas();
+        
+        // Reset game state
+        state.running = true;
         state.score = 0;
         state.lives = 3;
         state.monkey.x = state.canvasW / 2 - 30;
@@ -1096,10 +1039,14 @@
         state.monkey.vy = 0;
         state.monkey.isJumping = false;
         state.monkey.onGround = true;
+        state.monkey.walkFrame = 0;
         state.balloons = [];
         state.crocodiles = [];
         state.particles = [];
         state.effects = [];
+        state.lastBalloonTime = 0;
+        state.lastCrocTime = 0;
+        state.gameSpeed = DIFFICULTY.baseGameSpeed;
         state.combo = 0;
         state.multiplier = 1;
         state.comboTimer = 0;
@@ -1108,19 +1055,35 @@
         state.slowMotion = false;
         state.slowMotionTimer = 0;
         state.screenShake = 0;
-        state.lastBalloonTime = 0;
-        state.lastCrocTime = 0;
         state.lastComboTime = 0;
-        state.gameSpeed = DIFFICULTY.baseGameSpeed;
-        state.displayScore = 0;
         
-        // Restart game
-        setTimeout(() => {
-          startGame();
-        }, 300);
+        backgroundLayers.forEach(layer => layer.offset = 0);
+        
+        createDecorations();
+        updateHud();
+        
+        state.lastTime = performance.now();
+        logError('START', 'Game loop starting');
+        requestAnimationFrame(loop);
+      }
+
+      // ============================================================================
+      // BUTTON EVENT HANDLERS
+      // ============================================================================
+      startBtn.addEventListener('click', () => {
+        logError('USER_ACTION', 'Start button clicked');
+        startGameFlow();
+      });
+      
+      restartBtn.addEventListener('click', () => {
+        logError('USER_ACTION', 'Restart button clicked');
+        gameOverOverlay.classList.add('hidden');
+        startGame();
       });
 
       exitFullscreenBtn.addEventListener('click', () => {
+        logError('USER_ACTION', 'Exit fullscreen button clicked');
+        
         state.running = false;
         keys.left = false;
         keys.right = false;
@@ -1128,25 +1091,14 @@
         touches.clear();
         dragVelocity = 0;
         
-        // Exit fullscreen
-        if (document.exitFullscreen) {
-          document.exitFullscreen();
-        } else if (document.webkitExitFullscreen) {
-          document.webkitExitFullscreen();
-        } else if (document.mozCancelFullScreen) {
-          document.mozCancelFullScreen();
-        } else if (document.msExitFullscreen) {
-          document.msExitFullscreen();
-        }
+        exitFullscreen();
         
-        // Return to description page
         setTimeout(() => {
           stage.classList.add('hidden');
           descriptionPage.classList.remove('hidden');
           document.body.classList.remove('game-running');
           gameOverOverlay.classList.add('hidden');
           
-          // Reset game state
           state.score = 0;
           state.lives = 3;
           state.monkey.x = W / 2 - 30;
@@ -1159,70 +1111,45 @@
         }, 300);
       });
 
-      function startGame() {
-        try {
-          logError('GAME_STATE', 'Starting game...');
-          
-          state.running = false;
-          keys.left = false;
-          keys.right = false;
-          keys.jump = false;
-          touches.clear();
-          dragVelocity = 0;
-          // Description page is already hidden, gameOverOverlay should be hidden
-          if (gameOverOverlay) gameOverOverlay.classList.add('hidden');
-          
-          resizeCanvas();
-          
-          requestAnimationFrame(() => {
-            try {
-              state.running = true;
-          state.score = 0;
-          state.lives = 3;
-          state.monkey.x = state.canvasW / 2 - 30;
-          state.monkey.y = state.groundY;
-          state.monkey.vy = 0;
-          state.monkey.isJumping = false;
-          state.monkey.onGround = true;
-          state.monkey.walkFrame = 0;
-          state.balloons = [];
-          state.crocodiles = [];
-          state.particles = [];
-          state.effects = [];
-          state.lastBalloonTime = 0;
-          state.lastCrocTime = 0;
-          state.gameSpeed = DIFFICULTY.baseGameSpeed;
-          state.combo = 0;
-          state.multiplier = 1;
-          state.comboTimer = 0;
-          state.shield = false;
-          state.shieldTimer = 0;
-          state.slowMotion = false;
-          state.slowMotionTimer = 0;
-          state.screenShake = 0;
-          state.lastComboTime = 0;
-          
-          backgroundLayers.forEach(layer => layer.offset = 0);
-          
-          createDecorations();
-          updateHud();
-          state.lastTime = performance.now();
-          
-          logError('GAME_STATE', 'Game loop starting');
-          requestAnimationFrame(loop);
-            } catch (err) {
-              logError('GAME_START', 'Error in game initialization', err);
-            }
-          });
-        } catch (err) {
-          logError('CRITICAL', 'Error in startGame()', err);
-        }
+      // ============================================================================
+      // AUTO-START FOR EMBEDDED MODE (single attempt, no spam)
+      // ============================================================================
+      if (isEmbedded) {
+        logError('INIT', 'Embedded mode detected, will auto-start');
+        
+        // Wait for images to load
+        Promise.all([
+          ...imageCache.monkeyFrames.map(img => new Promise(resolve => { 
+            if (img.complete) resolve();
+            else { img.onload = resolve; img.onerror = resolve; }
+          })),
+          ...imageCache.balloons.map(img => new Promise(resolve => { 
+            if (img.complete) resolve();
+            else { img.onload = resolve; img.onerror = resolve; }
+          })),
+          new Promise(resolve => { 
+            if (imageCache.number8Balloon.complete) resolve();
+            else { imageCache.number8Balloon.onload = resolve; imageCache.number8Balloon.onerror = resolve; }
+          }),
+          ...imageCache.crocFrames.map(img => new Promise(resolve => { 
+            if (img.complete) resolve();
+            else { img.onload = resolve; img.onerror = resolve; }
+          })),
+        ]).then(() => {
+          logError('INIT', 'Images loaded, auto-starting embedded game');
+          setTimeout(() => {
+            startGameFlow();
+          }, 200);
+        });
       }
 
+      // ============================================================================
+      // GAME LOGIC
+      // ============================================================================
       function updateHud() {
-        scoreEl.textContent = state.score;
-        livesEl.textContent = state.lives;
-        bestEl.textContent = state.best;
+        if (scoreEl) scoreEl.textContent = state.score;
+        if (livesEl) livesEl.textContent = state.lives;
+        if (bestEl) bestEl.textContent = state.best;
       }
 
       function checkCollision(rect1, rect2) {
@@ -1236,47 +1163,76 @@
         state.running = false;
         touches.clear();
         dragVelocity = 0;
+        
         if (state.score > state.best) {
           state.best = state.score;
           localStorage.setItem('henryMonkeyBest', state.best.toString());
-          gameOverTitle.textContent = '🎉 New Best Score Henry! 🎉';
-          gameOverText.innerHTML = `Amazing! You caught <strong>${state.score}</strong> balloons! Happy 8th Birthday!`;
+          if (gameOverTitle) gameOverTitle.textContent = '🎉 New Best Score Henry! 🎉';
+          if (gameOverText) gameOverText.innerHTML = `Amazing! You caught <strong>${state.score}</strong> balloons! Happy 8th Birthday!`;
         } else {
-          gameOverTitle.textContent = 'Game Over!';
-          gameOverText.innerHTML = `You caught <strong>${state.score}</strong> balloons! Happy 8th Birthday Henry!`;
+          if (gameOverTitle) gameOverTitle.textContent = 'Game Over!';
+          if (gameOverText) gameOverText.innerHTML = `You caught <strong>${state.score}</strong> balloons! Happy 8th Birthday Henry!`;
         }
-        finalScoreEl.textContent = state.score;
-        gameOverOverlay.classList.remove('hidden');
+        if (finalScoreEl) finalScoreEl.textContent = state.score;
+        if (gameOverOverlay) gameOverOverlay.classList.remove('hidden');
       }
 
-              function loop(now) {
-                try {
-                  if (!state.running) {
-                    requestAnimationFrame(loop);
-                    return;
-                  }
+      function createParticles(x, y, color) {
+        for (let i = 0; i < 20; i++) {
+          state.particles.push({
+            x: x,
+            y: y,
+            vx: (Math.random() - 0.5) * 250,
+            vy: (Math.random() - 0.5) * 250,
+            color: color,
+            size: 3 + Math.random() * 5,
+            life: 0.6 + Math.random() * 0.6,
+            maxLife: 0.6 + Math.random() * 0.6,
+            alpha: 1,
+          });
+        }
+      }
+      
+      function addEffect(x, y, text, color) {
+        state.effects.push({
+          x: x,
+          y: y,
+          text: text,
+          color: color,
+          life: 1.5,
+          maxLife: 1.5,
+          alpha: 1,
+          size: 28,
+        });
+      }
 
-                  if (!now) now = performance.now();
-                  if (!state.lastTime) {
-                    state.lastTime = now;
-                    requestAnimationFrame(loop);
-                    return;
-                  }
+      // ============================================================================
+      // GAME LOOP
+      // ============================================================================
+      function loop(now) {
+        if (!state.running) {
+          requestAnimationFrame(loop);
+          return;
+        }
 
-                  // Calculate delta time with proper clamping for frame-rate independence
-                  const rawDt = (now - state.lastTime) / 1000;
-                  
-                  // Skip if delta is too large (tab was inactive) or invalid
-                  if (rawDt <= 0 || rawDt > 0.1) {
-                    state.lastTime = now;
-                    requestAnimationFrame(loop);
-                    return;
-                  }
-                  
-                  // Clamp delta time to prevent huge jumps (cap at 33ms = 30fps for stability)
-                  const dt = Math.min(rawDt, 0.033);
-                  state.lastTime = now;
+        if (!now) now = performance.now();
+        if (!state.lastTime) {
+          state.lastTime = now;
+          requestAnimationFrame(loop);
+          return;
+        }
+
+        const rawDt = (now - state.lastTime) / 1000;
         
+        if (rawDt <= 0 || rawDt > 0.1) {
+          state.lastTime = now;
+          requestAnimationFrame(loop);
+          return;
+        }
+        
+        const dt = Math.min(rawDt, 0.033);
+        state.lastTime = now;
+
         const currentW = state.canvasW;
         const currentH = state.canvasH;
         const currentGroundY = state.groundY;
@@ -1536,44 +1492,13 @@
           }
         }
 
-                draw();
-                requestAnimationFrame(loop);
-              } catch (err) {
-                logError('GAME_LOOP', 'Error in game loop', err);
-                // Stop the game on critical loop error
-                state.running = false;
-              }
-            }
-      
-      function createParticles(x, y, color) {
-        for (let i = 0; i < 20; i++) {
-          state.particles.push({
-            x: x,
-            y: y,
-            vx: (Math.random() - 0.5) * 250,
-            vy: (Math.random() - 0.5) * 250,
-            color: color,
-            size: 3 + Math.random() * 5,
-            life: 0.6 + Math.random() * 0.6,
-            maxLife: 0.6 + Math.random() * 0.6,
-            alpha: 1,
-          });
-        }
-      }
-      
-      function addEffect(x, y, text, color) {
-        state.effects.push({
-          x: x,
-          y: y,
-          text: text,
-          color: color,
-          life: 1.5,
-          maxLife: 1.5,
-          alpha: 1,
-          size: 28,
-        });
+        draw();
+        requestAnimationFrame(loop);
       }
 
+      // ============================================================================
+      // DRAWING
+      // ============================================================================
       function draw() {
         const currentW = state.canvasW;
         const currentH = state.canvasH;
@@ -1862,11 +1787,9 @@
         ctx.restore();
       }
       
+      // Initial setup
       resizeCanvas();
       draw();
-      } catch (err) {
-        logError('CRITICAL', 'Error in game initialization', err);
-      }
     })();
   </script>
 </body>
