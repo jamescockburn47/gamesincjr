@@ -46,14 +46,21 @@ export default function GamePlayer({ game }: GamePlayerProps) {
 
   // Load game HTML
   useEffect(() => {
-    if (!isClient || !game.demoPath) return;
+    if (!isClient) return;
+    
+    const demoPath = game.demoPath;
+    if (!demoPath) {
+      setError('No demo path available');
+      setIsLoading(false);
+      return;
+    }
 
     const loadGame = async () => {
       try {
         setIsLoading(true);
         setError(null);
         
-        const response = await fetch(game.demoPath);
+        const response = await fetch(demoPath);
         if (!response.ok) {
           throw new Error(`Failed to load game: ${response.status}`);
         }
