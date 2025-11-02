@@ -904,28 +904,80 @@
           // Add class to body to prevent scrolling
           document.body.classList.add('game-running');
           
-          // Request fullscreen
-          try {
-            if (stage.requestFullscreen) {
-              await stage.requestFullscreen();
-              logError('FULLSCREEN', 'Fullscreen entered (standard)');
-            } else if (stage.webkitRequestFullscreen) {
-              await stage.webkitRequestFullscreen();
-              logError('FULLSCREEN', 'Fullscreen entered (webkit)');
-            } else if (stage.mozRequestFullScreen) {
-              await stage.mozRequestFullScreen();
-              logError('FULLSCREEN', 'Fullscreen entered (moz)');
-            } else if (stage.msRequestFullscreen) {
-              await stage.msRequestFullscreen();
-              logError('FULLSCREEN', 'Fullscreen entered (ms)');
-            } else {
-              logError('FULLSCREEN', 'Fullscreen API not available');
+          // Check if we're in an iframe
+          const isInIframe = window.self !== window.top;
+          
+          if (isInIframe) {
+            logError('FULLSCREEN', 'Running in iframe - requesting fullscreen on parent');
+            
+            // Try to request fullscreen on the iframe itself from parent
+            try {
+              // Send message to parent to request fullscreen on iframe
+              if (window.parent) {
+                window.parent.postMessage({ type: 'REQUEST_FULLSCREEN', source: 'happy-birthday-monkey' }, '*');
+                logError('FULLSCREEN', 'Message sent to parent for fullscreen');
+              }
+            } catch (err) {
+              logError('FULLSCREEN', 'Failed to communicate with parent', err);
             }
-          } catch (err) {
-            logError('FULLSCREEN', 'Fullscreen request failed', err);
+            
+            // Also try to request fullscreen on iframe element (might work in some browsers)
+            try {
+              const iframe = window.frameElement;
+              if (iframe && (iframe as any).requestFullscreen) {
+                await (iframe as any).requestFullscreen();
+                logError('FULLSCREEN', 'Iframe fullscreen entered');
+              }
+            } catch (err) {
+              logError('FULLSCREEN', 'Iframe fullscreen request failed', err);
+            }
+            
+            // Try requesting fullscreen on the stage element anyway (some browsers allow it)
+            try {
+              if (stage.requestFullscreen) {
+                await stage.requestFullscreen();
+                logError('FULLSCREEN', 'Stage fullscreen entered (from iframe)');
+              } else if (stage.webkitRequestFullscreen) {
+                await stage.webkitRequestFullscreen();
+                logError('FULLSCREEN', 'Stage fullscreen entered (webkit from iframe)');
+              }
+            } catch (err) {
+              logError('FULLSCREEN', 'Stage fullscreen from iframe failed', err);
+            }
+            
+            // Make stage fill viewport even without fullscreen
+            stage.style.position = 'fixed';
+            stage.style.top = '0';
+            stage.style.left = '0';
+            stage.style.width = '100vw';
+            stage.style.height = '100vh';
+            stage.style.zIndex = '9999';
+            
+            logError('FULLSCREEN', 'Stage set to fixed position (fullscreen-like)');
+          } else {
+            // Not in iframe - normal fullscreen request
+            try {
+              if (stage.requestFullscreen) {
+                await stage.requestFullscreen();
+                logError('FULLSCREEN', 'Fullscreen entered (standard)');
+              } else if (stage.webkitRequestFullscreen) {
+                await stage.webkitRequestFullscreen();
+                logError('FULLSCREEN', 'Fullscreen entered (webkit)');
+              } else if (stage.mozRequestFullScreen) {
+                await stage.mozRequestFullScreen();
+                logError('FULLSCREEN', 'Fullscreen entered (moz)');
+              } else if (stage.msRequestFullscreen) {
+                await stage.msRequestFullscreen();
+                logError('FULLSCREEN', 'Fullscreen entered (ms)');
+              } else {
+                logError('FULLSCREEN', 'Fullscreen API not available');
+              }
+            } catch (err) {
+              logError('FULLSCREEN', 'Fullscreen request failed', err);
+            }
           }
           
-          // Start game after a brief delay to ensure fullscreen is ready
+          // Start game after a brief delay to ensure fullscreen/viewport is ready
           setTimeout(() => {
             startGame();
           }, 300);

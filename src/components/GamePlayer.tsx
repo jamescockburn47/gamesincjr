@@ -43,6 +43,15 @@ export default function GamePlayer({ game }: GamePlayerProps) {
 
   useEffect(() => {
     if (!isClient) return;
+    
+    // Listen for fullscreen requests from iframe content
+    const handleMessage = (event: MessageEvent) => {
+      if (event.data?.type === 'REQUEST_FULLSCREEN' && event.data?.source === 'happy-birthday-monkey') {
+        enterFullscreen();
+      }
+    };
+    window.addEventListener('message', handleMessage);
+    
     const onFsChange = () => {
       const fsDoc = document as FullscreenDocument;
       const fsEl = document.fullscreenElement || fsDoc.webkitFullscreenElement || null;
@@ -53,6 +62,7 @@ export default function GamePlayer({ game }: GamePlayerProps) {
     const vendorDoc = document as Document & Partial<WebkitFullscreenEvents>;
     try { vendorDoc.addEventListener?.('webkitfullscreenchange', onFsChange as EventListener); } catch {}
     return () => {
+      window.removeEventListener('message', handleMessage);
       document.removeEventListener('fullscreenchange', onFsChange);
       try { vendorDoc.removeEventListener?.('webkitfullscreenchange', onFsChange as EventListener); } catch {}
     };
@@ -60,6 +70,19 @@ export default function GamePlayer({ game }: GamePlayerProps) {
 
   const enterFullscreen = async () => {
     try {
+      // Try to fullscreen the iframe first (better for embedded games)
+      if (iframeRef.current) {
+        const iframe = iframeRef.current as FullscreenElement;
+        if (iframe.requestFullscreen) {
+          await iframe.requestFullscreen();
+          return;
+        } else if (iframe.webkitRequestFullscreen) {
+          await iframe.webkitRequestFullscreen();
+          return;
+        }
+      }
+      
+      // Fallback to container fullscreen
       const target = containerRef.current;
       if (!target) return;
       const el = target as FullscreenElement;
