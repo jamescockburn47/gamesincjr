@@ -12,8 +12,10 @@ export const dynamic = 'force-dynamic';
 
 export default async function GamesPage() {
   const allGames = await getAllGames();
-  const regularGames = allGames.filter(game => !game.submissionId);
-  const playerGames = allGames.filter(game => game.submissionId);
+  // Filter out internal games (like happy-birthday-monkey)
+  const publicGames = allGames.filter(game => !game.internal);
+  const regularGames = publicGames.filter(game => !game.submissionId);
+  const playerGames = publicGames.filter(game => game.submissionId);
 
   return (
     <PageShell>

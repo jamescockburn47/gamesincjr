@@ -304,73 +304,46 @@
 
   <script type="module">
     (() => {
-      // Detect if game is embedded (in an iframe or injected into a container div)
-      // This check runs immediately, but we'll also re-check after DOM is ready
-      let isEmbedded = (() => {
+      // Simple embedded detection - check if we're in a container
+      let isEmbedded = false;
+      
+      function checkEmbedded() {
+        // Check for container classes that indicate embedding
+        if (document.querySelector('.game-embed-container') || 
+            document.querySelector('.game-viewport') || 
+            document.querySelector('.game-content-ref')) {
+          return true;
+        }
+        
+        // Check if any game element is inside a container
+        const h1 = document.querySelector('h1');
+        if (h1 && (h1.closest('.game-embed-container') || h1.closest('.aspect-video'))) {
+          return true;
+        }
+        
         // Check if in iframe
         try {
           if (window.self !== window.top) return true;
         } catch (e) {
-          // Cross-origin iframe - treat as embedded
           return true;
         }
-        // Check for GamePlayer's container class in document
-        if (document.querySelector('.game-viewport') || document.querySelector('.game-content-ref')) {
-          return true;
-        }
-        // Check for GameEmbed's container class
-        if (document.querySelector('.game-embed-container')) {
-          return true;
-        }
-        // Check if body is inside a game container (GameEmbed injects body content into container)
-        if (document.body?.closest('.game-embed-container')) {
-          return true;
-        }
-        // Check if any game elements exist and are in a container (more reliable after injection)
-        const testH1 = document.querySelector('h1');
-        if (testH1 && (testH1.closest('.game-embed-container') || testH1.closest('.aspect-video'))) {
-          return true;
-        }
+        
         return false;
-      })();
-      
-      // Re-check after DOM is ready for more reliable detection
-      if (document.readyState === 'loading') {
-        document.addEventListener('DOMContentLoaded', () => {
-          if (!isEmbedded) {
-            // Check again after DOM is ready
-            const bodyParent = document.body?.parentElement;
-            if (bodyParent && bodyParent !== document.documentElement) {
-              const parentClasses = bodyParent.className || '';
-              if (parentClasses.includes('game-viewport') || parentClasses.includes('game-content') || parentClasses.includes('game-embed-container')) {
-                isEmbedded = true;
-              }
-              // Also check if any ancestor has the class
-              if (bodyParent.closest('.game-embed-container') || bodyParent.closest('.aspect-video')) {
-                isEmbedded = true;
-              }
-            }
-            // Check body size vs viewport
-            const bodyRect = document.body?.getBoundingClientRect();
-            if (bodyRect && bodyRect.height > 0 && bodyRect.height < window.innerHeight * 0.9) {
-              isEmbedded = true;
-            }
-          }
-        });
-      } else {
-        // DOM already ready, check now
-        const bodyParent = document.body?.parentElement;
-        if (bodyParent && bodyParent !== document.documentElement) {
-          const parentClasses = bodyParent.className || '';
-          if (parentClasses.includes('game-viewport') || parentClasses.includes('game-content') || parentClasses.includes('game-embed-container')) {
-            isEmbedded = true;
-          }
-          // Also check if any ancestor has the class
-          if (bodyParent.closest('.game-embed-container') || bodyParent.closest('.aspect-video')) {
-            isEmbedded = true;
-          }
-        }
       }
+      
+      // Check embedded state after DOM is ready
+      function checkEmbeddedAfterDelay() {
+        isEmbedded = checkEmbedded();
+      }
+      
+      // Check multiple times to catch it
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', checkEmbeddedAfterDelay);
+      } else {
+        checkEmbeddedAfterDelay();
+      }
+      setTimeout(checkEmbeddedAfterDelay, 100);
+      setTimeout(checkEmbeddedAfterDelay, 300);
       
       // ERROR HANDLING AND LOGGING
       const ERROR_LOG = [];
@@ -1038,99 +1011,70 @@
       
       let autoStartInitiated = false;
       
-      // Function to check if embedded and auto-start
-      function checkEmbeddedAndStart() {
-        // First, check if game-embed-container exists anywhere in document (most reliable)
-        const embedContainer = document.querySelector('.game-embed-container');
-        if (embedContainer) {
-          isEmbedded = true;
-        }
+      // Function to auto-start game when embedded
+      function tryAutoStart() {
+        // Update embedded check
+        checkEmbeddedAfterDelay();
         
-        // Final check for embedded state by looking at DOM tree
-        const h1 = document.querySelector('h1');
-        if (h1) {
-          // Check if h1 is inside game-embed-container or aspect-video
-          if (isInGameViewport(h1) || h1.closest('.game-embed-container') || h1.closest('.aspect-video')) {
-            isEmbedded = true;
-          }
-        }
-        
-        // Also check if we're inside a container that suggests embedding
-        const stage = document.getElementById('stage');
-        if (stage && (stage.closest('.game-embed-container') || stage.closest('.aspect-video'))) {
-          isEmbedded = true;
-        }
-        
-        // Auto-start if embedded (only once)
-        if (isEmbedded && !autoStartInitiated) {
+        // If embedded and not already started, start the game
+        if (isEmbedded && !autoStartInitiated && !state.running) {
           autoStartInitiated = true;
-          // Add embedded class to stage for proper styling
+          console.log('[Happy Birthday Monkey] Auto-starting embedded game');
+          
+          const stage = document.getElementById('stage');
           if (stage) {
             stage.classList.add('embedded');
           }
           
-          // When embedded, hide description page and show stage immediately
-          if (descriptionPage) descriptionPage.style.display = 'none';
+          // Hide description page immediately
+          if (descriptionPage) {
+            descriptionPage.style.display = 'none';
+          }
           
-          // Wait for images to load, then auto-start
+          // Show stage
+          if (stage) {
+            stage.classList.remove('hidden');
+          }
+          
+          // Wait for images to load, then start game
           Promise.all([
             ...imageCache.monkeyFrames.map(img => new Promise(resolve => { 
-              img.onload = resolve; 
-              img.onerror = resolve; 
+              if (img.complete) resolve();
+              else { img.onload = resolve; img.onerror = resolve; }
             })),
             ...imageCache.balloons.map(img => new Promise(resolve => { 
-              img.onload = resolve; 
-              img.onerror = resolve; 
+              if (img.complete) resolve();
+              else { img.onload = resolve; img.onerror = resolve; }
             })),
             new Promise(resolve => { 
-              imageCache.number8Balloon.onload = resolve; 
-              imageCache.number8Balloon.onerror = resolve; 
+              if (imageCache.number8Balloon.complete) resolve();
+              else { imageCache.number8Balloon.onload = resolve; imageCache.number8Balloon.onerror = resolve; }
             }),
             ...imageCache.crocFrames.map(img => new Promise(resolve => { 
-              img.onload = resolve; 
-              img.onerror = resolve; 
+              if (img.complete) resolve();
+              else { img.onload = resolve; img.onerror = resolve; }
             })),
           ]).then(() => {
-            if (stage) stage.classList.remove('hidden');
             setTimeout(() => {
               startGameFlow();
-            }, 200);
+            }, 100);
           });
         }
       }
       
-      // Check immediately and also after delays to ensure we catch it
-      // Use requestAnimationFrame to ensure DOM is ready
-      requestAnimationFrame(() => {
-        checkEmbeddedAndStart();
-      });
-      setTimeout(checkEmbeddedAndStart, 50);
-      setTimeout(checkEmbeddedAndStart, 150);
-      setTimeout(checkEmbeddedAndStart, 500);
-      setTimeout(checkEmbeddedAndStart, 1000);
+      // Try to auto-start multiple times
+      setTimeout(tryAutoStart, 200);
+      setTimeout(tryAutoStart, 500);
+      setTimeout(tryAutoStart, 1000);
       
-      // Fallback: If game hasn't started after 1.5 seconds and we're clearly in a container, force start
+      // Final fallback
       setTimeout(() => {
         if (!autoStartInitiated && !state.running) {
-          const h1 = document.querySelector('h1');
-          const stage = document.getElementById('stage');
-          const containerCheck = document.querySelector('.game-embed-container') || document.querySelector('.aspect-video');
-          
-          // If we have game elements but they're in a container, definitely embedded
-          if (containerCheck || (h1 && h1.closest('.game-embed-container')) || (h1 && h1.closest('.aspect-video'))) {
-            console.log('[Happy Birthday Monkey] Detected embedded mode via fallback, forcing start');
+          const container = document.querySelector('.game-embed-container') || document.querySelector('.aspect-video');
+          if (container) {
+            console.log('[Happy Birthday Monkey] Force-starting: container detected');
             isEmbedded = true;
-            checkEmbeddedAndStart();
-          } else {
-            // Debug: log what we found
-            console.log('[Happy Birthday Monkey] Embedded detection:', {
-              hasH1: !!h1,
-              h1Parent: h1?.parentElement?.className,
-              hasContainer: !!containerCheck,
-              hasStage: !!stage,
-              autoStartInitiated,
-              stateRunning: state.running
-            });
+            tryAutoStart();
           }
         }
       }, 1500);

@@ -27,6 +27,7 @@ const GameSchema = z.object({
   localPath: z.string().optional(),
   submissionId: z.string().optional(), // Track if game comes from database
   creatorName: z.string().optional(), // Player who created the game
+  internal: z.boolean().optional(), // Internal games (not shown in listings)
 });
 
 export type Game = z.infer<typeof GameSchema>;
