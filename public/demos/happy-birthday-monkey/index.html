@@ -305,7 +305,8 @@
   <script type="module">
     (() => {
       // Detect if game is embedded (in an iframe or injected into a container div)
-      const isEmbedded = (() => {
+      // This check runs immediately, but we'll also re-check after DOM is ready
+      let isEmbedded = (() => {
         // Check if in iframe
         try {
           if (window.self !== window.top) return true;
@@ -313,25 +314,42 @@
           // Cross-origin iframe - treat as embedded
           return true;
         }
-        // Check if we're inside a container that's not the full viewport
-        // When GamePlayer injects, our body might be in a div
-        const bodyParent = document.body.parentElement;
-        if (bodyParent && bodyParent !== document.documentElement) {
-          // Check if parent has specific classes from GamePlayer
-          const parentClasses = bodyParent.className || '';
-          if (parentClasses.includes('game-viewport') || parentClasses.includes('game-content')) {
-            return true;
-          }
-        }
-        // Check body itself for container indicators
-        const bodyRect = document.body.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        // If body height is significantly less than viewport, likely embedded
-        if (bodyRect.height > 0 && bodyRect.height < viewportHeight * 0.9) {
+        // Check for GamePlayer's container class in document
+        if (document.querySelector('.game-viewport') || document.querySelector('.game-content-ref')) {
           return true;
         }
         return false;
       })();
+      
+      // Re-check after DOM is ready for more reliable detection
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', () => {
+          if (!isEmbedded) {
+            // Check again after DOM is ready
+            const bodyParent = document.body?.parentElement;
+            if (bodyParent && bodyParent !== document.documentElement) {
+              const parentClasses = bodyParent.className || '';
+              if (parentClasses.includes('game-viewport') || parentClasses.includes('game-content')) {
+                isEmbedded = true;
+              }
+            }
+            // Check body size vs viewport
+            const bodyRect = document.body?.getBoundingClientRect();
+            if (bodyRect && bodyRect.height > 0 && bodyRect.height < window.innerHeight * 0.9) {
+              isEmbedded = true;
+            }
+          }
+        });
+      } else {
+        // DOM already ready, check now
+        const bodyParent = document.body?.parentElement;
+        if (bodyParent && bodyParent !== document.documentElement) {
+          const parentClasses = bodyParent.className || '';
+          if (parentClasses.includes('game-viewport') || parentClasses.includes('game-content')) {
+            isEmbedded = true;
+          }
+        }
+      }
       
       // ERROR HANDLING AND LOGGING
       const ERROR_LOG = [];
@@ -979,43 +997,70 @@
 
       startBtn?.addEventListener('click', startGameFlow);
       
-      // Auto-start if embedded
-      if (isEmbedded) {
-        // Add embedded class to stage for proper styling
-        if (stage) {
-          stage.classList.add('embedded');
+      // Helper function to check if element is inside game-viewport container
+      function isInGameViewport(element) {
+        if (!element) return false;
+        let current = element;
+        while (current && current !== document.body) {
+          if (current.classList && (current.classList.contains('game-viewport') || current.classList.contains('game-content-ref'))) {
+            return true;
+          }
+          current = current.parentElement;
+        }
+        return false;
+      }
+      
+      let autoStartInitiated = false;
+      
+      // Function to check if embedded and auto-start
+      function checkEmbeddedAndStart() {
+        // Final check for embedded state by looking at DOM tree
+        const h1 = document.querySelector('h1');
+        if (h1 && isInGameViewport(h1)) {
+          isEmbedded = true;
         }
         
-        // When embedded, hide description page and show stage immediately
-        setTimeout(() => {
+        // Auto-start if embedded (only once)
+        if (isEmbedded && !autoStartInitiated) {
+          autoStartInitiated = true;
+          // Add embedded class to stage for proper styling
+          if (stage) {
+            stage.classList.add('embedded');
+          }
+          
+          // When embedded, hide description page and show stage immediately
           if (descriptionPage) descriptionPage.style.display = 'none';
-        }, 50);
-        
-        // Wait for images to load, then auto-start
-        Promise.all([
-          ...imageCache.monkeyFrames.map(img => new Promise(resolve => { 
-            img.onload = resolve; 
-            img.onerror = resolve; 
-          })),
-          ...imageCache.balloons.map(img => new Promise(resolve => { 
-            img.onload = resolve; 
-            img.onerror = resolve; 
-          })),
-          new Promise(resolve => { 
-            imageCache.number8Balloon.onload = resolve; 
-            imageCache.number8Balloon.onerror = resolve; 
-          }),
-          ...imageCache.crocFrames.map(img => new Promise(resolve => { 
-            img.onload = resolve; 
-            img.onerror = resolve; 
-          })),
-        ]).then(() => {
-          if (stage) stage.classList.remove('hidden');
-          setTimeout(() => {
-            startGameFlow();
-          }, 200);
-        });
+          
+          // Wait for images to load, then auto-start
+          Promise.all([
+            ...imageCache.monkeyFrames.map(img => new Promise(resolve => { 
+              img.onload = resolve; 
+              img.onerror = resolve; 
+            })),
+            ...imageCache.balloons.map(img => new Promise(resolve => { 
+              img.onload = resolve; 
+              img.onerror = resolve; 
+            })),
+            new Promise(resolve => { 
+              imageCache.number8Balloon.onload = resolve; 
+              imageCache.number8Balloon.onerror = resolve; 
+            }),
+            ...imageCache.crocFrames.map(img => new Promise(resolve => { 
+              img.onload = resolve; 
+              img.onerror = resolve; 
+            })),
+          ]).then(() => {
+            if (stage) stage.classList.remove('hidden');
+            setTimeout(() => {
+              startGameFlow();
+            }, 200);
+          });
+        }
       }
+      
+      // Check immediately and also after a short delay
+      checkEmbeddedAndStart();
+      setTimeout(checkEmbeddedAndStart, 150);
 
       restartBtn.addEventListener('click', () => {
         state.running = false;
