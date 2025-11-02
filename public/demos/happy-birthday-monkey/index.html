@@ -236,6 +236,8 @@
       bottom: 30px;
       left: 30px;
       right: 30px;
+      display: flex !important; /* Force visibility in fullscreen */
+      visibility: visible !important;
     }
 
     :fullscreen .control-btn,
@@ -575,18 +577,31 @@
         }
       }
 
-      document.addEventListener('fullscreenchange', () => {
-        setTimeout(resizeCanvas, 100);
-      });
-      document.addEventListener('webkitfullscreenchange', () => {
-        setTimeout(resizeCanvas, 100);
-      });
-      document.addEventListener('mozfullscreenchange', () => {
-        setTimeout(resizeCanvas, 100);
-      });
-      document.addEventListener('MSFullscreenChange', () => {
-        setTimeout(resizeCanvas, 100);
-      });
+      // Helper to check if fullscreen
+      function isFullscreen() {
+        return !!(document.fullscreenElement || 
+                 (document as any).webkitFullscreenElement || 
+                 (document as any).mozFullScreenElement || 
+                 (document as any).msFullscreenElement);
+      }
+
+      // Listen for fullscreen changes - ensure controls are visible
+      function handleFullscreenChange() {
+        setTimeout(() => {
+          resizeCanvas();
+          // Force controls to be visible in fullscreen on touch devices
+          if (isTouchDevice && isFullscreen()) {
+            touchControls.classList.add('visible');
+            touchControls.style.display = 'flex';
+            touchControls.style.visibility = 'visible';
+          }
+        }, 100);
+      }
+
+      document.addEventListener('fullscreenchange', handleFullscreenChange);
+      document.addEventListener('webkitfullscreenchange', handleFullscreenChange);
+      document.addEventListener('mozfullscreenchange', handleFullscreenChange);
+      document.addEventListener('MSFullscreenChange', handleFullscreenChange);
       
       window.addEventListener('resize', resizeCanvas);
 
@@ -686,6 +701,14 @@
           startGame();
           setTimeout(() => {
             requestFullscreen().catch(() => {});
+            // Explicitly show controls after fullscreen (even if fullscreen fails)
+            if (isTouchDevice) {
+              setTimeout(() => {
+                touchControls.classList.add('visible');
+                touchControls.style.display = 'flex';
+                touchControls.style.visibility = 'visible';
+              }, 200);
+            }
           }, 100);
         }
       });
@@ -799,7 +822,19 @@
         if (!now) now = performance.now();
         if (!state.lastTime) state.lastTime = now;
 
-        const dt = Math.min((now - state.lastTime) / 1000, 0.1);
+        // Calculate delta time with proper handling for inactive tabs
+        const rawDt = (now - state.lastTime) / 1000;
+        
+        // Skip if delta is too large (tab was inactive) or invalid
+        if (rawDt <= 0 || rawDt > 0.1) {
+          state.lastTime = now;
+          requestAnimationFrame(loop);
+          return;
+        }
+        
+        // Clamp delta time to prevent huge jumps and ensure consistent speed
+        // Cap at 33ms (30fps) for physics stability
+        const dt = Math.min(rawDt, 0.033);
         state.lastTime = now;
         
         const currentW = state.canvasW;
@@ -861,8 +896,8 @@
         state.monkey.x = Math.max(0, Math.min(currentW - state.monkey.width, state.monkey.x));
 
         state.decorations.forEach(d => {
-          d.rotation += d.speed;
-          d.y += (0.5 + d.depth * 0.5);
+          d.rotation += d.speed * dt * 60;
+          d.y += (0.5 + d.depth * 0.5) * dt * 60;
           if (d.y > currentH) d.y = -20;
         });
 
@@ -1037,8 +1072,8 @@
         
         for (let i = state.particles.length - 1; i >= 0; i--) {
           const p = state.particles[i];
-          p.x += p.vx * dt * 60;
-          p.y += p.vy * dt * 60;
+          p.x += p.vx * dt;
+          p.y += p.vy * dt;
           p.vy += 0.3 * dt * 60;
           p.life -= dt;
           p.alpha = Math.max(0, p.life / p.maxLife);
@@ -1049,7 +1084,7 @@
         
         for (let i = state.effects.length - 1; i >= 0; i--) {
           const e = state.effects[i];
-          e.y -= 50 * dt;
+          e.y -= 50 * dt * 60;
           e.life -= dt;
           e.alpha = Math.min(1, e.life / e.maxLife);
           if (e.life <= 0) {
