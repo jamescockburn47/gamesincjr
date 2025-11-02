@@ -6,6 +6,10 @@ interface GameEmbedProps {
   gamePath: string;
 }
 
+/**
+ * Embeds a standalone HTML game into the current page by fetching
+ * the markup from the public demos folder and executing its scripts.
+ */
 export default function GameEmbed({ gamePath }: GameEmbedProps) {
   const [html, setHtml] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -13,27 +17,38 @@ export default function GameEmbed({ gamePath }: GameEmbedProps) {
   const containerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
+    const abortController = new AbortController();
+
     const loadGame = async () => {
       try {
         setLoading(true);
         setError(null);
-        
-        const response = await fetch(gamePath);
+        setHtml(null);
+
+        const response = await fetch(gamePath, { signal: abortController.signal, cache: 'no-cache' });
         if (!response.ok) {
           throw new Error(`Failed to load game: ${response.status}`);
         }
-        
+
         const gameHtml = await response.text();
         setHtml(gameHtml);
       } catch (err) {
+        if (abortController.signal.aborted) {
+          return;
+        }
         setError(err instanceof Error ? err.message : 'Failed to load game');
         console.error('Game load error:', err);
       } finally {
-        setLoading(false);
+        if (!abortController.signal.aborted) {
+          setLoading(false);
+        }
       }
     };
 
     loadGame();
+    return () => {
+      abortController.abort();
+    };
   }, [gamePath]);
 
   useEffect(() => {
@@ -79,21 +94,21 @@ export default function GameEmbed({ gamePath }: GameEmbedProps) {
   }, [html]);
 
   return (
-    <>
-      <div ref={containerRef} className="absolute inset-0 w-full h-full game-embed-container" />
+    <div className="relative h-full w-full">
+      <div ref={containerRef} className="absolute inset-0 h-full w-full game-embed-container" />
       {loading && (
         <div className="absolute inset-0 flex items-center justify-center text-white">
           <div className="text-center">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
+            <div className="mx-auto mb-2 h-8 w-8 animate-spin rounded-full border-b-2 border-white"></div>
             <p className="text-sm">Loading game...</p>
           </div>
         </div>
       )}
       {error && (
-        <div className="absolute inset-0 flex items-center justify-center text-red-400 p-4">
+        <div className="absolute inset-0 flex items-center justify-center p-4 text-red-400">
           <p className="text-center">{error}</p>
         </div>
       )}
-    </>
+    </div>
   );
 }

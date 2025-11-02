@@ -55,12 +55,15 @@ export default function GamePlayer({ game }: GamePlayerProps) {
       return;
     }
 
+    const abortController = new AbortController();
+
     const loadGame = async () => {
       try {
         setIsLoading(true);
         setError(null);
+        setGameHtml(null);
 
-        const response = await fetch(demoPath);
+        const response = await fetch(demoPath, { signal: abortController.signal, cache: 'no-cache' });
         if (!response.ok) {
           throw new Error(`Failed to load game: ${response.status}`);
         }
@@ -68,14 +71,23 @@ export default function GamePlayer({ game }: GamePlayerProps) {
         const html = await response.text();
         setGameHtml(html);
       } catch (err) {
+        if (abortController.signal.aborted) {
+          return;
+        }
         setError(err instanceof Error ? err.message : 'Failed to load game');
         console.error('Game load error:', err);
       } finally {
-        setIsLoading(false);
+        if (!abortController.signal.aborted) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadGame();
+
+    return () => {
+      abortController.abort();
+    };
   }, [isClient, game.demoPath]);
 
   useEffect(() => {
