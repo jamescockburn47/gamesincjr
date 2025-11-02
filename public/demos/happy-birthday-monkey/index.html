@@ -319,7 +319,16 @@
           return true;
         }
         // Check for GameEmbed's container class
-        if (document.querySelector('.game-embed-container') || document.body?.closest('.game-embed-container')) {
+        if (document.querySelector('.game-embed-container')) {
+          return true;
+        }
+        // Check if body is inside a game container (GameEmbed injects body content into container)
+        if (document.body?.closest('.game-embed-container')) {
+          return true;
+        }
+        // Check if any game elements exist and are in a container (more reliable after injection)
+        const testH1 = document.querySelector('h1');
+        if (testH1 && (testH1.closest('.game-embed-container') || testH1.closest('.aspect-video'))) {
           return true;
         }
         return false;
@@ -1031,6 +1040,12 @@
       
       // Function to check if embedded and auto-start
       function checkEmbeddedAndStart() {
+        // First, check if game-embed-container exists anywhere in document (most reliable)
+        const embedContainer = document.querySelector('.game-embed-container');
+        if (embedContainer) {
+          isEmbedded = true;
+        }
+        
         // Final check for embedded state by looking at DOM tree
         const h1 = document.querySelector('h1');
         if (h1) {
@@ -1085,7 +1100,11 @@
       }
       
       // Check immediately and also after delays to ensure we catch it
-      checkEmbeddedAndStart();
+      // Use requestAnimationFrame to ensure DOM is ready
+      requestAnimationFrame(() => {
+        checkEmbeddedAndStart();
+      });
+      setTimeout(checkEmbeddedAndStart, 50);
       setTimeout(checkEmbeddedAndStart, 150);
       setTimeout(checkEmbeddedAndStart, 500);
       setTimeout(checkEmbeddedAndStart, 1000);
@@ -1095,10 +1114,23 @@
         if (!autoStartInitiated && !state.running) {
           const h1 = document.querySelector('h1');
           const stage = document.getElementById('stage');
+          const containerCheck = document.querySelector('.game-embed-container') || document.querySelector('.aspect-video');
+          
           // If we have game elements but they're in a container, definitely embedded
-          if ((h1 && h1.closest('.game-embed-container')) || (h1 && h1.closest('.aspect-video'))) {
+          if (containerCheck || (h1 && h1.closest('.game-embed-container')) || (h1 && h1.closest('.aspect-video'))) {
+            console.log('[Happy Birthday Monkey] Detected embedded mode via fallback, forcing start');
             isEmbedded = true;
             checkEmbeddedAndStart();
+          } else {
+            // Debug: log what we found
+            console.log('[Happy Birthday Monkey] Embedded detection:', {
+              hasH1: !!h1,
+              h1Parent: h1?.parentElement?.className,
+              hasContainer: !!containerCheck,
+              hasStage: !!stage,
+              autoStartInitiated,
+              stateRunning: state.running
+            });
           }
         }
       }, 1500);
