@@ -140,7 +140,7 @@
       width: 100vw;
       height: 100vh;
       pointer-events: none;
-      z-index: 1000;
+      z-index: 10000;
     }
 
     .controls.visible {
@@ -270,6 +270,15 @@
     :-ms-fullscreen canvas {
       width: 100vw;
       height: 100vh;
+    }
+
+    /* Ensure controls are visible in fullscreen */
+    :fullscreen .controls,
+    :-webkit-full-screen .controls,
+    :-moz-full-screen .controls,
+    :-ms-fullscreen .controls {
+      position: fixed;
+      z-index: 9999;
     }
   </style>
 </head>
@@ -760,15 +769,40 @@
       // Listen for fullscreen changes
       document.addEventListener('fullscreenchange', () => {
         setTimeout(resizeCanvas, 100);
+        // Ensure controls are visible in fullscreen on touch devices
+        if (isTouchDevice) {
+          const isFullscreen = !!document.fullscreenElement || !!(document as any).webkitFullscreenElement || !!(document as any).mozFullScreenElement || !!(document as any).msFullscreenElement;
+          if (isFullscreen) {
+            controls.classList.add('visible');
+          }
+        }
       });
       document.addEventListener('webkitfullscreenchange', () => {
         setTimeout(resizeCanvas, 100);
+        if (isTouchDevice) {
+          const isFullscreen = !!document.fullscreenElement || !!(document as any).webkitFullscreenElement || !!(document as any).mozFullScreenElement || !!(document as any).msFullscreenElement;
+          if (isFullscreen) {
+            controls.classList.add('visible');
+          }
+        }
       });
       document.addEventListener('mozfullscreenchange', () => {
         setTimeout(resizeCanvas, 100);
+        if (isTouchDevice) {
+          const isFullscreen = !!document.fullscreenElement || !!(document as any).webkitFullscreenElement || !!(document as any).mozFullScreenElement || !!(document as any).msFullscreenElement;
+          if (isFullscreen) {
+            controls.classList.add('visible');
+          }
+        }
       });
       document.addEventListener('MSFullscreenChange', () => {
         setTimeout(resizeCanvas, 100);
+        if (isTouchDevice) {
+          const isFullscreen = !!document.fullscreenElement || !!(document as any).webkitFullscreenElement || !!(document as any).mozFullScreenElement || !!(document as any).msFullscreenElement;
+          if (isFullscreen) {
+            controls.classList.add('visible');
+          }
+        }
       });
       
       // Resize canvas on window resize ONLY

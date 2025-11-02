@@ -32,10 +32,32 @@ const nextConfig: NextConfig = {
               "font-src 'self' data:",
               "connect-src 'self' https://api.anthropic.com https://api.openai.com",
               "frame-src 'self'",
-              "frame-ancestors 'none'",
+              "frame-ancestors 'self'",
               "base-uri 'self'",
               "form-action 'self'",
             ].join('; '),
+          },
+        ],
+      },
+      {
+        source: '/api/games/:path*/demo',
+        headers: [
+          {
+            key: 'Content-Security-Policy',
+            value: [
+              "default-src 'self'",
+              "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
+              "style-src 'self' 'unsafe-inline'",
+              "img-src 'self' data: blob:",
+              "font-src 'self' data:",
+              "connect-src 'self'",
+              "frame-src 'self'",
+              "frame-ancestors 'self'",
+            ].join('; '),
+          },
+          {
+            key: 'X-Frame-Options',
+            value: 'SAMEORIGIN',
           },
         ],
       },
