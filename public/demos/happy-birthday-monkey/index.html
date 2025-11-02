@@ -240,6 +240,33 @@
       transform: translateY(0);
     }
 
+    .fullscreen-btn {
+      position: absolute;
+      top: 10px;
+      right: 10px;
+      z-index: 100;
+      padding: 10px 16px;
+      font-size: 14px;
+      font-weight: 700;
+      color: white;
+      background: rgba(0, 0, 0, 0.6);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+      border-radius: 8px;
+      cursor: pointer;
+      backdrop-filter: blur(4px);
+      transition: all 0.2s;
+    }
+
+    .fullscreen-btn:hover {
+      background: rgba(0, 0, 0, 0.8);
+      border-color: rgba(255, 255, 255, 0.5);
+      transform: scale(1.05);
+    }
+
+    .fullscreen-btn:active {
+      transform: scale(0.95);
+    }
+
     .heart {
       display: inline-block;
       color: #ff6b9d;
@@ -294,6 +321,9 @@
   <!-- Fullscreen Game Stage (hidden until game starts) -->
   <div class="stage hidden" id="stage">
     <canvas id="game" width="900" height="506" aria-label="Happy 8th Birthday Henry Monkey game"></canvas>
+    
+    <!-- Fullscreen button (shown during gameplay) -->
+    <button id="fullscreenBtn" class="fullscreen-btn" style="display: none;" aria-label="Enter fullscreen">⛶ Fullscreen</button>
     
     <div id="gameOverOverlay" class="overlay hidden">
       <h2 id="gameOverTitle">Game Over!</h2>
@@ -367,6 +397,7 @@
       const descriptionPage = document.getElementById('descriptionPage');
       const gameOverOverlay = document.getElementById('gameOverOverlay');
       const startBtn = document.getElementById('startBtn');
+      const fullscreenBtn = document.getElementById('fullscreenBtn');
       const restartBtn = document.getElementById('restartBtn');
       const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
       const scoreEl = document.getElementById('score');
@@ -615,11 +646,7 @@
       // FULLSCREEN HANDLING
       // ============================================================================
       function requestFullscreen() {
-        if (isEmbedded) {
-          logError('FULLSCREEN', 'Skipping fullscreen (embedded mode)');
-          return Promise.resolve();
-        }
-
+        // Always try fullscreen - even when embedded, it may work (e.g., user gesture)
         const elem = stage;
         
         if (elem.requestFullscreen) {
@@ -655,6 +682,39 @@
           document.msExitFullscreen();
         }
       }
+      
+      // Update fullscreen button state
+      function updateFullscreenButton() {
+        if (!fullscreenBtn) return;
+        const isFs = !!document.fullscreenElement || !!(document as any).webkitFullscreenElement;
+        if (isFs) {
+          fullscreenBtn.textContent = '⛶ Exit Fullscreen';
+        } else {
+          fullscreenBtn.textContent = '⛶ Fullscreen';
+        }
+      }
+      
+      // Fullscreen button click handler
+      if (fullscreenBtn) {
+        fullscreenBtn.addEventListener('click', async () => {
+          const isFs = !!document.fullscreenElement || !!(document as any).webkitFullscreenElement;
+          if (isFs) {
+            exitFullscreen();
+          } else {
+            await requestFullscreen();
+            resizeCanvas();
+          }
+        });
+      }
+      
+      // Listen for fullscreen changes
+      document.addEventListener('fullscreenchange', updateFullscreenButton);
+      document.addEventListener('webkitfullscreenchange', updateFullscreenButton);
+      document.addEventListener('mozfullscreenchange', updateFullscreenButton);
+      document.addEventListener('MSFullscreenChange', updateFullscreenButton);
+      
+      // Initial button state
+      updateFullscreenButton();
 
       // ============================================================================
       // CANVAS RESIZE HANDLING
@@ -960,18 +1020,23 @@
           }
         }
         
+        // Show fullscreen button when game starts
+        if (fullscreenBtn) {
+          fullscreenBtn.style.display = 'block';
+        }
+        
         // Add running class to body (only if not embedded)
         if (!isEmbedded) {
           document.body.classList.add('game-running');
         }
         
-        // Request fullscreen (only if not embedded)
-        if (!isEmbedded) {
-          try {
-            await requestFullscreen();
-            logError('START', 'Fullscreen requested');
-            
-            // Wait for fullscreen event before starting
+        // Always try to request fullscreen (even when embedded, browser may allow it)
+        try {
+          await requestFullscreen();
+          logError('START', 'Fullscreen requested');
+          
+          if (!isEmbedded) {
+            // Standalone mode: wait for fullscreen event before starting
             document.addEventListener('fullscreenchange', function onFullscreen() {
               if (document.fullscreenElement === stage) {
                 document.removeEventListener('fullscreenchange', onFullscreen);
@@ -990,14 +1055,17 @@
                 startGame();
               }
             }, 500);
-            
-          } catch (err) {
-            logError('START', 'Fullscreen failed, starting anyway', err);
-            resizeCanvas();
-            startGame();
+          } else {
+            // Embedded mode: try fullscreen but don't wait - start immediately
+            setTimeout(() => {
+              resizeCanvas();
+              startGame();
+            }, 100);
           }
-        } else {
-          // Embedded mode: start immediately
+          
+        } catch (err) {
+          logError('START', 'Fullscreen failed, starting anyway', err);
+          // Start game even if fullscreen fails
           setTimeout(() => {
             resizeCanvas();
             startGame();
