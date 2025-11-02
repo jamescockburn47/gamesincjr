@@ -11,6 +11,8 @@ type FullscreenDocument = Document & {
 
 type FullscreenElement = HTMLElement & {
   webkitRequestFullscreen?: () => Promise<void> | void;
+  mozRequestFullScreen?: () => Promise<void> | void;
+  msRequestFullscreen?: () => Promise<void> | void;
 };
 
 interface WebkitFullscreenEvents {
@@ -94,8 +96,8 @@ export default function GamePlayer({ game }: GamePlayerProps) {
       const el = target as FullscreenElement;
       if (el.requestFullscreen) await el.requestFullscreen();
       else if (el.webkitRequestFullscreen) await el.webkitRequestFullscreen();
-      else if ((el as any).mozRequestFullScreen) await (el as any).mozRequestFullScreen();
-      else if ((el as any).msRequestFullscreen) await (el as any).msRequestFullscreen();
+      else if (el.mozRequestFullScreen) await el.mozRequestFullScreen();
+      else if (el.msRequestFullscreen) await el.msRequestFullscreen();
     } catch (err) {
       console.error('Fullscreen error:', err);
     }
