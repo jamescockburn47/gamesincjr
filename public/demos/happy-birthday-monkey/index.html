@@ -165,11 +165,20 @@
       touch-action: none; /* Prevent default touch behaviors when game is running */
       z-index: 9999;
     }
+    
+    /* When embedded, use relative positioning instead of fixed */
+    .stage.embedded {
+      position: relative;
+      width: 100%;
+      height: 100%;
+      min-height: 400px;
+      aspect-ratio: 16 / 9;
+    }
 
     canvas {
       display: block;
-      width: 100vw;
-      height: 100vh;
+      width: 100%;
+      height: 100%;
       touch-action: none;
       cursor: pointer;
     }
@@ -295,6 +304,35 @@
 
   <script type="module">
     (() => {
+      // Detect if game is embedded (in an iframe or injected into a container div)
+      const isEmbedded = (() => {
+        // Check if in iframe
+        try {
+          if (window.self !== window.top) return true;
+        } catch (e) {
+          // Cross-origin iframe - treat as embedded
+          return true;
+        }
+        // Check if we're inside a container that's not the full viewport
+        // When GamePlayer injects, our body might be in a div
+        const bodyParent = document.body.parentElement;
+        if (bodyParent && bodyParent !== document.documentElement) {
+          // Check if parent has specific classes from GamePlayer
+          const parentClasses = bodyParent.className || '';
+          if (parentClasses.includes('game-viewport') || parentClasses.includes('game-content')) {
+            return true;
+          }
+        }
+        // Check body itself for container indicators
+        const bodyRect = document.body.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        // If body height is significantly less than viewport, likely embedded
+        if (bodyRect.height > 0 && bodyRect.height < viewportHeight * 0.9) {
+          return true;
+        }
+        return false;
+      })();
+      
       // ERROR HANDLING AND LOGGING
       const ERROR_LOG = [];
       function logError(category, message, error = null) {
@@ -306,7 +344,8 @@
           userAgent: navigator.userAgent,
           touchDevice: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
           fullscreen: !!document.fullscreenElement,
-          windowSize: { w: window.innerWidth, h: window.innerHeight }
+          windowSize: { w: window.innerWidth, h: window.innerHeight },
+          embedded: isEmbedded
         };
         ERROR_LOG.push(entry);
         console.error(`[${category}]`, message, error || '');
@@ -889,50 +928,94 @@
         previewCtx.fillText('Happy 8th Birthday Henry!', w/2, 50);
       }
 
-      startBtn.addEventListener('click', async () => {
+      async function startGameFlow() {
         try {
           if (state.running) return;
           
-          logError('USER_ACTION', 'Start button clicked');
+          logError('USER_ACTION', isEmbedded ? 'Auto-starting embedded game' : 'Start button clicked');
           
           // Hide description page
-          descriptionPage.classList.add('hidden');
+          if (descriptionPage) descriptionPage.classList.add('hidden');
           
           // Show game stage
-          stage.classList.remove('hidden');
+          if (stage) stage.classList.remove('hidden');
           
-          // Add class to body to prevent scrolling
-          document.body.classList.add('game-running');
-          
-          // Request fullscreen on stage element
-          try {
-            if (stage.requestFullscreen) {
-              await stage.requestFullscreen();
-              logError('FULLSCREEN', 'Fullscreen entered (standard)');
-            } else if (stage.webkitRequestFullscreen) {
-              await stage.webkitRequestFullscreen();
-              logError('FULLSCREEN', 'Fullscreen entered (webkit)');
-            } else if ((stage as any).mozRequestFullScreen) {
-              await (stage as any).mozRequestFullScreen();
-              logError('FULLSCREEN', 'Fullscreen entered (moz)');
-            } else if ((stage as any).msRequestFullscreen) {
-              await (stage as any).msRequestFullscreen();
-              logError('FULLSCREEN', 'Fullscreen entered (ms)');
-            } else {
-              logError('FULLSCREEN', 'Fullscreen API not available');
-            }
-          } catch (err) {
-            logError('FULLSCREEN', 'Fullscreen request failed', err);
+          // Add class to body to prevent scrolling (only if not embedded)
+          if (!isEmbedded) {
+            document.body.classList.add('game-running');
           }
           
-          // Start game after a brief delay to ensure fullscreen/viewport is ready
+          // Request fullscreen on stage element (only if not embedded)
+          if (!isEmbedded) {
+            try {
+              if (stage.requestFullscreen) {
+                await stage.requestFullscreen();
+                logError('FULLSCREEN', 'Fullscreen entered (standard)');
+              } else if (stage.webkitRequestFullscreen) {
+                await stage.webkitRequestFullscreen();
+                logError('FULLSCREEN', 'Fullscreen entered (webkit)');
+              } else if ((stage as any).mozRequestFullScreen) {
+                await (stage as any).mozRequestFullScreen();
+                logError('FULLSCREEN', 'Fullscreen entered (moz)');
+              } else if ((stage as any).msRequestFullscreen) {
+                await (stage as any).msRequestFullscreen();
+                logError('FULLSCREEN', 'Fullscreen entered (ms)');
+              } else {
+                logError('FULLSCREEN', 'Fullscreen API not available');
+              }
+            } catch (err) {
+              logError('FULLSCREEN', 'Fullscreen request failed', err);
+            }
+          }
+          
+          // Start game after a brief delay to ensure viewport is ready
           setTimeout(() => {
             startGame();
-          }, 300);
+          }, isEmbedded ? 100 : 300);
         } catch (err) {
-          logError('CRITICAL', 'Error in start button handler', err);
+          logError('CRITICAL', 'Error in start game flow', err);
         }
-      });
+      }
+
+      startBtn?.addEventListener('click', startGameFlow);
+      
+      // Auto-start if embedded
+      if (isEmbedded) {
+        // Add embedded class to stage for proper styling
+        if (stage) {
+          stage.classList.add('embedded');
+        }
+        
+        // When embedded, hide description page and show stage immediately
+        setTimeout(() => {
+          if (descriptionPage) descriptionPage.style.display = 'none';
+        }, 50);
+        
+        // Wait for images to load, then auto-start
+        Promise.all([
+          ...imageCache.monkeyFrames.map(img => new Promise(resolve => { 
+            img.onload = resolve; 
+            img.onerror = resolve; 
+          })),
+          ...imageCache.balloons.map(img => new Promise(resolve => { 
+            img.onload = resolve; 
+            img.onerror = resolve; 
+          })),
+          new Promise(resolve => { 
+            imageCache.number8Balloon.onload = resolve; 
+            imageCache.number8Balloon.onerror = resolve; 
+          }),
+          ...imageCache.crocFrames.map(img => new Promise(resolve => { 
+            img.onload = resolve; 
+            img.onerror = resolve; 
+          })),
+        ]).then(() => {
+          if (stage) stage.classList.remove('hidden');
+          setTimeout(() => {
+            startGameFlow();
+          }, 200);
+        });
+      }
 
       restartBtn.addEventListener('click', () => {
         state.running = false;
