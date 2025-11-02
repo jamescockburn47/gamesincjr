@@ -290,7 +290,7 @@
     <div class="start-content">
       <h1>🎉 Happy 8th Birthday Henry! 🎉</h1>
       <p class="tagline">Jump and catch balloons while avoiding snapping crocodiles! <span class="heart">💝</span></p>
-      <button id="startBtn" class="start-button" onclick="window.startHenryGame()">Start Now</button>
+      <button id="startBtn" class="start-button">Start Now</button>
     </div>
   </div>
 
@@ -429,6 +429,76 @@
       const fullscreenBtn = document.getElementById('fullscreenBtn');
       const restartBtn = document.getElementById('restartBtn');
       const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+      
+      // ATTACH START BUTTON HANDLER IMMEDIATELY
+      if (startBtn) {
+        console.log('[Henry] Found start button, attaching click handler NOW');
+        const handleStart = async () => {
+          console.log('[Henry] BUTTON CLICKED - handler fired!');
+          
+          // Hide start screen
+          if (startScreen) startScreen.style.display = 'none';
+          
+          // Show stage
+          if (stage) stage.classList.remove('hidden');
+          
+          // Show fullscreen button
+          if (fullscreenBtn) fullscreenBtn.style.display = 'block';
+          
+          // Lock body
+          document.body.classList.add('game-running');
+          
+          // Go fullscreen
+          try {
+            if (stage) {
+              if (stage.requestFullscreen) await stage.requestFullscreen();
+              else if (stage.webkitRequestFullscreen) await stage.webkitRequestFullscreen();
+              else if (stage.mozRequestFullScreen) await stage.mozRequestFullScreen();
+              else if (stage.msRequestFullscreen) await stage.msRequestFullscreen();
+            }
+          } catch (e) {
+            console.log('[Henry] Fullscreen error:', e);
+          }
+          
+          // Start game
+          setTimeout(() => {
+            resizeCanvas();
+            startGame();
+          }, 200);
+        };
+        
+        startBtn.onclick = handleStart;
+        startBtn.addEventListener('click', handleStart, true);
+        startBtn.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          handleStart();
+        }, true);
+        
+        console.log('[Henry] Start button handler attached');
+      } else {
+        console.error('[Henry] START BUTTON NOT FOUND!');
+        // Retry finding it
+        setTimeout(() => {
+          const retryBtn = document.getElementById('startBtn');
+          if (retryBtn) {
+            console.log('[Henry] Found button on retry, attaching handler');
+            retryBtn.onclick = async () => {
+              console.log('[Henry] Retry handler clicked');
+              if (startScreen) startScreen.style.display = 'none';
+              if (stage) {
+                stage.classList.remove('hidden');
+                try {
+                  if (stage.requestFullscreen) await stage.requestFullscreen();
+                } catch (e) {}
+                setTimeout(() => {
+                  resizeCanvas();
+                  startGame();
+                }, 200);
+              }
+            };
+          }
+        }, 500);
+      }
       const scoreEl = document.getElementById('score');
       const livesEl = document.getElementById('lives');
       const bestEl = document.getElementById('best');
