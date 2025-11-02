@@ -309,6 +309,77 @@
     </div>
   </div>
 
+  <!-- Global start function - defined BEFORE module script -->
+  <script>
+    // Define global function immediately so inline onclick works
+    window.startHenryGame = async function() {
+      console.log('[Henry Game] START BUTTON CLICKED - function called!');
+      
+      // Get elements directly - don't rely on closures
+      const screen = document.getElementById('startScreen');
+      const gameStage = document.getElementById('stage');
+      const fsBtn = document.getElementById('fullscreenBtn');
+      
+      if (!gameStage) {
+        console.error('[Henry Game] Stage not found!');
+        alert('Game stage not found. Please refresh the page.');
+        return;
+      }
+      
+      console.log('[Henry Game] Hiding start screen, showing stage');
+      
+      // Hide start screen
+      if (screen) {
+        screen.style.display = 'none';
+      }
+      
+      // Show game stage
+      gameStage.classList.remove('hidden');
+      
+      // Show fullscreen button
+      if (fsBtn) {
+        fsBtn.style.display = 'block';
+      }
+      
+      // Lock body
+      document.body.classList.add('game-running');
+      
+      // Go fullscreen
+      try {
+        if (gameStage.requestFullscreen) {
+          await gameStage.requestFullscreen().catch(e => console.log('Fullscreen error:', e));
+        } else if (gameStage.webkitRequestFullscreen) {
+          await gameStage.webkitRequestFullscreen();
+        } else if (gameStage.mozRequestFullScreen) {
+          await gameStage.mozRequestFullScreen();
+        } else if (gameStage.msRequestFullscreen) {
+          await gameStage.msRequestFullscreen();
+        }
+        console.log('[Henry Game] Fullscreen requested');
+      } catch (err) {
+        console.log('[Henry Game] Fullscreen request failed:', err);
+      }
+      
+      // Call the game's start function if it exists
+      if (window.startHenryGameInternal) {
+        setTimeout(() => {
+          window.startHenryGameInternal();
+        }, 200);
+      } else {
+        console.error('[Henry Game] Internal start function not found!');
+        // Fallback: try to trigger resize and find start function
+        setTimeout(() => {
+          const resizeFn = window.resizeHenryCanvas;
+          const startFn = window.startHenryGameStart;
+          if (resizeFn) resizeFn();
+          if (startFn) startFn();
+        }, 200);
+      }
+    };
+    
+    console.log('[Henry Game] Global start function defined on window');
+  </script>
+
   <script type="module">
     (() => {
       // ============================================================================
@@ -915,55 +986,14 @@
 
 
       // ============================================================================
-      // GLOBAL START FUNCTION - Simple, reliable launch
+      // EXPOSE FUNCTIONS TO WINDOW FOR GLOBAL START FUNCTION
       // ============================================================================
-      window.startHenryGame = async function() {
-        console.log('[Henry Game] Start button clicked');
-        
-        if (state.running) {
-          console.log('[Henry Game] Already running');
-          return;
-        }
-        
-        // Hide start screen immediately
-        const screen = document.getElementById('startScreen');
-        if (screen) screen.style.display = 'none';
-        
-        // Show game stage
-        const gameStage = document.getElementById('stage');
-        if (gameStage) {
-          gameStage.classList.remove('hidden');
-        }
-        
-        // Show fullscreen button
-        const fsBtn = document.getElementById('fullscreenBtn');
-        if (fsBtn) fsBtn.style.display = 'block';
-        
-        // Lock body
-        document.body.classList.add('game-running');
-        
-        // Go fullscreen
-        try {
-          if (gameStage) {
-            if (gameStage.requestFullscreen) {
-              await gameStage.requestFullscreen();
-            } else if (gameStage.webkitRequestFullscreen) {
-              await gameStage.webkitRequestFullscreen();
-            } else if (gameStage.mozRequestFullScreen) {
-              await gameStage.mozRequestFullScreen();
-            } else if (gameStage.msRequestFullscreen) {
-              await gameStage.msRequestFullscreen();
-            }
-          }
-        } catch (err) {
-          console.log('[Henry Game] Fullscreen request failed:', err);
-        }
-        
-        // Wait a moment for fullscreen, then start
-        setTimeout(() => {
-          resizeCanvas();
-          startGame();
-        }, 200);
+      // Expose resizeCanvas and startGame to window so global function can call them
+      window.resizeHenryCanvas = resizeCanvas;
+      window.startHenryGameStart = startGame;
+      window.startHenryGameInternal = function() {
+        resizeCanvas();
+        startGame();
       };
 
       // ============================================================================
