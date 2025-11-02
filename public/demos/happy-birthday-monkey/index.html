@@ -145,6 +145,9 @@
       transition: transform 0.2s, box-shadow 0.2s;
       touch-action: manipulation;
       margin-top: 20px;
+      position: relative;
+      z-index: 10001;
+      pointer-events: auto;
     }
 
     .start-button:hover {
@@ -1041,10 +1044,73 @@
       // ============================================================================
       // BUTTON EVENT HANDLERS
       // ============================================================================
-      startBtn.addEventListener('click', () => {
-        logError('USER_ACTION', 'Start button clicked');
-        startGameFlow();
-      });
+      // Button event handlers - ensure they're attached
+      function attachButtonHandlers() {
+        if (!startBtn) {
+          console.error('[Happy Birthday Monkey] Start button not found!');
+          logError('CRITICAL', 'Start button not found');
+          return;
+        }
+        
+        console.log('[Happy Birthday Monkey] Attaching start button handler');
+        
+        // Remove any existing listeners
+        const newStartBtn = startBtn.cloneNode(true);
+        startBtn.parentNode?.replaceChild(newStartBtn, startBtn);
+        const actualStartBtn = document.getElementById('startBtn');
+        
+        if (!actualStartBtn) {
+          console.error('[Happy Birthday Monkey] Could not find start button after clone');
+          return;
+        }
+        
+        actualStartBtn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('[Happy Birthday Monkey] Start button clicked!');
+          logError('USER_ACTION', 'Start button clicked');
+          try {
+            await startGameFlow();
+          } catch (err) {
+            console.error('[Happy Birthday Monkey] Error in startGameFlow:', err);
+            logError('CRITICAL', 'Error starting game', err);
+          }
+        });
+        
+        // Also handle mouseup/touchend
+        actualStartBtn.addEventListener('mouseup', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('[Happy Birthday Monkey] Start button mouseup');
+          actualStartBtn.click();
+        });
+        
+        actualStartBtn.addEventListener('touchend', (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          console.log('[Happy Birthday Monkey] Start button touchend');
+          actualStartBtn.click();
+        });
+        
+        // Keyboard support
+        actualStartBtn.addEventListener('keydown', (e) => {
+          if (e.key === 'Enter' || e.key === ' ') {
+            e.preventDefault();
+            actualStartBtn.click();
+          }
+        });
+      }
+      
+      // Attach handlers when DOM is ready
+      if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', attachButtonHandlers);
+      } else {
+        attachButtonHandlers();
+      }
+      
+      // Fallback - try again after a short delay
+      setTimeout(attachButtonHandlers, 100);
+      setTimeout(attachButtonHandlers, 500);
       
       restartBtn.addEventListener('click', () => {
         logError('USER_ACTION', 'Restart button clicked');
