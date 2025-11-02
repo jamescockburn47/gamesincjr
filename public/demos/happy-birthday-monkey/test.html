@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Happy Birthday Monkey - Test Page</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-result {
+      padding: 10px;
+      margin: 5px 0;
+      border-radius: 4px;
+    }
+    .pass {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .fail {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .warning {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeaa7;
+    }
+    button {
+      padding: 10px 20px;
+      font-size: 16px;
+      margin: 5px;
+      cursor: pointer;
+      border: none;
+      border-radius: 4px;
+      background: #007bff;
+      color: white;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    #console-output {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Happy Birthday Monkey - Automated Test Suite</h1>
+  
+  <div class="test-section">
+    <h2>Test Controls</h2>
+    <button onclick="runAllTests()">Run All Tests</button>
+    <button onclick="clearResults()">Clear Results</button>
+    <button onclick="loadGameInIframe()">Load Game in Iframe</button>
+  </div>
+
+  <div class="test-section">
+    <h2>Test Results</h2>
+    <div id="test-results"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Console Output</h2>
+    <div id="console-output"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Game Preview</h2>
+    <iframe id="game-iframe" src="index.html" width="100%" height="600" style="border: 2px solid #ccc; border-radius: 4px; display: none;"></iframe>
+  </div>
+
+  <script>
+    const results = [];
+    const originalConsoleLog = console.log;
+    const originalConsoleError = console.error;
+    const originalConsoleWarn = console.warn;
+    const consoleOutput = [];
+
+    // Capture console output
+    console.log = function(...args) {
+      originalConsoleLog.apply(console, args);
+      consoleOutput.push({ type: 'log', message: args.join(' '), time: new Date().toISOString() });
+      updateConsoleOutput();
+    };
+
+    console.error = function(...args) {
+      originalConsoleError.apply(console, args);
+      consoleOutput.push({ type: 'error', message: args.join(' '), time: new Date().toISOString() });
+      updateConsoleOutput();
+    };
+
+    console.warn = function(...args) {
+      originalConsoleWarn.apply(console, args);
+      consoleOutput.push({ type: 'warn', message: args.join(' '), time: new Date().toISOString() });
+      updateConsoleOutput();
+    };
+
+    function updateConsoleOutput() {
+      const output = document.getElementById('console-output');
+      const recent = consoleOutput.slice(-50);
+      output.textContent = recent.map(item => 
+        `[${item.time.split('T')[1].split('.')[0]}] ${item.type.toUpperCase()}: ${item.message}`
+      ).join('\n');
+      output.scrollTop = output.scrollHeight;
+    }
+
+    function addResult(testName, passed, message) {
+      results.push({ testName, passed, message, time: new Date().toISOString() });
+      const resultsDiv = document.getElementById('test-results');
+      const resultDiv = document.createElement('div');
+      resultDiv.className = `test-result ${passed ? 'pass' : 'fail'}`;
+      resultDiv.innerHTML = `<strong>${passed ? '✅' : '❌'} ${testName}</strong><br>${message}`;
+      resultsDiv.appendChild(resultDiv);
+    }
+
+    function clearResults() {
+      results.length = 0;
+      document.getElementById('test-results').innerHTML = '';
+      consoleOutput.length = 0;
+      updateConsoleOutput();
+    }
+
+    async function testFileExists() {
+      try {
+        const response = await fetch('index.html', { method: 'HEAD' });
+        addResult('File Exists', response.ok, 
+          response.ok ? 'Game file exists and is accessible' : `HTTP ${response.status}`);
+        return response.ok;
+      } catch (error) {
+        addResult('File Exists', false, `Error: ${error.message}`);
+        return false;
+      }
+    }
+
+    async function testFileContent() {
+      try {
+        const response = await fetch('index.html');
+        const html = await response.text();
+        
+        const checks = [
+          { name: 'Has HTML5 doctype', test: /<!DOCTYPE html>/i.test(html) },
+          { name: 'Has canvas element', test: /<canvas/i.test(html) },
+          { name: 'Has start button', test: /id=["']startBtn["']/i.test(html) },
+          { name: 'Has description page', test: /id=["']descriptionPage["']/i.test(html) },
+          { name: 'Has game stage', test: /id=["']stage["']/i.test(html) },
+          { name: 'Has touch event handlers', test: /touchstart|touchmove|touchend/i.test(html) },
+          { name: 'Has fullscreen code', test: /requestFullscreen|webkitRequestFullscreen/i.test(html) },
+          { name: 'Has game loop', test: /requestAnimationFrame|loop\s*\(/i.test(html) },
+          { name: 'No old joystick code', test: !/joystick|jump-button|control-btn/i.test(html) },
+        ];
+
+        let passed = 0;
+        checks.forEach(check => {
+          if (check.test) passed++;
+          addResult(check.name, check.test, check.test ? 'Found' : 'Missing');
+        });
+
+        addResult('Content Structure', passed === checks.length, 
+          `${passed}/${checks.length} content checks passed`);
+        
+        return passed === checks.length;
+      } catch (error) {
+        addResult('File Content', false, `Error: ${error.message}`);
+        return false;
+      }
+    }
+
+    function testJavaScriptSyntax() {
+      return new Promise((resolve) => {
+        fetch('index.html')
+          .then(response => response.text())
+          .then(html => {
+            const scriptMatches = html.match(/<script[^>]*>([\s\S]*?)<\/script>/gi);
+            if (!scriptMatches) {
+              addResult('JavaScript Syntax', false, 'No script tags found');
+              resolve(false);
+              return;
+            }
+
+            let errors = [];
+            scriptMatches.forEach((script, index) => {
+              // Extract script content
+              const content = script.replace(/<script[^>]*>|<\/script>/gi, '');
+              
+              // Basic syntax checks
+              try {
+                // Check for common syntax errors
+                if (content.includes('function') && !content.match(/function\s+\w+\s*\(/)) {
+                  const functionMatches = content.match(/function\s*\(/g);
+                  if (functionMatches) {
+                    errors.push(`Script ${index}: Possible anonymous function issue`);
+                  }
+                }
+
+                // Check for unclosed brackets
+                const openBraces = (content.match(/{/g) || []).length;
+                const closeBraces = (content.match(/}/g) || []).length;
+                if (openBraces !== closeBraces) {
+                  errors.push(`Script ${index}: Mismatched braces (${openBraces} open, ${closeBraces} close)`);
+                }
+
+                const openParens = (content.match(/\(/g) || []).length;
+                const closeParens = (content.match(/\)/g) || []).length;
+                if (openParens !== closeParens) {
+                  errors.push(`Script ${index}: Mismatched parentheses`);
+                }
+              } catch (e) {
+                errors.push(`Script ${index}: ${e.message}`);
+              }
+            });
+
+            if (errors.length === 0) {
+              addResult('JavaScript Syntax', true, 'No obvious syntax errors detected');
+              resolve(true);
+            } else {
+              addResult('JavaScript Syntax', false, errors.join('; '));
+              resolve(false);
+            }
+          })
+          .catch(error => {
+            addResult('JavaScript Syntax', false, `Error: ${error.message}`);
+            resolve(false);
+          });
+      });
+    }
+
+    async function testGameLoads() {
+      return new Promise((resolve) => {
+        const iframe = document.createElement('iframe');
+        iframe.src = 'index.html';
+        iframe.style.display = 'none';
+        document.body.appendChild(iframe);
+
+        const timeout = setTimeout(() => {
+          addResult('Game Loads', false, 'Timeout waiting for game to load');
+          document.body.removeChild(iframe);
+          resolve(false);
+        }, 10000);
+
+        iframe.onload = () => {
+          clearTimeout(timeout);
+          try {
+            const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+            const canvas = iframeDoc.getElementById('game');
+            const startBtn = iframeDoc.getElementById('startBtn');
+            const descriptionPage = iframeDoc.getElementById('descriptionPage');
+            
+            const checks = [
+              { name: 'Canvas exists', test: canvas !== null },
+              { name: 'Start button exists', test: startBtn !== null },
+              { name: 'Description page exists', test: descriptionPage !== null },
+            ];
+
+            let passed = 0;
+            checks.forEach(check => {
+              if (check.test) passed++;
+              addResult(check.name, check.test, check.test ? 'Found in DOM' : 'Missing from DOM');
+            });
+
+            addResult('Game Loads', passed === checks.length, 
+              `${passed}/${checks.length} DOM elements found`);
+            
+            document.body.removeChild(iframe);
+            resolve(passed === checks.length);
+          } catch (error) {
+            addResult('Game Loads', false, `Error accessing iframe: ${error.message}`);
+            document.body.removeChild(iframe);
+            resolve(false);
+          }
+        };
+
+        iframe.onerror = () => {
+          clearTimeout(timeout);
+          addResult('Game Loads', false, 'Failed to load game file');
+          document.body.removeChild(iframe);
+          resolve(false);
+        };
+      });
+    }
+
+    async function testTouchDeviceDetection() {
+      const isTouch = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+      addResult('Touch Device Detection', true, 
+        isTouch ? 'Touch device detected' : 'Non-touch device (expected on desktop)');
+      return true;
+    }
+
+    async function runAllTests() {
+      clearResults();
+      console.log('🧪 Starting test suite...');
+      
+      addResult('Test Suite Started', true, new Date().toLocaleString());
+      
+      await testFileExists();
+      await testFileContent();
+      await testJavaScriptSyntax();
+      await testTouchDeviceDetection();
+      await testGameLoads();
+      
+      const passed = results.filter(r => r.passed).length;
+      const total = results.filter(r => r.testName !== 'Test Suite Started').length;
+      
+      addResult('Test Suite Complete', true, 
+        `${passed}/${total} tests passed`);
+      
+      console.log(`✅ Test suite complete: ${passed}/${total} tests passed`);
+    }
+
+    function loadGameInIframe() {
+      const iframe = document.getElementById('game-iframe');
+      iframe.style.display = iframe.style.display === 'none' ? 'block' : 'none';
+    }
+
+    // Auto-run tests on load
+    window.addEventListener('load', () => {
+      console.log('Test page loaded. Click "Run All Tests" to start.');
+    });
+  </script>
+</body>
+</html>

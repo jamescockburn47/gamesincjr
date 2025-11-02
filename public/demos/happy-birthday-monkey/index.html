@@ -295,22 +295,77 @@
 
   <script type="module">
     (() => {
-      const canvas = document.getElementById('game');
-      const ctx = canvas.getContext('2d');
-      const previewCanvas = document.getElementById('previewCanvas');
-      const previewCtx = previewCanvas?.getContext('2d');
-      const stage = document.getElementById('stage');
-      const descriptionPage = document.getElementById('descriptionPage');
-      const gameOverOverlay = document.getElementById('gameOverOverlay');
-      const startBtn = document.getElementById('startBtn');
-      const restartBtn = document.getElementById('restartBtn');
-      const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
-      const scoreEl = document.getElementById('score');
-      const livesEl = document.getElementById('lives');
-      const bestEl = document.getElementById('best');
-      const finalScoreEl = document.getElementById('finalScore');
-      const gameOverTitle = document.getElementById('gameOverTitle');
-      const gameOverText = document.getElementById('gameOverText');
+      // ERROR HANDLING AND LOGGING
+      const ERROR_LOG = [];
+      function logError(category, message, error = null) {
+        const entry = {
+          time: new Date().toISOString(),
+          category,
+          message,
+          error: error ? { name: error.name, message: error.message, stack: error.stack } : null,
+          userAgent: navigator.userAgent,
+          touchDevice: 'ontouchstart' in window || navigator.maxTouchPoints > 0,
+          fullscreen: !!document.fullscreenElement,
+          windowSize: { w: window.innerWidth, h: window.innerHeight }
+        };
+        ERROR_LOG.push(entry);
+        console.error(`[${category}]`, message, error || '');
+        
+        // Show critical errors to user
+        if (category === 'CRITICAL') {
+          alert(`Game Error: ${message}\n\nCheck console for details.`);
+        }
+      }
+
+      window.addEventListener('error', (e) => {
+        logError('JAVASCRIPT_ERROR', `${e.message} at ${e.filename}:${e.lineno}:${e.colno}`, e.error);
+      });
+
+      window.addEventListener('unhandledrejection', (e) => {
+        logError('PROMISE_REJECTION', e.reason?.message || String(e.reason), e.reason);
+      });
+
+      // Export for testing
+      window.GAME_ERROR_LOG = ERROR_LOG;
+
+      try {
+        const canvas = document.getElementById('game');
+        if (!canvas) {
+          logError('CRITICAL', 'Canvas element not found', null);
+          return;
+        }
+        const ctx = canvas.getContext('2d');
+        if (!ctx) {
+          logError('CRITICAL', 'Could not get canvas 2d context', null);
+          return;
+        }
+        
+        const previewCanvas = document.getElementById('previewCanvas');
+        const previewCtx = previewCanvas?.getContext('2d');
+        const stage = document.getElementById('stage');
+        if (!stage) {
+          logError('CRITICAL', 'Stage element not found', null);
+          return;
+        }
+        const descriptionPage = document.getElementById('descriptionPage');
+        if (!descriptionPage) {
+          logError('CRITICAL', 'Description page element not found', null);
+          return;
+        }
+        const gameOverOverlay = document.getElementById('gameOverOverlay');
+        const startBtn = document.getElementById('startBtn');
+        if (!startBtn) {
+          logError('CRITICAL', 'Start button not found', null);
+          return;
+        }
+        const restartBtn = document.getElementById('restartBtn');
+        const exitFullscreenBtn = document.getElementById('exitFullscreenBtn');
+        const scoreEl = document.getElementById('score');
+        const livesEl = document.getElementById('lives');
+        const bestEl = document.getElementById('best');
+        const finalScoreEl = document.getElementById('finalScore');
+        const gameOverTitle = document.getElementById('gameOverTitle');
+        const gameOverText = document.getElementById('gameOverText');
 
       const W = canvas.width;
       const H = canvas.height;
@@ -835,36 +890,48 @@
       }
 
       startBtn.addEventListener('click', async () => {
-        if (state.running) return;
-        
-        // Hide description page
-        descriptionPage.classList.add('hidden');
-        
-        // Show game stage
-        stage.classList.remove('hidden');
-        
-        // Add class to body to prevent scrolling
-        document.body.classList.add('game-running');
-        
-        // Request fullscreen
         try {
-          if (stage.requestFullscreen) {
-            await stage.requestFullscreen();
-          } else if (stage.webkitRequestFullscreen) {
-            await stage.webkitRequestFullscreen();
-          } else if (stage.mozRequestFullScreen) {
-            await stage.mozRequestFullScreen();
-          } else if (stage.msRequestFullscreen) {
-            await stage.msRequestFullscreen();
+          if (state.running) return;
+          
+          logError('USER_ACTION', 'Start button clicked');
+          
+          // Hide description page
+          descriptionPage.classList.add('hidden');
+          
+          // Show game stage
+          stage.classList.remove('hidden');
+          
+          // Add class to body to prevent scrolling
+          document.body.classList.add('game-running');
+          
+          // Request fullscreen
+          try {
+            if (stage.requestFullscreen) {
+              await stage.requestFullscreen();
+              logError('FULLSCREEN', 'Fullscreen entered (standard)');
+            } else if (stage.webkitRequestFullscreen) {
+              await stage.webkitRequestFullscreen();
+              logError('FULLSCREEN', 'Fullscreen entered (webkit)');
+            } else if (stage.mozRequestFullScreen) {
+              await stage.mozRequestFullScreen();
+              logError('FULLSCREEN', 'Fullscreen entered (moz)');
+            } else if (stage.msRequestFullscreen) {
+              await stage.msRequestFullscreen();
+              logError('FULLSCREEN', 'Fullscreen entered (ms)');
+            } else {
+              logError('FULLSCREEN', 'Fullscreen API not available');
+            }
+          } catch (err) {
+            logError('FULLSCREEN', 'Fullscreen request failed', err);
           }
+          
+          // Start game after a brief delay to ensure fullscreen is ready
+          setTimeout(() => {
+            startGame();
+          }, 300);
         } catch (err) {
-          console.log('Fullscreen not available, continuing anyway');
+          logError('CRITICAL', 'Error in start button handler', err);
         }
-        
-        // Start game after a brief delay to ensure fullscreen is ready
-        setTimeout(() => {
-          startGame();
-        }, 300);
       });
 
       restartBtn.addEventListener('click', () => {
@@ -948,19 +1015,23 @@
       });
 
       function startGame() {
-        state.running = false;
-        keys.left = false;
-        keys.right = false;
-        keys.jump = false;
-        touches.clear();
-        dragVelocity = 0;
-        // Description page is already hidden, gameOverOverlay should be hidden
-        gameOverOverlay.classList.add('hidden');
-        
-        resizeCanvas();
-        
-        requestAnimationFrame(() => {
-          state.running = true;
+        try {
+          logError('GAME_STATE', 'Starting game...');
+          
+          state.running = false;
+          keys.left = false;
+          keys.right = false;
+          keys.jump = false;
+          touches.clear();
+          dragVelocity = 0;
+          // Description page is already hidden, gameOverOverlay should be hidden
+          if (gameOverOverlay) gameOverOverlay.classList.add('hidden');
+          
+          resizeCanvas();
+          
+          requestAnimationFrame(() => {
+            try {
+              state.running = true;
           state.score = 0;
           state.lives = 3;
           state.monkey.x = state.canvasW / 2 - 30;
@@ -992,8 +1063,15 @@
           updateHud();
           state.lastTime = performance.now();
           
+          logError('GAME_STATE', 'Game loop starting');
           requestAnimationFrame(loop);
-        });
+            } catch (err) {
+              logError('GAME_START', 'Error in game initialization', err);
+            }
+          });
+        } catch (err) {
+          logError('CRITICAL', 'Error in startGame()', err);
+        }
       }
 
       function updateHud() {
@@ -1026,11 +1104,12 @@
         gameOverOverlay.classList.remove('hidden');
       }
 
-      function loop(now) {
-        if (!state.running) return;
+              function loop(now) {
+                try {
+                  if (!state.running) return;
 
-        if (!now) now = performance.now();
-        if (!state.lastTime) state.lastTime = now;
+                  if (!now) now = performance.now();
+                  if (!state.lastTime) state.lastTime = now;
 
         const dt = Math.min((now - state.lastTime) / 1000, 0.1);
         state.lastTime = now;
@@ -1294,9 +1373,14 @@
           }
         }
 
-        draw();
-        requestAnimationFrame(loop);
-      }
+                draw();
+                requestAnimationFrame(loop);
+              } catch (err) {
+                logError('GAME_LOOP', 'Error in game loop', err);
+                // Stop the game on critical loop error
+                state.running = false;
+              }
+            }
       
       function createParticles(x, y, color) {
         for (let i = 0; i < 20; i++) {
@@ -1617,6 +1701,9 @@
       
       resizeCanvas();
       draw();
+      } catch (err) {
+        logError('CRITICAL', 'Error in game initialization', err);
+      }
     })();
   </script>
 </body>
