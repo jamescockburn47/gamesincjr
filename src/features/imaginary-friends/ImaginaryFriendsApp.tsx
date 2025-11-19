@@ -243,7 +243,6 @@ export default function ImaginaryFriendsApp() {
   useEffect(() => {
     try {
       const savedCharId = localStorage.getItem(STORAGE_KEYS.selectedCharacter);
-      const savedMessagesRaw = sessionStorage.getItem(STORAGE_KEYS.messages);
       const savedCustomRaw = localStorage.getItem(STORAGE_KEYS.customCharacters);
       const savedCreatedAt = localStorage.getItem(STORAGE_KEYS.lastCreatedAt);
 
@@ -267,33 +266,6 @@ export default function ImaginaryFriendsApp() {
         if (found) {
           setSelectedCharacter(found);
           setGameStatus(createFallbackGameStatus(found));
-        }
-      }
-
-      if (savedMessagesRaw) {
-        try {
-          const parsed = JSON.parse(savedMessagesRaw) as SavedMessagesPayload;
-
-          const entries = Array.isArray(parsed)
-            ? parsed
-            : Array.isArray(parsed?.entries)
-              ? parsed.entries
-              : [];
-          const restored = entries.map<ConversationMessage>((message) => ({
-            ...message,
-            timestamp: new Date(message.timestamp),
-          }));
-          if (restored.length) setMessages(restored);
-          const storedHiddenBefore = Array.isArray(parsed)
-            ? 0
-            : typeof parsed?.hiddenBefore === 'number'
-              ? parsed.hiddenBefore
-              : 0;
-          if (storedHiddenBefore > 0) {
-            setHiddenBefore(storedHiddenBefore);
-          }
-        } catch {
-          // ignore invalid session data
         }
       }
 
@@ -377,25 +349,22 @@ export default function ImaginaryFriendsApp() {
         });
         if (!response.ok) throw new Error('Failed to fetch introduction');
         const data = (await response.json()) as CharacterIntroResponse;
-        // Only seed intro if no messages have arrived in the meantime
-        if (messagesRef.current.length === 0) {
-          setHiddenBefore(0);
-          setMessages([
-            {
-              id: String(Date.now()),
-              speaker: 'character',
-              text: data.introduction,
-              timestamp: new Date(),
-              imageUrl: data.imageUrl ?? null,
-            },
-          ]);
-        }
+        
+        setHiddenBefore(0);
+        setMessages([
+          {
+            id: String(Date.now()),
+            speaker: 'character',
+            text: data.introduction,
+            timestamp: new Date(),
+            imageUrl: data.imageUrl ?? null,
+          },
+        ]);
+        
         updateCharacterMood(characterId, 'happy');
         const character = characters.find((entry) => entry.id === characterId);
         if (character) {
           setGameStatus(data.gameStatus ?? createFallbackGameStatus(character));
-        } else {
-          setGameStatus(null);
         }
       } catch (error) {
         console.warn('Failed to initialise conversation', error);
@@ -411,22 +380,76 @@ export default function ImaginaryFriendsApp() {
         const character = characters.find((entry) => entry.id === characterId);
         if (character) {
           setGameStatus(createFallbackGameStatus(character));
-        } else {
-          setGameStatus(null);
         }
       }
     },
     [characters, createFallbackGameStatus, updateCharacterMood],
   );
 
-  useEffect(() => {
-    if (selectedCharacter) {
-      localStorage.setItem(STORAGE_KEYS.selectedCharacter, selectedCharacter.id);
-      if (!messages.length) {
-        void initialiseConversation(selectedCharacter.id);
+  const restoreConversationHistory = useCallback(
+    async (characterId: string, targetUserId: string): Promise<boolean> => {
+      if (wasConversationClearedThisSession(characterId, targetUserId)) {
+        return false;
       }
-    }
-  }, [selectedCharacter, messages.length, initialiseConversation]);
+      try {
+        const params = new URLSearchParams({
+          characterId,
+          userId: targetUserId,
+        });
+        params.set('skipCache', '1');
+        const res = await fetch(`${API_BASE_URL}/history?${params.toString()}`, { cache: 'no-store' });
+        if (!res.ok) {
+          return false;
+        }
+        const data = (await res.json()) as {
+          turns?: Array<{ speaker: 'player' | 'character'; text: string }>;
+        };
+        const turns = Array.isArray(data.turns) ? data.turns : [];
+        if (!turns.length) {
+          return false;
+        }
+        const seeded: ConversationMessage[] = turns.map((turn, index) => ({
+          id: `${Date.now()}-${index}`,
+          speaker: turn.speaker,
+          text: turn.text,
+          timestamp: new Date(),
+        }));
+        setHiddenBefore(0);
+        messagesRef.current = seeded;
+        setMessages(seeded);
+        return true;
+      } catch (error) {
+        console.warn('Failed to restore conversation history', error);
+        return false;
+      }
+    },
+    [wasConversationClearedThisSession],
+  );
+
+  // Combined useEffect to handle initialization/restore logic properly
+  useEffect(() => {
+    if (!selectedCharacter) return;
+
+    localStorage.setItem(STORAGE_KEYS.selectedCharacter, selectedCharacter.id);
+
+    const load = async () => {
+      // If we already have messages for this character (e.g. from memory), don't reload
+      if (messagesRef.current.length > 0) return;
+
+      const resolvedUserId = effectiveUserId;
+      if (!resolvedUserId) return;
+
+      const restored = await restoreConversationHistory(selectedCharacter.id, resolvedUserId);
+      
+      // If we couldn't restore history, and we have no messages, initialize a new conversation
+      if (!restored && messagesRef.current.length === 0) {
+        await initialiseConversation(selectedCharacter.id);
+      }
+    };
+
+    void load();
+  }, [selectedCharacter, effectiveUserId, initialiseConversation, restoreConversationHistory]);
+
 
   useEffect(() => {
     try {
@@ -468,6 +491,9 @@ export default function ImaginaryFriendsApp() {
     }
     setIsClearingHistory(true);
     try {
+      // 1. Mark locally as cleared immediately to prevent restoration race
+      markConversationCleared(selectedCharacter.id, effectiveUserId);
+      
       const params = new URLSearchParams({
         characterId: selectedCharacter.id,
         userId: effectiveUserId,
@@ -480,74 +506,24 @@ export default function ImaginaryFriendsApp() {
         throw new Error(`Failed to delete history (${response.status})`);
       }
       clearStoredMessages();
-      markConversationCleared(selectedCharacter.id, effectiveUserId);
       setGameStatus(null);
+      // Re-initialize to show fresh intro
+      await initialiseConversation(selectedCharacter.id);
     } catch (error) {
       console.error('Failed to clear conversation history', error);
       pushSystemMessage("I couldn't clear our saved chats right now. Let's try again in a moment!");
+      // If failed, maybe unmark? But safer to leave marked to force fresh start next time if needed
     } finally {
       setIsClearingHistory(false);
     }
-  }, [clearStoredMessages, effectiveUserId, isClearingHistory, markConversationCleared, pushSystemMessage, selectedCharacter]);
+  }, [clearStoredMessages, effectiveUserId, isClearingHistory, markConversationCleared, pushSystemMessage, selectedCharacter, initialiseConversation]);
 
   const handleNewThread = useCallback(() => {
     clearStoredMessages();
-  }, [clearStoredMessages]);
-
-  /**
-   * Load the last stored turns for a character/user pair so the UI can
-   * surface them immediately while still allowing the server to use them
-   * for context. We only hydrate when the current chat is empty to avoid
-   * clobbering in-progress conversations.
-   */
-  const restoreConversationHistory = useCallback(
-    async (characterId: string, targetUserId: string) => {
-      if (wasConversationClearedThisSession(characterId, targetUserId)) {
-        return;
-      }
-      try {
-        const params = new URLSearchParams({
-          characterId,
-          userId: targetUserId,
-        });
-        params.set('skipCache', '1');
-        const res = await fetch(`${API_BASE_URL}/history?${params.toString()}`, { cache: 'no-store' });
-        if (!res.ok) {
-          return;
-        }
-        const data = (await res.json()) as {
-          turns?: Array<{ speaker: 'player' | 'character'; text: string }>;
-        };
-        const turns = Array.isArray(data.turns) ? data.turns : [];
-        if (!turns.length || messagesRef.current.length > 0) {
-          return;
-        }
-        const seeded: ConversationMessage[] = turns.map((turn, index) => ({
-          id: `${Date.now()}-${index}`,
-          speaker: turn.speaker,
-          text: turn.text,
-          timestamp: new Date(),
-        }));
-        setHiddenBefore(0);
-        messagesRef.current = seeded;
-        setMessages(seeded);
-      } catch (error) {
-        console.warn('Failed to restore conversation history', error);
-      }
-    },
-    [wasConversationClearedThisSession],
-  );
-
-  useEffect(() => {
-    if (!selectedCharacter) {
-      return;
+    if (selectedCharacter) {
+       void initialiseConversation(selectedCharacter.id);
     }
-    const resolvedUserId = effectiveUserId;
-    if (!resolvedUserId || messagesRef.current.length > 0) {
-      return;
-    }
-    void restoreConversationHistory(selectedCharacter.id, resolvedUserId);
-  }, [effectiveUserId, restoreConversationHistory, selectedCharacter]);
+  }, [clearStoredMessages, selectedCharacter, initialiseConversation]);
 
   const handleSendMessage = useCallback(
     async (messageText: string, requestImage = false) => {
@@ -677,7 +653,7 @@ export default function ImaginaryFriendsApp() {
                     const next = [...prev];
                     const last = next[next.length - 1];
                     if (last && last.id.startsWith('typing-')) {
-                      last.text = (last.text || '') + evt.text;
+                      last.text = (last.text === '…' ? '' : last.text) + evt.text;
                     }
                     messagesRef.current = next;
                     return next;
@@ -798,14 +774,14 @@ export default function ImaginaryFriendsApp() {
                   character={character}
                   isSelected={false}
                   onClick={() => {
-                    const resolvedUserId = effectiveUserId;
+                    // Clear everything first to ensure fresh start for the view
                     messagesRef.current = [];
                     setHiddenBefore(0);
                     setMessages([]);
-                    // Seed from server history for context continuity (guard so we don't overwrite live chat)
-                    void restoreConversationHistory(character.id, resolvedUserId);
-                    setGameStatus(createFallbackGameStatus(character));
+                    
                     setSelectedCharacter(character);
+                    setGameStatus(createFallbackGameStatus(character));
+                    // The useEffect will trigger now and handle load/restore
                   }}
                 />
               ))}
@@ -1517,11 +1493,3 @@ export default function ImaginaryFriendsApp() {
     </div>
   );
 }
-
-
-
-
-
-
-
-

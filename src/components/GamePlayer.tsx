@@ -28,9 +28,8 @@ export default function GamePlayer({ game }: GamePlayerProps) {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
-  const [gameHtml, setGameHtml] = useState<string | null>(null);
   const containerRef = useRef<HTMLDivElement | null>(null);
-  const gameContentRef = useRef<HTMLDivElement | null>(null);
+  const gameContentRef = useRef<HTMLIFrameElement | null>(null);
   const isClient = useMemo(() => typeof window !== 'undefined', []);
 
   useEffect(() => {
@@ -43,86 +42,6 @@ export default function GamePlayer({ game }: GamePlayerProps) {
     window.addEventListener('resize', setVh);
     return () => window.removeEventListener('resize', setVh);
   }, [isClient]);
-
-  // Load game HTML
-  useEffect(() => {
-    if (!isClient) return;
-
-    const demoPath = game.demoPath;
-    if (!demoPath) {
-      setError('No demo path available');
-      setIsLoading(false);
-      return;
-    }
-
-    const loadGame = async () => {
-      try {
-        setIsLoading(true);
-        setError(null);
-
-        const response = await fetch(demoPath);
-        if (!response.ok) {
-          throw new Error(`Failed to load game: ${response.status}`);
-        }
-
-        const html = await response.text();
-        setGameHtml(html);
-      } catch (err) {
-        setError(err instanceof Error ? err.message : 'Failed to load game');
-        console.error('Game load error:', err);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-
-    loadGame();
-  }, [isClient, game.demoPath]);
-
-  useEffect(() => {
-    if (!isClient) return;
-    const container = gameContentRef.current;
-    if (!container) return;
-
-    container.innerHTML = '';
-
-    if (!gameHtml) return;
-
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(gameHtml, 'text/html');
-    const fragment = document.createDocumentFragment();
-
-    const headNodes = doc.head ? Array.from(doc.head.children) : [];
-    headNodes.forEach((node) => {
-      const tag = node.tagName.toLowerCase();
-      if (tag === 'style' || (tag === 'link' && (node as HTMLLinkElement).rel === 'stylesheet')) {
-        fragment.appendChild(node.cloneNode(true));
-      }
-    });
-
-    const bodyNodes = doc.body ? Array.from(doc.body.childNodes) : [];
-    bodyNodes.forEach((node) => {
-      fragment.appendChild(node.cloneNode(true));
-    });
-
-    container.appendChild(fragment);
-
-    // Execute scripts - need to do this after a small delay to ensure DOM is ready
-    setTimeout(() => {
-      const scripts = Array.from(container.querySelectorAll('script'));
-      scripts.forEach((oldScript) => {
-        const newScript = document.createElement('script');
-        Array.from(oldScript.attributes).forEach((attr) => {
-          newScript.setAttribute(attr.name, attr.value);
-        });
-        newScript.textContent = oldScript.textContent;
-        oldScript.replaceWith(newScript);
-      });
-    }, 50);
-
-    return () => {
-      container.innerHTML = '';
-    };
-  }, [gameHtml, isClient]);
 
   useEffect(() => {
     if (!isClient) return;
@@ -189,10 +108,26 @@ export default function GamePlayer({ game }: GamePlayerProps) {
 
             {/* Game content container */}
             <div className="relative w-full aspect-video game-viewport bg-black">
-              <div ref={gameContentRef} className="absolute inset-0 w-full h-full" />
+              <iframe
+                ref={gameContentRef}
+                src={game.demoPath}
+                className="absolute inset-0 w-full h-full border-0"
+                title={game.title}
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                allowFullScreen
+                onLoad={(e) => {
+                  setIsLoading(false);
+                  // Attempt to focus the iframe so keyboard controls work immediately
+                  const iframe = e.target as HTMLIFrameElement;
+                  try {
+                    iframe.contentWindow?.focus();
+                  } catch {}
+                }}
+                onError={() => setError("Failed to load game iframe")}
+              />
 
               {isLoading && (
-                <div className="absolute inset-0 flex items-center justify-center text-white">
+                <div className="absolute inset-0 flex items-center justify-center text-white pointer-events-none">
                   <div className="text-center">
                     <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-white mx-auto mb-2"></div>
                     <p className="text-sm">Loading game...</p>

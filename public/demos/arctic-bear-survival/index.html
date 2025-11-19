@@ -2,1736 +2,1008 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Arctic Survival</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Arctic Bear Survival</title>
     <style>
-        * { margin: 0; padding: 0; box-sizing: border-box; }
+        @import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700&display=swap');
+
+        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body {
-            font-family: Arial, sans-serif;
-            background: linear-gradient(180deg, #0a1218 0%, #1a2332 100%);
+            font-family: 'Nunito', sans-serif;
+            background: #1a2332;
             color: white;
             overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            touch-action: none;
+        }
+        
+        #gameContainer {
+            position: relative;
+            width: 100%;
+            height: 100%;
             display: flex;
             justify-content: center;
             align-items: center;
-            height: 100vh;
+            background: linear-gradient(180deg, #87CEEB 0%, #E0F7FA 100%);
         }
-        #gameCanvas {
-            border: 2px solid #00ffff;
-            background: #2c3e50;
+
+        canvas {
             display: block;
-            box-shadow: 0 0 20px rgba(0, 255, 255, 0.3);
+            max-width: 100%;
+            max-height: 100%;
+            box-shadow: 0 0 50px rgba(0,0,0,0.2);
         }
-        .ui {
+
+        /* UI Layer */
+        .ui-layer {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+        }
+
+        .hud-top {
             position: absolute;
             top: 20px;
             left: 20px;
-            background: rgba(0,0,0,0.8);
-            padding: 12px;
-            border-radius: 5px;
-            border: 1px solid rgba(0, 255, 255, 0.3);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
         }
-        .stat { margin: 6px 0; font-size: 13px; }
-        .bar {
-            width: 150px;
+
+        .stat-pill {
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(4px);
+            padding: 8px 16px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border: 2px solid rgba(255,255,255,0.2);
+            width: 280px;
+        }
+
+        .stat-icon { font-size: 24px; width: 30px; text-align: center; }
+        
+        .bar-container {
+            flex: 1;
             height: 16px;
-            background: #222;
+            background: rgba(0,0,0,0.5);
             border-radius: 8px;
             overflow: hidden;
-            display: inline-block;
-            vertical-align: middle;
-            border: 1px solid #444;
+            position: relative;
         }
+
         .bar-fill {
             height: 100%;
-            transition: width 0.3s;
+            border-radius: 8px;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
         }
-        .health { background: linear-gradient(90deg, #ff4444, #cc2222); }
-        .warmth { background: linear-gradient(90deg, #ff8800, #dd6600); }
-        .hunger { background: linear-gradient(90deg, #44ff44, #339933); }
-        button {
+
+        .bar-fill::after {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.1) 100%);
+        }
+
+        .hp-bar { background: linear-gradient(90deg, #ff6b6b, #ff8787); }
+        .warmth-bar { background: linear-gradient(90deg, #ff922b, #ffa94d); }
+        .hunger-bar { background: linear-gradient(90deg, #51cf66, #69db7c); }
+
+        .inventory {
             position: absolute;
             top: 20px;
             right: 20px;
-            padding: 10px 20px;
-            font-size: 16px;
-            cursor: pointer;
-            background: linear-gradient(135deg, #00ffff, #008888);
+            background: rgba(255,255,255,0.9);
+            color: #333;
+            padding: 15px;
+            border-radius: 20px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            font-family: 'Fredoka One', cursive;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .inv-row { display: flex; gap: 15px; justify-content: center; font-size: 18px; }
+        .inv-item { display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.05); padding: 5px 10px; border-radius: 10px; }
+        
+        .crafting-panel {
+            margin-top: 5px;
+            border-top: 2px dashed #ddd;
+            padding-top: 10px;
+        }
+
+        .craft-btn {
+            background: #eee;
             border: none;
-            border-radius: 5px;
+            padding: 8px 12px;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: 'Nunito', sans-serif;
             font-weight: bold;
-            transition: transform 0.2s;
-        }
-        button:hover { transform: scale(1.05); }
-        .inventory {
-            position: absolute;
-            bottom: 20px;
-            left: 20px;
-            background: rgba(0,0,0,0.8);
-            padding: 10px;
-            border-radius: 5px;
             font-size: 14px;
-            border: 1px solid rgba(0, 255, 255, 0.3);
-        }
-        .controls {
-            position: absolute;
-            bottom: 20px;
-            right: 20px;
-            background: rgba(0,0,0,0.8);
-            padding: 10px;
-            border-radius: 5px;
-            font-size: 12px;
-            border: 1px solid rgba(0, 255, 255, 0.3);
-        }
-        .message {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(0,0,0,0.9);
-            padding: 15px 25px;
-            border-radius: 10px;
-            font-size: 16px;
-            animation: fadeOut 3s forwards;
-            z-index: 1000;
-            pointer-events: none;
-            border: 2px solid #00ffff;
-        }
-        @keyframes fadeOut {
-            0%, 70% { opacity: 1; }
-            100% { opacity: 0; }
-        }
-        .overlay {
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.9);
+            transition: all 0.2s;
+            width: 100%;
+            margin-bottom: 5px;
+            pointer-events: auto;
             display: flex;
             align-items: center;
-            justify-content: center;
-            z-index: 2000;
+            justify-content: space-between;
+            color: #888;
         }
-        .overlay.hidden {
-            display: none;
-        }
-        .overlay-panel {
-            background: rgba(20,0,0,0.95);
-            padding: 40px;
-            border-radius: 15px;
-            border: 3px solid #4da6ff;
-            text-align: center;
-            max-width: 600px;
-        }
-        .overlay-panel h2 {
-            color: #4da6ff;
-            margin: 0 0 20px;
-            font-size: 32px;
-        }
-        .overlay-panel p {
-            color: #fff;
-            margin: 0 0 20px;
-            line-height: 1.6;
-        }
-        .overlay-panel button {
-            padding: 14px 28px;
-            font-size: 1.1rem;
-            font-weight: 700;
-            color: #fff;
-            background: linear-gradient(135deg, #4da6ff, #0066cc);
-            border: none;
-            border-radius: 8px;
-            cursor: pointer;
-        }
-        .game-over {
-            position: fixed;
-            top: 50%;
-            left: 50%;
-            transform: translate(-50%, -50%);
-            background: rgba(20,0,0,0.95);
-            padding: 40px;
-            border-radius: 15px;
-            border: 3px solid #ff4444;
-            text-align: center;
-            z-index: 2000;
-            display: none;
-        }
-        .game-over h2 {
-            color: #ff4444;
-            margin-bottom: 20px;
-            font-size: 32px;
-        }
-        .restart-btn {
-            position: static;
-            margin-top: 15px;
-            background: linear-gradient(135deg, #ff4444, #cc0000);
+
+        .craft-btn.active {
+            background: #4dabf7;
             color: white;
+            transform: scale(1.02);
+            box-shadow: 0 4px 0 #339af0;
         }
-        .particle {
+        
+        .craft-btn.active:active {
+            transform: scale(0.98);
+            box-shadow: 0 0 0 #339af0;
+        }
+
+        .controls-hint {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
+            padding: 10px 20px;
+            border-radius: 30px;
+            color: white;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .key {
+            display: inline-block;
+            background: white;
+            color: #333;
+            padding: 2px 6px;
+            border-radius: 4px;
+            font-weight: bold;
+            margin: 0 2px;
+            box-shadow: 0 2px 0 #ccc;
+        }
+
+        /* Floating Messages */
+        .floater {
             position: absolute;
             pointer-events: none;
-            border-radius: 50%;
+            animation: floatUp 1s ease-out forwards;
+            font-weight: bold;
+            font-family: 'Fredoka One', cursive;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            font-size: 20px;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.2); }
+        }
+
+        /* Overlays */
+        .overlay {
+            position: absolute;
+            inset: 0;
+            background: rgba(0,0,0,0.4);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: auto;
+            z-index: 100;
+            transition: opacity 0.3s;
+        }
+
+        .hidden { opacity: 0; pointer-events: none; }
+
+        .card {
+            background: white;
+            padding: 40px;
+            border-radius: 30px;
+            text-align: center;
+            max-width: 500px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            color: #333;
+        }
+
+        @keyframes popIn {
+            from { transform: scale(0.8); opacity: 0; }
+            to { transform: scale(1); opacity: 1; }
+        }
+
+        h1 { font-family: 'Fredoka One', cursive; color: #2c3e50; font-size: 42px; margin-bottom: 10px; }
+        h2 { font-family: 'Fredoka One', cursive; color: #e67700; font-size: 32px; margin-bottom: 20px; }
+        p { margin-bottom: 25px; font-size: 18px; line-height: 1.6; color: #666; }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #4dabf7 0%, #339af0 100%);
+            color: white;
+            border: none;
+            padding: 15px 40px;
+            font-size: 24px;
+            border-radius: 50px;
+            font-family: 'Fredoka One', cursive;
+            cursor: pointer;
+            transition: transform 0.1s;
+            box-shadow: 0 6px 0 #228be6;
+        }
+
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #228be6; }
+        .btn-primary:active { transform: translateY(4px); box-shadow: 0 0 0 #228be6; }
+
+        /* Mobile Controls */
+        .touch-controls {
+            display: none; /* Hidden by default, shown on touch devices via JS detection could happen but pure CSS media query is safer for now */
+        }
+        
+        @media (hover: none) and (pointer: coarse) {
+            .touch-controls {
+                display: block;
+                position: absolute;
+                bottom: 20px;
+                width: 100%;
+                height: 150px;
+                pointer-events: none;
+            }
+            
+            .dpad {
+                position: absolute;
+                bottom: 20px;
+                left: 20px;
+                width: 120px;
+                height: 120px;
+                pointer-events: auto;
+            }
+            
+            .action-btn {
+                position: absolute;
+                bottom: 30px;
+                right: 20px;
+                width: 80px;
+                height: 80px;
+                border-radius: 50%;
+                background: rgba(255,255,255,0.3);
+                border: 2px solid white;
+                color: white;
+                font-size: 30px;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                pointer-events: auto;
+                backdrop-filter: blur(5px);
+            }
+
+            .action-btn:active { background: rgba(255,255,255,0.5); }
+
+            .controls-hint { display: none; } /* Hide keyboard hints on mobile */
+        }
+
+        .day-badge {
+            position: absolute;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            color: #333;
+            padding: 10px 30px;
+            border-radius: 0 0 20px 20px;
+            font-family: 'Fredoka One', cursive;
+            font-size: 24px;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
+            margin-top: -20px; /* Tuck it up */
         }
     </style>
 </head>
 <body>
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-    
-    <div class="ui">
-        <div class="stat">Health: <div class="bar"><div class="bar-fill health" id="health" style="width: 100%"></div></div></div>
-        <div class="stat">Warmth: <div class="bar"><div class="bar-fill warmth" id="warmth" style="width: 75%"></div></div></div>
-        <div class="stat">Hunger: <div class="bar"><div class="bar-fill hunger" id="hunger" style="width: 70%"></div></div></div>
-        <div class="stat">Day: <span id="day">1</span> | Score: <span id="score">0</span></div>
-    </div>
-    
-    <div class="inventory">
-        <div>Wood: <span id="wood">0</span> | Food: <span id="food">0</span> | Materials: <span id="materials">0</span></div>
-        <div style="margin-top: 5px; border-top: 1px solid #555; padding-top: 5px;">
-            🪤 Food Traps: <span id="foodTraps">0</span> | 🪤 Bear Traps: <span id="bearTraps">0</span>
-        </div>
-    </div>
-    
-    <div class="controls">
-        <div><strong>WASD</strong> - Move (warms you!)</div>
-        <div><strong>E</strong> - Collect/Build</div>
-        <div><strong>F</strong> - Eat food (+35 hunger, +20 HP)</div>
-        <div><strong>Q</strong> - Food Trap (3w+2m)</div>
-        <div><strong>R</strong> - Bear Trap (5w+5m)</div>
-        <div style="margin-top: 5px; color: #ffa500;">💡 Combo: Eat near fire for bonus!</div>
-    </div>
+    <div id="gameContainer">
+        <canvas id="gameCanvas" width="800" height="600"></canvas>
+        
+        <div class="ui-layer">
+            <div class="day-badge">Day <span id="dayVal">1</span></div>
 
-    <div id="tryOverlay" class="overlay">
-        <div class="overlay-panel">
-            <h2>Arctic Bear Survival</h2>
-            <p>Survive polar nights by gathering resources and outsmarting roaming bears!</p>
-            <button id="tryBtn">Try Now</button>
-        </div>
-    </div>
+            <div class="hud-top">
+                <div class="stat-pill">
+                    <div class="stat-icon">❤️</div>
+                    <div class="bar-container">
+                        <div class="bar-fill hp-bar" id="hpBar" style="width: 100%"></div>
+                    </div>
+                </div>
+                <div class="stat-pill">
+                    <div class="stat-icon">🔥</div>
+                    <div class="bar-container">
+                        <div class="bar-fill warmth-bar" id="warmthBar" style="width: 100%"></div>
+                    </div>
+                </div>
+                <div class="stat-pill">
+                    <div class="stat-icon">🍖</div>
+                    <div class="bar-container">
+                        <div class="bar-fill hunger-bar" id="hungerBar" style="width: 100%"></div>
+                    </div>
+                </div>
+            </div>
 
-    <div id="startOverlay" class="overlay hidden">
-        <div class="overlay-panel">
-            <h2>Ready to Survive?</h2>
-            <p>Gather resources, build shelter, and survive the harsh arctic conditions. Watch out for bears!</p>
-            <button id="startBtn">Start</button>
+            <div class="inventory">
+                <div class="inv-row">
+                    <div class="inv-item">🪵 <span id="woodVal">0</span></div>
+                    <div class="inv-item">🍖 <span id="foodVal">0</span></div>
+                    <div class="inv-item">🔩 <span id="matVal">0</span></div>
+                </div>
+                
+                <div class="crafting-panel">
+                    <button class="craft-btn" id="btnTrap">
+                        <span>Food Trap 🪤</span>
+                        <small>3🪵 2🔩</small>
+                    </button>
+                    <button class="craft-btn" id="btnBearTrap">
+                        <span>Bear Trap ⚙️</span>
+                        <small>5🪵 5🔩</small>
+                    </button>
+                    <button class="craft-btn" id="btnEat">
+                        <span>Eat Food 🍖</span>
+                        <small>Restore HP</small>
+                    </button>
+                </div>
+            </div>
+
+            <div class="controls-hint">
+                Use <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> to move • <span class="key">SPACE</span> to interact
+            </div>
+            
+            <div class="touch-controls">
+                <div class="dpad" id="virtualDpad"></div> <!-- Placeholder for touch logic -->
+                <div class="action-btn" id="virtualBtn">👋</div>
+            </div>
         </div>
-    </div>
-    
-    <div id="messages"></div>
-    
-    <div class="game-over" id="gameOver">
-        <h2>FROZEN</h2>
-        <p>Days survived: <span id="finalDays">0</span></p>
-        <p>Final score: <span id="finalScore">0</span></p>
-        <button class="restart-btn" onclick="location.reload()">Try Again</button>
+
+        <!-- Start Screen -->
+        <div id="startScreen" class="overlay">
+            <div class="card">
+                <h1>🐻 Arctic Survival</h1>
+                <p>You are lost in the frozen north!</p>
+                <p>Gather wood 🪵, hunt rabbits 🐇, and avoid the grumpy bears 🐻.</p>
+                <p><strong>Goal:</strong> Survive as many days as you can!</p>
+                <button class="btn-primary" id="startBtn">PLAY NOW</button>
+            </div>
+        </div>
+
+        <!-- Game Over Screen -->
+        <div id="gameOverScreen" class="overlay hidden">
+            <div class="card">
+                <h1>🥶 BRRR!</h1>
+                <p>The cold got you (or a bear did)!</p>
+                <div style="font-size: 24px; margin-bottom: 20px; color: #333;">
+                    Days Survived: <strong id="finalDays" style="color: #4dabf7;">0</strong>
+                </div>
+                <button class="btn-primary" onclick="location.reload()">TRY AGAIN</button>
+            </div>
+        </div>
     </div>
 
     <script>
+        // --- Game Engine ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
+        // Resize canvas to fit window but keep aspect ratio
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Game State
         const game = {
             running: false,
             day: 1,
-            time: 0,
-            score: 0,
+            time: 0, // 0 to 24 hours
             player: {
-                x: 400, y: 300,
+                x: canvas.width / 2,
+                y: canvas.height / 2,
                 vx: 0, vy: 0,
-                health: 100,
-                warmth: 75,
-                hunger: 70,
-                wood: 0,
-                food: 0,
-                materials: 0,
-                foodTraps: 0,
-                bearTraps: 0,
-                inIgloo: false,
-                hasWarmCoat: false,
-                combo: 0,
-                lastAction: 0,
-                captured: false,  // NEW: Capture state
-                capturedBy: null,  // NEW: Which bear captured player
-                dragProgress: 0,   // NEW: Progress of drag to den
-                escapeAttempts: 0  // NEW: Track escape attempts
+                speed: 200,
+                hp: 100,
+                warmth: 100,
+                hunger: 100,
+                inv: { wood: 0, food: 0, materials: 0, traps: 0, bearTraps: 0 },
+                facing: 1, // 1 right, -1 left
+                actionCooldown: 0
             },
-            trees: [],
-            rabbits: [],
-            seals: [],
-            ice: [],
-            bears: [],
-            traps: [],
-            igloo: null,
-            fire: null,
-            fireWasLit: false,
-            warmCoat: null,
-            keys: {},
-            particles: [], // NEW: Particle system
-            snowflakes: [], // NEW: Falling snow
-            footprints: [] // NEW: Player footprints
+            entities: [],
+            particles: [],
+            cam: { x: 0, y: 0 },
+            keys: {}
         };
 
-        function init() {
-            // Trees
-            for (let i = 0; i < 6; i++) {
-                game.trees.push({
-                    x: 100 + Math.random() * 600,
-                    y: 100 + Math.random() * 400,
-                    sway: Math.random() * Math.PI * 2,
-                    health: 3 // NEW: Trees need multiple chops
-                });
-            }
-            
-            // More rabbits for better gameplay
-            for (let i = 0; i < 3; i++) {
-                game.rabbits.push({
-                    x: 100 + Math.random() * 600,
-                    y: 100 + Math.random() * 400,
-                    vx: 0, vy: 0,
-                    hopTimer: 0,
-                    hopPhase: 0,
-                    isHopping: false,
-                    direction: Math.random() * Math.PI * 2,
-                    pauseTimer: 2,
-                    scared: false // NEW: Rabbits flee from bears
-                });
-            }
-            
-            // Seals
-            for (let i = 0; i < 2; i++) {
-                game.seals.push({
-                    x: 100 + Math.random() * 600,
-                    y: 100 + Math.random() * 400,
-                    vx: 0, vy: 0,
-                    direction: Math.random() * Math.PI * 2,
-                    pauseTimer: 3,
-                    slideTimer: 0
-                });
-            }
-            
-            // Ice
-            for (let i = 0; i < 5; i++) {
-                game.ice.push({
-                    x: 100 + Math.random() * 600,
-                    y: 100 + Math.random() * 400,
-                    rotation: Math.random() * Math.PI * 2,
-                    size: 15 + Math.random() * 10
-                });
-            }
-            
-            // Warm coat
-            game.warmCoat = {
-                x: 200 + Math.random() * 400,
-                y: 200 + Math.random() * 200,
-                collected: false
-            };
-            
-            // Bears
-            const caveX = 100, caveY = 100;
-            for (let i = 0; i < 2; i++) {
-                const angle = (Math.PI / 2) * i + Math.PI / 4;
-                const dist = 80 + i * 30;
-                game.bears.push({
-                    x: caveX + Math.cos(angle) * dist,
-                    y: caveY + Math.sin(angle) * dist,
-                    vx: 0, vy: 0,
-                    caveX, caveY,
-                    state: 'docile',
-                    docileTime: 15 + i * 3,
-                    wanderTime: 0,
-                    chaseTime: 0,
-                    roarTime: 0,
-                    caveTime: 0,
-                    targetX: 0,
-                    targetY: 0,
-                    trapped: false,
-                    trapTime: 0,
-                    hasRoared: false,
-                    alertRadius: 150, // Dynamic alert radius
-                    hasCaptured: false // NEW: Track if bear has captured player
-                });
-            }
-            
-            // Build spots
-            game.igloo = { x: 500, y: 300, built: false, buildProgress: 0 }; // NEW: Build progress
-            game.fire = { x: 300, y: 300, lit: false, health: 0, radius: 100 }; // NEW: Fire radius
-            
-            // Initialize snow
-            for (let i = 0; i < 100; i++) {
-                game.snowflakes.push({
-                    x: Math.random() * 800,
-                    y: Math.random() * 600,
-                    speed: 20 + Math.random() * 30,
-                    size: 2 + Math.random() * 3,
-                    drift: Math.random() * 2 - 1
-                });
-            }
-        }
+        // Entity Types
+        const TYPES = {
+            TREE: 'tree',
+            RABBIT: 'rabbit',
+            BEAR: 'bear',
+            SEAL: 'seal',
+            WOOD: 'wood_drop',
+            FOOD: 'food_drop',
+            TRAP: 'trap',
+            BEAR_TRAP: 'bear_trap',
+            IGLOO: 'igloo',
+            FIRE: 'fire'
+        };
 
+        // Assets (Emojis are drawn directly)
+        
+        // --- Input Handling ---
         window.addEventListener('keydown', e => {
             game.keys[e.key.toLowerCase()] = true;
-            if (e.key.toLowerCase() === 'e') interact();
-            if (e.key.toLowerCase() === 'f') eatFood();
-            if (e.key.toLowerCase() === 'q') {
-                if (game.player.foodTraps > 0) placeFoodTrap();
-                else craftFoodTrap();
-            }
-            if (e.key.toLowerCase() === 'r') {
-                if (game.player.bearTraps > 0) placeBearTrap();
-                else craftBearTrap();
-            }
-            // NEW: Space bar for escaping capture
-            if (e.key === ' ' && game.player.captured) {
-                attemptEscape();
-                e.preventDefault();
-            }
+            if (e.code === 'Space') handleAction();
+            
+            // Hotkeys for crafting
+            if (e.key === '1') craft('trap');
+            if (e.key === '2') craft('bearTrap');
+            if (e.key === 'e') eatFood();
         });
         window.addEventListener('keyup', e => game.keys[e.key.toLowerCase()] = false);
 
-        function showMessage(text) {
-            const div = document.createElement('div');
-            div.className = 'message';
-            div.textContent = text;
-            document.getElementById('messages').appendChild(div);
-            setTimeout(() => div.remove(), 3000);
-        }
+        // UI Buttons
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('startScreen').classList.add('hidden');
+            initGame();
+        });
+
+        document.getElementById('btnTrap').addEventListener('click', () => craft('trap'));
+        document.getElementById('btnBearTrap').addEventListener('click', () => craft('bearTrap'));
+        document.getElementById('btnEat').addEventListener('click', () => eatFood());
         
-        // ESCAPE MECHANIC: Strength-based with clear feedback
-        function attemptEscape() {
-            const p = game.player;
-            if (!p.captured || !p.capturedBy) return;
-            
-            p.escapeAttempts++;
-            
-            // Calculate escape chance based on player's CURRENT condition
-            const playerStrength = (p.health + p.warmth + p.hunger) / 300;
-            const isFreezing = p.warmth < 30;
-            
-            // Freezing players have VERY low escape chance (5-20%)
-            // Normal weak players: 10-30%
-            // Strong players: 30-50%
-            let baseEscapeChance;
-            if (isFreezing) {
-                baseEscapeChance = 0.05 + (playerStrength * 0.15);
-            } else if (playerStrength < 0.5) {
-                baseEscapeChance = 0.10 + (playerStrength * 0.40);
-            } else {
-                baseEscapeChance = 0.30 + ((playerStrength - 0.5) * 0.40);
+        const virtualBtn = document.getElementById('virtualBtn');
+        virtualBtn.addEventListener('touchstart', (e) => { e.preventDefault(); handleAction(); });
+        virtualBtn.addEventListener('mousedown', (e) => { e.preventDefault(); handleAction(); });
+
+        // Virtual D-Pad Logic (Simple Touch Quadrants)
+        const dpad = document.getElementById('virtualDpad');
+        let touchId = null;
+        dpad.addEventListener('touchstart', e => {
+            e.preventDefault();
+            touchId = e.changedTouches[0].identifier;
+            updateTouchMove(e.changedTouches[0]);
+        });
+        dpad.addEventListener('touchmove', e => {
+            e.preventDefault();
+            for(let i=0; i<e.changedTouches.length; i++) {
+                if(e.changedTouches[i].identifier === touchId) updateTouchMove(e.changedTouches[i]);
             }
+        });
+        dpad.addEventListener('touchend', e => {
+            e.preventDefault();
+            game.keys['w'] = game.keys['a'] = game.keys['s'] = game.keys['d'] = false;
+        });
+
+        function updateTouchMove(touch) {
+            const rect = dpad.getBoundingClientRect();
+            const cx = rect.left + rect.width/2;
+            const cy = rect.top + rect.height/2;
+            const dx = touch.clientX - cx;
+            const dy = touch.clientY - cy;
             
-            // Rapid button mashing adds significant bonus
-            const rapidBonus = Math.min(0.20, p.escapeAttempts * 0.04);
-            
-            const totalEscapeChance = Math.min(0.7, baseEscapeChance + rapidBonus);
-            
-            if (Math.random() < totalEscapeChance) {
-                // ESCAPED!
-                p.captured = false;
-                const bear = p.capturedBy;
-                bear.hasCaptured = false;
-                bear.state = 'stunned';
-                bear.stunnedTime = 3;
-                p.capturedBy = null;
-                p.escapeAttempts = 0;
-                
-                // Push player away from bear
-                const dx = p.x - bear.x;
-                const dy = p.y - bear.y;
-                const dist = Math.hypot(dx, dy) || 1;
-                p.x += (dx / dist) * 50;
-                p.y += (dy / dist) * 50;
-                
-                // Bonus points for strong escapes
-                const escapeBonus = isFreezing ? 500 : (playerStrength < 0.5 ? 300 : 200);
-                game.score += escapeBonus;
-                
-                if (isFreezing) {
-                    showMessage(`❄️✨ MIRACLE ESCAPE! +${escapeBonus} (you were freezing!)`);
-                } else {
-                    showMessage(`✨ ESCAPED! +${escapeBonus} score`);
-                }
-                createParticles(p.x, p.y, '#00ff00', 15);
-            } else {
-                // Failed escape - damage increases with each failed attempt
-                const struggleDamage = 2 + p.escapeAttempts * 0.5;
-                p.health -= struggleDamage;
-                
-                if (p.escapeAttempts === 1) {
-                    // Show exact probability on first attempt
-                    if (isFreezing) {
-                        showMessage(`TOO COLD TO ESCAPE! (${Math.floor(totalEscapeChance * 100)}% chance)`);
-                    } else {
-                        showMessage(`Struggling... ${Math.floor(totalEscapeChance * 100)}% chance. Keep mashing!`);
-                    }
-                } else if (p.escapeAttempts % 3 === 0) {
-                    // Update every 3 attempts
-                    showMessage(`Escape chance rising: ${Math.floor(totalEscapeChance * 100)}%`);
-                }
-                createParticles(p.x, p.y, '#ff8800', 2);
-            }
+            game.keys['w'] = dy < -20;
+            game.keys['s'] = dy > 20;
+            game.keys['a'] = dx < -20;
+            game.keys['d'] = dx > 20;
         }
 
-        // NEW: Particle system for visual feedback
-        function createParticles(x, y, color, count = 5) {
-            for (let i = 0; i < count; i++) {
+        // --- Core Logic ---
+        function initGame() {
+            game.running = true;
+            game.entities = [];
+            game.particles = [];
+            game.day = 1;
+            game.time = 0;
+            
+            // Generate World
+            // Trees
+            for(let i=0; i<30; i++) {
+                game.entities.push({
+                    type: TYPES.TREE,
+                    x: Math.random() * 2000 - 1000,
+                    y: Math.random() * 2000 - 1000,
+                    hp: 3,
+                    scale: 0.8 + Math.random() * 0.4
+                });
+            }
+            
+            // Rabbits
+            for(let i=0; i<15; i++) {
+                spawnRabbit();
+            }
+
+            // Bears
+            for(let i=0; i<3; i++) {
+                spawnBear();
+            }
+
+            // Starting Igloo (Ruined) - acts as base
+            game.entities.push({
+                type: TYPES.IGLOO,
+                x: 0,
+                y: 0,
+                built: false,
+                progress: 0
+            });
+
+            gameLoop();
+        }
+
+        function spawnRabbit() {
+            game.entities.push({
+                type: TYPES.RABBIT,
+                x: Math.random() * 2000 - 1000,
+                y: Math.random() * 2000 - 1000,
+                vx: 0, vy: 0,
+                timer: 0,
+                state: 'idle'
+            });
+        }
+
+        function spawnBear() {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 800 + Math.random() * 400;
+            game.entities.push({
+                type: TYPES.BEAR,
+                x: Math.cos(angle) * dist,
+                y: Math.sin(angle) * dist,
+                vx: 0, vy: 0,
+                state: 'wandering',
+                timer: 0,
+                hp: 5
+            });
+        }
+
+        function spawnParticle(x, y, emoji, count=1) {
+            for(let i=0; i<count; i++) {
                 game.particles.push({
                     x, y,
-                    vx: (Math.random() - 0.5) * 100,
-                    vy: (Math.random() - 0.5) * 100 - 50,
-                    life: 1,
-                    color
+                    vx: (Math.random() - 0.5) * 200,
+                    vy: (Math.random() - 0.5) * 200 - 100,
+                    emoji,
+                    life: 1.0,
+                    scale: 0.5 + Math.random() * 0.5
                 });
             }
         }
 
-        function interact() {
+        function showFloatText(x, y, text, color='white') {
+            const el = document.createElement('div');
+            el.className = 'floater';
+            el.textContent = text;
+            el.style.left = (canvas.width/2 + (x - game.player.x)) + 'px';
+            el.style.top = (canvas.height/2 + (y - game.player.y)) + 'px';
+            el.style.color = color;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1000);
+        }
+
+        function handleAction() {
+            if (!game.running) return;
             const p = game.player;
-            const now = Date.now();
             
-            // Trees - NEW: Multiple chops
-            for (let i = game.trees.length - 1; i >= 0; i--) {
-                const tree = game.trees[i];
-                if (Math.hypot(p.x - tree.x, p.y - tree.y) < 40) {
-                    tree.health--;
-                    if (tree.health <= 0) {
-                        p.wood += 5; // More wood
-                        game.score += 10;
-                        game.trees.splice(i, 1);
-                        createParticles(tree.x, tree.y, '#228B22', 8);
-                        showMessage('+5 wood');
-                        setTimeout(() => {
-                            game.trees.push({
-                                x: 100 + Math.random() * 600,
-                                y: 100 + Math.random() * 400,
-                                sway: Math.random() * Math.PI * 2,
-                                health: 3
-                            });
-                        }, 5000);
-                    } else {
-                        p.wood += 1;
-                        showMessage('Chopping... ' + tree.health + ' hits left');
+            // Check interaction with nearest entity
+            const nearest = game.entities.find(e => {
+                const d = Math.hypot(e.x - p.x, e.y - p.y);
+                return d < 60;
+            });
+
+            if (nearest) {
+                if (nearest.type === TYPES.TREE) {
+                    nearest.hp--;
+                    spawnParticle(nearest.x, nearest.y - 20, '🍂', 3);
+                    if (nearest.hp <= 0) {
+                        // Drop wood
+                        game.entities.push({ type: TYPES.WOOD, x: nearest.x, y: nearest.y });
+                        // Respawn tree elsewhere
+                        nearest.x = Math.random() * 2000 - 1000;
+                        nearest.y = Math.random() * 2000 - 1000;
+                        nearest.hp = 3;
+                        showFloatText(p.x, p.y - 50, "+ Wood", "#deb887");
                     }
-                    return;
-                }
-            }
-            
-            // Rabbits
-            for (let i = game.rabbits.length - 1; i >= 0; i--) {
-                const r = game.rabbits[i];
-                if (Math.hypot(p.x - r.x, p.y - r.y) < 30) {
-                    p.food += 3; // More food
-                    game.score += 25;
-                    game.rabbits.splice(i, 1);
-                    createParticles(r.x, r.y, '#ffffff', 6);
-                    showMessage('+3 food');
-                    setTimeout(() => {
-                        game.rabbits.push({
-                            x: 100 + Math.random() * 600,
-                            y: 100 + Math.random() * 400,
-                            vx: 0, vy: 0,
-                            hopTimer: 0, hopPhase: 0,
-                            isHopping: false,
-                            direction: Math.random() * Math.PI * 2,
-                            pauseTimer: 2,
-                            scared: false
-                        });
-                    }, 5000);
-                    return;
-                }
-            }
-            
-            // Seals
-            for (let i = game.seals.length - 1; i >= 0; i--) {
-                const s = game.seals[i];
-                if (Math.hypot(p.x - s.x, p.y - s.y) < 30) {
-                    p.food += 5; // Even more food
-                    game.score += 50;
-                    game.seals.splice(i, 1);
-                    createParticles(s.x, s.y, '#6a6a6a', 8);
-                    showMessage('+5 food (seal!)');
-                    setTimeout(() => {
-                        game.seals.push({
-                            x: 100 + Math.random() * 600,
-                            y: 100 + Math.random() * 400,
-                            vx: 0, vy: 0,
-                            direction: Math.random() * Math.PI * 2,
-                            pauseTimer: 3,
-                            slideTimer: 0
-                        });
-                    }, 8000);
-                    return;
-                }
-            }
-            
-            // Ice
-            for (let i = game.ice.length - 1; i >= 0; i--) {
-                const ice = game.ice[i];
-                if (Math.hypot(p.x - ice.x, p.y - ice.y) < 30) {
-                    p.materials += 5; // More materials
-                    game.score += 15;
-                    game.ice.splice(i, 1);
-                    createParticles(ice.x, ice.y, '#b0d4e8', 8);
-                    showMessage('+5 materials');
-                    setTimeout(() => {
-                        game.ice.push({
-                            x: 100 + Math.random() * 600,
-                            y: 100 + Math.random() * 400,
-                            rotation: Math.random() * Math.PI * 2,
-                            size: 15 + Math.random() * 10
-                        });
-                    }, 4000);
-                    return;
-                }
-            }
-            
-            // Warm coat
-            if (game.warmCoat && !game.warmCoat.collected && 
-                Math.hypot(p.x - game.warmCoat.x, p.y - game.warmCoat.y) < 30) {
-                game.warmCoat.collected = true;
-                p.hasWarmCoat = true;
-                game.score += 100;
-                createParticles(game.warmCoat.x, game.warmCoat.y, '#8B4513', 10);
-                showMessage('🧥 Warm Coat! Warmth drains 50% slower!');
-                return;
-            }
-            
-            // Food traps with catch
-            for (let i = game.traps.length - 1; i >= 0; i--) {
-                const trap = game.traps[i];
-                if (trap.type === 'food' && trap.hasCatch && 
-                    Math.hypot(p.x - trap.x, p.y - trap.y) < 40) {
-                    p.food += 3;
-                    game.score += 30;
-                    game.traps.splice(i, 1);
-                    showMessage('+3 food from trap!');
-                    return;
-                }
-            }
-            
-            // Build igloo - NEW: Progressive building
-            if (game.igloo && !game.igloo.built && 
-                Math.hypot(p.x - game.igloo.x, p.y - game.igloo.y) < 50) {
-                if (p.materials >= 3) {
-                    p.materials -= 3;
-                    game.igloo.buildProgress += 33;
-                    if (game.igloo.buildProgress >= 100) {
-                        game.igloo.built = true;
-                        game.score += 200;
-                        showMessage('🏠 Igloo complete!');
-                    } else {
-                        showMessage(`Building... ${Math.floor(game.igloo.buildProgress)}%`);
-                    }
-                } else {
-                    showMessage(`Need 3 materials per stage (${game.igloo.buildProgress}% done)`);
-                }
-                return;
-            }
-            
-            // Light fire - NEW: Fire maintenance
-            if (game.fire && Math.hypot(p.x - game.fire.x, p.y - game.fire.y) < 50) {
-                if (!game.fire.lit && p.wood >= 5) {
-                    p.wood -= 5;
-                    game.fire.lit = true;
-                    game.fire.health = 100;
-                    game.fireWasLit = true;
-                    game.score += 150;
-                    game.bears.forEach(b => {
-                        b.hasRoared = false;
-                        if (b.state === 'roaring' || b.state === 'charging') {
-                            b.state = 'wandering';
-                            b.wanderTime = 10;
+                } else if (nearest.type === TYPES.WOOD) {
+                    p.inv.wood++;
+                    p.inv.materials += Math.random() > 0.5 ? 1 : 0;
+                    showFloatText(p.x, p.y - 50, "+1 Wood", "#deb887");
+                    game.entities = game.entities.filter(e => e !== nearest);
+                    spawnParticle(p.x, p.y, '✨', 5);
+                } else if (nearest.type === TYPES.FOOD) {
+                    p.inv.food++;
+                    showFloatText(p.x, p.y - 50, "+1 Food", "#ff6b6b");
+                    game.entities = game.entities.filter(e => e !== nearest);
+                    spawnParticle(p.x, p.y, '✨', 5);
+                } else if (nearest.type === TYPES.IGLOO && !nearest.built) {
+                    if (p.inv.wood >= 1) {
+                        p.inv.wood--;
+                        nearest.progress += 10;
+                        spawnParticle(nearest.x, nearest.y, '❄️', 5);
+                        if (nearest.progress >= 100) {
+                            nearest.built = true;
+                            showFloatText(nearest.x, nearest.y, "Home Sweet Home!", "#4dabf7");
                         }
-                    });
-                    showMessage('🔥 Fire lit! Bears scared!');
-                } else if (game.fire.lit && p.wood >= 2) {
-                    p.wood -= 2;
-                    game.fire.health = Math.min(100, game.fire.health + 50);
-                    showMessage('🔥 Fire stoked! (+50 fuel)');
-                } else if (!game.fire.lit) {
-                    showMessage(`Need 5 wood to light (have ${p.wood})`);
-                } else {
-                    showMessage(`Need 2 wood to stoke (have ${p.wood})`);
+                    } else {
+                        showFloatText(nearest.x, nearest.y, "Need Wood!", "red");
+                    }
                 }
-                return;
+            }
+        }
+
+        function craft(item) {
+            const p = game.player;
+            if (item === 'trap') {
+                if (p.inv.wood >= 3 && p.inv.materials >= 2) {
+                    p.inv.wood -= 3;
+                    p.inv.materials -= 2;
+                    game.entities.push({ type: TYPES.TRAP, x: p.x, y: p.y, caught: false });
+                    showFloatText(p.x, p.y, "Trap Set!", "#51cf66");
+                } else showFloatText(p.x, p.y, "Need 3🪵 2🔩", "red");
+            }
+            if (item === 'bearTrap') {
+                if (p.inv.wood >= 5 && p.inv.materials >= 5) {
+                    p.inv.wood -= 5;
+                    p.inv.materials -= 5;
+                    game.entities.push({ type: TYPES.BEAR_TRAP, x: p.x, y: p.y, caught: false });
+                    showFloatText(p.x, p.y, "Big Trap Set!", "#ff922b");
+                } else showFloatText(p.x, p.y, "Need 5🪵 5🔩", "red");
             }
         }
 
         function eatFood() {
             const p = game.player;
-            if (p.food > 0) {
-                p.food--;
-                let hungerBonus = 35;
-                let healthBonus = 20;
-                
-                // NEW: Fire bonus
-                if (game.fire && game.fire.lit && 
-                    Math.hypot(p.x - game.fire.x, p.y - game.fire.y) < 100) {
-                    hungerBonus += 15;
-                    healthBonus += 10;
-                    showMessage('🔥 Food eaten near fire! BONUS: +50 hunger, +30 HP!');
-                } else {
-                    showMessage('Food eaten! +35 hunger, +20 HP');
-                }
-                
-                p.hunger = Math.min(100, p.hunger + hungerBonus);
-                p.health = Math.min(100, p.health + healthBonus);
-                game.score += 5;
+            if (p.inv.food > 0) {
+                p.inv.food--;
+                p.hp = Math.min(100, p.hp + 20);
+                p.hunger = Math.min(100, p.hunger + 40);
+                spawnParticle(p.x, p.y, '❤️', 5);
+                showFloatText(p.x, p.y, "Yum!", "#51cf66");
             } else {
-                showMessage('No food!');
-            }
-        }
-
-        function craftFoodTrap() {
-            const p = game.player;
-            if (p.wood >= 3 && p.materials >= 2) {
-                p.wood -= 3;
-                p.materials -= 2;
-                p.foodTraps++;
-                game.score += 20;
-                showMessage('🪤 Food Trap crafted!');
-            } else {
-                showMessage('Need 3 wood + 2 materials');
-            }
-        }
-
-        function craftBearTrap() {
-            const p = game.player;
-            if (p.wood >= 5 && p.materials >= 5) {
-                p.wood -= 5;
-                p.materials -= 5;
-                p.bearTraps++;
-                game.score += 50;
-                showMessage('🪤 Bear Trap crafted!');
-            } else {
-                showMessage('Need 5 wood + 5 materials');
-            }
-        }
-
-        function placeFoodTrap() {
-            if (game.player.foodTraps > 0) {
-                game.player.foodTraps--;
-                game.traps.push({
-                    type: 'food',
-                    x: game.player.x,
-                    y: game.player.y,
-                    hasCatch: false
-                });
-                showMessage('🪤 Food trap placed!');
-            }
-        }
-
-        function placeBearTrap() {
-            if (game.player.bearTraps > 0) {
-                game.player.bearTraps--;
-                game.traps.push({
-                    type: 'bear',
-                    x: game.player.x,
-                    y: game.player.y,
-                    triggered: false
-                });
-                showMessage('🪤 Bear trap placed!');
-            }
-        }
-
-        function updateRabbit(r, dt) {
-            // NEW: Rabbits flee from bears
-            r.scared = false;
-            for (const bear of game.bears) {
-                if (bear.state !== 'in_cave' && Math.hypot(r.x - bear.x, r.y - bear.y) < 100) {
-                    r.scared = true;
-                    const dx = r.x - bear.x;
-                    const dy = r.y - bear.y;
-                    const dist = Math.hypot(dx, dy) || 1;
-                    r.vx = (dx / dist) * 120;
-                    r.vy = (dy / dist) * 120;
-                    r.x += r.vx * dt;
-                    r.y += r.vy * dt;
-                    r.x = Math.max(30, Math.min(770, r.x));
-                    r.y = Math.max(30, Math.min(570, r.y));
-                    return;
-                }
-            }
-            
-            r.pauseTimer -= dt;
-            
-            if (r.pauseTimer <= 0) {
-                r.direction = Math.random() * Math.PI * 2;
-                r.pauseTimer = 1.5 + Math.random() * 2;
-                r.isHopping = true;
-                r.hopTimer = 0;
-            }
-            
-            if (r.isHopping) {
-                r.hopTimer += dt * 6;
-                if (r.hopTimer > Math.PI) {
-                    r.isHopping = false;
-                    r.hopPhase = 0;
-                } else {
-                    r.hopPhase = Math.sin(r.hopTimer);
-                }
-            }
-            
-            if (r.pauseTimer > 0.8 && r.isHopping) {
-                r.vx = Math.cos(r.direction) * 60;
-                r.vy = Math.sin(r.direction) * 60;
-            } else {
-                r.vx = 0;
-                r.vy = 0;
-            }
-            
-            r.x += r.vx * dt;
-            r.y += r.vy * dt;
-            r.x = Math.max(30, Math.min(770, r.x));
-            r.y = Math.max(30, Math.min(570, r.y));
-        }
-
-        function updateSeal(s, dt) {
-            s.pauseTimer -= dt;
-            s.slideTimer += dt;
-            
-            if (s.pauseTimer <= 0) {
-                s.direction = Math.random() * Math.PI * 2;
-                s.pauseTimer = 2 + Math.random() * 3;
-            }
-            
-            if (s.pauseTimer > 1) {
-                const slideSpeed = 50 * (0.7 + Math.sin(s.slideTimer * 2) * 0.3);
-                s.vx = Math.cos(s.direction) * slideSpeed;
-                s.vy = Math.sin(s.direction) * slideSpeed;
-            } else {
-                s.vx *= 0.9;
-                s.vy *= 0.9;
-            }
-            
-            s.x += s.vx * dt;
-            s.y += s.vy * dt;
-            
-            if (s.x < 30 || s.x > 770) {
-                s.direction = Math.PI - s.direction;
-                s.vx *= -1;
-            }
-            if (s.y < 30 || s.y > 570) {
-                s.direction = -s.direction;
-                s.vy *= -1;
-            }
-            
-            s.x = Math.max(30, Math.min(770, s.x));
-            s.y = Math.max(30, Math.min(570, s.y));
-        }
-
-        function updateBear(bear, dt) {
-            const p = game.player;
-            const distToPlayer = Math.hypot(p.x - bear.x, p.y - bear.y);
-            
-            // NEW: Calculate player's effective strength (0-1)
-            const playerStrength = (p.health + p.warmth + p.hunger) / 300;
-            const playerWeak = playerStrength < 0.5; // Under 50% average
-            
-            // NEW: Dynamic alert radius based on player condition
-            bear.alertRadius = 150 + (playerWeak ? 50 : 0) - (p.hasWarmCoat ? 30 : 0);
-            
-            // Check traps
-            if (bear.trapped) {
-                bear.trapTime -= dt;
-                if (bear.trapTime <= 0) {
-                    bear.trapped = false;
-                    bear.state = 'wandering';
-                    bear.wanderTime = 10;
-                }
-                return;
-            }
-            
-            for (const trap of game.traps) {
-                if (trap.type === 'bear' && !trap.triggered &&
-                    Math.hypot(bear.x - trap.x, bear.y - trap.y) < 35) {
-                    trap.triggered = true;
-                    bear.trapped = true;
-                    bear.trapTime = 8; // Longer trap time
-                    game.score += 100;
-                    showMessage('🪤 Bear trapped! +100 score');
-                    return;
-                }
-            }
-            
-            // Check fire
-            const nearFire = game.fire?.lit && 
-                Math.hypot(bear.x - game.fire.x, bear.y - game.fire.y) < game.fire.radius;
-            
-            if (nearFire) {
-                const dx = bear.x - game.fire.x;
-                const dy = bear.y - game.fire.y;
-                const dist = Math.hypot(dx, dy) || 1;
-                bear.vx = (dx / dist) * 70;
-                bear.vy = (dy / dist) * 70;
-                bear.x += bear.vx * dt;
-                bear.y += bear.vy * dt;
-                bear.x = Math.max(30, Math.min(770, bear.x));
-                bear.y = Math.max(30, Math.min(770, bear.y));
-                return;
-            }
-            
-            // Fire went out - roar then charge
-            if (!game.fire?.lit && game.fireWasLit && 
-                bear.state !== 'roaring' && bear.state !== 'charging') {
-                bear.state = 'roaring';
-                bear.roarTime = 3; // Shorter warning
-                if (!bear.hasRoared) {
-                    showMessage('🐻 ROAR! Fire went out!');
-                    bear.hasRoared = true;
-                }
-            }
-            
-            // State machine
-            if (bear.state === 'docile') {
-                bear.docileTime -= dt;
-                if (bear.docileTime <= 0) {
-                    bear.state = 'wandering';
-                    bear.wanderTime = 12;
-                    showMessage('🐻 Bears active!');
-                }
-                
-                if (Math.random() < 0.01) {
-                    const angle = Math.random() * Math.PI * 2;
-                    bear.targetX = bear.x + Math.cos(angle) * 150;
-                    bear.targetY = bear.y + Math.sin(angle) * 150;
-                }
-                
-                const dx = bear.targetX - bear.x;
-                const dy = bear.targetY - bear.y;
-                const dist = Math.hypot(dx, dy) || 1;
-                
-                if (dist > 10) {
-                    bear.vx = (dx / dist) * 60 * 0.2;
-                    bear.vy = (dy / dist) * 60 * 0.2;
-                }
-                
-            } else if (bear.state === 'wandering') {
-                bear.wanderTime -= dt;
-                
-                // NEW: Dynamic alert radius
-                if (!p.inIgloo && distToPlayer < bear.alertRadius) {
-                    bear.state = 'chasing';
-                    bear.chaseTime = 8; // Longer chase
-                    showMessage('🐻 Bear spotted you!');
-                } else if (bear.wanderTime <= 0) {
-                    bear.state = 'returning';
-                } else {
-                    if (Math.random() < 0.02) {
-                        const angle = Math.random() * Math.PI * 2;
-                        bear.targetX = bear.x + Math.cos(angle) * 100;
-                        bear.targetY = bear.y + Math.sin(angle) * 100;
-                    }
-                    
-                    const dx = bear.targetX - bear.x;
-                    const dy = bear.targetY - bear.y;
-                    const dist = Math.hypot(dx, dy) || 1;
-                    
-                    if (dist > 5) {
-                        bear.vx = (dx / dist) * 60 * 0.35;
-                        bear.vy = (dy / dist) * 60 * 0.35;
-                    }
-                }
-                
-            } else if (bear.state === 'chasing') {
-                bear.chaseTime -= dt;
-                
-                if (p.inIgloo || distToPlayer > 250 || bear.chaseTime <= 0) {
-                    bear.state = 'wandering';
-                    bear.wanderTime = 8;
-                } else {
-                    const dx = p.x - bear.x;
-                    const dy = p.y - bear.y;
-                    const dist = Math.hypot(dx, dy) || 1;
-                    
-                    // NEW: Chase speed increases if player is weak/cold
-                    const chaseMultiplier = 0.8 + (playerWeak ? 0.3 : 0);
-                    bear.vx = (dx / dist) * 60 * chaseMultiplier;
-                    bear.vy = (dy / dist) * 60 * chaseMultiplier;
-                    
-                    if (distToPlayer < 30) {
-                        // DYNAMIC CAPTURE: Based on overall condition, not just health
-                        // Capture if weak (<50% average) OR freezing (<30 warmth regardless of other stats)
-                        const isFreezing = p.warmth < 30;
-                        const canCapture = (playerWeak || isFreezing) && !p.captured;
-                        
-                        if (canCapture) {
-                            // Capture probability increases with weakness
-                            const captureChance = isFreezing ? 0.6 : (0.3 + (0.5 - playerStrength) * 0.8);
-                            
-                            if (Math.random() < captureChance * dt * 10) {
-                                p.captured = true;
-                                p.capturedBy = bear;
-                                bear.hasCaptured = true;
-                                bear.state = 'dragging';
-                                
-                                if (isFreezing) {
-                                    showMessage('❄️🐻 TOO COLD! CAPTURED! Press SPACE to escape!');
-                                } else {
-                                    showMessage(`🐻 CAPTURED! (Strength: ${Math.floor(playerStrength * 100)}%) Press SPACE!`);
-                                }
-                            }
-                        } else if (!p.captured) {
-                            // Normal damage - MORE damage if weak/cold
-                            const damageMultiplier = isFreezing ? 2.0 : (playerWeak ? 1.5 : 1.0);
-                            p.health -= dt * 15 * damageMultiplier;
-                            createParticles(p.x, p.y, '#ff0000', 2);
-                        }
-                    }
-                }
-                
-            } else if (bear.state === 'roaring') {
-                bear.roarTime -= dt;
-                bear.vx = 0;
-                bear.vy = 0;
-                
-                if (bear.roarTime <= 0) {
-                    bear.state = 'charging';
-                    showMessage('🔥💨 CHARGING!');
-                }
-                
-            } else if (bear.state === 'charging') {
-                if (p.inIgloo) {
-                    bear.state = 'wandering';
-                    bear.wanderTime = 10;
-                } else {
-                    const dx = p.x - bear.x;
-                    const dy = p.y - bear.y;
-                    const dist = Math.hypot(dx, dy) || 1;
-                    
-                    // NEW: Charging is more effective against weak players
-                    const chargeMultiplier = 2 + (playerWeak ? 0.5 : 0);
-                    bear.vx = (dx / dist) * 60 * chargeMultiplier;
-                    bear.vy = (dy / dist) * 60 * chargeMultiplier;
-                    
-                    if (distToPlayer < 30) {
-                        // CHARGING CAPTURE: Much higher probability than normal chase
-                        const isFreezing = p.warmth < 30;
-                        const canCapture = (playerWeak || isFreezing) && !p.captured;
-                        
-                        if (canCapture) {
-                            // Charging = 70-95% capture chance per second depending on condition
-                            const captureChance = isFreezing ? 0.95 : (0.7 + (0.5 - playerStrength) * 0.5);
-                            
-                            if (Math.random() < captureChance * dt * 10) {
-                                p.captured = true;
-                                p.capturedBy = bear;
-                                bear.hasCaptured = true;
-                                bear.state = 'dragging';
-                                
-                                if (isFreezing) {
-                                    showMessage('❄️🐻 FROZEN & CAPTURED! Press SPACE!');
-                                } else {
-                                    showMessage(`🐻 CHARGING CAPTURE! (${Math.floor(playerStrength * 100)}% strength) Press SPACE!`);
-                                }
-                            }
-                        } else if (!p.captured) {
-                            // Massive damage from charge - even worse if cold/weak
-                            const damageMultiplier = isFreezing ? 3.0 : (playerWeak ? 2.0 : 1.5);
-                            p.health -= dt * 30 * damageMultiplier;
-                            createParticles(p.x, p.y, '#ff0000', 3);
-                        }
-                    }
-                }
-                
-            } else if (bear.state === 'returning') {
-                const distToCave = Math.hypot(bear.x - bear.caveX, bear.y - bear.caveY);
-                
-                if (distToCave < 40) {
-                    bear.state = 'in_cave';
-                    bear.caveTime = 25; // Longer rest
-                } else {
-                    const dx = bear.caveX - bear.x;
-                    const dy = bear.caveY - bear.y;
-                    const dist = Math.hypot(dx, dy) || 1;
-                    
-                    bear.vx = (dx / dist) * 60 * 0.5;
-                    bear.vy = (dy / dist) * 60 * 0.5;
-                }
-                
-            } else if (bear.state === 'dragging') {
-                // NEW: Dragging captured player to den
-                const distToCave = Math.hypot(bear.x - bear.caveX, bear.y - bear.caveY);
-                
-                if (distToCave < 40) {
-                    // Reached den - massive damage or instant death
-                    p.health -= 60;
-                    p.captured = false;
-                    p.capturedBy = null;
-                    bear.hasCaptured = false;
-                    bear.state = 'in_cave';
-                    bear.caveTime = 20;
-                    showMessage('💀 Dragged to den! -60 HP!');
-                    createParticles(bear.caveX, bear.caveY, '#8B0000', 15);
-                } else {
-                    // Drag toward cave
-                    const dx = bear.caveX - bear.x;
-                    const dy = bear.caveY - bear.y;
-                    const dist = Math.hypot(dx, dy) || 1;
-                    
-                    bear.vx = (dx / dist) * 60 * 0.9;
-                    bear.vy = (dy / dist) * 60 * 0.9;
-                    
-                    // Drag player along
-                    p.x = bear.x;
-                    p.y = bear.y;
-                    
-                    // Small continuous damage while being dragged
-                    p.health -= dt * 5;
-                    
-                    if (Math.random() < 0.02) {
-                        createParticles(p.x, p.y, '#ff0000', 1);
-                    }
-                }
-                
-            } else if (bear.state === 'stunned') {
-                // NEW: Stunned state after player escapes
-                bear.stunnedTime -= dt;
-                bear.vx = 0;
-                bear.vy = 0;
-                
-                if (bear.stunnedTime <= 0) {
-                    bear.state = 'returning';
-                    showMessage('🐻 Bear recovering...');
-                }
-                return;
-                
-            } else if (bear.state === 'in_cave') {
-                bear.caveTime -= dt;
-                if (bear.caveTime <= 0) {
-                    bear.state = 'wandering';
-                    bear.wanderTime = 12;
-                    showMessage('🐻 Bear emerged!');
-                }
-                bear.x = bear.caveX;
-                bear.y = bear.caveY;
-                return;
-            }
-            
-            bear.x += bear.vx * dt;
-            bear.y += bear.vy * dt;
-            bear.x = Math.max(30, Math.min(770, bear.x));
-            bear.y = Math.max(30, Math.min(570, bear.y));
-        }
-
-        function updateFoodTraps(dt) {
-            for (const trap of game.traps) {
-                if (trap.type === 'food' && !trap.hasCatch) {
-                    for (let i = game.rabbits.length - 1; i >= 0; i--) {
-                        const r = game.rabbits[i];
-                        if (Math.hypot(trap.x - r.x, trap.y - r.y) < 40) {
-                            trap.hasCatch = true;
-                            game.rabbits.splice(i, 1);
-                            setTimeout(() => {
-                                game.rabbits.push({
-                                    x: 100 + Math.random() * 600,
-                                    y: 100 + Math.random() * 400,
-                                    vx: 0, vy: 0,
-                                    hopTimer: 0, hopPhase: 0,
-                                    isHopping: false,
-                                    direction: Math.random() * Math.PI * 2,
-                                    pauseTimer: 2,
-                                    scared: false
-                                });
-                            }, 5000);
-                            break;
-                        }
-                    }
-                }
+                showFloatText(p.x, p.y, "No Food!", "red");
             }
         }
 
         function update(dt) {
             if (!game.running) return;
             
-            // Time progression (original slower pace)
-            game.time += dt * 0.3;
+            const p = game.player;
+            
+            // Controls
+            let dx = 0, dy = 0;
+            if (game.keys['w'] || game.keys['arrowup']) dy = -1;
+            if (game.keys['s'] || game.keys['arrowdown']) dy = 1;
+            if (game.keys['a'] || game.keys['arrowleft']) { dx = -1; p.facing = -1; }
+            if (game.keys['d'] || game.keys['arrowright']) { dx = 1; p.facing = 1; }
+            
+            if (dx !== 0 || dy !== 0) {
+                const len = Math.hypot(dx, dy);
+                dx /= len; dy /= len;
+                p.x += dx * p.speed * dt;
+                p.y += dy * p.speed * dt;
+                
+                // Footprints (particles)
+                if (Math.random() < 0.1) {
+                    game.particles.push({
+                        x: p.x, y: p.y + 10,
+                        vx: 0, vy: 0,
+                        emoji: '👣',
+                        life: 3.0,
+                        scale: 0.3
+                    });
+                }
+            }
+
+            // Survival Drain
+            p.hunger -= dt * 1.5;
+            p.warmth -= dt * 1.0;
+            
+            // Time Cycle
+            game.time += dt * 0.5; // 1 hour per 2 real seconds
             if (game.time >= 24) {
                 game.time = 0;
                 game.day++;
-                game.score += 100 * game.day;
-                showMessage(`Day ${game.day}! +${100 * game.day} score`);
-            }
-            
-            // Player movement
-            const p = game.player;
-            p.vx = 0;
-            p.vy = 0;
-            
-            if (game.keys['w']) p.vy = -120;
-            if (game.keys['s']) p.vy = 120;
-            if (game.keys['a']) p.vx = -120;
-            if (game.keys['d']) p.vx = 120;
-            
-            // Normalize diagonal
-            if (p.vx !== 0 && p.vy !== 0) {
-                p.vx *= 0.707;
-                p.vy *= 0.707;
-            }
-            
-            // Movement warms slightly
-            if (p.vx !== 0 || p.vy !== 0) {
-                p.warmth = Math.min(100, p.warmth + dt * 0.8);
-            }
-            
-            p.x += p.vx * dt;
-            p.y += p.vy * dt;
-            p.x = Math.max(20, Math.min(780, p.x));
-            p.y = Math.max(20, Math.min(580, p.y));
-            
-            // Check if player is moving
-            const moving = p.vx !== 0 || p.vy !== 0;
-            
-            // Create footprints when moving
-            if (moving && Math.random() < 0.3) {
-                game.footprints.push({
-                    x: p.x,
-                    y: p.y,
-                    life: 8, // Lasts 8 seconds
-                    angle: Math.atan2(p.vy, p.vx)
-                });
-            }
-            
-            // Check igloo
-            if (game.igloo?.built && Math.hypot(p.x - game.igloo.x, p.y - game.igloo.y) < 40) {
-                p.inIgloo = true;
-                p.warmth = Math.min(100, p.warmth + dt * 8); // Strong warmth bonus
+                document.getElementById('dayVal').textContent = game.day;
+                showFloatText(p.x, p.y - 100, `Day ${game.day}`, '#4dabf7');
                 
-                // Bears forget rage and wander off when player enters igloo
-                game.bears.forEach(bear => {
-                    if (bear.state === 'chasing' || bear.state === 'roaring' || bear.state === 'charging') {
-                        bear.state = 'wandering';
-                        bear.wanderTime = 10;
+                // Respawn Trees/Rabbits
+                if (game.entities.filter(e => e.type === TYPES.TREE).length < 15) {
+                    for(let i=0; i<5; i++) {
+                        game.entities.push({
+                            type: TYPES.TREE,
+                            x: Math.random() * 2000 - 1000,
+                            y: Math.random() * 2000 - 1000,
+                            hp: 3,
+                            scale: 0.8 + Math.random() * 0.4
+                        });
                     }
-                });
-            } else {
-                p.inIgloo = false;
-            }
-            
-            // Fire warmth
-            if (game.fire?.lit && Math.hypot(p.x - game.fire.x, p.y - game.fire.y) < game.fire.radius) {
-                p.warmth = Math.min(100, p.warmth + dt * 6);
-            }
-            
-            // Fire decay (slower like original)
-            if (game.fire?.lit) {
-                game.fire.health -= dt * 2; // Original rate
-                if (game.fire.health <= 0) {
-                    game.fire.lit = false;
-                    game.fire.health = 0;
-                    showMessage('🔥 Fire died! Bears will attack!');
                 }
             }
             
-            // Survival stats - ORIGINAL BALANCED FORMULA
-            const warmthDrain = dt * 0.05;
-            const warmthMult = p.hasWarmCoat ? 0.5 : 1;
-            
-            if (p.inIgloo) {
-                p.warmth = Math.min(100, p.warmth + warmthDrain * 8);
-            } else if (moving) {
-                p.warmth = Math.min(100, p.warmth + warmthDrain * 3);
-            } else {
-                p.warmth = Math.max(0, p.warmth - warmthDrain * 2 * warmthMult);
+            // Near Igloo Warmth
+            const igloo = game.entities.find(e => e.type === TYPES.IGLOO && e.built);
+            if (igloo && Math.hypot(p.x - igloo.x, p.y - igloo.y) < 80) {
+                p.warmth = Math.min(100, p.warmth + dt * 10);
             }
+
+            if (p.hunger <= 0 || p.warmth <= 0) p.hp -= dt * 2;
             
-            p.hunger = Math.max(0, p.hunger - (moving ? warmthDrain * 2 : warmthDrain));
-            
-            // Health regeneration at good stats, slow drain at bad
-            if (p.warmth > 50 && p.hunger > 50) {
-                p.health = Math.min(100, p.health + warmthDrain * 2);
-            } else {
-                if (p.warmth < 30) p.health -= warmthDrain * 3;
-                if (p.hunger < 30) p.health -= warmthDrain * 2;
+            if (p.hp <= 0) {
+                game.running = false;
+                document.getElementById('finalDays').textContent = game.day;
+                document.getElementById('gameOverScreen').classList.remove('hidden');
             }
+
+            // Update UI
+            document.getElementById('hpBar').style.width = Math.max(0, p.hp) + '%';
+            document.getElementById('warmthBar').style.width = Math.max(0, p.warmth) + '%';
+            document.getElementById('hungerBar').style.width = Math.max(0, p.hunger) + '%';
             
-            p.health = Math.max(0, p.health);
+            document.getElementById('woodVal').textContent = p.inv.wood;
+            document.getElementById('foodVal').textContent = p.inv.food;
+            document.getElementById('matVal').textContent = p.inv.materials;
             
-            // Updates
-            game.rabbits.forEach(r => updateRabbit(r, dt));
-            game.seals.forEach(s => updateSeal(s, dt));
-            game.bears.forEach(b => updateBear(b, dt));
-            updateFoodTraps(dt);
+            // Enable/Disable craft buttons
+            document.getElementById('btnTrap').classList.toggle('active', p.inv.wood >= 3 && p.inv.materials >= 2);
+            document.getElementById('btnBearTrap').classList.toggle('active', p.inv.wood >= 5 && p.inv.materials >= 5);
+            document.getElementById('btnEat').classList.toggle('active', p.inv.food > 0);
+
+            // Entities Update
+            game.entities.forEach(e => {
+                if (e.type === TYPES.RABBIT) {
+                    // Rabbit logic
+                    e.timer -= dt;
+                    if (e.timer <= 0) {
+                        e.timer = Math.random() * 2 + 1;
+                        e.vx = (Math.random() - 0.5) * 100;
+                        e.vy = (Math.random() - 0.5) * 100;
+                    }
+                    e.x += e.vx * dt;
+                    e.y += e.vy * dt;
+                    
+                    // Check Trap
+                    const trap = game.entities.find(t => t.type === TYPES.TRAP && !t.caught && Math.hypot(t.x - e.x, t.y - e.y) < 30);
+                    if (trap) {
+                        trap.caught = true;
+                        // Turn rabbit into food drop
+                        game.entities.push({ type: TYPES.FOOD, x: e.x, y: e.y });
+                        e.dead = true;
+                        showFloatText(e.x, e.y, "Caught!", "#51cf66");
+                    }
+                } else if (e.type === TYPES.BEAR) {
+                    // Bear logic
+                    const distToPlayer = Math.hypot(p.x - e.x, p.y - e.y);
+                    
+                    if (distToPlayer < 300) {
+                        e.state = 'chasing';
+                        const angle = Math.atan2(p.y - e.y, p.x - e.x);
+                        e.x += Math.cos(angle) * 110 * dt; // Bear speed
+                        e.y += Math.sin(angle) * 110 * dt;
+                        
+                        if (distToPlayer < 40) {
+                            p.hp -= dt * 30;
+                            p.x += Math.cos(angle) * 200 * dt; // Knockback
+                            p.y += Math.sin(angle) * 200 * dt;
+                            spawnParticle(p.x, p.y, '💥', 1);
+                        }
+                    } else {
+                        e.state = 'wandering';
+                    }
+                    
+                    // Check Bear Trap
+                    const trap = game.entities.find(t => t.type === TYPES.BEAR_TRAP && !t.caught && Math.hypot(t.x - e.x, t.y - e.y) < 40);
+                    if (trap) {
+                        trap.caught = true; // One use
+                        e.hp--;
+                        showFloatText(e.x, e.y, "Bear Snared!", "#ff922b");
+                        spawnParticle(e.x, e.y, '💢', 5);
+                        // Teleport bear away if hurt enough? Or just slow it?
+                        if (e.hp <= 0) {
+                            e.dead = true;
+                            spawnParticle(e.x, e.y, '🥩', 5);
+                            game.entities.push({ type: TYPES.FOOD, x: e.x, y: e.y });
+                            game.entities.push({ type: TYPES.FOOD, x: e.x+10, y: e.y });
+                        } else {
+                            e.x += 200; // Flee
+                        }
+                    }
+                }
+            });
             
-            // Update particles
-            for (let i = game.particles.length - 1; i >= 0; i--) {
+            // Cleanup dead entities
+            game.entities = game.entities.filter(e => !e.dead);
+
+            // Particles
+            for(let i=game.particles.length-1; i>=0; i--) {
                 const part = game.particles[i];
                 part.x += part.vx * dt;
                 part.y += part.vy * dt;
-                part.vy += 200 * dt; // Gravity
-                part.life -= dt * 2;
-                if (part.life <= 0) {
-                    game.particles.splice(i, 1);
-                }
-            }
-            
-            // Update snowflakes
-            for (let i = 0; i < game.snowflakes.length; i++) {
-                const snow = game.snowflakes[i];
-                snow.y += snow.speed * dt;
-                snow.x += snow.drift * dt * 20;
-                
-                if (snow.y > 600) {
-                    snow.y = -10;
-                    snow.x = Math.random() * 800;
-                }
-                if (snow.x < 0) snow.x = 800;
-                if (snow.x > 800) snow.x = 0;
-            }
-            
-            // Update footprints
-            for (let i = game.footprints.length - 1; i >= 0; i--) {
-                game.footprints[i].life -= dt;
-                if (game.footprints[i].life <= 0) {
-                    game.footprints.splice(i, 1);
-                }
-            }
-            
-            // Game over
-            if (p.health <= 0) {
-                game.running = false;
-                document.getElementById('finalDays').textContent = game.day;
-                document.getElementById('finalScore').textContent = game.score;
-                document.getElementById('gameOver').style.display = 'block';
+                part.life -= dt;
+                if (part.life <= 0) game.particles.splice(i, 1);
             }
         }
 
+        function drawEmoji(emoji, x, y, size, scale=1, align='center') {
+            ctx.font = `${size * scale}px 'Nunito', sans-serif`;
+            ctx.textAlign = align;
+            ctx.textBaseline = 'middle';
+            ctx.fillText(emoji, x - game.cam.x + canvas.width/2, y - game.cam.y + canvas.height/2);
+        }
+
         function render() {
-            // Snowy background
+            // Camera Follow
+            const p = game.player;
+            // Smooth Lerp
+            game.cam.x += (p.x - game.cam.x) * 0.1;
+            game.cam.y += (p.y - game.cam.y) * 0.1;
+
+            // Background
             ctx.fillStyle = '#e8f4f8';
-            ctx.fillRect(0, 0, 800, 600);
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
             
-            // Footprints first (so they're behind everything)
-            game.footprints.forEach(print => {
-                ctx.save();
-                ctx.translate(print.x, print.y);
-                ctx.rotate(print.angle);
-                ctx.globalAlpha = Math.min(1, print.life / 2);
-                
-                ctx.fillStyle = 'rgba(180, 200, 220, 0.4)';
-                // Left foot
-                ctx.beginPath();
-                ctx.ellipse(-3, 0, 4, 6, 0, 0, Math.PI * 2);
-                ctx.fill();
-                // Right foot
-                ctx.beginPath();
-                ctx.ellipse(3, 0, 4, 6, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.globalAlpha = 1;
-                ctx.restore();
-            });
+            // Draw Grid/Snow Floor
+            const gridSize = 100;
+            const offsetX = Math.floor((game.cam.x - canvas.width/2) / gridSize) * gridSize;
+            const offsetY = Math.floor((game.cam.y - canvas.height/2) / gridSize) * gridSize;
             
-            // Cave (enhanced graphics)
-            ctx.save();
-            ctx.translate(100, 100);
-            const caveGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 50);
-            caveGrad.addColorStop(0, '#111');
-            caveGrad.addColorStop(1, '#333');
-            ctx.fillStyle = caveGrad;
-            ctx.beginPath();
-            ctx.arc(0, 0, 50, 0, Math.PI, true);
-            ctx.fill();
-            ctx.fillStyle = '#222';
-            ctx.fillRect(-30, 0, 60, 10);
-            ctx.restore();
-            
-            // Trees (enhanced)
-            game.trees.forEach(tree => {
-                const sway = Math.sin(Date.now() / 500 + tree.sway) * 3;
-                ctx.fillStyle = '#654321';
-                ctx.fillRect(tree.x - 5, tree.y, 10, 25);
-                
-                const treeGrad = ctx.createRadialGradient(tree.x, tree.y - 10, 0, tree.x, tree.y - 10, 25);
-                treeGrad.addColorStop(0, '#2d5016');
-                treeGrad.addColorStop(1, '#1a3010');
-                ctx.fillStyle = treeGrad;
-                ctx.beginPath();
-                ctx.moveTo(tree.x + sway, tree.y - 20);
-                ctx.lineTo(tree.x - 20, tree.y + 10);
-                ctx.lineTo(tree.x + 20, tree.y + 10);
-                ctx.closePath();
-                ctx.fill();
-                
-                // Health indicator
-                if (tree.health < 3) {
-                    ctx.fillStyle = '#ff0000';
-                    ctx.font = 'bold 10px Arial';
-                    ctx.fillText(tree.health, tree.x - 5, tree.y - 25);
-                }
-            });
-            
-            // Ice (enhanced)
-            game.ice.forEach(ice => {
-                ctx.save();
-                ctx.translate(ice.x, ice.y);
-                ctx.rotate(ice.rotation);
-                const iceGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, ice.size);
-                iceGrad.addColorStop(0, '#e0f7ff');
-                iceGrad.addColorStop(0.5, '#b0d4e8');
-                iceGrad.addColorStop(1, '#88b0c8');
-                ctx.fillStyle = iceGrad;
-                ctx.beginPath();
-                for (let i = 0; i < 6; i++) {
-                    const angle = (Math.PI / 3) * i;
-                    const x = Math.cos(angle) * ice.size;
-                    const y = Math.sin(angle) * ice.size;
-                    if (i === 0) ctx.moveTo(x, y);
-                    else ctx.lineTo(x, y);
-                }
-                ctx.closePath();
-                ctx.fill();
-                ctx.strokeStyle = 'rgba(200, 230, 255, 0.8)';
-                ctx.lineWidth = 2;
-                ctx.stroke();
-                ctx.restore();
-            });
-            
-            // Rabbits (enhanced - show scared state)
-            game.rabbits.forEach(r => {
-                ctx.save();
-                ctx.translate(r.x, r.y);
-                const hop = r.isHopping ? r.hopPhase * 8 : 0;
-                ctx.translate(0, -hop);
-                
-                const rabbitColor = r.scared ? '#ffe0e0' : '#f5f5f5';
-                ctx.fillStyle = rabbitColor;
-                ctx.beginPath();
-                ctx.ellipse(0, 0, 12, 8, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.fillStyle = '#ffb6c1';
-                ctx.beginPath();
-                ctx.ellipse(-5, -10, 3, 9, -0.3, 0, Math.PI * 2);
-                ctx.ellipse(5, -10, 3, 9, 0.3, 0, Math.PI * 2);
-                ctx.fill();
-                
-                if (r.scared) {
-                    ctx.fillStyle = '#ff0000';
-                    ctx.font = 'bold 16px Arial';
-                    ctx.fillText('!', 0, -18);
-                }
-                ctx.restore();
-            });
-            
-            // Seals (enhanced)
-            game.seals.forEach(s => {
-                ctx.save();
-                ctx.translate(s.x, s.y);
-                const sealGrad = ctx.createRadialGradient(-5, -5, 0, 0, 0, 25);
-                sealGrad.addColorStop(0, '#8a8a8a');
-                sealGrad.addColorStop(1, '#4a4a4a');
-                ctx.fillStyle = sealGrad;
-                ctx.beginPath();
-                ctx.ellipse(0, 0, 22, 13, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.fillStyle = '#5a5a5a';
-                ctx.beginPath();
-                ctx.ellipse(-15, 8, 8, 4, -0.5, 0, Math.PI * 2);
-                ctx.ellipse(15, 8, 8, 4, 0.5, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.restore();
-            });
-            
-            // Traps
-            game.traps.forEach(trap => {
-                if (trap.type === 'food') {
-                    ctx.fillStyle = '#8B4513';
-                    ctx.beginPath();
-                    ctx.arc(trap.x, trap.y, 15, 0, Math.PI * 2);
-                    ctx.fill();
-                    
-                    if (trap.hasCatch) {
-                        ctx.fillStyle = '#fff';
-                        ctx.font = 'bold 16px Arial';
-                        ctx.textAlign = 'center';
-                        ctx.fillText('!', trap.x, trap.y + 5);
-                    }
-                } else {
-                    const jawAngle = trap.triggered ? 0 : Math.PI / 4;
-                    ctx.fillStyle = '#555';
-                    ctx.save();
-                    ctx.translate(trap.x, trap.y);
-                    ctx.rotate(-jawAngle);
-                    ctx.fillRect(-20, 0, 40, 6);
-                    ctx.restore();
-                    
-                    ctx.save();
-                    ctx.translate(trap.x, trap.y);
-                    ctx.rotate(jawAngle);
-                    ctx.fillRect(-20, -6, 40, 6);
-                    ctx.restore();
-                }
-            });
-            
-            // Warm coat
-            if (game.warmCoat && !game.warmCoat.collected) {
-                ctx.save();
-                ctx.translate(game.warmCoat.x, game.warmCoat.y);
-                const pulse = Math.sin(Date.now() / 200) * 0.2 + 1;
-                ctx.scale(pulse, pulse);
-                ctx.fillStyle = '#8B4513';
-                ctx.beginPath();
-                ctx.arc(0, 0, 12, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#fff';
-                ctx.font = 'bold 14px Arial';
-                ctx.textAlign = 'center';
-                ctx.fillText('🧥', 0, 5);
-                ctx.restore();
-            }
-            
-            // Igloo
-            if (game.igloo) {
-                if (game.igloo.built) {
-                    const iglooGrad = ctx.createRadialGradient(
-                        game.igloo.x, game.igloo.y - 5, 0,
-                        game.igloo.x, game.igloo.y - 5, 35
-                    );
-                    iglooGrad.addColorStop(0, '#ffffff');
-                    iglooGrad.addColorStop(1, '#c0d8e8');
-                    ctx.fillStyle = iglooGrad;
-                    ctx.beginPath();
-                    ctx.arc(game.igloo.x, game.igloo.y - 5, 35, Math.PI, 0);
-                    ctx.fill();
-                    
-                    ctx.strokeStyle = 'rgba(150, 200, 230, 0.6)';
-                    ctx.lineWidth = 2;
-                    for (let i = 0; i < 4; i++) {
+            ctx.fillStyle = '#dbeff7';
+            for (let x = offsetX - gridSize; x < offsetX + canvas.width + gridSize; x += gridSize) {
+                for (let y = offsetY - gridSize; y < offsetY + canvas.height + gridSize; y += gridSize) {
+                    if ((Math.floor(x/gridSize) + Math.floor(y/gridSize)) % 2 === 0) {
+                        // relative coordinates for camera
+                        const drawX = x - game.cam.x + canvas.width/2;
+                        const drawY = y - game.cam.y + canvas.height/2;
                         ctx.beginPath();
-                        ctx.arc(game.igloo.x, game.igloo.y - 5, 35 - i * 8, Math.PI, 0);
-                        ctx.stroke();
-                    }
-                    
-                    ctx.fillStyle = '#1a2332';
-                    ctx.beginPath();
-                    ctx.arc(game.igloo.x, game.igloo.y + 5, 10, Math.PI, 0);
-                    ctx.fill();
-                } else {
-                    ctx.strokeStyle = '#00ffff';
-                    ctx.setLineDash([5, 5]);
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(game.igloo.x, game.igloo.y, 35, 0, Math.PI * 2);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                    
-                    if (game.igloo.buildProgress > 0) {
-                        ctx.fillStyle = '#00ffff';
-                        ctx.font = 'bold 12px Arial';
-                        ctx.textAlign = 'center';
-                        ctx.fillText(Math.floor(game.igloo.buildProgress) + '%', game.igloo.x, game.igloo.y - 40);
-                    }
-                }
-            }
-            
-            // Fire (enhanced)
-            if (game.fire) {
-                if (game.fire.lit) {
-                    const time = Date.now() / 100;
-                    for (let i = 0; i < 8; i++) {
-                        const offset = Math.sin(time + i * 0.5) * 8;
-                        const size = 12 - i * 1.3;
-                        const y = game.fire.y - i * 6;
-                        
-                        const fireGrad = ctx.createRadialGradient(
-                            game.fire.x + offset, y, 0,
-                            game.fire.x + offset, y, size
-                        );
-                        fireGrad.addColorStop(0, `rgba(255, ${240 - i * 15}, 0, ${0.9 - i * 0.08})`);
-                        fireGrad.addColorStop(1, `rgba(255, ${100 + i * 20}, 0, ${0.3 - i * 0.03})`);
-                        
-                        ctx.fillStyle = fireGrad;
-                        ctx.beginPath();
-                        ctx.arc(game.fire.x + offset, y, size, 0, Math.PI * 2);
+                        ctx.arc(drawX, drawY, 2, 0, Math.PI*2);
                         ctx.fill();
                     }
+                }
+            }
+
+            // Shadows
+            game.entities.forEach(e => {
+                const screenX = e.x - game.cam.x + canvas.width/2;
+                const screenY = e.y - game.cam.y + canvas.height/2;
+                ctx.fillStyle = 'rgba(0,0,0,0.1)';
+                ctx.beginPath();
+                ctx.ellipse(screenX, screenY + 15, 20, 8, 0, 0, Math.PI*2);
+                ctx.fill();
+            });
+
+            // Entities sorted by Y for depth
+            const renderList = [...game.entities, { ...p, type: 'player' }];
+            renderList.sort((a, b) => a.y - b.y);
+
+            renderList.forEach(e => {
+                const screenX = e.x - game.cam.x + canvas.width/2;
+                const screenY = e.y - game.cam.y + canvas.height/2;
+                
+                // Cull off-screen
+                if (screenX < -100 || screenX > canvas.width + 100 || screenY < -100 || screenY > canvas.height + 100) return;
+
+                if (e.type === TYPES.TREE) {
+                    drawEmoji('🌲', e.x, e.y - 20, 60, e.scale);
+                    if (e.hp < 3) {
+                         ctx.fillStyle = 'white';
+                         ctx.font = '12px sans-serif';
+                         ctx.fillText(`${e.hp} HP`, screenX, screenY - 60);
+                    }
+                }
+                else if (e.type === TYPES.RABBIT) {
+                    ctx.save();
+                    if (e.vx < 0) ctx.scale(-1, 1);
+                    drawEmoji('🐇', e.vx < 0 ? -e.x : e.x, e.y, 30);
+                    ctx.restore();
+                }
+                else if (e.type === TYPES.BEAR) {
+                    const bounce = Math.sin(Date.now() / 200) * 5;
+                    drawEmoji(e.state === 'chasing' ? '😡' : '🐻', e.x, e.y + bounce - 10, 50);
+                    if (e.state === 'chasing') {
+                        drawEmoji('💢', e.x + 20, e.y - 40, 20);
+                    }
+                }
+                else if (e.type === TYPES.WOOD) drawEmoji('🪵', e.x, e.y, 30);
+                else if (e.type === TYPES.FOOD) drawEmoji('🍖', e.x, e.y, 30);
+                else if (e.type === TYPES.TRAP) drawEmoji(e.caught ? '🔒' : '🪤', e.x, e.y, 30);
+                else if (e.type === TYPES.BEAR_TRAP) drawEmoji(e.caught ? '🔒' : '⚙️', e.x, e.y, 40);
+                else if (e.type === TYPES.IGLOO) {
+                    if (e.built) drawEmoji('🛖', e.x, e.y - 10, 80);
+                    else {
+                        ctx.globalAlpha = 0.5;
+                        drawEmoji('🛖', e.x, e.y - 10, 80);
+                        ctx.globalAlpha = 1;
+                        ctx.fillStyle = 'black';
+                        ctx.font = '14px Arial';
+                        ctx.fillText(`${e.progress}%`, screenX, screenY - 50);
+                    }
+                }
+                else if (e.type === 'player') {
+                    const bounce = Math.abs(Math.sin(Date.now() / 150)) * 5;
+                    const yOff = (game.keys['w'] || game.keys['a'] || game.keys['s'] || game.keys['d']) ? bounce : 0;
                     
-                    // Fire health bar
-                    ctx.fillStyle = 'rgba(0,0,0,0.7)';
-                    ctx.fillRect(game.fire.x - 30, game.fire.y + 25, 60, 6);
-                    ctx.fillStyle = game.fire.health > 30 ? '#ffaa00' : '#ff0000';
-                    ctx.fillRect(game.fire.x - 30, game.fire.y + 25, 60 * (game.fire.health / 100), 6);
-                } else {
-                    ctx.fillStyle = '#3a2a1a';
+                    // Flip logic
+                    ctx.save();
+                    ctx.translate(screenX, screenY);
+                    if (p.facing === -1) ctx.scale(-1, 1);
+                    
+                    ctx.font = '45px sans-serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillText(p.hp < 30 ? '🥶' : '😃', 0, yOff - 10);
+                    
+                    // Coat
+                    if (p.warmth > 80) ctx.fillText('🧣', 0, yOff + 15);
+                    else ctx.fillText('👕', 0, yOff + 15);
+
+                    ctx.restore();
+                }
+            });
+
+            // Darkness Overlay (Night)
+            const hour = game.time;
+            let darkness = 0;
+            if (hour > 18 || hour < 6) {
+                // Night: 18->24 (0.4), 0->6 (0.4)
+                darkness = 0.4;
+                if (hour > 18) darkness = ((hour - 18) / 6) * 0.4;
+                if (hour < 6) darkness = ((6 - hour) / 6) * 0.4;
+            }
+            
+            if (darkness > 0) {
+                ctx.fillStyle = `rgba(0, 10, 40, ${darkness})`;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                
+                // Draw Fire Glow if night
+                const fire = game.entities.find(e => e.type === TYPES.FIRE);
+                // (Assuming we add fire logic later, but igloo has light)
+                const igloo = game.entities.find(e => e.type === TYPES.IGLOO && e.built);
+                if (igloo) {
+                    const ix = igloo.x - game.cam.x + canvas.width/2;
+                    const iy = igloo.y - game.cam.y + canvas.height/2;
+                    const grad = ctx.createRadialGradient(ix, iy, 10, ix, iy, 150);
+                    grad.addColorStop(0, 'rgba(255, 200, 100, 0.3)');
+                    grad.addColorStop(1, 'rgba(0,0,0,0)');
+                    ctx.fillStyle = grad;
                     ctx.beginPath();
-                    ctx.arc(game.fire.x, game.fire.y, 20, 0, Math.PI * 2);
+                    ctx.arc(ix, iy, 150, 0, Math.PI*2);
                     ctx.fill();
                 }
             }
-            
-            // Bears (enhanced)
-            game.bears.forEach(bear => {
-                if (bear.state === 'in_cave') return;
-                
-                ctx.save();
-                ctx.translate(bear.x, bear.y);
-                
-                let color = '#8b6540';
-                if (bear.state === 'docile') color = '#a08060';
-                else if (bear.state === 'chasing') color = '#8b4040';
-                else if (bear.state === 'roaring') color = '#ff6040';
-                else if (bear.state === 'charging') color = '#ff2020';
-                
-                const bearGrad = ctx.createRadialGradient(-5, -5, 0, 0, 0, 22);
-                bearGrad.addColorStop(0, color);
-                bearGrad.addColorStop(1, '#4a3020');
-                ctx.fillStyle = bearGrad;
-                ctx.beginPath();
-                ctx.arc(0, 0, 20, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.fillStyle = '#2a1a1a';
-                ctx.beginPath();
-                ctx.arc(-8, -8, 4, 0, Math.PI * 2);
-                ctx.arc(8, -8, 4, 0, Math.PI * 2);
-                ctx.fill();
-                
-                const eyeColor = (bear.state === 'chasing' || bear.state === 'roaring' || 
-                                 bear.state === 'charging') ? '#ff0000' : '#000';
-                ctx.fillStyle = eyeColor;
-                ctx.beginPath();
-                ctx.arc(-5, -2, 2, 0, Math.PI * 2);
-                ctx.arc(5, -2, 2, 0, Math.PI * 2);
-                ctx.fill();
-                
-                ctx.fillStyle = '#1a0a0a';
-                ctx.beginPath();
-                ctx.ellipse(0, 4, 6, 4, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                if (bear.state === 'docile') {
-                    ctx.fillStyle = '#90ee90';
-                    ctx.font = 'bold 11px Arial';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(`😴 ${Math.ceil(bear.docileTime)}s`, 0, -28);
-                } else if (bear.state === 'roaring') {
-                    ctx.fillStyle = '#ff6600';
-                    ctx.font = 'bold 18px Arial';
-                    ctx.fillText('ROAR!', 0, -30);
-                    
-                    ctx.font = 'bold 10px Arial';
-                    ctx.fillStyle = '#ffaa00';
-                    ctx.fillText(`${Math.ceil(bear.roarTime)}s`, 0, -45);
-                } else if (bear.state === 'charging') {
-                    ctx.fillStyle = '#ff0000';
-                    ctx.font = 'bold 14px Arial';
-                    ctx.fillText('!!!', 0, -28);
-                } else if (bear.state === 'stunned') {
-                    ctx.fillStyle = '#ffff00';
-                    ctx.font = 'bold 16px Arial';
-                    ctx.fillText('⭐', 0, -28);
-                    ctx.font = 'bold 10px Arial';
-                    ctx.fillStyle = '#ffaa00';
-                    ctx.fillText(`Stunned ${Math.ceil(bear.stunnedTime)}s`, 0, -40);
-                } else if (bear.trapped) {
-                    ctx.fillStyle = '#ffaa00';
-                    ctx.font = 'bold 14px Arial';
-                    ctx.fillText('🪤', 0, -28);
-                    ctx.font = 'bold 10px Arial';
-                    ctx.fillText(`${Math.ceil(bear.trapTime)}s`, 0, -40);
-                }
-                
-                ctx.restore();
-            });
-            
-            // Player (enhanced)
-            const p = game.player;
-            const parkaColor = p.hasWarmCoat ? '#8B4513' : '#3a5f8f';
-            
-            ctx.save();
-            ctx.translate(p.x, p.y);
-            
-            const parkaGrad = ctx.createRadialGradient(-3, -3, 0, 0, 0, 15);
-            parkaGrad.addColorStop(0, parkaColor);
-            parkaGrad.addColorStop(1, p.hasWarmCoat ? '#5a2a0a' : '#2a4565');
-            ctx.fillStyle = parkaGrad;
-            ctx.beginPath();
-            ctx.arc(0, 0, 15, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.strokeStyle = '#fff';
-            ctx.lineWidth = p.hasWarmCoat ? 4 : 3;
-            ctx.beginPath();
-            ctx.arc(0, -5, 12, 0, Math.PI);
-            ctx.stroke();
-            
-            ctx.fillStyle = '#fdb99b';
-            ctx.beginPath();
-            ctx.arc(0, -5, 8, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.fillStyle = '#000';
-            ctx.beginPath();
-            ctx.arc(-3, -7, 1.5, 0, Math.PI * 2);
-            ctx.arc(3, -7, 1.5, 0, Math.PI * 2);
-            ctx.fill();
-            
-            ctx.restore();
-            
-            // Particles (NEW)
-            game.particles.forEach(part => {
-                ctx.fillStyle = part.color;
-                ctx.globalAlpha = part.life;
-                ctx.beginPath();
-                ctx.arc(part.x, part.y, 3, 0, Math.PI * 2);
-                ctx.fill();
+
+            // Particles
+            game.particles.forEach(p => {
+                ctx.globalAlpha = p.life;
+                drawEmoji(p.emoji, p.x, p.y, 20 * p.scale);
                 ctx.globalAlpha = 1;
-            });
-            
-            // Falling snow (render last so it's on top)
-            game.snowflakes.forEach(snow => {
-                ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
-                ctx.beginPath();
-                ctx.arc(snow.x, snow.y, snow.size, 0, Math.PI * 2);
-                ctx.fill();
             });
         }
 
         let lastTime = 0;
-        function gameLoop(time) {
-            const dt = Math.min((time - lastTime) / 1000, 0.1);
-            lastTime = time;
-            
-            update(dt);
+        function loop(timestamp) {
+            const dt = (timestamp - lastTime) / 1000;
+            lastTime = timestamp;
+            update(dt || 0.016);
             render();
-            
-            // Update UI
-            const p = game.player;
-            document.getElementById('health').style.width = p.health + '%';
-            document.getElementById('warmth').style.width = p.warmth + '%';
-            document.getElementById('hunger').style.width = p.hunger + '%';
-            document.getElementById('wood').textContent = p.wood;
-            document.getElementById('food').textContent = p.food;
-            document.getElementById('materials').textContent = p.materials;
-            document.getElementById('foodTraps').textContent = p.foodTraps;
-            document.getElementById('bearTraps').textContent = p.bearTraps;
-            document.getElementById('day').textContent = game.day;
-            document.getElementById('score').textContent = game.score;
-            
-            requestAnimationFrame(gameLoop);
+            requestAnimationFrame(loop);
         }
 
-        document.getElementById('tryBtn').addEventListener('click', () => {
-            const elem = document.documentElement;
-            if (elem.requestFullscreen) {
-                elem.requestFullscreen().catch(() => {});
-            } else if (elem.webkitRequestFullscreen) {
-                elem.webkitRequestFullscreen();
-            } else if (elem.msRequestFullscreen) {
-                elem.msRequestFullscreen();
-            }
-            document.getElementById('tryOverlay').classList.add('hidden');
-            document.getElementById('startOverlay').classList.remove('hidden');
-        });
-
-        document.getElementById('startBtn').addEventListener('click', () => {
-            document.getElementById('startOverlay').classList.add('hidden');
-            if (!game.running) {
-                game.running = true;
-                showMessage('Bears docile for 15 seconds!');
-            }
-        });
-
-        init();
-        requestAnimationFrame(gameLoop);
+        requestAnimationFrame(loop);
+        
+        // Start loop (game running check inside update)
+        function gameLoop() {
+             // just a placeholder if needed, but main loop handles it
+        }
     </script>
 </body>
 </html>
