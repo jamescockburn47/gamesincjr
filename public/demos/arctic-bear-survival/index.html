@@ -10,7 +10,7 @@
         * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
         body {
             font-family: 'Nunito', sans-serif;
-            background: #1a2332;
+            background: #0a1218;
             color: white;
             overflow: hidden;
             height: 100vh;
@@ -45,158 +45,146 @@
             pointer-events: none;
         }
 
-        .hud-top {
+        .stats-panel {
             position: absolute;
             top: 20px;
             left: 20px;
+            background: rgba(0,0,0,0.8);
+            padding: 15px;
+            border-radius: 12px;
+            border: 2px solid rgba(255,255,255,0.2);
             display: flex;
             flex-direction: column;
             gap: 10px;
+            width: 220px;
         }
 
-        .stat-pill {
-            background: rgba(0,0,0,0.6);
-            backdrop-filter: blur(4px);
-            padding: 8px 16px;
-            border-radius: 20px;
+        .stat-row {
             display: flex;
             align-items: center;
             gap: 10px;
-            border: 2px solid rgba(255,255,255,0.2);
-            width: 280px;
+            font-weight: bold;
+            font-size: 14px;
+            color: #ccc;
         }
-
-        .stat-icon { font-size: 24px; width: 30px; text-align: center; }
         
         .bar-container {
             flex: 1;
-            height: 16px;
-            background: rgba(0,0,0,0.5);
-            border-radius: 8px;
+            height: 12px;
+            background: #333;
+            border-radius: 6px;
             overflow: hidden;
-            position: relative;
+            border: 1px solid #555;
         }
 
         .bar-fill {
             height: 100%;
-            border-radius: 8px;
-            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-            position: relative;
-            overflow: hidden;
+            transition: width 0.2s;
         }
 
-        .bar-fill::after {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: linear-gradient(90deg, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.1) 100%);
-        }
-
-        .hp-bar { background: linear-gradient(90deg, #ff6b6b, #ff8787); }
-        .warmth-bar { background: linear-gradient(90deg, #ff922b, #ffa94d); }
-        .hunger-bar { background: linear-gradient(90deg, #51cf66, #69db7c); }
+        .hp-bar { background: linear-gradient(90deg, #ff4444, #cc2222); }
+        .warmth-bar { background: linear-gradient(90deg, #ff8800, #dd6600); }
+        .hunger-bar { background: linear-gradient(90deg, #44ff44, #339933); }
 
         .inventory {
             position: absolute;
             top: 20px;
             right: 20px;
-            background: rgba(255,255,255,0.9);
-            color: #333;
-            padding: 15px;
-            border-radius: 20px;
-            box-shadow: 0 10px 20px rgba(0,0,0,0.15);
+            background: rgba(255,255,255,0.95);
+            color: #2c3e50;
+            padding: 20px;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
             font-family: 'Fredoka One', cursive;
             display: flex;
             flex-direction: column;
-            gap: 10px;
+            gap: 15px;
+            min-width: 200px;
         }
 
-        .inv-row { display: flex; gap: 15px; justify-content: center; font-size: 18px; }
-        .inv-item { display: flex; align-items: center; gap: 5px; background: rgba(0,0,0,0.05); padding: 5px 10px; border-radius: 10px; }
+        .inv-row { display: flex; gap: 15px; justify-content: center; font-size: 20px; }
         
         .crafting-panel {
             margin-top: 5px;
-            border-top: 2px dashed #ddd;
-            padding-top: 10px;
+            border-top: 2px dashed #ccc;
+            padding-top: 15px;
         }
 
         .craft-btn {
-            background: #eee;
-            border: none;
-            padding: 8px 12px;
-            border-radius: 12px;
+            background: #f0f0f0;
+            border: 2px solid #ddd;
+            padding: 10px;
+            border-radius: 10px;
             cursor: pointer;
             font-family: 'Nunito', sans-serif;
             font-weight: bold;
             font-size: 14px;
-            transition: all 0.2s;
             width: 100%;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             pointer-events: auto;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            color: #888;
+            color: #666;
+            transition: all 0.1s;
         }
 
+        .craft-btn:hover { background: #e9e9e9; }
+
         .craft-btn.active {
-            background: #4dabf7;
-            color: white;
-            transform: scale(1.02);
-            box-shadow: 0 4px 0 #339af0;
-        }
-        
-        .craft-btn.active:active {
-            transform: scale(0.98);
-            box-shadow: 0 0 0 #339af0;
+            background: #e3f2fd;
+            border-color: #2196f3;
+            color: #1565c0;
         }
 
         .controls-hint {
             position: absolute;
-            bottom: 20px;
+            bottom: 30px;
             left: 50%;
             transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
-            padding: 10px 20px;
-            border-radius: 30px;
+            background: rgba(0,0,0,0.8);
+            padding: 12px 24px;
+            border-radius: 50px;
             color: white;
-            font-size: 14px;
+            font-size: 16px;
             text-align: center;
+            border: 1px solid rgba(255,255,255,0.3);
+            font-weight: bold;
         }
 
         .key {
             display: inline-block;
-            background: white;
+            background: #eee;
             color: #333;
-            padding: 2px 6px;
+            padding: 2px 8px;
             border-radius: 4px;
             font-weight: bold;
-            margin: 0 2px;
-            box-shadow: 0 2px 0 #ccc;
+            margin: 0 4px;
+            border-bottom: 2px solid #ccc;
         }
 
         /* Floating Messages */
         .floater {
             position: absolute;
             pointer-events: none;
-            animation: floatUp 1s ease-out forwards;
+            animation: floatUp 1.5s ease-out forwards;
             font-weight: bold;
-            font-family: 'Fredoka One', cursive;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.3);
-            font-size: 20px;
+            text-shadow: 0 2px 2px rgba(0,0,0,0.5);
+            font-size: 18px;
+            white-space: nowrap;
         }
 
         @keyframes floatUp {
-            0% { opacity: 1; transform: translateY(0) scale(1); }
-            100% { opacity: 0; transform: translateY(-50px) scale(1.2); }
+            0% { opacity: 1; transform: translateY(0); }
+            100% { opacity: 0; transform: translateY(-60px); }
         }
 
         /* Overlays */
         .overlay {
             position: absolute;
             inset: 0;
-            background: rgba(0,0,0,0.4);
-            backdrop-filter: blur(8px);
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(5px);
             display: flex;
             justify-content: center;
             align-items: center;
@@ -210,99 +198,54 @@
         .card {
             background: white;
             padding: 40px;
-            border-radius: 30px;
+            border-radius: 20px;
             text-align: center;
             max-width: 500px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            animation: popIn 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
             color: #333;
-        }
-
-        @keyframes popIn {
-            from { transform: scale(0.8); opacity: 0; }
-            to { transform: scale(1); opacity: 1; }
+            border: 4px solid #87CEEB;
         }
 
         h1 { font-family: 'Fredoka One', cursive; color: #2c3e50; font-size: 42px; margin-bottom: 10px; }
-        h2 { font-family: 'Fredoka One', cursive; color: #e67700; font-size: 32px; margin-bottom: 20px; }
-        p { margin-bottom: 25px; font-size: 18px; line-height: 1.6; color: #666; }
+        p { margin-bottom: 25px; font-size: 18px; line-height: 1.6; color: #555; }
 
         .btn-primary {
-            background: linear-gradient(135deg, #4dabf7 0%, #339af0 100%);
+            background: #2196f3;
             color: white;
             border: none;
             padding: 15px 40px;
-            font-size: 24px;
+            font-size: 20px;
             border-radius: 50px;
             font-family: 'Fredoka One', cursive;
             cursor: pointer;
             transition: transform 0.1s;
-            box-shadow: 0 6px 0 #228be6;
+            box-shadow: 0 4px 0 #1565c0;
         }
 
-        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 0 #228be6; }
-        .btn-primary:active { transform: translateY(4px); box-shadow: 0 0 0 #228be6; }
-
-        /* Mobile Controls */
-        .touch-controls {
-            display: none; /* Hidden by default, shown on touch devices via JS detection could happen but pure CSS media query is safer for now */
-        }
-        
-        @media (hover: none) and (pointer: coarse) {
-            .touch-controls {
-                display: block;
-                position: absolute;
-                bottom: 20px;
-                width: 100%;
-                height: 150px;
-                pointer-events: none;
-            }
-            
-            .dpad {
-                position: absolute;
-                bottom: 20px;
-                left: 20px;
-                width: 120px;
-                height: 120px;
-                pointer-events: auto;
-            }
-            
-            .action-btn {
-                position: absolute;
-                bottom: 30px;
-                right: 20px;
-                width: 80px;
-                height: 80px;
-                border-radius: 50%;
-                background: rgba(255,255,255,0.3);
-                border: 2px solid white;
-                color: white;
-                font-size: 30px;
-                display: flex;
-                justify-content: center;
-                align-items: center;
-                pointer-events: auto;
-                backdrop-filter: blur(5px);
-            }
-
-            .action-btn:active { background: rgba(255,255,255,0.5); }
-
-            .controls-hint { display: none; } /* Hide keyboard hints on mobile */
-        }
+        .btn-primary:hover { transform: translateY(-2px); background: #1e88e5; }
+        .btn-primary:active { transform: translateY(2px); box-shadow: none; }
 
         .day-badge {
             position: absolute;
-            top: 20px;
+            top: 0;
             left: 50%;
             transform: translateX(-50%);
-            background: white;
-            color: #333;
-            padding: 10px 30px;
-            border-radius: 0 0 20px 20px;
+            background: #333;
+            color: white;
+            padding: 8px 30px;
+            border-radius: 0 0 15px 15px;
             font-family: 'Fredoka One', cursive;
-            font-size: 24px;
-            box-shadow: 0 5px 15px rgba(0,0,0,0.1);
-            margin-top: -20px; /* Tuck it up */
+            font-size: 20px;
+            box-shadow: 0 5px 10px rgba(0,0,0,0.3);
+        }
+
+        /* Mobile Controls */
+        .touch-controls { display: none; }
+        @media (hover: none) and (pointer: coarse) {
+            .touch-controls { display: block; position: absolute; bottom: 20px; width: 100%; height: 150px; pointer-events: none; }
+            .dpad { position: absolute; bottom: 20px; left: 20px; width: 140px; height: 140px; pointer-events: auto; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,255,255,0.3); }
+            .action-btn { position: absolute; bottom: 30px; right: 20px; width: 90px; height: 90px; border-radius: 50%; background: rgba(255,255,255,0.2); border: 2px solid white; color: white; font-size: 32px; display: flex; justify-content: center; align-items: center; pointer-events: auto; }
+            .controls-hint { display: none; }
         }
     </style>
 </head>
@@ -313,24 +256,18 @@
         <div class="ui-layer">
             <div class="day-badge">Day <span id="dayVal">1</span></div>
 
-            <div class="hud-top">
-                <div class="stat-pill">
-                    <div class="stat-icon">❤️</div>
-                    <div class="bar-container">
-                        <div class="bar-fill hp-bar" id="hpBar" style="width: 100%"></div>
-                    </div>
+            <div class="stats-panel">
+                <div class="stat-row">
+                    <span>Health</span>
+                    <div class="bar-container"><div class="bar-fill hp-bar" id="hpBar" style="width: 100%"></div></div>
                 </div>
-                <div class="stat-pill">
-                    <div class="stat-icon">🔥</div>
-                    <div class="bar-container">
-                        <div class="bar-fill warmth-bar" id="warmthBar" style="width: 100%"></div>
-                    </div>
+                <div class="stat-row">
+                    <span>Warmth</span>
+                    <div class="bar-container"><div class="bar-fill warmth-bar" id="warmthBar" style="width: 100%"></div></div>
                 </div>
-                <div class="stat-pill">
-                    <div class="stat-icon">🍖</div>
-                    <div class="bar-container">
-                        <div class="bar-fill hunger-bar" id="hungerBar" style="width: 100%"></div>
-                    </div>
+                <div class="stat-row">
+                    <span>Hunger</span>
+                    <div class="bar-container"><div class="bar-fill hunger-bar" id="hungerBar" style="width: 100%"></div></div>
                 </div>
             </div>
 
@@ -343,60 +280,54 @@
                 
                 <div class="crafting-panel">
                     <button class="craft-btn" id="btnTrap">
-                        <span>Food Trap 🪤</span>
+                        <span>Food Trap</span>
                         <small>3🪵 2🔩</small>
                     </button>
                     <button class="craft-btn" id="btnBearTrap">
-                        <span>Bear Trap ⚙️</span>
+                        <span>Bear Trap</span>
                         <small>5🪵 5🔩</small>
                     </button>
                     <button class="craft-btn" id="btnEat">
-                        <span>Eat Food 🍖</span>
-                        <small>Restore HP</small>
+                        <span>Eat Food (+20 HP)</span>
+                        <small>1🍖</small>
                     </button>
                 </div>
             </div>
 
             <div class="controls-hint">
-                Use <span class="key">W</span><span class="key">A</span><span class="key">S</span><span class="key">D</span> to move • <span class="key">SPACE</span> to interact
+                <span class="key">WASD</span> Move &nbsp;•&nbsp; <span class="key">SPACE</span> Action &nbsp;•&nbsp; <span class="key">E</span> Eat
             </div>
             
             <div class="touch-controls">
-                <div class="dpad" id="virtualDpad"></div> <!-- Placeholder for touch logic -->
+                <div class="dpad" id="virtualDpad"></div>
                 <div class="action-btn" id="virtualBtn">👋</div>
             </div>
         </div>
 
-        <!-- Start Screen -->
         <div id="startScreen" class="overlay">
             <div class="card">
-                <h1>🐻 Arctic Survival</h1>
-                <p>You are lost in the frozen north!</p>
-                <p>Gather wood 🪵, hunt rabbits 🐇, and avoid the grumpy bears 🐻.</p>
-                <p><strong>Goal:</strong> Survive as many days as you can!</p>
-                <button class="btn-primary" id="startBtn">PLAY NOW</button>
+                <h1>Arctic Survival</h1>
+                <p>Survive the frozen wilderness.</p>
+                <p>Collect resources, build shelter, and stay warm.</p>
+                <p>Watch out for bears!</p>
+                <button class="btn-primary" id="startBtn">START GAME</button>
             </div>
         </div>
 
-        <!-- Game Over Screen -->
         <div id="gameOverScreen" class="overlay hidden">
             <div class="card">
-                <h1>🥶 BRRR!</h1>
-                <p>The cold got you (or a bear did)!</p>
-                <div style="font-size: 24px; margin-bottom: 20px; color: #333;">
-                    Days Survived: <strong id="finalDays" style="color: #4dabf7;">0</strong>
-                </div>
+                <h1>FROZEN!</h1>
+                <p>The arctic claimed you.</p>
+                <p>Days Survived: <strong id="finalDays" style="color: #2196f3;">0</strong></p>
                 <button class="btn-primary" onclick="location.reload()">TRY AGAIN</button>
             </div>
         </div>
     </div>
 
     <script>
-        // --- Game Engine ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
         
-        // Resize canvas to fit window but keep aspect ratio
         function resize() {
             canvas.width = window.innerWidth;
             canvas.height = window.innerHeight;
@@ -408,18 +339,15 @@
         const game = {
             running: false,
             day: 1,
-            time: 0, // 0 to 24 hours
+            time: 8, // Start at 8 AM
             player: {
-                x: canvas.width / 2,
-                y: canvas.height / 2,
-                vx: 0, vy: 0,
-                speed: 200,
+                x: 0, y: 0,
+                speed: 180,
                 hp: 100,
                 warmth: 100,
                 hunger: 100,
-                inv: { wood: 0, food: 0, materials: 0, traps: 0, bearTraps: 0 },
-                facing: 1, // 1 right, -1 left
-                actionCooldown: 0
+                inv: { wood: 0, food: 0, materials: 0 },
+                facing: 1
             },
             entities: [],
             particles: [],
@@ -427,35 +355,131 @@
             keys: {}
         };
 
-        // Entity Types
         const TYPES = {
             TREE: 'tree',
             RABBIT: 'rabbit',
             BEAR: 'bear',
-            SEAL: 'seal',
-            WOOD: 'wood_drop',
-            FOOD: 'food_drop',
+            WOOD: 'wood',
+            FOOD: 'food',
             TRAP: 'trap',
             BEAR_TRAP: 'bear_trap',
             IGLOO: 'igloo',
-            FIRE: 'fire'
+            FIRE: 'fire',
+            CAVE: 'cave'
         };
 
-        // Assets (Emojis are drawn directly)
-        
-        // --- Input Handling ---
+        // Initial Entities
+        function initGame() {
+            game.running = true;
+            game.day = 1;
+            game.time = 8;
+            game.player.hp = 100;
+            game.player.warmth = 100;
+            game.player.hunger = 100;
+            game.player.inv = { wood: 0, food: 0, materials: 0 };
+            game.entities = [];
+            game.particles = [];
+            
+            // Base Igloo (Unbuilt)
+            game.entities.push({
+                type: TYPES.IGLOO,
+                x: 0, y: -100,
+                built: false,
+                progress: 0
+            });
+
+            // Fire Pit
+            game.entities.push({
+                type: TYPES.FIRE,
+                x: 0, y: 50,
+                lit: false,
+                fuel: 0
+            });
+
+            // Bear Cave
+            const caveX = 1000, caveY = 1000;
+            game.entities.push({
+                type: TYPES.CAVE,
+                x: caveX, y: caveY
+            });
+
+            // Generate World
+            for(let i=0; i<40; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const dist = 300 + Math.random() * 1500;
+                game.entities.push({
+                    type: TYPES.TREE,
+                    x: Math.cos(angle) * dist,
+                    y: Math.sin(angle) * dist,
+                    hp: 3
+                });
+            }
+            
+            for(let i=0; i<10; i++) spawnRabbit();
+            for(let i=0; i<3; i++) spawnBear(caveX, caveY);
+
+            gameLoop();
+        }
+
+        function spawnRabbit() {
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 400 + Math.random() * 1000;
+            game.entities.push({
+                type: TYPES.RABBIT,
+                x: Math.cos(angle) * dist,
+                y: Math.sin(angle) * dist,
+                vx: 0, vy: 0,
+                timer: 0
+            });
+        }
+
+        function spawnBear(caveX, caveY) {
+            // Spawn near cave
+            const offsetX = (Math.random() - 0.5) * 200;
+            const offsetY = (Math.random() - 0.5) * 200;
+            game.entities.push({
+                type: TYPES.BEAR,
+                x: caveX + offsetX,
+                y: caveY + offsetY,
+                caveX: caveX,
+                caveY: caveY,
+                vx: 0, vy: 0,
+                state: 'wandering',
+                hp: 5
+            });
+        }
+
+        function spawnParticle(x, y, color, count=5) {
+            for(let i=0; i<count; i++) {
+                game.particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 100,
+                    vy: (Math.random() - 0.5) * 100 - 50,
+                    life: 1.0,
+                    color
+                });
+            }
+        }
+
+        function showFloatText(x, y, text, color='#fff') {
+            const el = document.createElement('div');
+            el.className = 'floater';
+            el.textContent = text;
+            el.style.left = (canvas.width/2 + (x - game.cam.x)) + 'px';
+            el.style.top = (canvas.height/2 + (y - game.cam.y)) + 'px';
+            el.style.color = color;
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 1500);
+        }
+
+        // Input
         window.addEventListener('keydown', e => {
             game.keys[e.key.toLowerCase()] = true;
             if (e.code === 'Space') handleAction();
-            
-            // Hotkeys for crafting
-            if (e.key === '1') craft('trap');
-            if (e.key === '2') craft('bearTrap');
             if (e.key === 'e') eatFood();
         });
         window.addEventListener('keyup', e => game.keys[e.key.toLowerCase()] = false);
 
-        // UI Buttons
         document.getElementById('startBtn').addEventListener('click', () => {
             document.getElementById('startScreen').classList.add('hidden');
             initGame();
@@ -463,24 +487,24 @@
 
         document.getElementById('btnTrap').addEventListener('click', () => craft('trap'));
         document.getElementById('btnBearTrap').addEventListener('click', () => craft('bearTrap'));
-        document.getElementById('btnEat').addEventListener('click', () => eatFood());
-        
+        document.getElementById('btnEat').addEventListener('click', eatFood);
+
         const virtualBtn = document.getElementById('virtualBtn');
         virtualBtn.addEventListener('touchstart', (e) => { e.preventDefault(); handleAction(); });
         virtualBtn.addEventListener('mousedown', (e) => { e.preventDefault(); handleAction(); });
 
-        // Virtual D-Pad Logic (Simple Touch Quadrants)
+        // D-Pad
         const dpad = document.getElementById('virtualDpad');
         let touchId = null;
         dpad.addEventListener('touchstart', e => {
             e.preventDefault();
             touchId = e.changedTouches[0].identifier;
-            updateTouchMove(e.changedTouches[0]);
+            updateTouch(e.changedTouches[0]);
         });
         dpad.addEventListener('touchmove', e => {
             e.preventDefault();
             for(let i=0; i<e.changedTouches.length; i++) {
-                if(e.changedTouches[i].identifier === touchId) updateTouchMove(e.changedTouches[i]);
+                if(e.changedTouches[i].identifier === touchId) updateTouch(e.changedTouches[i]);
             }
         });
         dpad.addEventListener('touchend', e => {
@@ -488,156 +512,71 @@
             game.keys['w'] = game.keys['a'] = game.keys['s'] = game.keys['d'] = false;
         });
 
-        function updateTouchMove(touch) {
+        function updateTouch(touch) {
             const rect = dpad.getBoundingClientRect();
             const cx = rect.left + rect.width/2;
             const cy = rect.top + rect.height/2;
             const dx = touch.clientX - cx;
             const dy = touch.clientY - cy;
-            
             game.keys['w'] = dy < -20;
             game.keys['s'] = dy > 20;
             game.keys['a'] = dx < -20;
             game.keys['d'] = dx > 20;
         }
 
-        // --- Core Logic ---
-        function initGame() {
-            game.running = true;
-            game.entities = [];
-            game.particles = [];
-            game.day = 1;
-            game.time = 0;
-            
-            // Generate World
-            // Trees
-            for(let i=0; i<30; i++) {
-                game.entities.push({
-                    type: TYPES.TREE,
-                    x: Math.random() * 2000 - 1000,
-                    y: Math.random() * 2000 - 1000,
-                    hp: 3,
-                    scale: 0.8 + Math.random() * 0.4
-                });
-            }
-            
-            // Rabbits
-            for(let i=0; i<15; i++) {
-                spawnRabbit();
-            }
-
-            // Bears
-            for(let i=0; i<3; i++) {
-                spawnBear();
-            }
-
-            // Starting Igloo (Ruined) - acts as base
-            game.entities.push({
-                type: TYPES.IGLOO,
-                x: 0,
-                y: 0,
-                built: false,
-                progress: 0
-            });
-
-            gameLoop();
-        }
-
-        function spawnRabbit() {
-            game.entities.push({
-                type: TYPES.RABBIT,
-                x: Math.random() * 2000 - 1000,
-                y: Math.random() * 2000 - 1000,
-                vx: 0, vy: 0,
-                timer: 0,
-                state: 'idle'
-            });
-        }
-
-        function spawnBear() {
-            const angle = Math.random() * Math.PI * 2;
-            const dist = 800 + Math.random() * 400;
-            game.entities.push({
-                type: TYPES.BEAR,
-                x: Math.cos(angle) * dist,
-                y: Math.sin(angle) * dist,
-                vx: 0, vy: 0,
-                state: 'wandering',
-                timer: 0,
-                hp: 5
-            });
-        }
-
-        function spawnParticle(x, y, emoji, count=1) {
-            for(let i=0; i<count; i++) {
-                game.particles.push({
-                    x, y,
-                    vx: (Math.random() - 0.5) * 200,
-                    vy: (Math.random() - 0.5) * 200 - 100,
-                    emoji,
-                    life: 1.0,
-                    scale: 0.5 + Math.random() * 0.5
-                });
-            }
-        }
-
-        function showFloatText(x, y, text, color='white') {
-            const el = document.createElement('div');
-            el.className = 'floater';
-            el.textContent = text;
-            el.style.left = (canvas.width/2 + (x - game.player.x)) + 'px';
-            el.style.top = (canvas.height/2 + (y - game.player.y)) + 'px';
-            el.style.color = color;
-            document.body.appendChild(el);
-            setTimeout(() => el.remove(), 1000);
-        }
-
         function handleAction() {
             if (!game.running) return;
             const p = game.player;
             
-            // Check interaction with nearest entity
+            // Find nearest interactive entity
             const nearest = game.entities.find(e => {
                 const d = Math.hypot(e.x - p.x, e.y - p.y);
-                return d < 60;
+                return d < 70;
             });
 
-            if (nearest) {
-                if (nearest.type === TYPES.TREE) {
-                    nearest.hp--;
-                    spawnParticle(nearest.x, nearest.y - 20, '🍂', 3);
-                    if (nearest.hp <= 0) {
-                        // Drop wood
-                        game.entities.push({ type: TYPES.WOOD, x: nearest.x, y: nearest.y });
-                        // Respawn tree elsewhere
-                        nearest.x = Math.random() * 2000 - 1000;
-                        nearest.y = Math.random() * 2000 - 1000;
-                        nearest.hp = 3;
-                        showFloatText(p.x, p.y - 50, "+ Wood", "#deb887");
-                    }
-                } else if (nearest.type === TYPES.WOOD) {
-                    p.inv.wood++;
-                    p.inv.materials += Math.random() > 0.5 ? 1 : 0;
-                    showFloatText(p.x, p.y - 50, "+1 Wood", "#deb887");
+            if (!nearest) return;
+
+            if (nearest.type === TYPES.TREE) {
+                nearest.hp--;
+                spawnParticle(nearest.x, nearest.y - 30, '#5d4037'); // Wood chips
+                if (nearest.hp <= 0) {
                     game.entities = game.entities.filter(e => e !== nearest);
-                    spawnParticle(p.x, p.y, '✨', 5);
-                } else if (nearest.type === TYPES.FOOD) {
-                    p.inv.food++;
-                    showFloatText(p.x, p.y - 50, "+1 Food", "#ff6b6b");
-                    game.entities = game.entities.filter(e => e !== nearest);
-                    spawnParticle(p.x, p.y, '✨', 5);
-                } else if (nearest.type === TYPES.IGLOO && !nearest.built) {
-                    if (p.inv.wood >= 1) {
-                        p.inv.wood--;
-                        nearest.progress += 10;
-                        spawnParticle(nearest.x, nearest.y, '❄️', 5);
-                        if (nearest.progress >= 100) {
-                            nearest.built = true;
-                            showFloatText(nearest.x, nearest.y, "Home Sweet Home!", "#4dabf7");
-                        }
-                    } else {
-                        showFloatText(nearest.x, nearest.y, "Need Wood!", "red");
+                    game.entities.push({ type: TYPES.WOOD, x: nearest.x, y: nearest.y });
+                    // Chance for materials
+                    if (Math.random() > 0.5) {
+                         game.player.inv.materials++;
+                         showFloatText(p.x, p.y - 60, "+1 Material", "#aaa");
                     }
+                }
+            } else if (nearest.type === TYPES.WOOD) {
+                p.inv.wood++;
+                game.entities = game.entities.filter(e => e !== nearest);
+                showFloatText(p.x, p.y - 60, "+1 Wood", "#deb887");
+            } else if (nearest.type === TYPES.FOOD) {
+                p.inv.food++;
+                game.entities = game.entities.filter(e => e !== nearest);
+                showFloatText(p.x, p.y - 60, "+1 Food", "#ff6b6b");
+            } else if (nearest.type === TYPES.IGLOO && !nearest.built) {
+                if (p.inv.wood >= 1) {
+                    p.inv.wood--;
+                    nearest.progress += 10;
+                    spawnParticle(nearest.x, nearest.y, '#e0f7fa');
+                    if (nearest.progress >= 100) {
+                        nearest.built = true;
+                        showFloatText(nearest.x, nearest.y - 80, "Shelter Built!", "#00bcd4");
+                    }
+                } else {
+                    showFloatText(nearest.x, nearest.y - 80, "Need Wood!", "#ff5252");
+                }
+            } else if (nearest.type === TYPES.FIRE) {
+                if (p.inv.wood >= 1) {
+                    p.inv.wood--;
+                    nearest.fuel = Math.min(100, nearest.fuel + 30);
+                    nearest.lit = true;
+                    showFloatText(nearest.x, nearest.y - 50, "Fire Fueled!", "#ff9800");
+                    spawnParticle(nearest.x, nearest.y, '#ff5722', 10);
+                } else {
+                    showFloatText(nearest.x, nearest.y - 50, "Need Wood!", "#ff5252");
                 }
             }
         }
@@ -649,305 +588,415 @@
                     p.inv.wood -= 3;
                     p.inv.materials -= 2;
                     game.entities.push({ type: TYPES.TRAP, x: p.x, y: p.y, caught: false });
-                    showFloatText(p.x, p.y, "Trap Set!", "#51cf66");
-                } else showFloatText(p.x, p.y, "Need 3🪵 2🔩", "red");
-            }
-            if (item === 'bearTrap') {
+                    showFloatText(p.x, p.y, "Trap Set", "#8bc34a");
+                }
+            } else if (item === 'bearTrap') {
                 if (p.inv.wood >= 5 && p.inv.materials >= 5) {
                     p.inv.wood -= 5;
                     p.inv.materials -= 5;
                     game.entities.push({ type: TYPES.BEAR_TRAP, x: p.x, y: p.y, caught: false });
-                    showFloatText(p.x, p.y, "Big Trap Set!", "#ff922b");
-                } else showFloatText(p.x, p.y, "Need 5🪵 5🔩", "red");
+                    showFloatText(p.x, p.y, "Bear Trap Set", "#ff9800");
+                }
             }
         }
 
         function eatFood() {
-            const p = game.player;
-            if (p.inv.food > 0) {
-                p.inv.food--;
-                p.hp = Math.min(100, p.hp + 20);
-                p.hunger = Math.min(100, p.hunger + 40);
-                spawnParticle(p.x, p.y, '❤️', 5);
-                showFloatText(p.x, p.y, "Yum!", "#51cf66");
-            } else {
-                showFloatText(p.x, p.y, "No Food!", "red");
+            if (game.player.inv.food > 0) {
+                game.player.inv.food--;
+                game.player.hp = Math.min(100, game.player.hp + 20);
+                game.player.hunger = Math.min(100, game.player.hunger + 40);
+                showFloatText(game.player.x, game.player.y - 60, "Yum! (+HP)", "#4caf50");
+                spawnParticle(game.player.x, game.player.y, '#4caf50', 8);
             }
         }
 
         function update(dt) {
             if (!game.running) return;
-            
             const p = game.player;
-            
-            // Controls
-            let dx = 0, dy = 0;
-            if (game.keys['w'] || game.keys['arrowup']) dy = -1;
-            if (game.keys['s'] || game.keys['arrowdown']) dy = 1;
-            if (game.keys['a'] || game.keys['arrowleft']) { dx = -1; p.facing = -1; }
-            if (game.keys['d'] || game.keys['arrowright']) { dx = 1; p.facing = 1; }
-            
-            if (dx !== 0 || dy !== 0) {
-                const len = Math.hypot(dx, dy);
-                dx /= len; dy /= len;
-                p.x += dx * p.speed * dt;
-                p.y += dy * p.speed * dt;
-                
-                // Footprints (particles)
-                if (Math.random() < 0.1) {
-                    game.particles.push({
-                        x: p.x, y: p.y + 10,
-                        vx: 0, vy: 0,
-                        emoji: '👣',
-                        life: 3.0,
-                        scale: 0.3
-                    });
-                }
-            }
 
-            // Survival Drain
-            p.hunger -= dt * 1.5;
-            p.warmth -= dt * 1.0;
-            
-            // Time Cycle
-            game.time += dt * 0.5; // 1 hour per 2 real seconds
+            // Time
+            game.time += dt * 0.5; // 1 game hour = 2 real seconds
             if (game.time >= 24) {
                 game.time = 0;
                 game.day++;
                 document.getElementById('dayVal').textContent = game.day;
-                showFloatText(p.x, p.y - 100, `Day ${game.day}`, '#4dabf7');
-                
-                // Respawn Trees/Rabbits
-                if (game.entities.filter(e => e.type === TYPES.TREE).length < 15) {
-                    for(let i=0; i<5; i++) {
-                        game.entities.push({
-                            type: TYPES.TREE,
-                            x: Math.random() * 2000 - 1000,
-                            y: Math.random() * 2000 - 1000,
-                            hp: 3,
-                            scale: 0.8 + Math.random() * 0.4
-                        });
-                    }
-                }
-            }
-            
-            // Near Igloo Warmth
-            const igloo = game.entities.find(e => e.type === TYPES.IGLOO && e.built);
-            if (igloo && Math.hypot(p.x - igloo.x, p.y - igloo.y) < 80) {
-                p.warmth = Math.min(100, p.warmth + dt * 10);
+                // Respawn resources
+                if (Math.random() > 0.5) spawnRabbit();
             }
 
-            if (p.hunger <= 0 || p.warmth <= 0) p.hp -= dt * 2;
+            // Movement
+            let dx = 0, dy = 0;
+            if (game.keys['w']) dy = -1;
+            if (game.keys['s']) dy = 1;
+            if (game.keys['a']) { dx = -1; p.facing = -1; }
+            if (game.keys['d']) { dx = 1; p.facing = 1; }
+
+            if (dx || dy) {
+                const len = Math.hypot(dx, dy);
+                p.x += (dx/len) * p.speed * dt;
+                p.y += (dy/len) * p.speed * dt;
+            }
+
+            // Camera Lerp
+            game.cam.x += (p.x - game.cam.x) * 0.1;
+            game.cam.y += (p.y - game.cam.y) * 0.1;
+
+            // Stats Drain
+            let drainMult = 1;
+            // Check warmth sources
+            const fire = game.entities.find(e => e.type === TYPES.FIRE && e.lit);
+            const igloo = game.entities.find(e => e.type === TYPES.IGLOO && e.built);
             
+            let nearWarmth = false;
+            if (fire && Math.hypot(fire.x - p.x, fire.y - p.y) < 150) nearWarmth = true;
+            if (igloo && Math.hypot(igloo.x - p.x, igloo.y - p.y) < 100) nearWarmth = true;
+
+            if (nearWarmth) {
+                p.warmth = Math.min(100, p.warmth + dt * 10);
+                drainMult = 0.5; // Hunger drains slower when warm/resting
+            } else {
+                p.warmth -= dt * 1.5;
+            }
+            
+            p.hunger -= dt * 1.0 * drainMult;
+
+            if (p.warmth <= 0 || p.hunger <= 0) p.hp -= dt * 2;
             if (p.hp <= 0) {
                 game.running = false;
                 document.getElementById('finalDays').textContent = game.day;
                 document.getElementById('gameOverScreen').classList.remove('hidden');
             }
 
-            // Update UI
-            document.getElementById('hpBar').style.width = Math.max(0, p.hp) + '%';
-            document.getElementById('warmthBar').style.width = Math.max(0, p.warmth) + '%';
-            document.getElementById('hungerBar').style.width = Math.max(0, p.hunger) + '%';
-            
-            document.getElementById('woodVal').textContent = p.inv.wood;
-            document.getElementById('foodVal').textContent = p.inv.food;
-            document.getElementById('matVal').textContent = p.inv.materials;
-            
-            // Enable/Disable craft buttons
-            document.getElementById('btnTrap').classList.toggle('active', p.inv.wood >= 3 && p.inv.materials >= 2);
-            document.getElementById('btnBearTrap').classList.toggle('active', p.inv.wood >= 5 && p.inv.materials >= 5);
-            document.getElementById('btnEat').classList.toggle('active', p.inv.food > 0);
+            // Fire Logic
+            if (fire && fire.lit) {
+                fire.fuel -= dt * 2;
+                if (fire.fuel <= 0) {
+                    fire.lit = false;
+                    showFloatText(fire.x, fire.y - 50, "Fire died!", "#aaa");
+                }
+            }
 
-            // Entities Update
+            // Update Entities
             game.entities.forEach(e => {
                 if (e.type === TYPES.RABBIT) {
-                    // Rabbit logic
                     e.timer -= dt;
                     if (e.timer <= 0) {
-                        e.timer = Math.random() * 2 + 1;
-                        e.vx = (Math.random() - 0.5) * 100;
-                        e.vy = (Math.random() - 0.5) * 100;
+                        e.timer = Math.random() * 3 + 1;
+                        e.vx = (Math.random() - 0.5) * 60;
+                        e.vy = (Math.random() - 0.5) * 60;
                     }
                     e.x += e.vx * dt;
                     e.y += e.vy * dt;
-                    
-                    // Check Trap
-                    const trap = game.entities.find(t => t.type === TYPES.TRAP && !t.caught && Math.hypot(t.x - e.x, t.y - e.y) < 30);
+
+                    // Check traps
+                    const trap = game.entities.find(t => t.type === TYPES.TRAP && !t.caught && Math.hypot(t.x - e.x, t.y - e.y) < 20);
                     if (trap) {
                         trap.caught = true;
-                        // Turn rabbit into food drop
+                        game.entities = game.entities.filter(x => x !== e);
                         game.entities.push({ type: TYPES.FOOD, x: e.x, y: e.y });
-                        e.dead = true;
-                        showFloatText(e.x, e.y, "Caught!", "#51cf66");
                     }
                 } else if (e.type === TYPES.BEAR) {
-                    // Bear logic
-                    const distToPlayer = Math.hypot(p.x - e.x, p.y - e.y);
+                    const dist = Math.hypot(p.x - e.x, p.y - e.y);
+                    const distToCave = Math.hypot(e.caveX - e.x, e.caveY - e.y);
                     
-                    if (distToPlayer < 300) {
+                    // Bear State Logic
+                    if (dist < 300 && !nearWarmth) { 
+                        // Chase Player
                         e.state = 'chasing';
                         const angle = Math.atan2(p.y - e.y, p.x - e.x);
-                        e.x += Math.cos(angle) * 110 * dt; // Bear speed
-                        e.y += Math.sin(angle) * 110 * dt;
+                        e.x += Math.cos(angle) * 90 * dt;
+                        e.y += Math.sin(angle) * 90 * dt;
                         
-                        if (distToPlayer < 40) {
+                        if (dist < 40) {
                             p.hp -= dt * 30;
                             p.x += Math.cos(angle) * 200 * dt; // Knockback
                             p.y += Math.sin(angle) * 200 * dt;
-                            spawnParticle(p.x, p.y, '💥', 1);
+                            showFloatText(p.x, p.y - 50, "OUCH!", "#f00");
                         }
                     } else {
-                        e.state = 'wandering';
-                    }
-                    
-                    // Check Bear Trap
-                    const trap = game.entities.find(t => t.type === TYPES.BEAR_TRAP && !t.caught && Math.hypot(t.x - e.x, t.y - e.y) < 40);
-                    if (trap) {
-                        trap.caught = true; // One use
-                        e.hp--;
-                        showFloatText(e.x, e.y, "Bear Snared!", "#ff922b");
-                        spawnParticle(e.x, e.y, '💢', 5);
-                        // Teleport bear away if hurt enough? Or just slow it?
-                        if (e.hp <= 0) {
-                            e.dead = true;
-                            spawnParticle(e.x, e.y, '🥩', 5);
-                            game.entities.push({ type: TYPES.FOOD, x: e.x, y: e.y });
-                            game.entities.push({ type: TYPES.FOOD, x: e.x+10, y: e.y });
+                        // Return to cave area if too far
+                        if (distToCave > 500) {
+                            e.state = 'returning';
+                            const angle = Math.atan2(e.caveY - e.y, e.caveX - e.x);
+                            e.x += Math.cos(angle) * 40 * dt;
+                            e.y += Math.sin(angle) * 40 * dt;
                         } else {
-                            e.x += 200; // Flee
+                             // Wander near cave
+                             e.state = 'wandering';
+                             e.x += (Math.random() - 0.5) * 30 * dt;
+                             e.y += (Math.random() - 0.5) * 30 * dt;
+                        }
+                    }
+
+                    const trap = game.entities.find(t => t.type === TYPES.BEAR_TRAP && !t.caught && Math.hypot(t.x - e.x, t.y - e.y) < 30);
+                    if (trap) {
+                        trap.caught = true;
+                        e.hp -= 5; // Instakill for demo simplicity
+                        if (e.hp <= 0) {
+                            game.entities = game.entities.filter(x => x !== e);
+                            game.entities.push({ type: TYPES.FOOD, x: e.x, y: e.y });
+                            game.entities.push({ type: TYPES.FOOD, x: e.x + 10, y: e.y });
                         }
                     }
                 }
             });
-            
-            // Cleanup dead entities
-            game.entities = game.entities.filter(e => !e.dead);
+
+            // UI Update
+            document.getElementById('hpBar').style.width = p.hp + '%';
+            document.getElementById('warmthBar').style.width = p.warmth + '%';
+            document.getElementById('hungerBar').style.width = p.hunger + '%';
+            document.getElementById('woodVal').textContent = p.inv.wood;
+            document.getElementById('foodVal').textContent = p.inv.food;
+            document.getElementById('matVal').textContent = p.inv.materials;
+
+            document.getElementById('btnTrap').classList.toggle('active', p.inv.wood >= 3 && p.inv.materials >= 2);
+            document.getElementById('btnBearTrap').classList.toggle('active', p.inv.wood >= 5 && p.inv.materials >= 5);
+            document.getElementById('btnEat').classList.toggle('active', p.inv.food > 0);
 
             // Particles
             for(let i=game.particles.length-1; i>=0; i--) {
-                const part = game.particles[i];
-                part.x += part.vx * dt;
-                part.y += part.vy * dt;
-                part.life -= dt;
-                if (part.life <= 0) game.particles.splice(i, 1);
+                const pt = game.particles[i];
+                pt.x += pt.vx * dt;
+                pt.y += pt.vy * dt;
+                pt.life -= dt;
+                if(pt.life <= 0) game.particles.splice(i, 1);
             }
         }
 
-        function drawEmoji(emoji, x, y, size, scale=1, align='center') {
-            ctx.font = `${size * scale}px 'Nunito', sans-serif`;
-            ctx.textAlign = align;
-            ctx.textBaseline = 'middle';
-            ctx.fillText(emoji, x - game.cam.x + canvas.width/2, y - game.cam.y + canvas.height/2);
-        }
-
         function render() {
-            // Camera Follow
-            const p = game.player;
-            // Smooth Lerp
-            game.cam.x += (p.x - game.cam.x) * 0.1;
-            game.cam.y += (p.y - game.cam.y) * 0.1;
-
-            // Background
-            ctx.fillStyle = '#e8f4f8';
+            // Clear
+            ctx.fillStyle = '#dbeff7'; // Snow color
             ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid
+            const gridSize = 200;
+            const offX = Math.floor(game.cam.x / gridSize) * gridSize;
+            const offY = Math.floor(game.cam.y / gridSize) * gridSize;
             
-            // Draw Grid/Snow Floor
-            const gridSize = 100;
-            const offsetX = Math.floor((game.cam.x - canvas.width/2) / gridSize) * gridSize;
-            const offsetY = Math.floor((game.cam.y - canvas.height/2) / gridSize) * gridSize;
-            
-            ctx.fillStyle = '#dbeff7';
-            for (let x = offsetX - gridSize; x < offsetX + canvas.width + gridSize; x += gridSize) {
-                for (let y = offsetY - gridSize; y < offsetY + canvas.height + gridSize; y += gridSize) {
-                    if ((Math.floor(x/gridSize) + Math.floor(y/gridSize)) % 2 === 0) {
-                        // relative coordinates for camera
-                        const drawX = x - game.cam.x + canvas.width/2;
-                        const drawY = y - game.cam.y + canvas.height/2;
+            ctx.fillStyle = '#cce6f0';
+            for(let x = offX - gridSize; x < offX + canvas.width + gridSize; x += gridSize) {
+                for(let y = offY - gridSize; y < offY + canvas.height + gridSize; y += gridSize) {
+                    if ((x/gridSize + y/gridSize) % 2 === 0) {
+                        const dx = x - game.cam.x + canvas.width/2;
+                        const dy = y - game.cam.y + canvas.height/2;
                         ctx.beginPath();
-                        ctx.arc(drawX, drawY, 2, 0, Math.PI*2);
+                        ctx.arc(dx, dy, 2, 0, Math.PI*2);
                         ctx.fill();
                     }
                 }
             }
 
-            // Shadows
-            game.entities.forEach(e => {
-                const screenX = e.x - game.cam.x + canvas.width/2;
-                const screenY = e.y - game.cam.y + canvas.height/2;
+            const sortEntities = [...game.entities, { ...game.player, type: 'player' }];
+            sortEntities.sort((a, b) => a.y - b.y);
+
+            sortEntities.forEach(e => {
+                const sx = e.x - game.cam.x + canvas.width/2;
+                const sy = e.y - game.cam.y + canvas.height/2;
+                
+                // Offscreen cull
+                if (sx < -100 || sx > canvas.width + 100 || sy < -100 || sy > canvas.height + 100) return;
+
+                ctx.save();
+                ctx.translate(sx, sy);
+
+                // Shadow
                 ctx.fillStyle = 'rgba(0,0,0,0.1)';
                 ctx.beginPath();
-                ctx.ellipse(screenX, screenY + 15, 20, 8, 0, 0, Math.PI*2);
+                ctx.ellipse(0, 10, 20, 8, 0, 0, Math.PI*2);
                 ctx.fill();
-            });
 
-            // Entities sorted by Y for depth
-            const renderList = [...game.entities, { ...p, type: 'player' }];
-            renderList.sort((a, b) => a.y - b.y);
+                if (e.type === 'player') {
+                    if (e.facing === -1) ctx.scale(-1, 1);
+                    
+                    // Parka Hood
+                    const hoodColor = e.warmth < 30 ? '#546e7a' : '#d84315'; // Blueish when cold
+                    ctx.fillStyle = hoodColor;
+                    ctx.beginPath();
+                    ctx.arc(0, -20, 18, 0, Math.PI*2); // Head
+                    ctx.fill();
+                    
+                    // Parka Fur Trim
+                    ctx.strokeStyle = '#eee';
+                    ctx.lineWidth = 4;
+                    ctx.stroke();
 
-            renderList.forEach(e => {
-                const screenX = e.x - game.cam.x + canvas.width/2;
-                const screenY = e.y - game.cam.y + canvas.height/2;
-                
-                // Cull off-screen
-                if (screenX < -100 || screenX > canvas.width + 100 || screenY < -100 || screenY > canvas.height + 100) return;
+                    // Face
+                    ctx.fillStyle = '#ffccbc';
+                    ctx.beginPath();
+                    ctx.arc(0, -20, 12, 0, Math.PI*2);
+                    ctx.fill();
 
-                if (e.type === TYPES.TREE) {
-                    drawEmoji('🌲', e.x, e.y - 20, 60, e.scale);
+                    // Eyes
+                    ctx.fillStyle = '#333';
+                    ctx.beginPath();
+                    ctx.arc(-4, -22, 2, 0, Math.PI*2);
+                    ctx.arc(4, -22, 2, 0, Math.PI*2);
+                    ctx.fill();
+
+                    // Body
+                    ctx.fillStyle = hoodColor;
+                    ctx.beginPath();
+                    ctx.moveTo(-15, -10);
+                    ctx.lineTo(15, -10);
+                    ctx.lineTo(20, 20);
+                    ctx.lineTo(-20, 20);
+                    ctx.fill();
+                    
+                } else if (e.type === TYPES.TREE) {
+                    // Trunk
+                    ctx.fillStyle = '#5d4037';
+                    ctx.fillRect(-5, -10, 10, 20);
+                    
+                    // Leaves (Triangle style)
+                    ctx.fillStyle = '#2e7d32';
+                    ctx.beginPath();
+                    ctx.moveTo(0, -80);
+                    ctx.lineTo(30, -10);
+                    ctx.lineTo(-30, -10);
+                    ctx.fill();
+                    
                     if (e.hp < 3) {
-                         ctx.fillStyle = 'white';
-                         ctx.font = '12px sans-serif';
-                         ctx.fillText(`${e.hp} HP`, screenX, screenY - 60);
+                        ctx.fillStyle = 'white';
+                        ctx.font = 'bold 12px Arial';
+                        ctx.fillText(e.hp, -4, -40);
                     }
-                }
-                else if (e.type === TYPES.RABBIT) {
-                    ctx.save();
-                    if (e.vx < 0) ctx.scale(-1, 1);
-                    drawEmoji('🐇', e.vx < 0 ? -e.x : e.x, e.y, 30);
-                    ctx.restore();
-                }
-                else if (e.type === TYPES.BEAR) {
-                    const bounce = Math.sin(Date.now() / 200) * 5;
-                    drawEmoji(e.state === 'chasing' ? '😡' : '🐻', e.x, e.y + bounce - 10, 50);
-                    if (e.state === 'chasing') {
-                        drawEmoji('💢', e.x + 20, e.y - 40, 20);
-                    }
-                }
-                else if (e.type === TYPES.WOOD) drawEmoji('🪵', e.x, e.y, 30);
-                else if (e.type === TYPES.FOOD) drawEmoji('🍖', e.x, e.y, 30);
-                else if (e.type === TYPES.TRAP) drawEmoji(e.caught ? '🔒' : '🪤', e.x, e.y, 30);
-                else if (e.type === TYPES.BEAR_TRAP) drawEmoji(e.caught ? '🔒' : '⚙️', e.x, e.y, 40);
-                else if (e.type === TYPES.IGLOO) {
-                    if (e.built) drawEmoji('🛖', e.x, e.y - 10, 80);
-                    else {
-                        ctx.globalAlpha = 0.5;
-                        drawEmoji('🛖', e.x, e.y - 10, 80);
-                        ctx.globalAlpha = 1;
-                        ctx.fillStyle = 'black';
-                        ctx.font = '14px Arial';
-                        ctx.fillText(`${e.progress}%`, screenX, screenY - 50);
-                    }
-                }
-                else if (e.type === 'player') {
-                    const bounce = Math.abs(Math.sin(Date.now() / 150)) * 5;
-                    const yOff = (game.keys['w'] || game.keys['a'] || game.keys['s'] || game.keys['d']) ? bounce : 0;
-                    
-                    // Flip logic
-                    ctx.save();
-                    ctx.translate(screenX, screenY);
-                    if (p.facing === -1) ctx.scale(-1, 1);
-                    
-                    ctx.font = '45px sans-serif';
-                    ctx.textAlign = 'center';
-                    ctx.textBaseline = 'middle';
-                    ctx.fillText(p.hp < 30 ? '🥶' : '😃', 0, yOff - 10);
-                    
-                    // Coat
-                    if (p.warmth > 80) ctx.fillText('🧣', 0, yOff + 15);
-                    else ctx.fillText('👕', 0, yOff + 15);
 
-                    ctx.restore();
+                } else if (e.type === TYPES.BEAR) {
+                    if (e.vx < 0) ctx.scale(-1, 1);
+                    
+                    // Body
+                    ctx.fillStyle = '#5d4037';
+                    ctx.beginPath();
+                    ctx.ellipse(0, -10, 30, 20, 0, 0, Math.PI*2);
+                    ctx.fill();
+
+                    // Head
+                    ctx.beginPath();
+                    ctx.arc(25, -25, 15, 0, Math.PI*2);
+                    ctx.fill();
+
+                    // Legs
+                    ctx.beginPath();
+                    ctx.arc(-15, 10, 6, 0, Math.PI*2);
+                    ctx.arc(15, 10, 6, 0, Math.PI*2);
+                    ctx.fill();
+                    
+                    // Eye (Red if angry)
+                    ctx.fillStyle = e.state === 'chasing' ? 'red' : 'white';
+                    ctx.beginPath();
+                    ctx.arc(28, -28, 2, 0, Math.PI*2);
+                    ctx.fill();
+
+                } else if (e.type === TYPES.CAVE) {
+                    // Cave entrance
+                    ctx.fillStyle = '#111';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 60, 40, 0, 0, Math.PI*2); // Dark entrance
+                    ctx.fill();
+                    
+                    // Rocky mound
+                    ctx.fillStyle = '#555';
+                    ctx.beginPath();
+                    ctx.arc(0, -20, 60, Math.PI, 0);
+                    ctx.fill();
+                    
+                } else if (e.type === TYPES.IGLOO) {
+                    if (e.built) {
+                        ctx.fillStyle = '#e1f5fe';
+                        ctx.strokeStyle = '#b3e5fc';
+                        ctx.lineWidth = 2;
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 40, Math.PI, 0); // Dome
+                        ctx.fill();
+                        ctx.stroke();
+                        
+                        // Entrance
+                        ctx.fillStyle = '#263238';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 12, Math.PI, 0);
+                        ctx.fill();
+                    } else {
+                        // Foundation ghost
+                        ctx.strokeStyle = 'rgba(0, 200, 255, 0.5)';
+                        ctx.setLineDash([5, 5]);
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 40, 0, Math.PI*2);
+                        ctx.stroke();
+                        ctx.setLineDash([]);
+                        
+                        ctx.fillStyle = '#0288d1';
+                        ctx.font = 'bold 14px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText(`${e.progress}%`, 0, -10);
+                        ctx.font = '10px Arial';
+                        ctx.fillText('Need 1 Wood', 0, 5);
+                    }
+                } else if (e.type === TYPES.FIRE) {
+                    if (e.lit) {
+                        ctx.fillStyle = '#ff5722';
+                        ctx.beginPath();
+                        const flicker = Math.random() * 10;
+                        ctx.arc(0, 0, 20 + flicker, 0, Math.PI*2);
+                        ctx.fill();
+                        ctx.fillStyle = '#ffeb3b';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 10 + flicker/2, 0, Math.PI*2);
+                        ctx.fill();
+                    } else {
+                        // Unlit pit
+                        ctx.fillStyle = '#3e2723';
+                        ctx.beginPath();
+                        ctx.arc(0, 0, 15, 0, Math.PI*2);
+                        ctx.fill();
+                        ctx.fillStyle = '#aaa';
+                        ctx.font = '10px Arial';
+                        ctx.textAlign = 'center';
+                        ctx.fillText('Fire Pit', 0, -20);
+                    }
+                } else if (e.type === TYPES.RABBIT) {
+                    if (e.vx < 0) ctx.scale(-1, 1);
+                    ctx.fillStyle = '#fff';
+                    ctx.beginPath();
+                    ctx.ellipse(0, 0, 10, 8, 0, 0, Math.PI*2);
+                    ctx.fill();
+                    ctx.beginPath();
+                    ctx.ellipse(8, -8, 3, 8, -0.5, 0, Math.PI*2); // Ear
+                    ctx.fill();
+                } else if (e.type === TYPES.WOOD) {
+                    ctx.fillStyle = '#795548';
+                    ctx.fillRect(-10, -5, 20, 10);
+                } else if (e.type === TYPES.FOOD) {
+                    ctx.fillStyle = '#ef5350';
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 8, 0, Math.PI*2);
+                    ctx.fill();
+                } else if (e.type === TYPES.TRAP) {
+                    ctx.strokeStyle = '#555';
+                    ctx.lineWidth = 2;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 10, 0, Math.PI*2);
+                    ctx.stroke();
+                    if (e.caught) {
+                        ctx.fillStyle = '#f00';
+                        ctx.fillText('!', 0, 5);
+                    }
+                } else if (e.type === TYPES.BEAR_TRAP) {
+                    ctx.strokeStyle = '#333';
+                    ctx.lineWidth = 3;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 15, 0, Math.PI*2);
+                    ctx.stroke();
+                    // Teeth
+                    for(let i=0; i<8; i++) {
+                        const a = (i/8)*Math.PI*2;
+                        ctx.beginPath();
+                        ctx.moveTo(Math.cos(a)*15, Math.sin(a)*15);
+                        ctx.lineTo(Math.cos(a)*10, Math.sin(a)*10);
+                        ctx.stroke();
+                    }
                 }
+
+                ctx.restore();
             });
 
             // Darkness Overlay (Night)
@@ -972,7 +1021,7 @@
                     const ix = igloo.x - game.cam.x + canvas.width/2;
                     const iy = igloo.y - game.cam.y + canvas.height/2;
                     const grad = ctx.createRadialGradient(ix, iy, 10, ix, iy, 150);
-                    grad.addColorStop(0, 'rgba(255, 200, 100, 0.3)');
+                    grad.addColorStop(0, 'rgba(255, 200, 100, 0.4)');
                     grad.addColorStop(1, 'rgba(0,0,0,0)');
                     ctx.fillStyle = grad;
                     ctx.beginPath();
@@ -983,27 +1032,24 @@
 
             // Particles
             game.particles.forEach(p => {
+                ctx.fillStyle = p.color;
                 ctx.globalAlpha = p.life;
-                drawEmoji(p.emoji, p.x, p.y, 20 * p.scale);
-                ctx.globalAlpha = 1;
+                ctx.beginPath();
+                ctx.arc(p.x - game.cam.x + canvas.width/2, p.y - game.cam.y + canvas.height/2, 3, 0, Math.PI*2);
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
             });
         }
 
-        let lastTime = 0;
         function loop(timestamp) {
-            const dt = (timestamp - lastTime) / 1000;
-            lastTime = timestamp;
-            update(dt || 0.016);
+            const dt = Math.min((timestamp - (game.lastTime || timestamp)) / 1000, 0.1);
+            game.lastTime = timestamp;
+            update(dt);
             render();
             requestAnimationFrame(loop);
         }
 
         requestAnimationFrame(loop);
-        
-        // Start loop (game running check inside update)
-        function gameLoop() {
-             // just a placeholder if needed, but main loop handles it
-        }
     </script>
 </body>
 </html>
