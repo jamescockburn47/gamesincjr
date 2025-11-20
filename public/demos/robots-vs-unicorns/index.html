@@ -127,6 +127,12 @@
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
+            
+            // Ensure player stays on screen during resize
+            if (player.y > height - 150) {
+                 player.y = height - 150;
+            }
+
             // Generate background mountains
             mountains = [];
             for(let i=0; i<width; i+=10) {
@@ -162,6 +168,7 @@
             }));
 
             updateUI();
+            document.getElementById('hp-bar-container').classList.remove('hidden');
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('game-over-screen').classList.add('hidden');
             
@@ -586,7 +593,17 @@
             }
         };
 
-        window.addEventListener('keydown', e => handleInput(e.code, true));
+        // Focus management - ensure canvas/window receives events
+        window.addEventListener('click', () => window.focus());
+
+        window.addEventListener('keydown', e => {
+            // Prevent default scrolling for game keys
+            if(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+                e.preventDefault();
+            }
+            handleInput(e.code, true);
+        });
+        
         window.addEventListener('keyup', e => handleInput(e.code, false));
         
         // Touch
