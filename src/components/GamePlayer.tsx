@@ -33,6 +33,14 @@ export default function GamePlayer({ game }: GamePlayerProps) {
   const isClient = useMemo(() => typeof window !== 'undefined', []);
 
   useEffect(() => {
+    // Force loading to finish after 3 seconds in case onLoad fails (e.g. network lag or cache)
+    const timer = setTimeout(() => {
+      if (isLoading) setIsLoading(false);
+    }, 3000);
+    return () => clearTimeout(timer);
+  }, [isLoading]);
+
+  useEffect(() => {
     if (!isClient) return;
     const setVh = () => {
       const vh = window.innerHeight * 0.01;
