@@ -7,7 +7,6 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   
-  /* Use the font variables we defined in layout.tsx */
   --font-heading: var(--font-heading);
   --font-body: var(--font-body);
 
@@ -37,47 +36,46 @@
 }
 
 :root {
-  /* Fun, Spartan Color Palette */
-  /* Background: Warm off-white/cream */
-  --background: #FDFBF7;
-  /* Foreground: Dark Slate Blue (softer than black) */
-  --foreground: #1e293b;
+  /* Premium, Playful Palette */
+  /* Background: Very soft, warm cream/white */
+  --background: #FAFAF9;
+  /* Foreground: Deep, rich slate */
+  --foreground: #0f172a;
 
-  /* Primary: Vibrant Sky Blue */
-  --primary: #0ea5e9;
+  /* Primary: Electric Indigo/Violet */
+  --primary: #6366f1;
   --primary-foreground: #ffffff;
 
-  /* Secondary: Sunshine Yellow */
-  --secondary: #fbbf24;
-  --secondary-foreground: #451a03;
+  /* Secondary: Vibrant Amber */
+  --secondary: #f59e0b;
+  --secondary-foreground: #ffffff;
 
-  /* Accent: Soft Rose/Coral */
-  --accent: #f472b6;
+  /* Accent: Hot Pink/Rose */
+  --accent: #ec4899;
   --accent-foreground: #ffffff;
 
-  /* Muted: Cool Greys */
+  /* Muted: Cool Slate */
   --muted: #f1f5f9;
   --muted-foreground: #64748b;
 
-  /* Card: White with slight warmth */
+  /* Card: Pure White with depth */
   --card: #ffffff;
-  --card-foreground: #1e293b;
+  --card-foreground: #0f172a;
 
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #38bdf8;
+  --ring: #818cf8;
 
-  --radius: 1.5rem; /* Big rounded corners for friendly feel */
+  --radius: 1.5rem;
 }
 
 .dark {
-  /* Simple dark mode fallback (not main focus for kids site, but good practice) */
   --background: #0f172a;
   --foreground: #f8fafc;
-  --primary: #38bdf8;
+  --primary: #818cf8;
   --primary-foreground: #0f172a;
-  --secondary: #f59e0b;
-  --secondary-foreground: #fffbeb;
+  --secondary: #fbbf24;
+  --secondary-foreground: #451a03;
   --card: #1e293b;
   --card-foreground: #f8fafc;
   --border: #334155;
@@ -89,25 +87,23 @@
   }
   
   body {
-    @apply bg-background text-foreground font-body;
-    /* Subtle playful pattern overlay */
-    background-image: radial-gradient(#e2e8f0 1px, transparent 1px);
-    background-size: 32px 32px;
+    @apply bg-background text-foreground font-body antialiased selection:bg-primary/20 selection:text-primary;
+    /* Subtle noise texture for premium feel */
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.03'/%3E%3C/svg%3E");
   }
 
   h1, h2, h3, h4, h5, h6 {
-    @apply font-heading font-bold tracking-wide;
+    @apply font-heading font-bold tracking-tight;
   }
 }
 
 @layer utilities {
-  /* Fun button utility */
-  .btn-fun {
-    @apply inline-flex items-center justify-center rounded-full font-heading font-bold transition-all active:scale-95 hover:-translate-y-1 shadow-[0_4px_0_0_rgba(0,0,0,0.1)];
+  .glass-panel {
+    @apply bg-white/70 backdrop-blur-xl border border-white/50 shadow-xl;
   }
   
-  .btn-fun:active {
-    @apply shadow-none translate-y-[2px];
+  .text-gradient {
+    @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-accent;
   }
 
   .fullscreen-target:fullscreen {
