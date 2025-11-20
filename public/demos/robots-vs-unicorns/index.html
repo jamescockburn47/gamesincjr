@@ -144,13 +144,19 @@
         }
 
         function initGame() {
-            if (!AudioSys.ctx) AudioSys.init();
+            console.log('Initializing Game...'); // Debug log
+            if (AudioSys && !AudioSys.ctx) {
+                try { AudioSys.init(); } catch(e) { console.log('Audio init failed', e); }
+            }
             
             gameActive = true;
             score = 0;
             wave = 1;
             frames = 0;
             gameSpeed = 1;
+            
+            // Reset resizing to ensure we have correct dimensions
+            resize();
             
             player.y = height - 150;
             player.dy = 0;
@@ -172,6 +178,7 @@
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('game-over-screen').classList.add('hidden');
             
+            console.log('Game Loop Starting...');
             requestAnimationFrame(loop);
         }
 
