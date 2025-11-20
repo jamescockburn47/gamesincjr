@@ -1,5 +1,25 @@
 [
   {
+    "slug": "robots-vs-unicorns",
+    "title": "Robots vs Unicorns",
+    "tags": [
+      "action",
+      "runner",
+      "unicorn"
+    ],
+    "description": "Blast through waves of evil robots as a magical unicorn. Use rainbow lasers and jump to survive!",
+    "description_it": "Fatti strada tra ondate di robot malvagi nei panni di un unicorno magico. Usa laser arcobaleno e salta per sopravvivere!",
+    "hero": "/games/robots-vs-unicorns/hero.svg",
+    "screenshots": [
+      "/games/robots-vs-unicorns/s1.svg"
+    ],
+    "demoPath": "/demos/robots-vs-unicorns/index.html",
+    "gameType": "html5",
+    "engine": "vanilla-js",
+    "version": "1.0.0",
+    "status": "released"
+  },
+  {
     "slug": "alien-unicorn-alliance",
     "title": "Alien Unicorn Alliance",
     "tags": [
