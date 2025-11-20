@@ -1,34 +1,137 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Robots vs Unicorns: Neon Justice</title>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
-        body { margin: 0; overflow: hidden; background: #0d0221; touch-action: none; font-family: 'Press Start 2P', cursive; }
-        canvas { display: block; width: 100%; height: 100%; }
-        #ui { position: absolute; top: 20px; left: 20px; color: white; font-size: 20px; pointer-events: none; z-index: 10; text-shadow: 3px 3px 0 #ff00cc; }
-        #hp-bar-container { position: absolute; top: 20px; right: 20px; width: 200px; height: 20px; background: #333; border: 2px solid #fff; border-radius: 10px; overflow: hidden; }
-        #hp-bar { width: 100%; height: 100%; background: linear-gradient(90deg, #00ff00, #adff2f); transition: width 0.2s; }
-        #start-screen, #game-over-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(13, 2, 33, 0.85); backdrop-filter: blur(5px); display: flex; flex-direction: column; align-items: center; justify-content: center; color: white; z-index: 20; }
-        h1 { font-size: 40px; margin-bottom: 30px; text-align: center; line-height: 1.4; background: linear-gradient(to bottom, #fff, #ff00cc); -webkit-background-clip: text; -webkit-text-fill-color: transparent; text-shadow: 0 0 20px rgba(255,0,204,0.5); }
-        button { background: #ff00cc; border: 4px solid #fff; padding: 20px 40px; color: white; font-family: 'Press Start 2P', cursive; font-size: 20px; cursor: pointer; box-shadow: 0 8px 0 #99007a; transition: transform 0.1s, box-shadow 0.1s; text-transform: uppercase; }
-        button:active { transform: translateY(4px); box-shadow: 0 4px 0 #99007a; }
-        .controls { margin-top: 40px; font-size: 12px; color: #aaa; text-align: center; line-height: 2; background: rgba(0,0,0,0.5); padding: 20px; border-radius: 10px; border: 1px solid #333; }
-        .key { display: inline-block; padding: 5px 10px; border: 2px solid #666; border-radius: 4px; background: #222; color: #fff; margin: 0 5px; box-shadow: 0 3px 0 #000; }
-        #combo-text { position: absolute; top: 40%; left: 50%; transform: translate(-50%, -50%) scale(0); color: #ffff00; font-size: 40px; font-weight: bold; pointer-events: none; text-shadow: 4px 4px 0 #ff0000; z-index: 15; transition: transform 0.2s; }
-        .hidden { display: none !important; }
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background: #0d0221;
+            touch-action: none;
+            font-family: 'Press Start 2P', cursive;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: white;
+            font-size: 20px;
+            pointer-events: none;
+            z-index: 10;
+            text-shadow: 3px 3px 0 #ff00cc;
+        }
+
+        #hp-bar-container {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            width: 200px;
+            height: 20px;
+            background: #333;
+            border: 2px solid #fff;
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        #hp-bar {
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, #00ff00, #adff2f);
+            transition: width 0.2s;
+        }
+
+        #start-screen,
+        #game-over-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(13, 2, 33, 0.85);
+            backdrop-filter: blur(5px);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px 40px;
+            color: white;
+            font-family: 'Press Start 2P', cursive;
+            font-size: 20px;
+            cursor: pointer;
+            box-shadow: 0 8px 0 #99007a;
+            transition: transform 0.1s, box-shadow 0.1s;
+            text-transform: uppercase;
+        }
+
+        button:active {
+            transform: translateY(4px);
+            box-shadow: 0 4px 0 #99007a;
+        }
+
+        .controls {
+            margin-top: 40px;
+            font-size: 12px;
+            color: #aaa;
+            text-align: center;
+            line-height: 2;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+            border: 1px solid #333;
+        }
+
+        .key {
+            display: inline-block;
+            padding: 5px 10px;
+            border: 2px solid #666;
+            border-radius: 4px;
+            background: #222;
+            color: #fff;
+            margin: 0 5px;
+            box-shadow: 0 3px 0 #000;
+        }
+
+        #combo-text {
+            position: absolute;
+            top: 40%;
+            left: 50%;
+            transform: translate(-50%, -50%) scale(0);
+            color: #ffff00;
+            font-size: 40px;
+            font-weight: bold;
+            pointer-events: none;
+            text-shadow: 4px 4px 0 #ff0000;
+            z-index: 15;
+            transition: transform 0.2s;
+        }
+
+        .hidden {
+            display: none !important;
+        }
     </style>
 </head>
+
 <body>
     <canvas id="gameCanvas"></canvas>
     <div id="ui">
         <div>SCORE: <span id="score-val">0</span></div>
         <div style="font-size: 12px; color: #ccc; margin-top: 10px;">WAVE: <span id="wave-val">1</span></div>
     </div>
-    <div id="hp-bar-container"><div id="hp-bar"></div></div>
-    
+    <div id="hp-bar-container">
+        <div id="hp-bar"></div>
+    </div>
+
     <div id="combo-text">COMBO!</div>
 
     <div id="start-screen">
@@ -47,7 +150,8 @@
         <h1 style="color:#ff0055; -webkit-text-fill-color:#ff0055;">SYSTEM<br>FAILURE</h1>
         <div style="margin-bottom: 30px; font-size: 20px; text-align: center;">
             SCORE: <span id="final-score">0</span><br>
-            <span style="font-size: 12px; color: #888; margin-top: 10px; display: block;">HIGHSCORE: <span id="high-score">0</span></span>
+            <span style="font-size: 12px; color: #888; margin-top: 10px; display: block;">HIGHSCORE: <span
+                    id="high-score">0</span></span>
         </div>
         <button id="retryBtn">REBOOT</button>
     </div>
@@ -56,11 +160,11 @@
         // --- Audio System (Synthesized) ---
         const AudioSys = {
             ctx: null,
-            init: function() {
+            init: function () {
                 window.AudioContext = window.AudioContext || window.webkitAudioContext;
                 this.ctx = new AudioContext();
             },
-            playTone: function(freq, type, duration, vol=0.1) {
+            playTone: function (freq, type, duration, vol = 0.1) {
                 if (!this.ctx) return;
                 const osc = this.ctx.createOscillator();
                 const gain = this.ctx.createGain();
@@ -73,16 +177,16 @@
                 osc.start();
                 osc.stop(this.ctx.currentTime + duration);
             },
-            shoot: function() { 
-                this.playTone(800, 'square', 0.1, 0.05); 
+            shoot: function () {
+                this.playTone(800, 'square', 0.1, 0.05);
                 setTimeout(() => this.playTone(600, 'square', 0.1, 0.05), 50);
             },
-            jump: function() { this.playTone(300, 'sine', 0.2, 0.1); },
-            explosion: function() { 
-                this.playTone(100, 'sawtooth', 0.3, 0.1); 
+            jump: function () { this.playTone(300, 'sine', 0.2, 0.1); },
+            explosion: function () {
+                this.playTone(100, 'sawtooth', 0.3, 0.1);
                 this.playTone(50, 'square', 0.4, 0.1);
             },
-            powerup: function() {
+            powerup: function () {
                 this.playTone(600, 'sine', 0.1, 0.1);
                 setTimeout(() => this.playTone(900, 'sine', 0.1, 0.1), 100);
                 setTimeout(() => this.playTone(1200, 'sine', 0.2, 0.1), 200);
@@ -92,19 +196,20 @@
         // --- Game Constants & State ---
         const canvas = document.getElementById('gameCanvas');
         const ctx = canvas.getContext('2d');
-        
+
         let width, height;
         let frames = 0;
         let score = 0;
-        let highscore = localStorage.getItem('rvu_highscore') || 0;
+        let highscore = 0;
+        try { highscore = localStorage.getItem('rvu_highscore') || 0; } catch (e) { }
         let wave = 1;
         let gameActive = false;
         let shake = 0;
         let gameSpeed = 1;
-        
+
         const BASE_SPEED = 6;
         const GRAVITY = 0.7;
-        
+
         // --- Entities ---
         const player = {
             x: 100, y: 0, w: 50, h: 50,
@@ -127,15 +232,15 @@
         function resize() {
             width = canvas.width = window.innerWidth;
             height = canvas.height = window.innerHeight;
-            
+
             // Ensure player stays on screen during resize
             if (player.y > height - 150) {
-                 player.y = height - 150;
+                player.y = height - 150;
             }
 
             // Generate background mountains
             mountains = [];
-            for(let i=0; i<width; i+=10) {
+            for (let i = 0; i < width; i += 10) {
                 mountains.push({
                     h: Math.random() * 100 + 50,
                     c: Math.random() > 0.5 ? '#1e1235' : '#251640'
@@ -146,25 +251,25 @@
         function initGame() {
             console.log('Initializing Game...'); // Debug log
             if (AudioSys && !AudioSys.ctx) {
-                try { AudioSys.init(); } catch(e) { console.log('Audio init failed', e); }
+                try { AudioSys.init(); } catch (e) { console.log('Audio init failed', e); }
             }
-            
+
             gameActive = true;
             score = 0;
             wave = 1;
             frames = 0;
             gameSpeed = 1;
-            
+
             // Reset resizing to ensure we have correct dimensions
             resize();
-            
+
             player.y = height - 150;
             player.dy = 0;
             player.hp = 100;
             player.invincible = 0;
-            
+
             entities = [];
-            
+
             // Initial Stars
             stars = Array(80).fill().map(() => ({
                 x: Math.random() * width,
@@ -177,7 +282,7 @@
             document.getElementById('hp-bar-container').classList.remove('hidden');
             document.getElementById('start-screen').classList.add('hidden');
             document.getElementById('game-over-screen').classList.add('hidden');
-            
+
             console.log('Game Loop Starting...');
             requestAnimationFrame(loop);
         }
@@ -186,7 +291,7 @@
         function spawnEnemy() {
             const isBoss = wave % 5 === 0 && frames % 500 === 0; // Mini-boss logic could go here
             const typeRand = Math.random();
-            
+
             let type = 'walker';
             if (typeRand > 0.7) type = 'drone';
             if (typeRand > 0.9) type = 'dasher';
@@ -220,7 +325,7 @@
         }
 
         function createParticles(x, y, count, color) {
-            for(let i=0; i<count; i++) {
+            for (let i = 0; i < count; i++) {
                 entities.push({
                     group: 'particle',
                     x: x, y: y,
@@ -243,7 +348,7 @@
         function update() {
             if (!gameActive) return;
             frames++;
-            
+
             // Difficulty Scaling
             if (frames % 1000 === 0) {
                 wave++;
@@ -294,7 +399,7 @@
             // Update Entities
             for (let i = entities.length - 1; i >= 0; i--) {
                 let e = entities[i];
-                
+
                 if (e.group === 'bullet') {
                     e.x += e.vx;
                     e.life--;
@@ -305,7 +410,7 @@
                 else if (e.group === 'enemy') {
                     e.x -= (e.vx * gameSpeed);
                     if (e.type === 'drone') e.y += Math.sin(frames * 0.1) * 2;
-                    
+
                     // Cleanup offscreen
                     if (e.x < -100) entities.splice(i, 1);
 
@@ -318,7 +423,7 @@
                             // Remove bullet (find it in main array to be safe)
                             const realBIdx = entities.indexOf(b);
                             if (realBIdx > -1) entities.splice(realBIdx, 1);
-                            
+
                             createParticles(e.x, e.y, 5, '#ffaa00');
 
                             if (e.hp <= 0) {
@@ -360,14 +465,14 @@
 
         function destroyEnemy(e, index) {
             // Check if already removed
-            if (entities[index] !== e) return; 
-            
+            if (entities[index] !== e) return;
+
             entities.splice(index, 1);
             score += 100 * wave;
             createParticles(e.x, e.y, 15, e.type === 'dasher' ? '#f00' : '#aaa');
             AudioSys.explosion();
             shake = 5;
-            
+
             if (score % 1000 === 0) showCombo();
         }
 
@@ -382,15 +487,15 @@
             gameActive = false;
             if (score > highscore) {
                 highscore = score;
-                localStorage.setItem('rvu_highscore', highscore);
+                try { localStorage.setItem('rvu_highscore', highscore); } catch (e) { }
             }
-            
+
             // Save score to backend
             fetch('/api/scores/save', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ gameSlug: 'robots-vs-unicorns', score: score })
-            }).catch(() => {});
+            }).catch(() => { });
 
             document.getElementById('final-score').innerText = score;
             document.getElementById('high-score').innerText = highscore;
@@ -418,7 +523,7 @@
             stars.forEach(s => {
                 ctx.globalAlpha = Math.random() * 0.5 + 0.5;
                 ctx.beginPath();
-                ctx.arc(s.x, s.y, s.size, 0, Math.PI*2);
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
                 ctx.fill();
             });
             ctx.globalAlpha = 1;
@@ -427,7 +532,7 @@
             ctx.fillStyle = '#1e1235';
             ctx.beginPath();
             ctx.moveTo(0, height);
-            for(let i=0; i<mountains.length; i++) {
+            for (let i = 0; i < mountains.length; i++) {
                 const m = mountains[i];
                 const x = (i * 10) - (frames * 0.5 % width); // Parallax scroll
                 // If wrapped
@@ -447,7 +552,7 @@
             ctx.lineTo(width, height - 90);
             // Grid lines
             const offset = (frames * BASE_SPEED * gameSpeed) % 60;
-            for(let x = -offset; x < width; x += 60) {
+            for (let x = -offset; x < width; x += 60) {
                 ctx.moveTo(x + 30, height - 90);
                 ctx.lineTo(x - 60, height);
             }
@@ -480,18 +585,18 @@
 
             ctx.restore();
 
-            if (gameActive) requestAnimationFrame(draw);
+            // if (gameActive) requestAnimationFrame(draw); // Moved to loop()
         }
 
         function drawUnicorn(x, y) {
             ctx.save();
             ctx.translate(x, y);
-            
+
             // Rainbow Trail
             if (player.dy !== 0) {
-                for(let i=0; i<3; i++) {
-                    ctx.fillStyle = `hsl(${(frames * 10 + i*30) % 360}, 100%, 50%)`;
-                    ctx.fillRect(-10 - i*5, 10 + i*2, 10, 30);
+                for (let i = 0; i < 3; i++) {
+                    ctx.fillStyle = `hsl(${(frames * 10 + i * 30) % 360}, 100%, 50%)`;
+                    ctx.fillRect(-10 - i * 5, 10 + i * 2, 10, 30);
                 }
             }
 
@@ -500,10 +605,10 @@
             ctx.shadowColor = '#ff00cc';
             ctx.shadowBlur = 15;
             ctx.fillRect(0, 10, 40, 30);
-            
+
             // Head
             ctx.fillRect(25, 0, 20, 25);
-            
+
             // Horn
             ctx.fillStyle = '#ffd700'; // Gold
             ctx.beginPath();
@@ -527,19 +632,19 @@
         function drawEnemy(e) {
             ctx.save();
             ctx.translate(e.x, e.y);
-            
+
             if (e.type === 'drone') {
                 // Floating Drone
                 ctx.fillStyle = '#444';
                 ctx.beginPath();
-                ctx.arc(20, 20, 15, 0, Math.PI*2);
+                ctx.arc(20, 20, 15, 0, Math.PI * 2);
                 ctx.fill();
                 // Pulsing red eye
                 ctx.fillStyle = `rgba(255, 0, 0, ${Math.abs(Math.sin(frames * 0.1))})`;
                 ctx.shadowColor = 'red';
                 ctx.shadowBlur = 10;
                 ctx.beginPath();
-                ctx.arc(20, 20, 6, 0, Math.PI*2);
+                ctx.arc(20, 20, 6, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.shadowBlur = 0;
                 // Propeller
@@ -558,7 +663,7 @@
                 ctx.fillStyle = '#222';
                 const treadOffset = (frames * 0.5) % 10;
                 ctx.beginPath();
-                ctx.arc(e.w/2, e.h, 10, 0, Math.PI*2); // Wheel
+                ctx.arc(e.w / 2, e.h, 10, 0, Math.PI * 2); // Wheel
                 ctx.fill();
             }
             ctx.restore();
@@ -568,7 +673,7 @@
             document.getElementById('score-val').innerText = Math.floor(score);
             document.getElementById('wave-val').innerText = wave;
             document.getElementById('hp-bar').style.width = player.hp + '%';
-            
+
             // Color HP bar based on health
             const hpBar = document.getElementById('hp-bar');
             if (player.hp < 30) hpBar.style.background = '#ff0000';
@@ -577,15 +682,17 @@
         }
 
         function loop() {
+            if (!gameActive) return;
             update();
-            if (gameActive) draw();
+            draw();
+            requestAnimationFrame(loop);
         }
 
         function rectIntersect(r1, r2) {
-            return !(r2.x > r1.x + r1.w || 
-                     r2.x + r2.w < r1.x || 
-                     r2.y > r1.y + r1.h || 
-                     r2.y + r2.h < r1.y);
+            return !(r2.x > r1.x + r1.w ||
+                r2.x + r2.w < r1.x ||
+                r2.y > r1.y + r1.h ||
+                r2.y + r2.h < r1.y);
         }
 
         // --- Input Listeners ---
@@ -605,20 +712,20 @@
 
         window.addEventListener('keydown', e => {
             // Prevent default scrolling for game keys
-            if(['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
+            if (['Space', 'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.code)) {
                 e.preventDefault();
             }
             handleInput(e.code, true);
         });
-        
+
         window.addEventListener('keyup', e => handleInput(e.code, false));
-        
+
         // Touch
         canvas.addEventListener('touchstart', (e) => {
             e.preventDefault();
-            for(let i=0; i<e.touches.length; i++) {
+            for (let i = 0; i < e.touches.length; i++) {
                 const t = e.touches[i];
-                if (t.clientX < width/2) handleInput('Space', true);
+                if (t.clientX < width / 2) handleInput('Space', true);
                 else handleInput('Click', true);
             }
         });
@@ -628,7 +735,7 @@
             keys.Jump = false;
             keys.Shoot = false;
         });
-        
+
         canvas.addEventListener('mousedown', () => handleInput('Click', true));
         canvas.addEventListener('mouseup', () => handleInput('Click', false));
 
@@ -642,4 +749,5 @@
 
     </script>
 </body>
+
 </html>
