@@ -36,13 +36,18 @@ export default function MagicFriendsTab() {
             const res = await fetch('/api/admin/prompts', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ characterId: id, prompt: prompts[id] }),
+                body: JSON.stringify({ characterId: id, prompt: prompts[id] || '' }),
             });
-            if (!res.ok) throw new Error('Failed to save');
+
+            const data = await res.json();
+
+            if (!res.ok) {
+                throw new Error(data.error || 'Failed to save');
+            }
             // Optional: Show success toast
         } catch (error) {
             console.error('Failed to save prompt', error);
-            alert('Failed to save prompt');
+            alert('Failed to save prompt: ' + String(error));
         } finally {
             setSaving(null);
         }

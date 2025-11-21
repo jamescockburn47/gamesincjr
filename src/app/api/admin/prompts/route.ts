@@ -33,17 +33,22 @@ export async function POST(request: Request) {
         const body = await request.json();
         const { characterId, prompt } = body;
 
-        if (!characterId || !prompt) {
-            return NextResponse.json({ error: 'Missing characterId or prompt' }, { status: 400 });
+        console.log('Updating prompt for:', characterId);
+
+        if (!characterId || typeof prompt !== 'string') {
+            console.warn('Invalid request body:', body);
+            return NextResponse.json({ error: 'Missing characterId or prompt must be a string' }, { status: 400 });
         }
 
         const overrides = await getOverrides();
         overrides[characterId] = prompt;
         await saveOverrides(overrides);
 
+        console.log('Prompt updated successfully for:', characterId);
+
         return NextResponse.json({ success: true, prompts: { ...characterRolePrompts, ...overrides } });
     } catch (error) {
         console.error('Failed to update prompt', error);
-        return NextResponse.json({ error: 'Failed to update prompt' }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to update prompt: ' + String(error) }, { status: 500 });
     }
 }
