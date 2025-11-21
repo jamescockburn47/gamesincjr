@@ -36,12 +36,7 @@ type SavedMessageEntry = {
   imageUrl?: string | null;
 };
 
-type SavedMessagesPayload =
-  | SavedMessageEntry[]
-  | {
-    entries?: SavedMessageEntry[];
-    hiddenBefore?: number;
-  };
+
 
 type StreamEvent =
   | { type: 'start'; sessionInfo?: SessionInfo }
@@ -830,9 +825,9 @@ export default function ImaginaryFriendsApp() {
                   <h2 className="text-xl font-bold text-slate-900">{selectedCharacter.name}</h2>
                   <div className="mt-2 flex items-center gap-2 text-xs font-medium text-slate-500">
                     <span className={`inline-block h-2 w-2 rounded-full ${selectedCharacter.currentMood === 'happy' ? 'bg-green-500' :
-                        selectedCharacter.currentMood === 'excited' ? 'bg-amber-500' :
-                          selectedCharacter.currentMood === 'sad' ? 'bg-blue-500' :
-                            'bg-purple-500'
+                      selectedCharacter.currentMood === 'excited' ? 'bg-amber-500' :
+                        selectedCharacter.currentMood === 'sad' ? 'bg-blue-500' :
+                          'bg-purple-500'
                       }`} />
                     <span className="capitalize">{selectedCharacter.currentMood}</span>
                   </div>
@@ -877,11 +872,17 @@ export default function ImaginaryFriendsApp() {
             <div className="flex h-[600px] flex-col overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-slate-100 lg:h-full">
               <ConversationPanel
                 messages={visibleMessages}
+                character={selectedCharacter}
+                topics={topics}
                 onSendMessage={handleSendMessage}
+                onSelectTopic={handleTopicSelected}
+                onClearChat={handleClearChat}
+                onNewThread={handleNewThread}
                 isLoading={isLoading}
                 showImageButton={showImageButton}
-                topics={topics}
-                onTopicSelected={handleTopicSelected}
+                sessionInfo={sessionInfo}
+                gameStatus={gameStatus}
+                isClearingChat={isClearingHistory}
               />
             </div>
           </section>
@@ -890,10 +891,12 @@ export default function ImaginaryFriendsApp() {
 
       {showCreator && (
         <CharacterCreator
+          isOpen={showCreator}
           onClose={() => setShowCreator(false)}
           onCreate={handleCreateCharacter}
           canCreate={canCreate}
           blockedReason={blockedReason}
+          apiBaseUrl={API_BASE_URL}
         />
       )}
 
