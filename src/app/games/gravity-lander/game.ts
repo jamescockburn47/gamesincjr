@@ -1,5 +1,5 @@
 import { GameEngine } from '@/lib/game-framework/GameEngine';
-import { Physics } from '@/lib/game-framework/mechanics/physics';
+
 import { InputManager } from '@/lib/game-framework/mechanics/input';
 import { Rendering } from '@/lib/game-framework/mechanics/rendering';
 import { ScoreManager } from '@/lib/game-framework/mechanics/scoring';
@@ -32,11 +32,11 @@ export class GravityLanderGame extends GameEngine {
     alive: true,
     spawnTime: 0
   };
-  
+
   private pad: Pad = { x: 540, y: 520, w: 120 };
   private input = new InputManager();
   private score = new ScoreManager('gravity-lander');
-  
+
   private readonly GRAVITY = 240;
   private readonly THRUST_POWER = 480;
   private readonly ROT_POWER = 3.6;
@@ -44,7 +44,7 @@ export class GravityLanderGame extends GameEngine {
   private readonly STALL_DURATION = 5.0;
   private readonly CANVAS_WIDTH = 960;
   private readonly CANVAS_HEIGHT = 540;
-  
+
   private wind = 0;
 
   init(): void {
@@ -104,7 +104,7 @@ export class GravityLanderGame extends GameEngine {
     if (this.lander.y > this.pad.y - 10) {
       const within = this.lander.x > this.pad.x && this.lander.x < this.pad.x + this.pad.w;
       const soft = Math.abs(this.lander.vy) < 270 && Math.abs(this.lander.vx) < 180 && Math.abs(this.lander.angle) < 1.0;
-      
+
       if (within && soft) {
         const points = Math.max(0, Math.floor(1000 - (Math.abs(this.lander.vy) / 3.6 + (200 - this.lander.fuel) * 2)));
         this.score.addPoints(points);
@@ -150,12 +150,12 @@ export class GravityLanderGame extends GameEngine {
     ctx.restore();
 
     Rendering.drawText(ctx, `Fuel: ${Math.round(this.lander.fuel)}`, 20, 30, '#ffffff', 24);
-    
+
     const vSpeed = Math.abs(this.lander.vy);
     let vsColor = '#2ee6a6';
     if (vSpeed > 240) vsColor = '#ff4444';
     else if (vSpeed > 150) vsColor = '#ffaa00';
-    
+
     Rendering.drawText(ctx, `V-Speed: ${(this.lander.vy / 60).toFixed(2)}`, 20, 60, vsColor, 24);
     Rendering.drawText(ctx, `Score: ${this.score.getScore()}`, 20, 90, '#ffffff', 24);
 

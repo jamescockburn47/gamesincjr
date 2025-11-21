@@ -16,7 +16,7 @@ export function FullScreenWrapper({ children, onExit }: Props) {
       try {
         await containerRef.current.requestFullscreen();
         setIsFullscreen(true);
-      } catch (err) {
+      } catch {
         containerRef.current.classList.add('fixed', 'inset-0', 'z-50', 'bg-black');
         setIsFullscreen(true);
       }
@@ -48,7 +48,7 @@ export function FullScreenWrapper({ children, onExit }: Props) {
 
     document.addEventListener('fullscreenchange', handleFullscreenChange);
     document.addEventListener('keydown', handleEscKey);
-    
+
     return () => {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('keydown', handleEscKey);

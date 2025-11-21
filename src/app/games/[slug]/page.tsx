@@ -6,7 +6,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import PageShell from "@/components/PageShell";
-import { Button, buttonVariants } from "@/components/ui/button";
+import { Button } from "@/components/ui/button";
 import ComingSoon from "@/components/ComingSoon";
 import GamePlayer from "@/components/GamePlayer";
 import { GamePlayerErrorBoundary } from "@/components/GamePlayerErrorBoundary";

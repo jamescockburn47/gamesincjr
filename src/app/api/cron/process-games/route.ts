@@ -334,20 +334,21 @@ function analyzeGameplayMechanics(code: string): GameplayIssue[] {
 
 
 // 80s Arcade Flavor - Simple version for cron job
-function getArcadeFlavorForType(gameType: string): string {
-  const arcadePatterns: Record<string, string> = {
-    'space': 'Space Invaders-style waves with formations, 50-100 point scoring, escalating speeds',
-    'runner': 'Obstacle avoidance with progressive difficulty, distance-based scoring, predictable patterns',
-    'puzzle': 'Progressive puzzle complexity, level-based advancement, time bonuses',
-    'racing': 'Traffic/obstacle patterns with escalating density, distance/overtake scoring',
-    'shooter': 'Enemy formations, wave progression, multiplier chains on kills',
-    'flying': 'Obstacle patterns with altitude stages, avoidance scoring, escalation',
-    'collecting': 'Collection loops with pursuing enemies, Pac-Man-like ghost patterns',
-    'fighting': 'Wave-based opponent battles, combo scoring, escalating difficulty',
-    'strategy': 'Escalating AI strategies, turn-based progression, objective scoring'
-  };
-  return arcadePatterns[gameType] || arcadePatterns['space'];
-}
+// 80s Arcade Flavor - Simple version for cron job
+// function getArcadeFlavorForType(gameType: string): string {
+//   const arcadePatterns: Record<string, string> = {
+//     'space': 'Space Invaders-style waves with formations, 50-100 point scoring, escalating speeds',
+//     'runner': 'Obstacle avoidance with progressive difficulty, distance-based scoring, predictable patterns',
+//     'puzzle': 'Progressive puzzle complexity, level-based advancement, time bonuses',
+//     'racing': 'Traffic/obstacle patterns with escalating density, distance/overtake scoring',
+//     'shooter': 'Enemy formations, wave progression, multiplier chains on kills',
+//     'flying': 'Obstacle patterns with altitude stages, avoidance scoring, escalation',
+//     'collecting': 'Collection loops with pursuing enemies, Pac-Man-like ghost patterns',
+//     'fighting': 'Wave-based opponent battles, combo scoring, escalating difficulty',
+//     'strategy': 'Escalating AI strategies, turn-based progression, objective scoring'
+//   };
+//   return arcadePatterns[gameType] || arcadePatterns['space'];
+// }
 
 // Helper functions (copied from main generation route)
 function buildGamePrompt(submission: GameSubmission): string {

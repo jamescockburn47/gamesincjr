@@ -27,7 +27,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; badge: string }>
   LIVE: { bg: 'bg-purple-100', text: 'text-purple-800', badge: '🚀' },
 };
 
-export default function GameSubmissionsList() {
+export default function GameSubmissionsList({ embedded = false }: { embedded?: boolean }) {
   const [submissions, setSubmissions] = useState<Submission[]>([]);
   const [loading, setLoading] = useState(true);
   const [filter, setFilter] = useState('all');
@@ -79,23 +79,25 @@ export default function GameSubmissionsList() {
   const statuses = ['all', 'PENDING', 'BUILDING', 'REVIEW', 'APPROVED', 'REJECTED', 'LIVE'];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className={embedded ? "" : "min-h-screen bg-gray-50"}>
       {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900">Game Submissions</h1>
-              <p className="text-sm text-gray-600 mt-1">Manage user-generated game submissions</p>
+      {!embedded && (
+        <div className="bg-white border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-4 py-4">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="text-2xl font-bold text-gray-900">Game Submissions</h1>
+                <p className="text-sm text-gray-600 mt-1">Manage user-generated game submissions</p>
+              </div>
+              <Button variant="outline" onClick={handleLogout}>
+                Logout
+              </Button>
             </div>
-            <Button variant="outline" onClick={handleLogout}>
-              Logout
-            </Button>
           </div>
         </div>
-      </div>
+      )}
 
-      <div className="max-w-7xl mx-auto px-4 py-8">
+      <div className={embedded ? "" : "max-w-7xl mx-auto px-4 py-8"}>
         {/* Filters */}
         <div className="bg-white rounded-lg shadow p-6 mb-8">
           <div className="space-y-4">
@@ -109,11 +111,10 @@ export default function GameSubmissionsList() {
                   <button
                     key={status}
                     onClick={() => setFilter(status)}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                      filter === status
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${filter === status
                         ? 'bg-blue-600 text-white'
                         : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                    }`}
+                      }`}
                   >
                     {status === 'all' ? 'All' : status}
                   </button>

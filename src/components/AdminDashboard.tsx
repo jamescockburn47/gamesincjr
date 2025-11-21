@@ -4,6 +4,8 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import type { Game } from '@/lib/games';
+import MagicFriendsTab from './MagicFriendsTab';
+import GameSubmissionsList from './GameSubmissionsList';
 
 interface AdminDashboardProps {
   games: Game[];
@@ -48,16 +50,17 @@ export default function AdminDashboard({ games }: AdminDashboardProps) {
               { id: 'games', label: 'Games' },
               { id: 'analytics', label: 'Analytics' },
               { id: 'payments', label: 'Payments' },
+              { id: 'magic-friends', label: 'Magic Friends' },
+              { id: 'submissions', label: 'Submissions' },
               { id: 'settings', label: 'Settings' },
             ].map((tab) => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
-                className={`py-2 px-1 border-b-2 font-medium text-sm ${
-                  activeTab === tab.id
+                className={`py-2 px-1 border-b-2 font-medium text-sm ${activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 {tab.label}
               </button>
@@ -69,7 +72,7 @@ export default function AdminDashboard({ games }: AdminDashboardProps) {
         {activeTab === 'overview' && (
           <div className="space-y-8">
             <h2 className="text-xl font-semibold">Overview</h2>
-            
+
             {/* Stats Cards */}
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
               <div className="bg-white rounded-lg shadow p-6">
@@ -162,11 +165,10 @@ export default function AdminDashboard({ games }: AdminDashboardProps) {
                         {game.price ? `£${game.price}` : 'Free'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                          game.status === 'coming-soon' 
-                            ? 'bg-yellow-100 text-yellow-800' 
+                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${game.status === 'coming-soon'
+                            ? 'bg-yellow-100 text-yellow-800'
                             : 'bg-green-100 text-green-800'
-                        }`}>
+                          }`}>
                           {game.status || 'released'}
                         </span>
                       </td>
@@ -185,7 +187,7 @@ export default function AdminDashboard({ games }: AdminDashboardProps) {
         {activeTab === 'analytics' && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold">Analytics</h2>
-            
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
               <div className="bg-white rounded-lg shadow p-6">
                 <h3 className="text-lg font-semibold mb-4">Game Performance</h3>
@@ -228,7 +230,7 @@ export default function AdminDashboard({ games }: AdminDashboardProps) {
         {activeTab === 'payments' && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold">Payment Management</h2>
-            
+
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold mb-4">Recent Transactions</h3>
               <div className="space-y-3">
@@ -257,10 +259,14 @@ export default function AdminDashboard({ games }: AdminDashboardProps) {
           </div>
         )}
 
+        {activeTab === 'magic-friends' && <MagicFriendsTab />}
+
+        {activeTab === 'submissions' && <GameSubmissionsList embedded={true} />}
+
         {activeTab === 'settings' && (
           <div className="space-y-6">
             <h2 className="text-xl font-semibold">System Settings</h2>
-            
+
             <div className="bg-white rounded-lg shadow p-6">
               <h3 className="text-lg font-semibold mb-4">API Configuration</h3>
               <div className="space-y-4">

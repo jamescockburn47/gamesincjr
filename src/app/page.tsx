@@ -4,7 +4,7 @@ import { getAllGames } from '@/lib/games';
 import { homeContent } from '@/data/homeContent';
 import ParentsCorner from '@/components/ParentsCorner';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowRight, Gamepad2, Sparkles, Rocket } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';

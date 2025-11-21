@@ -12,7 +12,6 @@ const RATE_LIMIT_PER_DAY = 50;
 const MAX_TOKENS = 16000;
 const ESTIMATED_GENERATION_TIME_SECONDS = 300;
 const AI_GENERATION_TIMEOUT_MS = 300000; // 5 minutes
-const MIN_VALID_CODE_LENGTH = 8000; // Increased to enforce more detailed code
 const API_RETRY_ATTEMPTS = 3;
 const GRAPHICS_ENHANCEMENT_TIMEOUT_MS = 120000; // 2 minutes for graphics pass
 
@@ -82,10 +81,10 @@ function withTimeout<T>(promise: Promise<T>, ms: number, errorMessage: string): 
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    
+
     // Validate input
     const submission = GameSubmissionSchema.parse(body);
-    
+
     // AI-powered content moderation
     const moderation = await moderateContent(submission);
     if (!moderation.approved) {
@@ -94,7 +93,7 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-    
+
     // Rate limiting (check per email)
     const canSubmit = await checkRateLimit(submission.creatorEmail);
     if (!canSubmit) {
@@ -103,7 +102,7 @@ export async function POST(req: NextRequest) {
         { status: 429 }
       );
     }
-    
+
     // Generate submission ID and unique slug
     const submissionId = crypto.randomUUID();
     const gameSlug = await generateUniqueSlug(submission.gameTitle);
@@ -140,7 +139,7 @@ export async function POST(req: NextRequest) {
         }
       }
     });
-    
+
     // Start async generation (don't await)
     // Fire and forget with comprehensive error handling
     generateGameAsync(submissionId, gameSlug, submission)
@@ -162,7 +161,7 @@ export async function POST(req: NextRequest) {
       status: 'building',
       estimatedTime: ESTIMATED_GENERATION_TIME_SECONDS
     });
-    
+
   } catch (error) {
     console.error('Submission error:', error);
     return NextResponse.json(
@@ -520,10 +519,6 @@ the addictive, simple, skill-based gameplay that made 80s arcades legendary.`;
 }
 
 function buildEnhancedGamePrompt(gameSlug: string, submission: GameSubmission): string {
-  const pascalCaseSlug = gameSlug
-    .split('-')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join('');
 
   return `You are creating an HTML5 game for Games Inc Jr using our centralized framework utilities. This game MUST work perfectly with ZERO manual fixes required.
 
@@ -1018,9 +1013,9 @@ Create a polished, fun, child-friendly game that works perfectly on first load.`
 
 function extractHTMLFromResponse(text: string): string {
   let code = text;
-  
+
   code = code.replace(/```html\n?/g, '').replace(/```\n?/g, '');
-  
+
   const doctypeIndex = code.indexOf('<!DOCTYPE');
   if (doctypeIndex !== -1) {
     code = code.substring(doctypeIndex);
@@ -1030,12 +1025,12 @@ function extractHTMLFromResponse(text: string): string {
       code = code.substring(htmlIndex);
     }
   }
-  
+
   const htmlEndIndex = code.lastIndexOf('</html>');
   if (htmlEndIndex !== -1) {
     code = code.substring(0, htmlEndIndex + 7);
   }
-  
+
   return code.trim();
 }
 
@@ -1044,12 +1039,12 @@ function validateGeneratedCode(code: string): boolean {
     console.error('[Validation] Missing HTML document structure');
     return false;
   }
-  
+
   if (!code.includes('/game-framework/game-engine.js')) {
     console.error('[Validation] Missing GameEngine script include');
     return false;
   }
-  
+
   if (!code.includes('/game-framework/game-utils.js')) {
     console.error('[Validation] Missing GameUtils script include');
     return false;
@@ -1252,7 +1247,7 @@ function generatePlaceholderAssets(title: string) {
       ${title}
     </text>
   </svg>`;
-  
+
   return {
     hero,
     screenshots: [hero, hero]
