@@ -39,9 +39,9 @@ type SavedMessageEntry = {
 type SavedMessagesPayload =
   | SavedMessageEntry[]
   | {
-      entries?: SavedMessageEntry[];
-      hiddenBefore?: number;
-    };
+    entries?: SavedMessageEntry[];
+    hiddenBefore?: number;
+  };
 
 type StreamEvent =
   | { type: 'start'; sessionInfo?: SessionInfo }
@@ -349,7 +349,7 @@ export default function ImaginaryFriendsApp() {
         });
         if (!response.ok) throw new Error('Failed to fetch introduction');
         const data = (await response.json()) as CharacterIntroResponse;
-        
+
         setHiddenBefore(0);
         setMessages([
           {
@@ -360,7 +360,7 @@ export default function ImaginaryFriendsApp() {
             imageUrl: data.imageUrl ?? null,
           },
         ]);
-        
+
         updateCharacterMood(characterId, 'happy');
         const character = characters.find((entry) => entry.id === characterId);
         if (character) {
@@ -440,7 +440,7 @@ export default function ImaginaryFriendsApp() {
       if (!resolvedUserId) return;
 
       const restored = await restoreConversationHistory(selectedCharacter.id, resolvedUserId);
-      
+
       // If we couldn't restore history, and we have no messages, initialize a new conversation
       if (!restored && messagesRef.current.length === 0) {
         await initialiseConversation(selectedCharacter.id);
@@ -493,7 +493,7 @@ export default function ImaginaryFriendsApp() {
     try {
       // 1. Mark locally as cleared immediately to prevent restoration race
       markConversationCleared(selectedCharacter.id, effectiveUserId);
-      
+
       const params = new URLSearchParams({
         characterId: selectedCharacter.id,
         userId: effectiveUserId,
@@ -521,7 +521,7 @@ export default function ImaginaryFriendsApp() {
   const handleNewThread = useCallback(() => {
     clearStoredMessages();
     if (selectedCharacter) {
-       void initialiseConversation(selectedCharacter.id);
+      void initialiseConversation(selectedCharacter.id);
     }
   }, [clearStoredMessages, selectedCharacter, initialiseConversation]);
 
@@ -554,18 +554,18 @@ export default function ImaginaryFriendsApp() {
       const history = requestImage && !messageText.trim()
         ? messages
         : [
-            ...messages,
-            ...(messageText.trim()
-              ? [
-                  {
-                    id: String(Date.now()),
-                    speaker: 'player' as const,
-                    text: messageText,
-                    timestamp: new Date(),
-                  },
-                ]
-              : []),
-          ];
+          ...messages,
+          ...(messageText.trim()
+            ? [
+              {
+                id: String(Date.now()),
+                speaker: 'player' as const,
+                text: messageText,
+                timestamp: new Date(),
+              },
+            ]
+            : []),
+        ];
 
       if (messageText.trim()) {
         updateCharacterMood(selectedCharacter.id, analyseSentiment(messageText));
@@ -747,27 +747,35 @@ export default function ImaginaryFriendsApp() {
   }, [hiddenBefore, messages]);
 
   return (
-    <div className="if-app">
-      <header className="if-hero">
-        <h1>✨ Magic AI Friends ✨</h1>
-        <p>Chat with magical companions tuned for young storytellers.</p>
+    <div className="min-h-[80vh] w-full">
+      <header className="mb-10 text-center">
+        <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">Magic AI Friends</span>
+        </h1>
+        <p className="mt-4 text-lg text-slate-600">Chat with magical companions tuned for young storytellers.</p>
       </header>
 
-      <main className="if-main">
+      <main className="mx-auto max-w-7xl">
         {!selectedCharacter ? (
-          <section className="if-selection">
-            <header className="if-selection__header">
-              <h2>Choose your next conversation</h2>
-              <p>Pick a friend or design a new companion (one per week).</p>
+          <section className="space-y-8">
+            <header className="text-center">
+              <h2 className="text-2xl font-bold text-slate-900">Choose your next conversation</h2>
+              <p className="text-slate-500">Pick a friend or design a new companion (one per week).</p>
             </header>
-            <div className="character-grid">
-              <button type="button" className="character-card creator-card" onClick={() => setShowCreator(true)}>
-                <div className="character-avatar">✨</div>
-                <div className="character-info">
-                  <h3 className="character-name">Create New Friend</h3>
-                  <p className="character-type">Design a custom personality</p>
+
+            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+              <button
+                type="button"
+                className="group relative flex flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center transition-all hover:border-primary hover:bg-primary/5"
+                onClick={() => setShowCreator(true)}
+              >
+                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 group-hover:scale-110 transition-transform">
+                  <span className="text-3xl">✨</span>
                 </div>
+                <h3 className="text-lg font-bold text-slate-900">Create New Friend</h3>
+                <p className="mt-2 text-sm text-slate-500">Design a custom personality</p>
               </button>
+
               {characters.map((character) => (
                 <CharacterCard
                   key={character.id}
@@ -778,7 +786,7 @@ export default function ImaginaryFriendsApp() {
                     messagesRef.current = [];
                     setHiddenBefore(0);
                     setMessages([]);
-                    
+
                     setSelectedCharacter(character);
                     setGameStatus(createFallbackGameStatus(character));
                     // The useEffect will trigger now and handle load/restore
@@ -788,11 +796,11 @@ export default function ImaginaryFriendsApp() {
             </div>
           </section>
         ) : (
-          <section className="if-conversation">
-            <aside className="if-sidebar">
+          <section className="grid gap-6 lg:grid-cols-[300px_1fr] lg:h-[600px]">
+            <aside className="flex flex-col gap-4 lg:h-full">
               <button
                 type="button"
-                className="if-back"
+                className="flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-3 text-sm font-bold text-slate-600 shadow-sm ring-1 ring-slate-200 transition-colors hover:bg-slate-50 hover:text-slate-900"
                 onClick={() => {
                   setSelectedCharacter(null);
                   setGameStatus(null);
@@ -800,694 +808,99 @@ export default function ImaginaryFriendsApp() {
                   setHiddenBefore(0);
                 }}
               >
-                Back to friends list
+                ← Back to Friends
               </button>
-              <div className="if-summary">
-                <div className="character-avatar large">{selectedCharacter.avatarUrl ?? '🙂'}</div>
-                <h3>{selectedCharacter.name}</h3>
-                <p>{selectedCharacter.personality}</p>
-                <div className="character-mood">
-                  Mood:&nbsp;
-                  <span className={`character-mood-chip mood-${selectedCharacter.currentMood}`}>
-                    {selectedCharacter.currentMood}
-                  </span>
-                </div>
-                <div className="character-relationship">
-                  Friendship level
-                  <div className="relationship-bar">
-                    <div
-                      className="relationship-bar__fill"
-                      style={{ width: `${Math.max(0, Math.min(100, selectedCharacter.relationshipLevel))}%` }}
-                    />
+
+              <div className="flex-1 overflow-y-auto rounded-3xl bg-white p-6 shadow-lg ring-1 ring-slate-100">
+                <div className="flex flex-col items-center text-center">
+                  <div className="relative mb-4 h-24 w-24 overflow-hidden rounded-2xl bg-slate-100 shadow-md ring-4 ring-white">
+                    {selectedCharacter.avatarUrl?.startsWith('/') ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={selectedCharacter.avatarUrl}
+                        alt={selectedCharacter.name}
+                        className="h-full w-full object-cover"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full items-center justify-center text-4xl">
+                        {selectedCharacter.avatarUrl || '🙂'}
+                      </div>
+                    )}
+                  </div>
+                  <h2 className="text-xl font-bold text-slate-900">{selectedCharacter.name}</h2>
+                  <div className="mt-2 flex items-center gap-2 text-xs font-medium text-slate-500">
+                    <span className={`inline-block h-2 w-2 rounded-full ${selectedCharacter.currentMood === 'happy' ? 'bg-green-500' :
+                        selectedCharacter.currentMood === 'excited' ? 'bg-amber-500' :
+                          selectedCharacter.currentMood === 'sad' ? 'bg-blue-500' :
+                            'bg-purple-500'
+                      }`} />
+                    <span className="capitalize">{selectedCharacter.currentMood}</span>
                   </div>
                 </div>
-              </div>
-              <div className="if-topics-hint">
-                <h4>Suggested topics</h4>
-                <ul>
-                  {topics.slice(0, 4).map((topic) => (
-                    <li key={topic.id}>{topic.name}</li>
-                  ))}
-                </ul>
+
+                <div className="mt-6 space-y-4">
+                  <div>
+                    <div className="mb-1 flex justify-between text-xs font-semibold text-slate-500 uppercase">
+                      <span>Friendship</span>
+                      <span>{selectedCharacter.relationshipLevel}%</span>
+                    </div>
+                    <div className="h-2 w-full overflow-hidden rounded-full bg-slate-100">
+                      <div
+                        className="h-full rounded-full bg-gradient-to-r from-primary to-purple-500 transition-all duration-500"
+                        style={{ width: `${Math.max(0, Math.min(100, selectedCharacter.relationshipLevel))}%` }}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl bg-slate-50 p-4 text-xs leading-relaxed text-slate-600">
+                    {selectedCharacter.personality}
+                  </div>
+                </div>
+
+                <div className="mt-auto pt-6">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (confirm('Are you sure you want to clear your chat history with ' + selectedCharacter.name + '? This cannot be undone.')) {
+                        handleClearChat();
+                      }
+                    }}
+                    disabled={isClearingHistory}
+                    className="w-full rounded-xl border border-red-200 bg-red-50 px-4 py-2 text-xs font-bold text-red-600 transition-colors hover:bg-red-100 disabled:opacity-50"
+                  >
+                    {isClearingHistory ? 'Clearing...' : 'Clear Chat History'}
+                  </button>
+                </div>
               </div>
             </aside>
-            <ConversationPanel
-              key={`conv-${selectedCharacter?.id ?? 'none'}-${hiddenBefore}-${visibleMessages.length}`}
-              messages={visibleMessages}
-              character={selectedCharacter}
-              topics={topics}
-              onSendMessage={handleSendMessage}
-              onSelectTopic={handleTopicSelected}
-              onClearChat={handleClearChat}
-              onNewThread={handleNewThread}
-              isLoading={isLoading}
-              showImageButton={showImageButton}
-              sessionInfo={sessionInfo}
-              gameStatus={gameStatus}
-              isClearingChat={isClearingHistory}
-            />
+
+            <div className="flex h-[600px] flex-col overflow-hidden rounded-3xl bg-white shadow-xl ring-1 ring-slate-100 lg:h-full">
+              <ConversationPanel
+                messages={visibleMessages}
+                onSendMessage={handleSendMessage}
+                isLoading={isLoading}
+                showImageButton={showImageButton}
+                topics={topics}
+                onTopicSelected={handleTopicSelected}
+              />
+            </div>
           </section>
         )}
       </main>
 
-      <CharacterCreator
-        isOpen={showCreator}
-        onClose={() => setShowCreator(false)}
-        onCreate={handleCreateCharacter}
-        canCreate={canCreate}
-        blockedReason={blockedReason}
-        apiBaseUrl={API_BASE_URL}
-      />
-
-      <style jsx global>{`
-        .if-app {
-          min-height: 100vh;
-          background: radial-gradient(circle at top, #f8fbff 0%, #eef2ff 45%, #e0e7ff 100%);
-          color: #1f2937;
-          padding-bottom: 48px;
-        }
-        .if-hero {
-          text-align: center;
-          padding: 48px 16px 24px;
-        }
-        .if-hero h1 {
-          font-size: clamp(2.25rem, 4vw, 3rem);
-          font-weight: 700;
-          margin-bottom: 8px;
-        }
-        .if-hero p {
-          font-size: 1.05rem;
-          color: #4b5563;
-        }
-        .if-main {
-          max-width: 1100px;
-          margin: 0 auto;
-          padding: 0 16px 32px;
-        }
-        .if-selection {
-          background: rgba(255, 255, 255, 0.82);
-          border-radius: 24px;
-          padding: 28px;
-          border: 1px solid rgba(147, 197, 253, 0.25);
-          box-shadow: 0 20px 40px rgba(148, 163, 209, 0.25);
-        }
-        .if-selection__header h2 {
-          font-size: clamp(1.6rem, 2.5vw, 2.1rem);
-          margin-bottom: 8px;
-        }
-        .if-selection__header p {
-          color: #4b5563;
-          margin-bottom: 24px;
-        }
-        .character-grid {
-          display: grid;
-          gap: 18px;
-          grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
-        }
-        .character-card {
-          border: none;
-          background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(235, 244, 255, 0.88));
-          border-radius: 18px;
-          padding: 20px;
-          text-align: left;
-          cursor: pointer;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          transition: transform 0.25s ease, box-shadow 0.25s ease;
-          box-shadow: 0 18px 28px rgba(148, 163, 209, 0.22);
-        }
-        .character-card:hover,
-        .character-card:focus-visible {
-          transform: translateY(-6px);
-          box-shadow: 0 24px 44px rgba(118, 169, 250, 0.32);
-        }
-        .character-card--selected {
-          border: 2px solid rgba(59, 130, 246, 0.35);
-        }
-        .creator-card {
-          background: linear-gradient(135deg, rgba(222, 247, 236, 0.9), rgba(219, 234, 254, 0.85));
-          border: 2px dashed rgba(56, 189, 248, 0.6);
-        }
-        .character-avatar {
-          width: 68px;
-          height: 68px;
-          border-radius: 50%;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 2rem;
-          background: linear-gradient(140deg, rgba(219, 234, 254, 0.9), rgba(191, 219, 254, 0.8));
-        }
-        .character-avatar.large {
-          width: 88px;
-          height: 88px;
-          font-size: 2.2rem;
-          margin: 0 auto 8px;
-        }
-        .character-info {
-          display: flex;
-          flex-direction: column;
-          gap: 6px;
-        }
-        .character-name {
-          font-size: 1.2rem;
-          font-weight: 700;
-        }
-        .character-type {
-          color: #4b5563;
-          font-size: 0.95rem;
-        }
-        .character-mood {
-          font-size: 0.9rem;
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .character-mood-chip {
-          border-radius: 999px;
-          padding: 2px 10px;
-          font-weight: 600;
-          text-transform: capitalize;
-          background: rgba(59, 130, 246, 0.12);
-          color: #1d4ed8;
-        }
-        .mood-happy { background: rgba(34, 197, 94, 0.15); color: #166534; }
-        .mood-sad { background: rgba(59, 130, 246, 0.15); color: #1d4ed8; }
-        .mood-excited { background: rgba(249, 115, 22, 0.15); color: #c2410c; }
-        .mood-curious { background: rgba(244, 114, 182, 0.15); color: #a21caf; }
-        .mood-thoughtful { background: rgba(129, 140, 248, 0.15); color: #4338ca; }
-        .character-relationship {
-          font-size: 0.85rem;
-          color: #334155;
-        }
-        .relationship-bar {
-          width: 100%;
-          height: 8px;
-          border-radius: 999px;
-          background: rgba(148, 163, 184, 0.2);
-          margin-top: 6px;
-          overflow: hidden;
-        }
-        .relationship-bar__fill {
-          height: 100%;
-          background: linear-gradient(90deg, #38bdf8, #6366f1);
-          transition: width 0.4s ease;
-        }
-        .if-conversation {
-          display: grid;
-          grid-template-columns: minmax(220px, 260px) minmax(0, 1fr);
-          gap: 18px;
-          margin-top: 24px;
-        }
-        .if-sidebar {
-          background: rgba(255, 255, 255, 0.82);
-          border: 1px solid rgba(147, 197, 253, 0.25);
-          border-radius: 20px;
-          padding: 20px;
-          box-shadow: 0 18px 36px rgba(148, 163, 209, 0.25);
-          display: flex;
-          flex-direction: column;
-          gap: 18px;
-          position: sticky;
-          top: 32px;
-          align-self: start;
-        }
-        .if-back {
-          border: none;
-          background: rgba(59, 130, 246, 0.12);
-          color: #1d4ed8;
-          font-weight: 600;
-          padding: 10px 14px;
-          border-radius: 12px;
-          cursor: pointer;
-        }
-        .if-summary h3 {
-          text-align: center;
-          font-size: 1.3rem;
-          margin-bottom: 4px;
-        }
-        .if-summary p {
-          text-align: center;
-          color: #4b5563;
-          font-size: 0.95rem;
-        }
-        .if-topics-hint h4 {
-          font-size: 0.95rem;
-          margin-bottom: 8px;
-        }
-        .if-topics-hint ul {
-          margin: 0;
-          padding-left: 16px;
-          color: #4b5563;
-          font-size: 0.9rem;
-        }
-        .conversation-panel {
-          border-radius: 24px;
-          background: rgba(255, 255, 255, 0.92);
-          border: 1px solid rgba(147, 197, 253, 0.25);
-          box-shadow: 0 16px 32px rgba(148, 163, 209, 0.25);
-          display: flex;
-          flex-direction: column;
-          min-height: 60vh;
-        }
-        .friendship-status {
-          padding: 20px 24px 18px;
-          background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(56, 189, 248, 0.12));
-          border-bottom: 1px solid rgba(148, 163, 209, 0.25);
-          display: grid;
-          gap: 8px;
-        }
-        .status-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-weight: 600;
-          color: #1f2937;
-        }
-        .status-level {
-          font-size: 1.05rem;
-        }
-        .status-xp {
-          font-size: 0.85rem;
-          color: #475569;
-        }
-        .status-progress {
-          height: 8px;
-          border-radius: 999px;
-          background: rgba(148, 163, 209, 0.3);
-          overflow: hidden;
-        }
-        .status-progress-bar {
-          height: 100%;
-          border-radius: 999px;
-          background: linear-gradient(135deg, #22d3ee, #6366f1);
-          transition: width 0.4s ease;
-        }
-        .status-meta {
-          display: flex;
-          gap: 12px;
-          flex-wrap: wrap;
-          font-size: 0.85rem;
-          color: #475569;
-        }
-        .status-stardust {
-          font-weight: 600;
-          color: #1d4ed8;
-        }
-        .status-badges,
-        .status-keywords,
-        .status-summary,
-        .status-suggestion {
-          font-size: 0.85rem;
-          color: #475569;
-        }
-        .status-summary {
-          font-weight: 600;
-        }
-        .status-suggestion {
-          color: #1e40af;
-          font-weight: 600;
-        }
-        .messages-container {
-          padding: 24px;
-          flex: 1;
-          overflow-y: auto;
-          display: flex;
-          flex-direction: column;
-          gap: 16px;
-        }
-        .message {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          max-width: 88%;
-        }
-        .player-message {
-          align-self: flex-end;
-          text-align: right;
-        }
-        .character-message {
-          align-self: flex-start;
-        }
-        .message-content {
-          padding: 14px 18px;
-          border-radius: 18px;
-          line-height: 1.5;
-          font-size: 0.96rem;
-        }
-        .player-message .message-content {
-          background: linear-gradient(135deg, #38bdf8, #6366f1);
-          color: #ffffff;
-        }
-        .character-message .message-content {
-          background: rgba(148, 163, 209, 0.12);
-          color: #1f2937;
-          border: 1px solid rgba(148, 163, 209, 0.2);
-        }
-        .message-time {
-          font-size: 0.75rem;
-          color: rgba(71, 85, 105, 0.7);
-        }
-        .message-image img {
-          max-width: min(380px, 80vw);
-          border-radius: 18px;
-          border: 1px solid rgba(148, 163, 209, 0.3);
-          box-shadow: 0 14px 26px rgba(148, 163, 209, 0.35);
-        }
-        .typing-message .message-content {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-        }
-        .typing-indicator {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          color: #475569;
-        }
-        .typing-dots span {
-          display: inline-block;
-          width: 8px;
-          height: 8px;
-          background: #6366f1;
-          border-radius: 50%;
-          margin-right: 4px;
-          animation: typing-bounce 1.4s infinite ease-in-out;
-        }
-        .typing-dots span:nth-child(2) {
-          animation-delay: 0.2s;
-        }
-        .typing-dots span:nth-child(3) {
-          animation-delay: 0.4s;
-        }
-        @keyframes typing-bounce {
-          0%,
-          80%,
-          100% {
-            transform: scale(0.7);
-            opacity: 0.6;
-          }
-          40% {
-            transform: scale(1);
-            opacity: 1;
-          }
-        }
-        .input-section {
-          border-top: 1px solid rgba(148, 163, 209, 0.18);
-          padding: 20px 24px 24px;
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
-          background: rgba(249, 250, 255, 0.92);
-          border-bottom-left-radius: 24px;
-          border-bottom-right-radius: 24px;
-        }
-        .countdown-timer {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          background: rgba(251, 191, 36, 0.12);
-          color: #b45309;
-          padding: 8px 12px;
-          border-radius: 999px;
-          font-size: 0.85rem;
-          width: fit-content;
-        }
-        .session-hint {
-          display: inline-flex;
-          align-items: center;
-          gap: 8px;
-          font-size: 0.85rem;
-          color: #334155;
-        }
-        .session-hint.budget {
-          color: #0f172a;
-        }
-        .image-generation {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-        }
-        .image-button {
-          background: linear-gradient(135deg, #ec4899, #f97316);
-          border: none;
-          color: #ffffff;
-          padding: 9px 18px;
-          border-radius: 14px;
-          cursor: pointer;
-          font-weight: 600;
-        }
-        .image-button:disabled {
-          opacity: 0.6;
-          cursor: not-allowed;
-        }
-        .image-count {
-          font-size: 0.85rem;
-          color: #475569;
-        }
-        .input-controls {
-          display: flex;
-          gap: 12px;
-          align-items: flex-end;
-        }
-        .message-input {
-          flex: 1;
-          border-radius: 16px;
-          border: 1px solid rgba(148, 163, 209, 0.4);
-          padding: 14px 16px;
-          min-height: 90px;
-          font-size: 0.98rem;
-          resize: vertical;
-          background: rgba(255, 255, 255, 0.95);
-        }
-        .input-buttons {
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-        }
-        .topics-button,
-        .send-button {
-          border: none;
-          border-radius: 14px;
-          padding: 10px 18px;
-          font-weight: 600;
-          cursor: pointer;
-          transition: transform 0.2s ease;
-        }
-        .topics-button {
-          background: rgba(59, 130, 246, 0.1);
-          color: #1d4ed8;
-        }
-        .send-button {
-          background: linear-gradient(135deg, #38bdf8, #6366f1);
-          color: #ffffff;
-        }
-        .topics-button:hover,
-        .send-button:hover {
-          transform: translateY(-2px);
-        }
-        .topics-panel {
-          background: rgba(255, 255, 255, 0.96);
-          border-radius: 16px;
-          border: 1px solid rgba(148, 163, 209, 0.3);
-          padding: 16px;
-          display: grid;
-          gap: 12px;
-        }
-        .topics-grid {
-          display: grid;
-          gap: 10px;
-          grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-        }
-        .topic-button {
-          border: none;
-          border-radius: 14px;
-          padding: 12px 14px;
-          text-align: left;
-          background: rgba(148, 163, 209, 0.12);
-          cursor: pointer;
-        }
-        .topic-name {
-          font-weight: 600;
-          display: block;
-          margin-bottom: 4px;
-        }
-        .topic-description {
-          font-size: 0.85rem;
-          color: #4b5563;
-        }
-        .voice-player {
-          display: flex;
-          align-items: center;
-          gap: 6px;
-        }
-        .voice-button {
-          border: none;
-          border-radius: 50%;
-          width: 40px;
-          height: 40px;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          cursor: pointer;
-          background: linear-gradient(135deg, #6366f1, #8b5cf6);
-          color: #ffffff;
-          font-size: 1.15rem;
-        }
-        .voice-button.voice-button--playing {
-          background: linear-gradient(135deg, #f97316, #ef4444);
-          animation: voice-pulse 2s infinite;
-        }
-        @keyframes voice-pulse {
-          0%,
-          100% {
-            transform: scale(1);
-          }
-          50% {
-            transform: scale(1.08);
-          }
-        }
-        .voice-settings-button {
-          border: none;
-          background: rgba(148, 163, 209, 0.2);
-          border-radius: 50%;
-          width: 32px;
-          height: 32px;
-          cursor: pointer;
-        }
-        .api-key-modal {
-          position: fixed;
-          inset: 0;
-          background: rgba(15, 23, 42, 0.45);
-          display: grid;
-          place-items: center;
-          padding: 16px;
-          z-index: 50;
-        }
-        .api-key-content {
-          background: #ffffff;
-          border-radius: 18px;
-          padding: 24px;
-          width: min(420px, 100%);
-          display: grid;
-          gap: 16px;
-        }
-        .api-key-section label {
-          display: grid;
-          gap: 6px;
-          font-size: 0.95rem;
-        }
-        .api-key-section input {
-          border-radius: 10px;
-          border: 1px solid rgba(148, 163, 209, 0.35);
-          padding: 10px 12px;
-        }
-        .api-key-actions {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          gap: 12px;
-        }
-        .cc-overlay {
-          position: fixed;
-          inset: 0;
-          background: rgba(15, 23, 42, 0.45);
-          display: grid;
-          place-items: center;
-          padding: 24px;
-          z-index: 60;
-        }
-        .cc-modal {
-          background: #ffffff;
-          border-radius: 20px;
-          padding: 28px;
-          width: min(520px, 100%);
-          display: grid;
-          gap: 16px;
-          box-shadow: 0 24px 44px rgba(15, 23, 42, 0.25);
-        }
-        .cc-form {
-          display: grid;
-          gap: 16px;
-        }
-        .cc-label {
-          display: grid;
-          gap: 8px;
-          font-weight: 600;
-          color: #1f2937;
-        }
-        .cc-input,
-        .cc-textarea {
-          border-radius: 12px;
-          border: 1px solid rgba(148, 163, 209, 0.35);
-          padding: 12px 14px;
-          font-size: 0.95rem;
-          width: 100%;
-        }
-        .cc-textarea {
-          min-height: 70px;
-          resize: vertical;
-        }
-        .cc-actions {
-          display: flex;
-          justify-content: flex-end;
-          gap: 12px;
-        }
-        .cc-primary,
-        .cc-secondary {
-          border: none;
-          border-radius: 12px;
-          padding: 10px 18px;
-          font-weight: 600;
-          cursor: pointer;
-        }
-        .cc-primary {
-          background: linear-gradient(135deg, #38bdf8, #6366f1);
-          color: #ffffff;
-        }
-        .cc-secondary {
-          background: rgba(148, 163, 209, 0.2);
-          color: #1f2937;
-        }
-        .cc-blocked {
-          background: rgba(248, 113, 113, 0.15);
-          color: #b91c1c;
-          padding: 10px 12px;
-          border-radius: 12px;
-          font-size: 0.9rem;
-        }
-        @media (max-width: 720px) {
-          .input-controls {
-            flex-direction: column;
-          }
-          .input-buttons {
-            flex-direction: row;
-            align-self: flex-end;
-          }
-        }
-        @media (max-width: 960px) {
-          .if-conversation {
-            grid-template-columns: 1fr;
-          }
-          .if-sidebar {
-            position: static;
-          }
-        }
-        @media (max-width: 720px) {
-          .if-selection {
-            padding: 20px;
-          }
-          .character-grid {
-            grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-          }
-        }
-      `}</style>
+      {showCreator && (
+        <CharacterCreator
+          onClose={() => setShowCreator(false)}
+          onCreate={handleCreateCharacter}
+          canCreate={canCreate}
+          blockedReason={blockedReason}
+        />
+      )}
 
       {/* Debug panel toggled via ?debug=1 */}
       {typeof window !== 'undefined' && new URLSearchParams(window.location.search).get('debug') && (
         <pre style={{ position: 'fixed', bottom: 8, left: 8, right: 8, maxHeight: 200, overflow: 'auto', background: '#0f172a', color: '#e2e8f0', padding: 8, borderRadius: 8, fontSize: 12 }}>
-{JSON.stringify(lastApi, null, 2)}
+          {JSON.stringify(lastApi, null, 2)}
         </pre>
       )}
     </div>

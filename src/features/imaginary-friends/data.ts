@@ -13,7 +13,7 @@ export const baseCharacters: Character[] = [
     relationshipLevel: 20,
     favoriteTopics: ['dreams', 'philosophy', 'stars', 'meaning'],
     imageStyle: 'glowing night sky, soft starlight, gentle cosmic palette',
-    avatarUrl: '🦉',
+    avatarUrl: '/images/characters/luna.png',
   },
   {
     id: 'shadow',
@@ -27,7 +27,7 @@ export const baseCharacters: Character[] = [
     relationshipLevel: 15,
     favoriteTopics: ['mystery', 'adventure', 'secrets', 'night'],
     imageStyle: 'moonlit alleyways, soft neon glows, curious feline poses',
-    avatarUrl: '🐱',
+    avatarUrl: '/images/characters/shadow.png',
   },
   {
     id: 'oak',
@@ -41,7 +41,7 @@ export const baseCharacters: Character[] = [
     relationshipLevel: 25,
     favoriteTopics: ['nature', 'growth', 'wisdom', 'peace'],
     imageStyle: 'sun-dappled forests, warm green palette, gentle woodland ambience',
-    avatarUrl: '🦌',
+    avatarUrl: '/images/characters/oak.png',
   },
   {
     id: 'spark',
@@ -55,7 +55,7 @@ export const baseCharacters: Character[] = [
     relationshipLevel: 18,
     favoriteTopics: ['creativity', 'art', 'inspiration', 'innovation'],
     imageStyle: 'bold colour splashes, motion blur, bright studio lighting',
-    avatarUrl: '🐦',
+    avatarUrl: '/images/characters/spark.png',
   },
   {
     id: 'coral',
@@ -69,7 +69,7 @@ export const baseCharacters: Character[] = [
     relationshipLevel: 22,
     favoriteTopics: ['ocean', 'marine life', 'exploration', 'underwater'],
     imageStyle: 'aquatic blues, shimmering light beams, colourful coral reefs',
-    avatarUrl: '🐬',
+    avatarUrl: '/images/characters/coral.png',
   },
   {
     id: 'ember',
@@ -83,7 +83,7 @@ export const baseCharacters: Character[] = [
     relationshipLevel: 20,
     favoriteTopics: ['warmth', 'stories', 'comfort', 'fireplace'],
     imageStyle: 'candlelight ambience, warm oranges, soft focus interiors',
-    avatarUrl: '🦊',
+    avatarUrl: '/images/characters/ember.png',
   },
 ];
 
