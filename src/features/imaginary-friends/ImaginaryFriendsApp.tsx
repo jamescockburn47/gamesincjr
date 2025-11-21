@@ -693,15 +693,20 @@ export default function ImaginaryFriendsApp() {
   }, [hiddenBefore, messages]);
 
   return (
-    <div className="min-h-[80vh] w-full">
-      <header className="mb-10 text-center">
+    <div className="min-h-[80vh] w-full relative overflow-hidden">
+      {/* Vibrant animated background */}
+      <div className="absolute inset-0 bg-gradient-to-br from-purple-50 via-pink-50 to-blue-50 -z-10" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_30%_20%,rgba(139,92,246,0.1),transparent_50%)] -z-10" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_70%_80%,rgba(236,72,153,0.1),transparent_50%)] -z-10" />
+
+      <header className="mb-10 text-center relative">
         <h1 className="text-4xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-6xl">
-          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary to-purple-600">Magic AI Friends</span>
+          <span className="text-transparent bg-clip-text bg-gradient-to-r from-primary via-purple-600 to-pink-600 animate-gradient">Magic AI Friends</span>
         </h1>
-        <p className="mt-4 text-lg text-slate-600">Chat with magical companions tuned for young storytellers.</p>
+        <p className="mt-4 text-lg text-slate-600 font-medium">Chat with magical companions tuned for young storytellers.</p>
       </header>
 
-      <main className="mx-auto max-w-7xl">
+      <main className="mx-auto max-w-7xl px-4">
         {!selectedCharacter ? (
           <section className="space-y-8">
             <header className="text-center">
@@ -709,17 +714,17 @@ export default function ImaginaryFriendsApp() {
               <p className="text-slate-500">Pick a friend or design a new companion (one per week).</p>
             </header>
 
-            <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
+            <div className="grid gap-8 sm:grid-cols-2 xl:grid-cols-3">
               <button
                 type="button"
-                className="group relative flex flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-slate-300 bg-slate-50 p-8 text-center transition-all hover:border-primary hover:bg-primary/5"
+                className="group relative flex flex-col items-center justify-center overflow-hidden rounded-3xl border-2 border-dashed border-slate-300 bg-white/60 backdrop-blur-sm p-10 text-center transition-all hover:border-primary hover:bg-primary/10 hover:shadow-xl hover:-translate-y-1"
                 onClick={() => setShowCreator(true)}
               >
-                <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-white shadow-sm ring-1 ring-slate-200 group-hover:scale-110 transition-transform">
-                  <span className="text-3xl">✨</span>
+                <div className="mb-4 flex h-20 w-20 items-center justify-center rounded-3xl bg-gradient-to-br from-primary to-purple-500 shadow-lg ring-4 ring-white/50 group-hover:scale-110 transition-transform">
+                  <span className="text-4xl">✨</span>
                 </div>
-                <h3 className="text-lg font-bold text-slate-900">Create New Friend</h3>
-                <p className="mt-2 text-sm text-slate-500">Design a custom personality</p>
+                <h3 className="text-lg font-black text-slate-900">Create New Friend</h3>
+                <p className="mt-2 text-sm text-slate-600 font-medium">Design a custom personality</p>
               </button>
 
               {characters.map((character) => (
