@@ -87,7 +87,7 @@ export default function ImaginaryFriendsApp() {
   const [isClearingHistory, setIsClearingHistory] = useState(false);
   const [lastApi, setLastApi] = useState<{ req?: unknown; res?: unknown; error?: string } | null>(null);
   const [lastCreatedAt, setLastCreatedAt] = useState<number | null>(null);
-  const [avatarsLoaded, setAvatarsLoaded] = useState(false);
+
   const effectiveUserId = useMemo(() => userId.trim() || 'default', [userId]);
   useEffect(() => {
     messagesRef.current = messages;
@@ -289,50 +289,7 @@ export default function ImaginaryFriendsApp() {
     }
   }, [selectedCharacter, characters, createFallbackGameStatus]);
 
-  useEffect(() => {
-    if (!avatarsLoaded) {
-      const loadAvatars = async () => {
-        try {
-          const response = await fetch(`${API_BASE_URL}/avatars`, { cache: 'no-store' });
-          if (!response.ok) return;
-          const data = (await response.json()) as { avatars?: Record<string, string> };
-          if (data?.avatars) {
-            setCharacters((prev) =>
-              prev.map((character) =>
-                data.avatars?.[character.id]
-                  ? { ...character, avatarUrl: data.avatars[character.id] }
-                  : character,
-              ),
-            );
-            setAvatarsLoaded(true);
-          } else {
-            const lastRefresh = Number(localStorage.getItem(STORAGE_KEYS.lastAvatarRefreshAt) ?? 0);
-            const oneWeekMs = 7 * 24 * 60 * 60 * 1000;
-            if (!lastRefresh || Date.now() - lastRefresh >= oneWeekMs) {
-              const refresh = await fetch(`${API_BASE_URL}/avatars/refresh`, { method: 'POST' });
-              if (refresh.ok) {
-                const refreshData = (await refresh.json()) as { avatars?: Record<string, string> };
-                if (refreshData?.avatars) {
-                  setCharacters((prev) =>
-                    prev.map((character) =>
-                      refreshData.avatars?.[character.id]
-                        ? { ...character, avatarUrl: refreshData.avatars[character.id] }
-                        : character,
-                    ),
-                  );
-                  localStorage.setItem(STORAGE_KEYS.lastAvatarRefreshAt, String(Date.now()));
-                  setAvatarsLoaded(true);
-                }
-              }
-            }
-          }
-        } catch (error) {
-          console.warn('Failed to load avatars', error);
-        }
-      };
-      loadAvatars();
-    }
-  }, [avatarsLoaded]);
+
 
   const initialiseConversation = useCallback(
     async (characterId: string) => {
