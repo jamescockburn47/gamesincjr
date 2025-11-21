@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { chatWithCharacter, loadRecentConversationTurns, streamChatWithCharacter } from '../_lib/service';
+import { chatWithCharacter, loadRecentConversationTurns } from '../_lib/service';
 
 export const runtime = 'nodejs';
 export const dynamic = 'force-dynamic';
@@ -35,13 +35,42 @@ export async function POST(request: NextRequest) {
       }));
 
     if (Boolean(body.stream)) {
-      const stream = streamChatWithCharacter({
+      const result = await chatWithCharacter({
         characterId,
         userMessage: message,
         history: normalisedHistory,
         requestImage,
         userId,
       });
+
+      const encoder = new TextEncoder();
+      const stream = new ReadableStream({
+        async start(controller) {
+          // 1. Start event
+          controller.enqueue(encoder.encode(JSON.stringify({
+            type: 'start',
+            sessionInfo: result.sessionInfo
+          }) + '\n'));
+
+          // 2. Simulate delta (send full text at once for simplicity)
+          controller.enqueue(encoder.encode(JSON.stringify({
+            type: 'delta',
+            text: result.response
+          }) + '\n'));
+
+          // 3. Final event
+          controller.enqueue(encoder.encode(JSON.stringify({
+            type: 'final',
+            response: result.response,
+            imageUrl: result.imageUrl,
+            gameStatus: result.gameStatus,
+            sessionInfo: result.sessionInfo
+          }) + '\n'));
+
+          controller.close();
+        }
+      });
+
       return new NextResponse(stream, {
         headers: {
           'Content-Type': 'application/x-ndjson; charset=utf-8',

@@ -76,7 +76,7 @@ export default function MagicFriendsTab() {
                             placeholder={`Enter system prompt for ${char.name}...`}
                         />
                         <p className="text-xs text-gray-500 mt-2">
-                            This prompt defines the character's personality, voice, and safety guidelines.
+                            This prompt defines the character&apos;s personality, voice, and safety guidelines.
                         </p>
                     </div>
                 ))}

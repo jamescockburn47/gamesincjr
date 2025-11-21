@@ -108,7 +108,7 @@ export default function ConversationPanel({
     : 0;
 
   const messagesLeft = sessionInfo?.messageAllowanceRemaining;
-  const budgetLeft = sessionInfo?.budgetCentsRemaining;
+
   const progressPercent = gameStatus
     ? Math.min(100, Math.round((gameStatus.experience / Math.max(1, gameStatus.nextLevelThreshold)) * 100))
     : 0;
@@ -192,8 +192,8 @@ export default function ConversationPanel({
           >
             <div
               className={`relative max-w-[85%] rounded-2xl px-5 py-3 text-sm leading-relaxed shadow-sm ${message.speaker === 'player'
-                  ? 'bg-primary text-white rounded-br-none'
-                  : 'bg-white text-slate-700 ring-1 ring-slate-200 rounded-bl-none'
+                ? 'bg-primary text-white rounded-br-none'
+                : 'bg-white text-slate-700 ring-1 ring-slate-200 rounded-bl-none'
                 }`}
             >
               <div className="whitespace-pre-wrap">{message.text}</div>

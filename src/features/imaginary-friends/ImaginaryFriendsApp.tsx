@@ -28,13 +28,7 @@ const STORAGE_KEYS = {
 
 type Sentiment = 'happy' | 'sad' | 'excited' | 'thoughtful' | 'curious';
 
-type SavedMessageEntry = {
-  id: string;
-  speaker: 'player' | 'character';
-  text: string;
-  timestamp: string;
-  imageUrl?: string | null;
-};
+
 
 
 

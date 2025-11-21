@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { characterIntro, getInitialGameStatus } from '../_lib/service';
+import { chatWithCharacter } from '../_lib/service';
 
 export const runtime = 'nodejs';
 
@@ -8,19 +8,38 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     characterId = String(body.characterId || '').trim() || characterId;
-    if (!characterId) {
-      return NextResponse.json({ error: 'Missing characterId' }, { status: 400 });
-    }
 
-    const introduction = await characterIntro(characterId);
-    const gameStatus = getInitialGameStatus(characterId);
-    return NextResponse.json({ introduction, gameStatus });
+    // Generate intro by simulating a "start" interaction
+    const result = await chatWithCharacter({
+      characterId,
+      userMessage: "Hello! Who are you?", // Prompt for an intro
+      history: [],
+      userId: 'intro-generator',
+      requestImage: false
+    });
+
+    return NextResponse.json({
+      introduction: result.response,
+      gameStatus: result.gameStatus
+    });
   } catch (error) {
     console.error('Imaginary Friends intro failed', error);
     return NextResponse.json(
       {
-        error: 'Failed to generate introduction. Please try again.',
-        gameStatus: getInitialGameStatus(characterId),
+        error: 'Failed to generate introduction.',
+        // Fallback status
+        gameStatus: {
+          friendshipLevel: 1,
+          experience: 0,
+          nextLevelThreshold: 100,
+          stardustEarned: 0,
+          badgesUnlocked: [],
+          sentiment: 'happy',
+          keywords: [],
+          suggestedActivity: 'Say hello!',
+          summary: 'Ready to play.',
+          creativityScore: 50
+        },
       },
       { status: 500 },
     );

@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect, ReactNode } from 'react';
+import { useRef, useState, useEffect, ReactNode, useCallback } from 'react';
 
 interface Props {
   children: ReactNode;
@@ -23,7 +23,7 @@ export function FullScreenWrapper({ children, onExit }: Props) {
     }
   };
 
-  const exitFullscreen = async () => {
+  const exitFullscreen = useCallback(async () => {
     if (document.fullscreenElement) {
       await document.exitFullscreen();
     } else {
@@ -31,7 +31,7 @@ export function FullScreenWrapper({ children, onExit }: Props) {
     }
     setIsFullscreen(false);
     onExit();
-  };
+  }, [onExit]);
 
   useEffect(() => {
     const handleFullscreenChange = () => {
@@ -53,7 +53,7 @@ export function FullScreenWrapper({ children, onExit }: Props) {
       document.removeEventListener('fullscreenchange', handleFullscreenChange);
       document.removeEventListener('keydown', handleEscKey);
     };
-  }, [isFullscreen]);
+  }, [isFullscreen, exitFullscreen]);
 
   useEffect(() => {
     enterFullscreen();

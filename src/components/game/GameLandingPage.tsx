@@ -1,4 +1,5 @@
 import { GameMetadata } from '@/lib/game-framework/types';
+import Image from 'next/image';
 
 interface Props {
   game: GameMetadata;
@@ -10,9 +11,11 @@ export function GameLandingPage({ game, onStart }: Props) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/90">
       <div className="max-w-2xl mx-auto p-8 bg-gradient-to-br from-purple-900 to-blue-900 rounded-3xl border-2 border-cyan-400 shadow-2xl">
         {game.thumbnailUrl && (
-          <img 
-            src={game.thumbnailUrl} 
+          <Image
+            src={game.thumbnailUrl}
             alt={game.title}
+            width={600}
+            height={400}
             className="w-full h-48 object-cover rounded-xl mb-6"
           />
         )}

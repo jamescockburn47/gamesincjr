@@ -1,7 +1,7 @@
 import Link from 'next/link';
 import Logo from './Logo';
 import { getUserFromCookies } from '@/lib/user-session';
-import LangSwitch from './LangSwitch';
+
 import MobileNav from './MobileNav';
 import ProgressWidget from './ProgressWidget';
 import NotificationCenter from './NotificationCenter';
@@ -54,7 +54,7 @@ export default async function Header() {
           <div className="hidden md:flex items-center gap-3">
             <ProgressWidget />
             <NotificationCenter />
-            
+
             {user.email ? (
               <Link
                 href="/account"
