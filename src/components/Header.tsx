@@ -13,6 +13,7 @@ export default async function Header() {
     { href: '/games', label: 'Games' },
     { href: '/imaginary-friends', label: 'Friends' },
     { href: '/make-your-game', label: 'Create' },
+    { href: '/admin-console', label: 'Admin' },
   ];
 
   return (

@@ -37,7 +37,9 @@ const STORAGE_KIND = process.env.IMAGINARY_FRIENDS_STORAGE || 'filesystem'; // '
 const BLOB_RW_TOKEN = process.env.BLOB_READ_WRITE_TOKEN || process.env.VERCEL_BLOB_RW_TOKEN;
 
 // Initialize Google Generative AI
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || '');
+const apiKey = process.env.GOOGLE_API_KEY || '';
+console.log('[Magic AI Friends] GOOGLE_API_KEY loaded:', apiKey ? `Yes (${apiKey.substring(0, 10)}...)` : 'NO - MISSING!');
+const genAI = new GoogleGenerativeAI(apiKey);
 const CHAT_MODEL = 'gemini-2.0-flash-exp';
 const IMAGE_MODEL = 'imagen-3.0-generate-001';
 
@@ -332,6 +334,11 @@ async function callGemini(systemPrompt: string, history: ConversationTurn[], use
     return response;
   } catch (error) {
     console.error('Gemini chat failed:', error);
+    console.error('Error details:', JSON.stringify(error, null, 2));
+    if (error instanceof Error) {
+      console.error('Error message:', error.message);
+      console.error('Error stack:', error.stack);
+    }
     throw error;
   }
 }
