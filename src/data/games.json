@@ -9,7 +9,7 @@
     ],
     "description": "Blast through waves of evil robots as a magical unicorn. Use rainbow lasers and jump to survive!",
     "description_it": "Fatti strada tra ondate di robot malvagi nei panni di un unicorno magico. Usa laser arcobaleno e salta per sopravvivere!",
-    "hero": "/games/robots-vs-unicorns/hero.svg",
+    "hero": "/games/robots-vs-unicorns/hero.png",
     "screenshots": [
       "/games/robots-vs-unicorns/s1.svg"
     ],
@@ -29,7 +29,7 @@
     ],
     "description": "Steer an aurora unicorn through alien raids, collecting harmony crystals and pulsing drones into stardust.",
     "description_it": "Guida un unicorno aurorale tra incursioni aliene, raccogliendo cristalli armonici e trasformando i droni in polvere di stelle.",
-    "hero": "/games/alien-unicorn-alliance/hero.svg",
+    "hero": "/games/alien-unicorn-alliance/hero.png",
     "screenshots": [
       "/games/alien-unicorn-alliance/s1.svg",
       "/games/alien-unicorn-alliance/s2.svg"
@@ -50,7 +50,7 @@
     ],
     "description": "Survive polar nights by gathering resources, building shelter, and outsmarting roaming bears.",
     "description_it": "Sopravvivi alle notti polari raccogliendo risorse, costruendo rifugi e ingannando gli orsi in pattuglia.",
-    "hero": "/games/arctic-bear-survival/hero.svg",
+    "hero": "/games/arctic-bear-survival/hero.png",
     "screenshots": [
       "/games/arctic-bear-survival/s1.svg",
       "/games/arctic-bear-survival/s2.svg"
@@ -71,7 +71,7 @@
     ],
     "description": "Dodge asteroids and survive as long as you can.",
     "description_it": "Evita gli asteroidi e sopravvivi il più a lungo possibile.",
-    "hero": "/games/space-runner/hero.svg",
+    "hero": "/games/space-runner/hero.png",
     "screenshots": [
       "/games/space-runner/s1.svg",
       "/games/space-runner/s2.svg"
@@ -91,7 +91,7 @@
     ],
     "description": "Retro shooter with waves of invaders and combo scoring.",
     "description_it": "Sparatutto retrò con ondate di invasori e punteggi combo.",
-    "hero": "/games/neon-invaders/hero.svg",
+    "hero": "/games/neon-invaders/hero.png",
     "screenshots": [
       "/games/neon-invaders/s1.svg"
     ],
@@ -111,7 +111,7 @@
     ],
     "description": "Dynamic mazes; power-orbs change the rules.",
     "description_it": "Labirinti dinamici; le power‑orb cambiano le regole.",
-    "hero": "/games/pixel-pac-run/hero.svg",
+    "hero": "/games/pixel-pac-run/hero.png",
     "screenshots": [
       "/games/pixel-pac-run/s1.svg"
     ],
@@ -131,7 +131,7 @@
     ],
     "description": "Arcade racing with drifting and rival slipstreams.",
     "description_it": "Corsa arcade con drift e scia dei rivali.",
-    "hero": "/games/turbo-outracer/hero.svg",
+    "hero": "/games/turbo-outracer/hero.png",
     "screenshots": [
       "/games/turbo-outracer/s1.svg"
     ],
@@ -151,7 +151,7 @@
     ],
     "description": "Breakout with simple physics and increasingly challenging levels.",
     "description_it": "Breakout con fisica semplice e livelli a difficoltà crescente.",
-    "hero": "/games/brick-blitz-84/hero.svg",
+    "hero": "/games/brick-blitz-84/hero.png",
     "screenshots": [
       "/games/brick-blitz-84/s1.svg"
     ],
