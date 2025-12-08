@@ -171,7 +171,7 @@
     ],
     "description": "Procedural rooms, one life, persistent scores.",
     "description_it": "Stanze procedurali, una sola vita, punteggi permanenti.",
-    "hero": "/games/rogue-dungeon-mini/hero.svg",
+    "hero": "/games/rogue-dungeon-mini/hero.png",
     "screenshots": [
       "/games/rogue-dungeon-mini/s1.svg"
     ],
@@ -191,7 +191,7 @@
     ],
     "description": "Land with limited fuel and variable wind.",
     "description_it": "Atterra con poco carburante e vento variabile.",
-    "hero": "/games/gravity-lander/hero.svg",
+    "hero": "/games/gravity-lander/hero.png",
     "screenshots": [
       "/games/gravity-lander/s1.svg"
     ],
@@ -211,7 +211,7 @@
     ],
     "description": "Drop cargo crates onto moving pads using side thrusters only. Score based on accuracy and fuel saved.",
     "description_it": "Lascia cadere casse cargo su piattaforme mobili usando solo i propulsori laterali. Punteggio basato su precisione e carburante risparmiato.",
-    "hero": "/games/cargo-thrust-lander/hero.svg",
+    "hero": "/games/cargo-thrust-lander/hero.png",
     "screenshots": [
       "/games/cargo-thrust-lander/s1.svg",
       "/games/cargo-thrust-lander/s2.svg"
@@ -232,7 +232,7 @@
     ],
     "description": "Shoot asteroids while managing your ship's inertia.",
     "description_it": "Spara agli asteroidi gestendo l&apos;inerzia della nave.",
-    "hero": "/games/vector-asteroids/hero.svg",
+    "hero": "/games/vector-asteroids/hero.png",
     "screenshots": [
       "/games/vector-asteroids/s1.svg"
     ],
@@ -252,7 +252,7 @@
     ],
     "description": "Build stable towers with perfect timing.",
     "description_it": "Costruisci torri stabili con tempi perfetti.",
-    "hero": "/games/tower-frenzy-90/hero.svg",
+    "hero": "/games/tower-frenzy-90/hero.png",
     "screenshots": [
       "/games/tower-frenzy-90/s1.svg"
     ],
@@ -272,7 +272,7 @@
     ],
     "description": "Cross chaotic roads and rivers, run after run.",
     "description_it": "Attraversa strade e fiumi caotici, run dopo run.",
-    "hero": "/games/frog-cross-dash/hero.svg",
+    "hero": "/games/frog-cross-dash/hero.png",
     "screenshots": [
       "/games/frog-cross-dash/s1.svg"
     ],
