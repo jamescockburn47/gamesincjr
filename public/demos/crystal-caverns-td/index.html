@@ -1,0 +1,1530 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crystal Caverns TD - Demo</title>
+    <link rel="stylesheet" href="/game-framework/overlay-styles.css">
+    <style>
+        :root {
+            --game-primary: #a855f7;
+            --game-secondary: #22d3ee;
+            --game-accent: #fbbf24;
+            --game-danger: #ef4444;
+            --game-bg: #0f0a1a;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background: linear-gradient(180deg, #1a0f2e 0%, #0f0a1a 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 12px;
+            font-family: 'Segoe UI', system-ui, sans-serif;
+            color: #e0d4f7;
+        }
+
+        h1 {
+            margin: 0 0 4px;
+            color: var(--game-primary);
+            text-shadow: 0 0 20px rgba(168, 85, 247, 0.6);
+            font-size: clamp(1.5rem, 3.5vw, 2rem);
+            letter-spacing: 2px;
+        }
+
+        .tagline {
+            margin: 0 0 8px;
+            color: #b8a8d4;
+            text-align: center;
+            font-size: 0.9rem;
+        }
+
+        .game-hud {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-bottom: 8px;
+        }
+
+        .game-hud .badge {
+            background: rgba(30, 20, 50, 0.9);
+            border: 1px solid rgba(168, 85, 247, 0.4);
+            padding: 6px 12px;
+            border-radius: 10px;
+            font-weight: 600;
+            font-size: 0.85rem;
+            -webkit-backdrop-filter: blur(8px);
+            backdrop-filter: blur(8px);
+        }
+
+        .game-hud .badge span {
+            color: var(--game-accent);
+            margin-left: 4px;
+        }
+
+        .game-container {
+            position: relative;
+            display: flex;
+            gap: 12px;
+            max-width: 1000px;
+            width: 100%;
+        }
+
+        .stage {
+            position: relative;
+            flex: 1;
+            aspect-ratio: 4/3;
+            border-radius: 12px;
+            overflow: hidden;
+            border: 2px solid rgba(168, 85, 247, 0.4);
+            box-shadow: 0 15px 40px rgba(15, 10, 26, 0.8);
+        }
+
+        #gameCanvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+            background: #1a1030;
+            cursor: crosshair;
+        }
+
+        .tower-panel {
+            width: 160px;
+            background: rgba(20, 15, 35, 0.95);
+            border: 1px solid rgba(168, 85, 247, 0.3);
+            border-radius: 12px;
+            padding: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .tower-panel h3 {
+            margin: 0;
+            color: var(--game-secondary);
+            font-size: 0.9rem;
+            text-align: center;
+            border-bottom: 1px solid rgba(168, 85, 247, 0.2);
+            padding-bottom: 6px;
+        }
+
+        .tower-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px;
+            border-radius: 10px;
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            background: rgba(30, 20, 50, 0.6);
+            color: #e0d4f7;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.8rem;
+        }
+
+        .tower-btn:hover {
+            border-color: var(--game-primary);
+            background: rgba(168, 85, 247, 0.2);
+            transform: translateY(-1px);
+        }
+
+        .tower-btn.selected {
+            border-color: var(--game-accent);
+            background: rgba(251, 191, 36, 0.15);
+            box-shadow: 0 0 15px rgba(251, 191, 36, 0.3);
+        }
+
+        .tower-btn.disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+
+        .tower-btn .icon {
+            font-size: 1.5rem;
+        }
+
+        .tower-btn .name {
+            font-weight: 600;
+            font-size: 0.75rem;
+        }
+
+        .tower-btn .cost {
+            font-size: 0.7rem;
+            color: var(--game-accent);
+        }
+
+        .wave-info {
+            text-align: center;
+            padding: 8px;
+            background: rgba(34, 211, 238, 0.1);
+            border-radius: 10px;
+            border: 1px solid rgba(34, 211, 238, 0.3);
+        }
+
+        .wave-info .label {
+            font-size: 0.65rem;
+            color: #8ac8d8;
+            text-transform: uppercase;
+        }
+
+        .wave-info .value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--game-secondary);
+        }
+
+        .start-wave-btn {
+            padding: 10px;
+            border-radius: 10px;
+            border: none;
+            background: linear-gradient(135deg, #22d3ee 0%, #0891b2 100%);
+            color: #0f172a;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .start-wave-btn:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(34, 211, 238, 0.4);
+        }
+
+        .start-wave-btn:disabled {
+            background: #374151;
+            color: #6b7280;
+            cursor: not-allowed;
+        }
+
+        .modal {
+            background: linear-gradient(135deg, #1a0f2e 0%, #0f0a1a 100%);
+            border-color: var(--game-primary);
+        }
+
+        .modal h1,
+        .modal h2 {
+            color: var(--game-primary);
+        }
+
+        .modal button {
+            background: linear-gradient(135deg, #a855f7 0%, #7c3aed 100%);
+            box-shadow: 0 5px 20px rgba(168, 85, 247, 0.4);
+        }
+
+        .level-complete-title {
+            color: var(--game-secondary) !important;
+        }
+
+        .bonus-text {
+            color: var(--game-accent);
+            font-weight: 600;
+        }
+
+        /* Level Select Screen */
+        .level-select {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 12px;
+            max-width: 500px;
+            margin: 20px 0;
+        }
+
+        .level-card {
+            padding: 16px;
+            border-radius: 12px;
+            border: 2px solid rgba(168, 85, 247, 0.3);
+            background: rgba(30, 20, 50, 0.6);
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .level-card:hover:not(.locked) {
+            border-color: var(--game-accent);
+            transform: translateY(-2px);
+        }
+
+        .level-card.locked {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .level-card .level-num {
+            font-size: 1.8rem;
+            margin-bottom: 4px;
+        }
+
+        .level-card .level-name {
+            font-size: 0.8rem;
+            color: #b8a8d4;
+        }
+
+        @media (max-width: 700px) {
+            .game-container {
+                flex-direction: column;
+            }
+
+            .tower-panel {
+                width: 100%;
+                flex-direction: row;
+                flex-wrap: wrap;
+                justify-content: center;
+            }
+
+            .tower-panel h3 {
+                width: 100%;
+            }
+
+            .tower-btn {
+                width: 70px;
+                padding: 6px;
+            }
+
+            .wave-info,
+            .start-wave-btn {
+                flex: 1;
+                min-width: 100px;
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <h1>💎 Crystal Caverns TD</h1>
+    <p class="tagline">Defend across 7 unique worlds!</p>
+
+    <div class="game-hud">
+        <div class="badge">💎 <span id="crystals">100</span></div>
+        <div class="badge">❤️ <span id="coreHp">15</span></div>
+        <div class="badge">🗺️ Lv<span id="level">1</span></div>
+        <div class="badge">🌊 <span id="wave">1</span>/6</div>
+        <div class="badge">🏗️ <span id="towerCount">0</span>/<span id="towerLimit">10</span></div>
+        <div class="badge">💀 <span id="kills">0</span></div>
+    </div>
+
+    <!-- Try Now Overlay -->
+    <div id="tryOverlay" class="overlay">
+        <div class="modal">
+            <h1>💎 Crystal Caverns TD</h1>
+            <p>Defend across 7 themed worlds with unique enemies and challenges!</p>
+            <button id="tryBtn">Play Now</button>
+        </div>
+    </div>
+
+    <!-- Level Select Overlay -->
+    <div id="levelSelectOverlay" class="overlay hidden">
+        <div class="modal" style="max-width: 550px;">
+            <h2>🗺️ Select Level</h2>
+            <div class="level-select" id="levelSelect"></div>
+        </div>
+    </div>
+
+    <!-- Instructions Overlay -->
+    <div id="instructionsOverlay" class="overlay hidden">
+        <div class="modal">
+            <h2 id="levelTitle">Level 1: Grasslands</h2>
+            <p id="levelDesc">Tutorial level - learn the basics!</p>
+            <div class="controls-box">
+                <p>How to Play</p>
+                <div>• Click tower type, then click map to place</div>
+                <div>• Survive 5 waves + 1 BOSS wave</div>
+                <div>• Earn crystals by defeating enemies</div>
+            </div>
+            <button id="startBtn">Start Level</button>
+        </div>
+    </div>
+
+    <!-- Countdown -->
+    <div id="countdown">3</div>
+
+    <!-- Wave Banner -->
+    <div id="waveBanner" class="overlay hidden" style="background: transparent; pointer-events: none;">
+        <div
+            style="font-size: 3rem; color: #fbbf24; text-shadow: 0 0 30px rgba(251,191,36,0.8); animation: pulse 0.5s ease-in-out;">
+            <span id="waveBannerText">WAVE 1</span>
+        </div>
+    </div>
+
+    <!-- Game Over Overlay -->
+    <div id="gameOverOverlay" class="overlay hidden">
+        <div class="modal">
+            <h2 class="text-danger">💔 Core Destroyed!</h2>
+            <p>Level <span id="finalLevel">1</span>, Wave <span id="finalWave">0</span></p>
+            <p>Kills: <span id="finalKills">0</span></p>
+            <button id="retryBtn">Try Again</button>
+            <button id="levelSelectBtn" style="margin-top: 10px; background: #374151;">Level Select</button>
+        </div>
+    </div>
+
+    <!-- Level Complete Overlay -->
+    <div id="levelCompleteOverlay" class="overlay hidden">
+        <div class="modal">
+            <h2 class="level-complete-title">🎉 Level Complete!</h2>
+            <p id="completeMsg">You defeated the boss!</p>
+            <p class="bonus-text">+100 💎 Bonus!</p>
+            <button id="nextLevelBtn">Next Level →</button>
+        </div>
+    </div>
+
+    <!-- Victory Overlay -->
+    <div id="victoryOverlay" class="overlay hidden">
+        <div class="modal">
+            <h2 style="color: gold;">🏆 VICTORY!</h2>
+            <p>You conquered all 7 worlds!</p>
+            <p class="bonus-text">Total Kills: <span id="totalKills">0</span></p>
+            <button id="playAgainBtn">Play Again</button>
+        </div>
+    </div>
+
+    <div class="game-container">
+        <div class="stage">
+            <canvas id="gameCanvas" width="800" height="600"></canvas>
+        </div>
+
+        <div class="tower-panel" id="towerPanel">
+            <h3>🏗️ Towers</h3>
+            <button class="tower-btn selected" data-tower="arrow">
+                <span class="icon">🏹</span>
+                <span class="name">Arrow</span>
+                <span class="cost">55 💎</span>
+            </button>
+            <button class="tower-btn" data-tower="cannon">
+                <span class="icon">💣</span>
+                <span class="name">Cannon</span>
+                <span class="cost">110 💎</span>
+            </button>
+            <button class="tower-btn" data-tower="ice">
+                <span class="icon">❄️</span>
+                <span class="name">Ice</span>
+                <span class="cost">80 💎</span>
+            </button>
+            <button class="tower-btn" data-tower="laser">
+                <span class="icon">⚡</span>
+                <span class="name">Laser</span>
+                <span class="cost">150 💎</span>
+            </button>
+            <div class="wave-info">
+                <div class="label">Next Wave</div>
+                <div class="value" id="nextWaveInfo">4 enemies</div>
+            </div>
+            <button class="start-wave-btn" id="startWaveBtn">🌊 Start Wave</button>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // CRYSTAL CAVERNS TD - 7 Level Tower Defense
+        // ============================================================
+
+        const canvas = document.getElementById('gameCanvas');
+        const ctx = canvas.getContext('2d');
+
+        // Sprite loading - Kenney Tower Defense pack
+        const sprites = {};
+        const SPRITE_BASE = 'sprites/PNG/Default size/towerDefense_tile';
+        let spritesLoaded = 0;
+        const TOTAL_SPRITES = 20;
+
+        function loadSprite(name, tileNum) {
+            const img = new Image();
+            img.onload = () => { spritesLoaded++; };
+            img.src = SPRITE_BASE + String(tileNum).padStart(3, '0') + '.png';
+            sprites[name] = img;
+        }
+
+        // Terrain sprites (64x64)
+        loadSprite('grass', 24); loadSprite('sand', 42); loadSprite('snow', 48);
+        loadSprite('lava', 168); loadSprite('stone', 1);
+        // Path sprites
+        loadSprite('path_h', 59); loadSprite('path_v', 60); loadSprite('path_c', 57);
+        // Tower sprites - bases and guns
+        loadSprite('tower_base', 180); loadSprite('tower_base2', 181);
+        loadSprite('gun_arrow', 249); loadSprite('gun_cannon', 250);
+        loadSprite('gun_ice', 203); loadSprite('gun_laser', 267);
+        // Enemy sprites
+        loadSprite('enemy_tank', 245); loadSprite('enemy_scout', 246);
+        loadSprite('enemy_heavy', 247); loadSprite('enemy_plane', 268);
+        // Effects
+        loadSprite('bullet', 272); loadSprite('explosion', 297);
+
+        // 7 Level Definitions
+        const LEVELS = [
+            {
+                id: 1, name: "Grasslands", emoji: "🌿",
+                desc: "Tutorial - Simple enemies, learn the basics",
+                colors: { bg: '#2d5a27', path: '#8b7355', accent: '#4ade80' },
+                enemyTypes: ['tank'], bossType: 'tank_boss',
+                enemyMod: { hpMult: 1, speedMult: 1, rewardMult: 1.2 },
+                special: null
+            },
+            {
+                id: 2, name: "Desert", emoji: "🏜️",
+                desc: "Fast enemies race across the sands",
+                colors: { bg: '#c2a860', path: '#8b6914', accent: '#fbbf24' },
+                enemyTypes: ['tank', 'scout'], bossType: 'speed_boss',
+                enemyMod: { hpMult: 1, speedMult: 1.3, rewardMult: 1 },
+                special: 'fast'
+            },
+            {
+                id: 3, name: "Frozen Peaks", emoji: "❄️",
+                desc: "Enemies start slow but thaw and speed up",
+                colors: { bg: '#b8d4e3', path: '#5a7a8a', accent: '#60a5fa' },
+                enemyTypes: ['tank', 'heavy'], bossType: 'ice_boss',
+                enemyMod: { hpMult: 1.2, speedMult: 0.7, rewardMult: 1 },
+                special: 'thaw'
+            },
+            {
+                id: 4, name: "Lava Fields", emoji: "🌋",
+                desc: "Enemies regenerate health over time",
+                colors: { bg: '#4a1a0a', path: '#8b2500', accent: '#ef4444' },
+                enemyTypes: ['tank', 'heavy', 'scout'], bossType: 'fire_boss',
+                enemyMod: { hpMult: 1.1, speedMult: 1, rewardMult: 1.1 },
+                special: 'regen'
+            },
+            {
+                id: 5, name: "Toxic Swamp", emoji: "🐸",
+                desc: "Poison clouds damage your towers",
+                colors: { bg: '#2a4a2a', path: '#3d5c3d', accent: '#84cc16' },
+                enemyTypes: ['tank', 'heavy', 'scout', 'flyer'], bossType: 'poison_boss',
+                enemyMod: { hpMult: 1.3, speedMult: 1, rewardMult: 1.2 },
+                special: 'poison'
+            },
+            {
+                id: 6, name: "Dark Fortress", emoji: "🏰",
+                desc: "Armored enemies reduce damage taken",
+                colors: { bg: '#1a1a2e', path: '#2d2d44', accent: '#a855f7' },
+                enemyTypes: ['heavy', 'armored', 'flyer'], bossType: 'armor_boss',
+                enemyMod: { hpMult: 1.5, speedMult: 0.9, rewardMult: 1.3 },
+                special: 'armor'
+            },
+            {
+                id: 7, name: "Crystal Core", emoji: "💎",
+                desc: "Final battle - all enemy types, ultimate boss",
+                colors: { bg: '#1a0a2e', path: '#3d1a5c', accent: '#c084fc' },
+                enemyTypes: ['tank', 'heavy', 'scout', 'flyer', 'armored'], bossType: 'final_boss',
+                enemyMod: { hpMult: 1.8, speedMult: 1.1, rewardMult: 1.5 },
+                special: 'all'
+            }
+        ];
+
+        // Enemy Types
+        const ENEMY_TYPES = {
+            tank: { hp: 5, speed: 50, reward: 8, color: '#4ade80', size: 14 },
+            scout: { hp: 2, speed: 90, reward: 6, color: '#fbbf24', size: 10 },
+            heavy: { hp: 15, speed: 35, reward: 15, color: '#78716c', size: 18 },
+            flyer: { hp: 4, speed: 70, reward: 10, color: '#c084fc', size: 12, flying: true },
+            armored: { hp: 12, speed: 40, reward: 12, color: '#64748b', size: 16, armor: 0.5 },
+            // Bosses
+            tank_boss: { hp: 40, speed: 30, reward: 50, color: '#22c55e', size: 28, boss: true },
+            speed_boss: { hp: 30, speed: 60, reward: 50, color: '#f59e0b', size: 26, boss: true },
+            ice_boss: { hp: 60, speed: 25, reward: 60, color: '#3b82f6', size: 30, boss: true },
+            fire_boss: { hp: 50, speed: 35, reward: 60, color: '#dc2626', size: 28, boss: true, regen: 1 },
+            poison_boss: { hp: 55, speed: 40, reward: 70, color: '#84cc16', size: 28, boss: true },
+            armor_boss: { hp: 80, speed: 30, reward: 80, color: '#6366f1', size: 32, boss: true, armor: 0.6 },
+            final_boss: { hp: 150, speed: 25, reward: 150, color: '#ec4899', size: 40, boss: true, armor: 0.3, regen: 2 }
+        };
+
+        // Tower Types - HARDER difficulty
+        const TOWERS = {
+            arrow: { cost: 55, range: 110, damage: 0.9, fireRate: 0.8, color: '#22d3ee', speed: 350, sprite: 'gun_arrow' },
+            cannon: { cost: 110, range: 90, damage: 2.5, fireRate: 1.8, color: '#ef4444', speed: 220, splash: 30, sprite: 'gun_cannon' },
+            ice: { cost: 80, range: 100, damage: 0.4, fireRate: 1.0, color: '#60a5fa', speed: 280, slow: 0.4, sprite: 'gun_ice' },
+            laser: { cost: 150, range: 140, damage: 1.6, fireRate: 0.6, color: '#a855f7', speed: 550, sprite: 'gun_laser' }
+        };
+
+        // AUTO-PLAY SANDBOX for rapid balance testing
+        const sandbox = {
+            enabled: false,
+            speed: 1,
+            gamesPlayed: 0,
+            results: [],
+            stats: { wins: 0, losses: 0, totalWaves: 0 },
+
+            // FLOW METRICS - for enjoyment optimization
+            flow: {
+                closeCallWins: 0,      // Won with HP <= 3 (exciting!)
+                closeCallLosses: 0,    // Lost on wave 5-6 (almost won - motivating!)
+                stomps: 0,              // Won easily (HP >= 8 on win = boring)
+                earlyCrushes: 0,        // Lost wave 1-2 (frustrating)
+                longestStreak: 0,
+                currentStreak: 0,
+                waveDeaths: {},         // Which waves kill players most?
+                levelDeaths: {},        // Which levels are walls?
+                avgHpOnWin: 0,
+                totalHpOnWin: 0,
+                winsTracked: 0
+            }
+        };
+
+        function toggleSandbox() {
+            sandbox.enabled = !sandbox.enabled;
+            sandbox.speed = sandbox.enabled ? 20 : 1;
+            console.log('🤖 Sandbox:', sandbox.enabled ? 'ON (20x speed)' : 'OFF');
+            console.log('Press S=toggle, R=stats, B=balance recommendations');
+            if (sandbox.enabled) {
+                document.getElementById('levelSelectOverlay').classList.add('hidden');
+                document.getElementById('tryOverlay').classList.add('hidden');
+                startLevel(1);
+            }
+        }
+
+        function aiThink() {
+            if (!sandbox.enabled) return;
+
+            // Auto-start waves
+            if (game.state === 'playing' && game.enemies.length === 0) {
+                startWave();
+                return;
+            }
+
+            // Auto-place towers (smarter AI: considers wave progression)
+            if (game.state === 'playing' || game.state === 'waveActive') {
+                const priority = game.wave <= 2 ? ['arrow', 'arrow', 'ice'] : ['arrow', 'ice', 'cannon', 'laser'];
+                for (const type of priority) {
+                    if (game.crystals >= TOWERS[type].cost && game.towers.length < game.towerLimit) {
+                        for (let i = 0; i < 30; i++) {
+                            const pathIdx = Math.floor(Math.random() * (game.path.length - 1));
+                            const p = game.path[pathIdx];
+                            const x = p.x + (Math.random() - 0.5) * 100;
+                            const y = p.y + (Math.random() - 0.5) * 100;
+                            if (canPlaceTower(x, y)) {
+                                game.selectedTower = type;
+                                placeTower(x, y);
+                                return;
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Auto-next level (with flow tracking)
+            if (game.state === 'levelComplete') {
+                const hpRemaining = game.coreHp;
+                sandbox.flow.totalHpOnWin += hpRemaining;
+                sandbox.flow.winsTracked++;
+                sandbox.flow.avgHpOnWin = sandbox.flow.totalHpOnWin / sandbox.flow.winsTracked;
+
+                if (hpRemaining <= 3) sandbox.flow.closeCallWins++;
+                if (hpRemaining >= 8) sandbox.flow.stomps++;
+
+                sandbox.flow.currentStreak++;
+                sandbox.flow.longestStreak = Math.max(sandbox.flow.longestStreak, sandbox.flow.currentStreak);
+                sandbox.stats.wins++;
+
+                if (game.currentLevel < 7) {
+                    nextLevel();
+                } else {
+                    console.log('🏆 AI completed all 7 levels!');
+                    sandbox.gamesPlayed++;
+                    sandbox.results.push({ result: 'WIN', level: 7, wave: 6, hp: hpRemaining });
+                    sandbox.flow.currentStreak = 0;
+                    startLevel(1);
+                }
+            }
+
+            // Auto-retry on game over (with flow tracking)
+            if (game.state === 'gameover') {
+                const lvl = game.currentLevel;
+                const wav = game.wave;
+
+                // Track death patterns
+                sandbox.flow.levelDeaths[lvl] = (sandbox.flow.levelDeaths[lvl] || 0) + 1;
+                sandbox.flow.waveDeaths[wav] = (sandbox.flow.waveDeaths[wav] || 0) + 1;
+
+                if (wav >= 5) sandbox.flow.closeCallLosses++;  // Almost won!
+                if (wav <= 2) sandbox.flow.earlyCrushes++;     // Frustrating
+
+                sandbox.flow.currentStreak = 0;
+                sandbox.stats.losses++;
+                sandbox.gamesPlayed++;
+                sandbox.results.push({ result: 'LOSS', level: lvl, wave: wav });
+                console.log(`💀 L${lvl}W${wav} | Streak: ${sandbox.flow.currentStreak}`);
+                startLevel(1);
+            }
+        }
+
+        function showSandboxStats() {
+            const f = sandbox.flow;
+            const winRate = sandbox.gamesPlayed > 0 ? Math.round(sandbox.stats.wins / sandbox.gamesPlayed * 100) : 0;
+
+            console.log('╔════════════════════════════════════╗');
+            console.log('║     🎮 SANDBOX ANALYTICS 🎮       ║');
+            console.log('╠════════════════════════════════════╣');
+            console.log(`║ Games: ${sandbox.gamesPlayed.toString().padStart(3)} | Win Rate: ${winRate}%`.padEnd(37) + '║');
+            console.log(`║ Best Streak: ${f.longestStreak}`.padEnd(37) + '║');
+            console.log('╠════════════════════════════════════╣');
+            console.log('║ 🎯 FLOW METRICS (Enjoyment)        ║');
+            console.log(`║ Close Wins (HP≤3): ${f.closeCallWins} = EXCITING`.padEnd(37) + '║');
+            console.log(`║ Close Losses (W5+): ${f.closeCallLosses} = MOTIVATING`.padEnd(37) + '║');
+            console.log(`║ Stomps (HP≥8): ${f.stomps} = BORING`.padEnd(37) + '║');
+            console.log(`║ Early Deaths (W1-2): ${f.earlyCrushes} = FRUSTRATING`.padEnd(37) + '║');
+            console.log(`║ Avg HP on Win: ${f.avgHpOnWin.toFixed(1)}`.padEnd(37) + '║');
+            console.log('╠════════════════════════════════════╣');
+            console.log('║ Death Hotspots:'.padEnd(37) + '║');
+            Object.entries(f.levelDeaths).sort((a, b) => b[1] - a[1]).slice(0, 3).forEach(([l, c]) => {
+                console.log(`║   Level ${l}: ${c} deaths`.padEnd(37) + '║');
+            });
+            console.log('╚════════════════════════════════════╝');
+        }
+
+        function showBalanceRecommendations() {
+            const f = sandbox.flow;
+            const winRate = sandbox.gamesPlayed > 0 ? sandbox.stats.wins / sandbox.gamesPlayed : 0;
+            const games = sandbox.gamesPlayed;
+
+            console.log('╔════════════════════════════════════════════╗');
+            console.log('║    ⚖️  BALANCE RECOMMENDATIONS  ⚖️         ║');
+            console.log('╠════════════════════════════════════════════╣');
+
+            if (games < 5) {
+                console.log('║ Need 5+ games for recommendations...       ║');
+            } else {
+                // FLOW STATE OPTIMIZATION
+                // Target: ~40-60% win rate, many close calls, few stomps/crushes
+
+                const closeCallRatio = (f.closeCallWins + f.closeCallLosses) / games;
+                const stompRatio = f.stomps / Math.max(1, sandbox.stats.wins);
+                const crushRatio = f.earlyCrushes / Math.max(1, sandbox.stats.losses);
+
+                // Win rate analysis
+                if (winRate > 0.7) {
+                    console.log('║ 😴 TOO EASY - Players will get bored       ║');
+                    console.log('║ → Increase enemy HP by 15%                 ║');
+                    console.log('║ → Reduce starting crystals to 60           ║');
+                } else if (winRate < 0.3) {
+                    console.log('║ 😤 TOO HARD - Players will quit            ║');
+                    console.log('║ → Reduce enemy HP by 15%                   ║');
+                    console.log('║ → Increase starting crystals to 90         ║');
+                } else if (winRate >= 0.4 && winRate <= 0.6) {
+                    console.log('║ ✅ WIN RATE: Perfect (40-60%)              ║');
+                }
+
+                // Close call analysis (MOST IMPORTANT FOR FUN)
+                if (closeCallRatio < 0.25) {
+                    console.log('║ ⚠️  Not enough close games                 ║');
+                    console.log('║ → Make bosses 20% stronger                 ║');
+                    console.log('║ → Reduce tower range by 10%                ║');
+                } else if (closeCallRatio > 0.6) {
+                    console.log('║ 😰 Too many close calls = stressful        ║');
+                    console.log('║ → Add 1 more tower slot                    ║');
+                } else {
+                    console.log('║ ✅ CLOSE CALLS: Good tension level         ║');
+                }
+
+                // Stomp analysis
+                if (stompRatio > 0.4) {
+                    console.log('║ 🥱 Too many easy wins                      ║');
+                    console.log('║ → Reduce core HP to 8                      ║');
+                }
+
+                // Early death analysis  
+                if (crushRatio > 0.4) {
+                    console.log('║ 💀 Too many early losses                   ║');
+                    console.log('║ → Reduce Wave 1-2 enemy count              ║');
+                    console.log('║ → Cheaper arrow tower (50💎)               ║');
+                }
+
+                // Level-specific hotspots
+                const hotLevel = Object.entries(f.levelDeaths).sort((a, b) => b[1] - a[1])[0];
+                if (hotLevel && hotLevel[1] > games * 0.3) {
+                    console.log(`║ 🚧 Level ${hotLevel[0]} is a wall (${hotLevel[1]} deaths)`.padEnd(45) + '║');
+                    console.log('║ → Reduce that level\'s enemy HP mult        ║');
+                }
+            }
+
+            console.log('╠════════════════════════════════════════════╣');
+            console.log('║ 📊 IDEAL TARGETS FOR ADDICTIVE GAMEPLAY:   ║');
+            console.log('║ • Win Rate: 40-55% (achievable but earned) ║');
+            console.log('║ • Close Calls: 30-50% (exciting tension)   ║');
+            console.log('║ • Stomps: <20% (no boring easy wins)       ║');
+            console.log('║ • Early Losses: <15% (not frustrating)     ║');
+            console.log('╚════════════════════════════════════════════╝');
+        }
+
+        document.addEventListener('keydown', e => {
+            if (e.key === 's' || e.key === 'S') toggleSandbox();
+            if (e.key === 'r' || e.key === 'R') showSandboxStats();
+            if (e.key === 'b' || e.key === 'B') showBalanceRecommendations();
+        });
+
+        // Game State
+        const game = {
+            state: 'menu',
+            currentLevel: 1,
+            unlockedLevels: parseInt(localStorage.getItem('td_unlocked') || '1'),
+            totalKills: 0,
+            crystals: 75,  // HARDER: less starting crystals
+            coreHp: 10,    // HARDER: less HP
+            maxCoreHp: 10,
+            wave: 1,
+            wavesPerLevel: 6,
+            kills: 0,
+            selectedTower: 'arrow',
+            towers: [],
+            towerLimit: 8,  // HARDER: fewer tower slots
+            enemies: [],
+            projectiles: [],
+            particles: [],
+            path: [],
+            corePosition: { x: 0, y: 0 },
+            spawnPoint: { x: 0, y: 0 },
+            enemiesRemaining: 0,
+            mouseX: 0, mouseY: 0,
+            lastTime: 0
+        };
+
+        // Generate path for level
+        function generatePath(levelId) {
+            const w = canvas.width;
+            const h = canvas.height;
+            const seed = levelId * 137;
+
+            const rand = (n) => {
+                const x = Math.sin(seed + n * 1234) * 10000;
+                return x - Math.floor(x);
+            };
+
+            game.spawnPoint = { x: 0, y: h * (0.2 + rand(0) * 0.5) };
+            game.corePosition = { x: w - 50, y: h * (0.3 + rand(1) * 0.4) };
+
+            const points = [{ x: 0, y: game.spawnPoint.y }];
+            const segments = 4 + Math.floor(rand(2) * 3);
+
+            for (let i = 0; i < segments; i++) {
+                const progress = (i + 1) / (segments + 1);
+                const x = w * progress * 0.85;
+                const baseY = (i % 2 === 0) ? 0.25 : 0.7;
+                const y = h * (baseY + (rand(i + 3) - 0.5) * 0.35);
+                points.push({ x, y: Math.max(40, Math.min(h - 40, y)) });
+            }
+            points.push({ x: w - 50, y: game.corePosition.y });
+            game.path = points;
+        }
+
+        // Render
+        function render() {
+            const level = LEVELS[game.currentLevel - 1];
+            const colors = level.colors;
+
+            // Background
+            ctx.fillStyle = colors.bg;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Grid pattern
+            ctx.strokeStyle = 'rgba(255,255,255,0.05)';
+            ctx.lineWidth = 1;
+            for (let x = 0; x < canvas.width; x += 40) {
+                ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+            }
+            for (let y = 0; y < canvas.height; y += 40) {
+                ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+            }
+
+            // Path
+            ctx.strokeStyle = colors.path;
+            ctx.lineWidth = 36;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            ctx.beginPath();
+            ctx.moveTo(game.path[0].x, game.path[0].y);
+            for (let i = 1; i < game.path.length; i++) {
+                ctx.lineTo(game.path[i].x, game.path[i].y);
+            }
+            ctx.stroke();
+
+            // Path inner
+            ctx.strokeStyle = 'rgba(0,0,0,0.3)';
+            ctx.lineWidth = 28;
+            ctx.stroke();
+
+            // Crystal Core
+            const t = Date.now() / 1000;
+            const pulse = 1 + Math.sin(t * 3) * 0.1;
+            const coreGlow = ctx.createRadialGradient(
+                game.corePosition.x, game.corePosition.y, 0,
+                game.corePosition.x, game.corePosition.y, 45 * pulse
+            );
+            coreGlow.addColorStop(0, colors.accent);
+            coreGlow.addColorStop(0.5, colors.accent + '80');
+            coreGlow.addColorStop(1, 'transparent');
+            ctx.fillStyle = coreGlow;
+            ctx.fillRect(game.corePosition.x - 50, game.corePosition.y - 50, 100, 100);
+
+            // Core crystal
+            ctx.save();
+            ctx.translate(game.corePosition.x, game.corePosition.y);
+            ctx.rotate(t * 0.5);
+            ctx.fillStyle = colors.accent;
+            ctx.beginPath();
+            for (let i = 0; i < 6; i++) {
+                const angle = (i / 6) * Math.PI * 2 - Math.PI / 2;
+                const r = i % 2 === 0 ? 25 : 12;
+                const x = Math.cos(angle) * r;
+                const y = Math.sin(angle) * r;
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.restore();
+
+            // Core HP bar
+            const hpRatio = game.coreHp / game.maxCoreHp;
+            ctx.fillStyle = '#333';
+            ctx.fillRect(game.corePosition.x - 25, game.corePosition.y + 35, 50, 6);
+            ctx.fillStyle = hpRatio > 0.5 ? '#4ade80' : hpRatio > 0.25 ? '#fbbf24' : '#ef4444';
+            ctx.fillRect(game.corePosition.x - 25, game.corePosition.y + 35, 50 * hpRatio, 6);
+
+            // Towers - use sprites if loaded
+            for (const tower of game.towers) {
+                const baseSprite = sprites.tower_base;
+                const gunSprite = sprites[tower.sprite];
+
+                // Draw tower base using sprite or fallback
+                if (baseSprite && baseSprite.complete && baseSprite.naturalWidth) {
+                    ctx.drawImage(baseSprite, tower.x - 24, tower.y - 24, 48, 48);
+                } else {
+                    ctx.fillStyle = '#333';
+                    ctx.beginPath();
+                    ctx.arc(tower.x, tower.y, 18, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+
+                // Draw gun turret with rotation
+                ctx.save();
+                ctx.translate(tower.x, tower.y);
+                ctx.rotate(tower.angle + Math.PI / 2); // Sprites face up, need to rotate
+
+                if (gunSprite && gunSprite.complete && gunSprite.naturalWidth) {
+                    ctx.drawImage(gunSprite, -20, -20, 40, 40);
+                } else {
+                    // Fallback colored turret
+                    ctx.fillStyle = tower.color;
+                    ctx.fillRect(-4, -14, 8, 22);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 10, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+                ctx.restore();
+
+                // Range indicator for selected tower type
+                if (game.state === 'playing' && game.selectedTower === tower.type) {
+                    ctx.strokeStyle = tower.color + '30';
+                    ctx.lineWidth = 1;
+                    ctx.beginPath();
+                    ctx.arc(tower.x, tower.y, tower.range, 0, Math.PI * 2);
+                    ctx.stroke();
+                }
+            }
+
+            // Enemies
+            // Get enemy sprite based on type
+            const enemySprites = {
+                tank: sprites.enemy_tank, scout: sprites.enemy_scout,
+                heavy: sprites.enemy_heavy, flyer: sprites.enemy_plane,
+                armored: sprites.enemy_heavy
+            };
+            const sprite = enemySprites[enemy.type] || sprites.enemy_tank;
+
+            // Shadow
+            ctx.fillStyle = 'rgba(0,0,0,0.25)';
+            ctx.beginPath();
+            ctx.ellipse(enemy.x + 3, enemy.y + enemy.size * 0.85, enemy.size * 0.9, enemy.size * 0.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Get direction for rotation
+            const nextPt = game.path[enemy.pathIndex + 1] || game.path[enemy.pathIndex];
+            const angle = Math.atan2(nextPt.y - enemy.y, nextPt.x - enemy.x);
+
+            // Draw enemy using sprite or fallback
+            ctx.save();
+            ctx.translate(enemy.x, enemy.y);
+            ctx.rotate(angle + Math.PI / 2);
+
+            if (sprite && sprite.complete && sprite.naturalWidth) {
+                const size = enemy.size * 2.5;
+                ctx.drawImage(sprite, -size / 2, -size / 2, size, size);
+            } else {
+                // Fallback colored circle
+                ctx.fillStyle = enemy.color;
+                ctx.beginPath();
+                ctx.arc(0, 0, enemy.size, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.restore();
+
+            // Boss crown
+            if (enemy.boss) {
+                ctx.fillStyle = '#fbbf24';
+                ctx.beginPath();
+                ctx.moveTo(enemy.x - 12, enemy.y - enemy.size - 6);
+                ctx.lineTo(enemy.x - 6, enemy.y - enemy.size - 18);
+                ctx.lineTo(enemy.x, enemy.y - enemy.size - 10);
+                ctx.lineTo(enemy.x + 6, enemy.y - enemy.size - 18);
+                ctx.lineTo(enemy.x + 12, enemy.y - enemy.size - 6);
+                ctx.closePath();
+                ctx.fill();
+            }
+
+            // HP bar
+            if (enemy.hp < enemy.maxHp) {
+                const barWidth = enemy.size * 2.2;
+                ctx.fillStyle = '#222';
+                ctx.fillRect(enemy.x - barWidth / 2, enemy.y - enemy.size - 10, barWidth, 5);
+                ctx.fillStyle = enemy.hp / enemy.maxHp > 0.5 ? '#4ade80' : enemy.hp / enemy.maxHp > 0.25 ? '#fbbf24' : '#ef4444';
+                ctx.fillRect(enemy.x - barWidth / 2, enemy.y - enemy.size - 10, barWidth * (enemy.hp / enemy.maxHp), 5);
+            }
+
+            // Slow effect
+            if (enemy.slowTimer > 0) {
+                ctx.strokeStyle = '#60a5fa';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.arc(enemy.x, enemy.y, enemy.size + 4, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+        }
+
+        // Projectiles
+        for (const proj of game.projectiles) {
+            ctx.fillStyle = proj.color;
+            ctx.beginPath();
+            ctx.arc(proj.x, proj.y, proj.splash ? 5 : 3, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        // Particles
+        for (const p of game.particles) {
+            ctx.globalAlpha = p.life / p.maxLife;
+            ctx.fillStyle = p.color;
+            ctx.beginPath();
+            ctx.arc(p.x, p.y, p.size * (p.life / p.maxLife), 0, Math.PI * 2);
+            ctx.fill();
+        }
+        ctx.globalAlpha = 1;
+
+        // Tower placement preview
+        if (game.state === 'playing' && game.mouseX && game.mouseY) {
+            const towerDef = TOWERS[game.selectedTower];
+            const canPlace = canPlaceTower(game.mouseX, game.mouseY);
+
+            ctx.globalAlpha = 0.5;
+            ctx.fillStyle = canPlace ? towerDef.color : '#ef4444';
+            ctx.beginPath();
+            ctx.arc(game.mouseX, game.mouseY, 14, 0, Math.PI * 2);
+            ctx.fill();
+
+            if (canPlace) {
+                ctx.strokeStyle = towerDef.color + '40';
+                ctx.lineWidth = 1;
+                ctx.beginPath();
+                ctx.arc(game.mouseX, game.mouseY, towerDef.range, 0, Math.PI * 2);
+                ctx.stroke();
+            }
+            ctx.globalAlpha = 1;
+        }
+
+        // Update
+        function update(dt) {
+            if (game.state !== 'playing' && game.state !== 'waveActive') return;
+
+            const level = LEVELS[game.currentLevel - 1];
+
+            // Update enemies
+            for (let i = game.enemies.length - 1; i >= 0; i--) {
+                const enemy = game.enemies[i];
+
+                // Level special effects
+                if (level.special === 'thaw' && enemy.thawTimer !== undefined) {
+                    enemy.thawTimer -= dt;
+                    if (enemy.thawTimer <= 0) {
+                        enemy.speed = enemy.baseSpeed * 1.5;
+                    }
+                }
+                if ((level.special === 'regen' || enemy.regen) && enemy.hp < enemy.maxHp) {
+                    enemy.hp = Math.min(enemy.maxHp, enemy.hp + (enemy.regen || 0.5) * dt);
+                }
+
+                // Slow effect
+                if (enemy.slowTimer > 0) {
+                    enemy.slowTimer -= dt;
+                    enemy.speed = enemy.baseSpeed * 0.4;
+                } else {
+                    enemy.speed = enemy.baseSpeed;
+                }
+
+                // Move
+                const target = game.path[enemy.pathIndex + 1];
+                if (target) {
+                    const dx = target.x - enemy.x;
+                    const dy = target.y - enemy.y;
+                    const dist = Math.hypot(dx, dy);
+                    if (dist < 5) {
+                        enemy.pathIndex++;
+                    } else {
+                        enemy.x += (dx / dist) * enemy.speed * dt;
+                        enemy.y += (dy / dist) * enemy.speed * dt;
+                    }
+                } else {
+                    // Reached core
+                    game.coreHp -= enemy.boss ? 3 : 1;
+                    game.enemies.splice(i, 1);
+                    game.enemiesRemaining--;
+                    screenShake(enemy.boss ? 12 : 5, 200);
+                    spawnParticles(game.corePosition.x, game.corePosition.y, '#ef4444', 15);
+                    updateHUD();
+                    if (game.coreHp <= 0) { gameOver(); return; }
+                    continue;
+                }
+
+                // Death check
+                if (enemy.hp <= 0) {
+                    game.kills++;
+                    game.totalKills++;
+                    game.crystals += enemy.reward;
+                    game.enemiesRemaining--;
+                    spawnParticles(enemy.x, enemy.y, enemy.color, enemy.boss ? 25 : 12);
+                    game.enemies.splice(i, 1);
+                    updateHUD();
+                    updateTowerButtons();
+                }
+            }
+
+            // Check wave complete
+            if (game.state === 'waveActive' && game.enemies.length === 0 && game.enemiesRemaining <= 0) {
+                if (game.wave >= game.wavesPerLevel) {
+                    levelComplete();
+                } else {
+                    game.wave++;
+                    game.state = 'playing';
+                    document.getElementById('startWaveBtn').disabled = false;
+                    updateHUD();
+                    updateNextWaveInfo();
+                }
+            }
+
+            // Update towers
+            for (const tower of game.towers) {
+                tower.cooldown -= dt;
+                let target = null;
+                let closestDist = tower.range;
+
+                for (const enemy of game.enemies) {
+                    const dist = Math.hypot(enemy.x - tower.x, enemy.y - tower.y);
+                    if (dist < closestDist) {
+                        closestDist = dist;
+                        target = enemy;
+                    }
+                }
+
+                if (target) {
+                    tower.angle = Math.atan2(target.y - tower.y, target.x - tower.x);
+                    if (tower.cooldown <= 0) {
+                        tower.cooldown = tower.fireRate;
+                        game.projectiles.push({
+                            x: tower.x, y: tower.y,
+                            vx: Math.cos(tower.angle) * tower.speed,
+                            vy: Math.sin(tower.angle) * tower.speed,
+                            damage: tower.damage,
+                            color: tower.color,
+                            splash: tower.splash,
+                            slow: tower.slow,
+                            type: tower.type
+                        });
+                    }
+                }
+            }
+
+            // Update projectiles
+            for (let i = game.projectiles.length - 1; i >= 0; i--) {
+                const proj = game.projectiles[i];
+                proj.x += proj.vx * dt;
+                proj.y += proj.vy * dt;
+
+                if (proj.x < -20 || proj.x > canvas.width + 20 || proj.y < -20 || proj.y > canvas.height + 20) {
+                    game.projectiles.splice(i, 1);
+                    continue;
+                }
+
+                for (const enemy of game.enemies) {
+                    const dist = Math.hypot(proj.x - enemy.x, proj.y - enemy.y);
+                    if (dist < enemy.size + 5) {
+                        let damage = proj.damage;
+                        if (enemy.armor) damage *= (1 - enemy.armor);
+                        enemy.hp -= damage;
+
+                        if (proj.splash) {
+                            for (const other of game.enemies) {
+                                if (other !== enemy && Math.hypot(proj.x - other.x, proj.y - other.y) < proj.splash) {
+                                    let splashDmg = proj.damage * 0.5;
+                                    if (other.armor) splashDmg *= (1 - other.armor);
+                                    other.hp -= splashDmg;
+                                }
+                            }
+                            spawnParticles(proj.x, proj.y, '#ff8c00', 8);
+                        }
+                        if (proj.slow) enemy.slowTimer = 2;
+                        spawnParticles(proj.x, proj.y, proj.color, 4);
+                        game.projectiles.splice(i, 1);
+                        break;
+                    }
+                }
+            }
+
+            // Update particles
+            for (let i = game.particles.length - 1; i >= 0; i--) {
+                const p = game.particles[i];
+                p.x += p.vx * dt;
+                p.y += p.vy * dt;
+                p.life -= dt;
+                p.vx *= 0.96;
+                p.vy *= 0.96;
+                if (p.life <= 0) game.particles.splice(i, 1);
+            }
+        }
+
+        function spawnParticles(x, y, color, count) {
+            for (let i = 0; i < count; i++) {
+                game.particles.push({
+                    x, y,
+                    vx: (Math.random() - 0.5) * 180,
+                    vy: (Math.random() - 0.5) * 180,
+                    life: 0.5 + Math.random() * 0.3,
+                    maxLife: 0.8,
+                    color,
+                    size: 3 + Math.random() * 3
+                });
+            }
+        }
+
+        let shakeIntensity = 0, shakeDuration = 0;
+        function screenShake(intensity, duration) {
+            shakeIntensity = intensity;
+            shakeDuration = duration;
+        }
+
+        function canPlaceTower(x, y) {
+            if (game.towers.length >= game.towerLimit) return false;
+            for (let i = 0; i < game.path.length - 1; i++) {
+                const p1 = game.path[i], p2 = game.path[i + 1];
+                const t = Math.max(0, Math.min(1, ((x - p1.x) * (p2.x - p1.x) + (y - p1.y) * (p2.y - p1.y)) /
+                    ((p2.x - p1.x) ** 2 + (p2.y - p1.y) ** 2)));
+                const dist = Math.hypot(x - (p1.x + t * (p2.x - p1.x)), y - (p1.y + t * (p2.y - p1.y)));
+                if (dist < 32) return false;
+            }
+            for (const tower of game.towers) {
+                if (Math.hypot(x - tower.x, y - tower.y) < 40) return false;
+            }
+            if (Math.hypot(x - game.corePosition.x, y - game.corePosition.y) < 45) return false;
+            if (x < 25 || x > canvas.width - 25 || y < 25 || y > canvas.height - 25) return false;
+            return true;
+        }
+
+        function placeTower(x, y) {
+            const t = TOWERS[game.selectedTower];
+            if (game.crystals < t.cost || !canPlaceTower(x, y)) return false;
+            game.crystals -= t.cost;
+            game.towers.push({ x, y, type: game.selectedTower, cooldown: 0, angle: 0, ...t });
+            spawnParticles(x, y, t.color, 12);
+            updateHUD();
+            updateTowerButtons();
+            return true;
+        }
+
+        function startWave() {
+            if (game.state !== 'playing') return;
+            game.state = 'waveActive';
+
+            const level = LEVELS[game.currentLevel - 1];
+            const isBoss = game.wave === game.wavesPerLevel;
+            const count = isBoss ? 1 : (3 + game.wave + Math.floor(game.currentLevel / 2));
+            game.enemiesRemaining = isBoss ? 1 : count;
+
+            document.getElementById('startWaveBtn').disabled = true;
+            showWaveBanner(isBoss ? '👑 BOSS WAVE!' : `WAVE ${game.wave}`);
+
+            const enemies = [];
+            if (isBoss) {
+                enemies.push(level.bossType);
+            } else {
+                for (let i = 0; i < count; i++) {
+                    enemies.push(level.enemyTypes[Math.floor(Math.random() * level.enemyTypes.length)]);
+                }
+            }
+
+            let idx = 0;
+            const delay = isBoss ? 1000 : Math.max(400, 700 - game.currentLevel * 30);
+            const interval = setInterval(() => {
+                if (idx < enemies.length && game.state === 'waveActive') {
+                    spawnEnemy(enemies[idx], level);
+                    idx++;
+                } else {
+                    clearInterval(interval);
+                }
+            }, delay);
+        }
+
+        function spawnEnemy(type, level) {
+            const def = ENEMY_TYPES[type];
+            const mod = level.enemyMod;
+            const waveScale = 1 + (game.wave - 1) * 0.08;
+
+            const enemy = {
+                x: game.spawnPoint.x,
+                y: game.spawnPoint.y,
+                type,
+                hp: def.hp * mod.hpMult * waveScale,
+                maxHp: def.hp * mod.hpMult * waveScale,
+                speed: def.speed * mod.speedMult,
+                baseSpeed: def.speed * mod.speedMult,
+                reward: Math.ceil(def.reward * mod.rewardMult),
+                color: def.color,
+                size: def.size,
+                pathIndex: 0,
+                slowTimer: 0,
+                boss: def.boss,
+                armor: def.armor,
+                regen: def.regen,
+                flying: def.flying
+            };
+
+            if (level.special === 'thaw') {
+                enemy.thawTimer = 3 + Math.random() * 2;
+                enemy.speed *= 0.5;
+            }
+
+            game.enemies.push(enemy);
+        }
+
+        function showWaveBanner(text) {
+            const banner = document.getElementById('waveBanner');
+            document.getElementById('waveBannerText').textContent = text;
+            banner.classList.remove('hidden');
+            setTimeout(() => banner.classList.add('hidden'), 1500);
+        }
+
+        function levelComplete() {
+            game.state = 'levelComplete';
+            game.crystals += 100;
+
+            if (game.currentLevel >= 7) {
+                document.getElementById('totalKills').textContent = game.totalKills;
+                document.getElementById('victoryOverlay').classList.remove('hidden');
+            } else {
+                if (game.currentLevel >= game.unlockedLevels) {
+                    game.unlockedLevels = game.currentLevel + 1;
+                    localStorage.setItem('td_unlocked', game.unlockedLevels);
+                }
+                document.getElementById('completeMsg').textContent =
+                    `Level ${game.currentLevel} cleared! Next: ${LEVELS[game.currentLevel].name}`;
+                document.getElementById('levelCompleteOverlay').classList.remove('hidden');
+            }
+            updateHUD();
+        }
+
+        function gameOver() {
+            game.state = 'gameover';
+            document.getElementById('finalLevel').textContent = game.currentLevel;
+            document.getElementById('finalWave').textContent = game.wave;
+            document.getElementById('finalKills').textContent = game.kills;
+            document.getElementById('gameOverOverlay').classList.remove('hidden');
+        }
+
+        function startLevel(levelId) {
+            game.currentLevel = levelId;
+            game.crystals = 75;   // HARDER: was 100
+            game.coreHp = 10;     // HARDER: was 15
+            game.maxCoreHp = 10;
+            game.wave = 1;
+            game.kills = 0;
+            game.towers = [];
+            game.enemies = [];
+            game.projectiles = [];
+            game.particles = [];
+            game.towerLimit = 8;  // HARDER: was 10
+            game.state = 'playing';
+
+            generatePath(levelId);
+
+            const level = LEVELS[levelId - 1];
+            document.getElementById('levelTitle').textContent = `Level ${levelId}: ${level.name}`;
+            document.getElementById('levelDesc').textContent = level.desc;
+
+            updateHUD();
+            updateNextWaveInfo();
+            updateTowerButtons();
+            document.getElementById('startWaveBtn').disabled = false;
+        }
+
+        function nextLevel() {
+            document.getElementById('levelCompleteOverlay').classList.add('hidden');
+            startLevel(game.currentLevel + 1);
+        }
+
+        function showLevelSelect() {
+            const container = document.getElementById('levelSelect');
+            container.innerHTML = '';
+
+            LEVELS.forEach((level, i) => {
+                const card = document.createElement('div');
+                card.className = 'level-card' + (i + 1 > game.unlockedLevels ? ' locked' : '');
+                card.innerHTML = `
+                    <div class="level-num">${level.emoji}</div>
+                    <div class="level-name">${i + 1 > game.unlockedLevels ? '🔒' : level.name}</div>
+                `;
+                if (i + 1 <= game.unlockedLevels) {
+                    card.onclick = () => {
+                        document.getElementById('levelSelectOverlay').classList.add('hidden');
+                        startLevel(i + 1);
+                    };
+                }
+                container.appendChild(card);
+            });
+
+            document.getElementById('levelSelectOverlay').classList.remove('hidden');
+        }
+
+        function updateHUD() {
+            document.getElementById('crystals').textContent = game.crystals;
+            document.getElementById('coreHp').textContent = game.coreHp;
+            document.getElementById('level').textContent = game.currentLevel;
+            document.getElementById('wave').textContent = game.wave;
+            document.getElementById('kills').textContent = game.kills;
+            document.getElementById('towerCount').textContent = game.towers.length;
+            document.getElementById('towerLimit').textContent = game.towerLimit;
+        }
+
+        function updateNextWaveInfo() {
+            const isBoss = game.wave === game.wavesPerLevel;
+            const count = 3 + game.wave + Math.floor(game.currentLevel / 2);
+            document.getElementById('nextWaveInfo').textContent = isBoss ? '👑 BOSS!' : `${count} enemies`;
+        }
+
+        function updateTowerButtons() {
+            document.querySelectorAll('.tower-btn').forEach(btn => {
+                const cost = TOWERS[btn.dataset.tower].cost;
+                btn.classList.toggle('disabled', game.crystals < cost || game.towers.length >= game.towerLimit);
+            });
+        }
+
+        // Game loop
+        function gameLoop(timestamp) {
+            if (!game.lastTime) game.lastTime = timestamp;
+            let dt = Math.min((timestamp - game.lastTime) / 1000, 0.05);
+            game.lastTime = timestamp;
+
+            // Apply sandbox speed multiplier
+            dt *= sandbox.speed;
+
+            // AI auto-play in sandbox mode
+            if (sandbox.enabled) aiThink();
+
+            update(dt);
+
+            if (shakeDuration > 0) {
+                shakeDuration -= dt * 1000;
+                ctx.save();
+                ctx.translate((Math.random() - 0.5) * shakeIntensity, (Math.random() - 0.5) * shakeIntensity);
+                render();
+                ctx.restore();
+            } else {
+                render();
+            }
+
+            requestAnimationFrame(gameLoop);
+        }
+
+        // Resize
+        function resizeCanvas() {
+            const rect = canvas.parentElement.getBoundingClientRect();
+            const dpr = Math.min(window.devicePixelRatio || 1, 2);
+            canvas.width = Math.floor(rect.width * dpr);
+            canvas.height = Math.floor(rect.height * dpr);
+            ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+            if (game.path.length > 0) generatePath(game.currentLevel);
+        }
+
+        // Events
+        canvas.addEventListener('click', e => {
+            if (game.state !== 'playing') return;
+            const rect = canvas.getBoundingClientRect();
+            const scale = canvas.width / rect.width / (window.devicePixelRatio || 1);
+            placeTower((e.clientX - rect.left) * scale, (e.clientY - rect.top) * scale);
+        });
+
+        canvas.addEventListener('mousemove', e => {
+            const rect = canvas.getBoundingClientRect();
+            const scale = canvas.width / rect.width / (window.devicePixelRatio || 1);
+            game.mouseX = (e.clientX - rect.left) * scale;
+            game.mouseY = (e.clientY - rect.top) * scale;
+        });
+
+        canvas.addEventListener('mouseleave', () => { game.mouseX = game.mouseY = undefined; });
+
+        document.querySelectorAll('.tower-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                if (btn.classList.contains('disabled')) return;
+                document.querySelectorAll('.tower-btn').forEach(b => b.classList.remove('selected'));
+                btn.classList.add('selected');
+                game.selectedTower = btn.dataset.tower;
+            });
+        });
+
+        document.getElementById('startWaveBtn').addEventListener('click', startWave);
+
+        document.getElementById('tryBtn').addEventListener('click', () => {
+            document.getElementById('tryOverlay').classList.add('hidden');
+            showLevelSelect();
+        });
+
+        document.getElementById('startBtn').addEventListener('click', () => {
+            document.getElementById('instructionsOverlay').classList.add('hidden');
+            const cd = document.getElementById('countdown');
+            cd.classList.add('show');
+            let count = 3;
+            cd.textContent = count;
+            const interval = setInterval(() => {
+                count--;
+                if (count <= 0) {
+                    clearInterval(interval);
+                    cd.classList.remove('show');
+                } else {
+                    cd.textContent = count;
+                }
+            }, 800);
+        });
+
+        document.getElementById('retryBtn').addEventListener('click', () => {
+            document.getElementById('gameOverOverlay').classList.add('hidden');
+            startLevel(game.currentLevel);
+        });
+
+        document.getElementById('levelSelectBtn').addEventListener('click', () => {
+            document.getElementById('gameOverOverlay').classList.add('hidden');
+            showLevelSelect();
+        });
+
+        document.getElementById('nextLevelBtn').addEventListener('click', nextLevel);
+
+        document.getElementById('playAgainBtn').addEventListener('click', () => {
+            document.getElementById('victoryOverlay').classList.add('hidden');
+            showLevelSelect();
+        });
+
+        // Init
+        window.addEventListener('resize', resizeCanvas);
+        resizeCanvas();
+        generatePath(1);
+        updateHUD();
+        requestAnimationFrame(gameLoop);
+    </script>
+</body>
+
+</html>
