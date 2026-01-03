@@ -17,6 +17,17 @@ const badgeVariants = cva(
           "border-transparent bg-destructive text-white [a&]:hover:bg-destructive/90 focus-visible:ring-destructive/20 dark:focus-visible:ring-destructive/40 dark:bg-destructive/60",
         outline:
           "text-foreground [a&]:hover:bg-accent [a&]:hover:text-accent-foreground",
+        // Kid-friendly game catalog variants
+        tag: "border-transparent bg-slate-100 text-slate-600 font-bold uppercase tracking-wider rounded-lg",
+        new: "border-transparent bg-gradient-to-r from-primary to-accent text-white font-bold animate-pulse rounded-full",
+        popular:
+          "border-transparent bg-orange-100 text-orange-700 font-bold rounded-full",
+        playerMade:
+          "border-transparent bg-purple-100 text-purple-700 font-bold rounded-full",
+        featured:
+          "border-transparent bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold rounded-full shadow-sm",
+        category:
+          "border-2 border-primary/20 bg-primary/5 text-primary font-bold rounded-full hover:bg-primary/10 transition-colors cursor-pointer",
       },
     },
     defaultVariants: {

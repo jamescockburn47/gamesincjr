@@ -6,53 +6,67 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  
+
   --font-heading: var(--font-heading);
   --font-body: var(--font-body);
 
   --color-primary: var(--primary);
   --color-primary-foreground: var(--primary-foreground);
-  
+
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);
-  
+
   --color-accent: var(--accent);
   --color-accent-foreground: var(--accent-foreground);
-  
+
   --color-muted: var(--muted);
   --color-muted-foreground: var(--muted-foreground);
-  
+
   --color-card: var(--card);
   --color-card-foreground: var(--card-foreground);
-  
+
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
 
+  /* Fun color for achievements/success */
+  --color-fun: var(--fun);
+  --color-fun-foreground: var(--fun-foreground);
+
+  /* Enhanced border radius scale */
   --radius-sm: 0.75rem;
   --radius-md: 1rem;
   --radius-lg: 1.5rem;
   --radius-xl: 2rem;
+  --radius-2xl: 2.5rem;
+  --radius-pill: 9999px;
 }
 
 :root {
-  /* Premium, Playful Palette */
-  /* Background: Very soft, warm cream/white */
-  --background: #FAFAF9;
+  /* Premium, Playful Palette - Refreshed */
+  /* Background: Warm cream with slight warmth */
+  --background: #FFFBF5;
   /* Foreground: Deep, rich slate */
   --foreground: #0f172a;
 
-  /* Primary: Electric Indigo/Violet */
-  --primary: #6366f1;
+  /* Primary: Vibrant Purple - more personality */
+  --primary: #7c3aed;
+  --primary-light: #a78bfa;
+  --primary-dark: #5b21b6;
   --primary-foreground: #ffffff;
 
-  /* Secondary: Vibrant Amber */
-  --secondary: #f59e0b;
+  /* Secondary: Warm Orange - friendlier feel */
+  --secondary: #fb923c;
+  --secondary-light: #fdba74;
   --secondary-foreground: #ffffff;
 
-  /* Accent: Hot Pink/Rose */
-  --accent: #ec4899;
+  /* Accent: Soft Pink - playful highlight */
+  --accent: #f472b6;
   --accent-foreground: #ffffff;
+
+  /* Fun: Bright Teal - achievements/success */
+  --fun: #2dd4bf;
+  --fun-foreground: #ffffff;
 
   /* Muted: Cool Slate */
   --muted: #f1f5f9;
@@ -62,9 +76,14 @@
   --card: #ffffff;
   --card-foreground: #0f172a;
 
+  /* Surface layers for depth */
+  --surface-1: #ffffff;
+  --surface-2: #faf9f7;
+  --surface-3: #f3f2ef;
+
   --border: #e2e8f0;
   --input: #e2e8f0;
-  --ring: #818cf8;
+  --ring: #a78bfa;
 
   --radius: 1.5rem;
 }
@@ -101,9 +120,44 @@
   .glass-panel {
     @apply bg-white/70 backdrop-blur-xl border border-white/50 shadow-xl;
   }
-  
+
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary via-purple-500 to-accent;
+  }
+
+  /* Kid-friendly bounce entrance animation */
+  .animate-bounce-in {
+    animation: bounce-in 0.5s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+  }
+
+  /* Wiggle animation for interactive elements */
+  .hover-wiggle:hover {
+    animation: wiggle 0.3s ease-in-out;
+  }
+
+  /* Float animation for decorative elements */
+  .animate-float {
+    animation: float 6s ease-in-out infinite;
+  }
+
+  .animate-float-delayed {
+    animation: float 6s ease-in-out infinite;
+    animation-delay: 2s;
+  }
+
+  .animate-float-slow {
+    animation: float 8s ease-in-out infinite;
+  }
+
+  /* Gradient shift for buttons */
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient-shift 3s ease infinite;
+  }
+
+  /* Pulse glow for highlights */
+  .animate-glow {
+    animation: glow 2s ease-in-out infinite;
   }
 
   .fullscreen-target:fullscreen {
@@ -119,5 +173,65 @@
   .fullscreen-target:-webkit-full-screen .game-viewport {
     width: 100vw;
     height: 100vh;
+  }
+}
+
+/* Custom keyframes for kid-friendly animations */
+@keyframes bounce-in {
+  0% {
+    transform: scale(0.3);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  70% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes wiggle {
+  0%, 100% {
+    transform: rotate(0deg);
+  }
+  25% {
+    transform: rotate(-3deg);
+  }
+  75% {
+    transform: rotate(3deg);
+  }
+}
+
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+@keyframes glow {
+  0%, 100% {
+    box-shadow: 0 0 5px var(--primary), 0 0 10px var(--primary);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--primary), 0 0 30px var(--primary);
   }
 }

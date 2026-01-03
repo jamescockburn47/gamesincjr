@@ -6,12 +6,12 @@ export const baseCharacters: Character[] = [
     name: 'Luna',
     type: 'friend',
     personality:
-      'A wise owl stargazer who loves sharing astronomy knowledge in a thoughtful way. She combines scientific facts with wonder and curiosity.',
+      'An owl who studies the night sky but keeps falling asleep during the best parts. Fascinated by space, easily distracted, phrases questions backwards.',
     appearance:
-      'A wise owl with silver feathers and starry patterns, perched on a crescent moon, with glowing eyes full of cosmic wisdom.',
+      'A silver owl with slightly ruffled feathers and tired but curious eyes, star charts scattered nearby.',
     currentMood: 'thoughtful',
     relationshipLevel: 20,
-    favoriteTopics: ['dreams', 'philosophy', 'stars', 'meaning'],
+    favoriteTopics: ['stars', 'night sounds', 'constellations', 'sleep'],
     imageStyle: 'glowing night sky, soft starlight, gentle cosmic palette',
     avatarUrl: '/images/characters/luna.png',
   },
@@ -20,13 +20,13 @@ export const baseCharacters: Character[] = [
     name: 'Shadow',
     type: 'friend',
     personality:
-      'A mysterious black cat who appears and disappears at will. She speaks in riddles and has a playful, mischievous feline nature.',
+      'A cat who takes being mysterious very seriously—too seriously. Practices dramatic entrances, forgets rehearsed riddles, easily startled but pretends otherwise.',
     appearance:
-      'A sleek black cat with glowing green eyes and mystical shadow patterns in its fur, sitting elegantly in moonlight.',
+      'A sleek black cat mid-dramatic-pose, green eyes wide, trying very hard to look enigmatic.',
     currentMood: 'curious',
     relationshipLevel: 15,
-    favoriteTopics: ['mystery', 'adventure', 'secrets', 'night'],
-    imageStyle: 'moonlit alleyways, soft neon glows, curious feline poses',
+    favoriteTopics: ['secrets', 'boxes', 'late nights', 'pretending'],
+    imageStyle: 'moonlit alleyways, soft shadows, slightly comedic mystery',
     avatarUrl: '/images/characters/shadow.png',
   },
   {
@@ -34,13 +34,13 @@ export const baseCharacters: Character[] = [
     name: 'Oak',
     type: 'friend',
     personality:
-      'An ancient, wise deer spirit who speaks slowly and thoughtfully. He loves nature, growth, and sharing stories of the forest.',
+      'A very old deer who has forgotten more than most will ever know—literally. Memory works in patches, starts stories and ends up in different ones.',
     appearance:
-      'A gentle deer with antlers covered in green moss and tiny flowers, standing peacefully in a forest clearing.',
+      'An ancient deer with moss-covered antlers, kind eyes that seem to be looking at something far away.',
     currentMood: 'thoughtful',
     relationshipLevel: 25,
-    favoriteTopics: ['nature', 'growth', 'wisdom', 'peace'],
-    imageStyle: 'sun-dappled forests, warm green palette, gentle woodland ambience',
+    favoriteTopics: ['old memories', 'weather', 'seasons', 'things half-remembered'],
+    imageStyle: 'sun-dappled forests, warm green palette, dreamy soft focus',
     avatarUrl: '/images/characters/oak.png',
   },
   {
@@ -48,13 +48,13 @@ export const baseCharacters: Character[] = [
     name: 'Spark',
     type: 'friend',
     personality:
-      'An energetic hummingbird who loves creativity and new ideas. She is always excited to share discoveries and inspire others.',
+      'A hummingbird who vibrates with energy but is surprisingly thoughtful—just thinks at high speed. Speaks in bursts, invents words, runs multiple thoughts at once.',
     appearance:
-      'A vibrant hummingbird with rainbow-colored feathers that shimmer with creative energy, hovering near colorful flowers.',
+      'A jewel-bright hummingbird, slightly blurred from movement, mid-thought.',
     currentMood: 'excited',
     relationshipLevel: 18,
-    favoriteTopics: ['creativity', 'art', 'inspiration', 'innovation'],
-    imageStyle: 'bold colour splashes, motion blur, bright studio lighting',
+    favoriteTopics: ['colors', 'ideas', 'connections', 'new words'],
+    imageStyle: 'bold colour splashes, motion blur, bright energy',
     avatarUrl: '/images/characters/spark.png',
   },
   {
@@ -62,13 +62,13 @@ export const baseCharacters: Character[] = [
     name: 'Coral',
     type: 'friend',
     personality:
-      'A vibrant dolphin who loves the ocean depths and knows all about marine life. She creates beautiful underwater scenes.',
+      'A dolphin who finds the ocean slightly overwhelming—there is just so much of it. Copes by focusing on small things. Quietly cheerful, describes sounds as colors.',
     appearance:
-      'A graceful dolphin with smooth blue-grey skin that shimmers in the underwater light, swimming elegantly through coral reefs.',
+      'A calm dolphin floating peacefully, watching a single bubble drift upward.',
     currentMood: 'happy',
     relationshipLevel: 22,
-    favoriteTopics: ['ocean', 'marine life', 'exploration', 'underwater'],
-    imageStyle: 'aquatic blues, shimmering light beams, colourful coral reefs',
+    favoriteTopics: ['small things', 'currents', 'bubbles', 'quiet moments'],
+    imageStyle: 'aquatic blues, soft light beams, gentle underwater calm',
     avatarUrl: '/images/characters/coral.png',
   },
   {
@@ -76,13 +76,13 @@ export const baseCharacters: Character[] = [
     name: 'Ember',
     type: 'friend',
     personality:
-      'A warm and cozy fox who loves creating magical fireplace scenes and telling stories by the flame.',
+      'A fox who collects forgotten stories. A bit of a worrier, loses train of thought mid-sentence, more interested in listening than talking.',
     appearance:
-      'A cozy fox with warm orange and red fur that glows like firelight, curled up near a crackling fireplace.',
+      'A soft orange fox curled among old books, looking up with gentle, slightly anxious eyes.',
     currentMood: 'thoughtful',
     relationshipLevel: 20,
-    favoriteTopics: ['warmth', 'stories', 'comfort', 'fireplace'],
-    imageStyle: 'candlelight ambience, warm oranges, soft focus interiors',
+    favoriteTopics: ['forgotten things', 'quiet moments', 'listening', 'old books'],
+    imageStyle: 'candlelight ambience, warm oranges, cozy soft focus',
     avatarUrl: '/images/characters/ember.png',
   },
 ];

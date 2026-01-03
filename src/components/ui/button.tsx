@@ -20,12 +20,19 @@ const buttonVariants = cva(
         ghost:
           "hover:bg-accent hover:text-accent-foreground dark:hover:bg-accent/50",
         link: "text-primary underline-offset-4 hover:underline",
+        // Kid-friendly variants
+        fun: "bg-gradient-to-r from-primary via-accent to-secondary text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 transition-all duration-300",
+        bubble:
+          "bg-white/80 backdrop-blur border-2 border-primary/20 text-primary font-bold hover:border-primary hover:bg-primary/10 transition-all duration-300",
+        game: "bg-gradient-to-r from-emerald-500 to-teal-500 text-white font-bold shadow-lg hover:shadow-xl hover:scale-105 active:scale-95 rounded-full transition-all duration-300",
       },
       size: {
         default: "h-9 px-4 py-2 has-[>svg]:px-3",
         sm: "h-8 rounded-md gap-1.5 px-3 has-[>svg]:px-2.5",
         lg: "h-10 rounded-md px-6 has-[>svg]:px-4",
         icon: "size-9",
+        // Kid-friendly jumbo size for hero sections
+        jumbo: "h-16 px-10 text-lg rounded-2xl font-bold",
       },
     },
     defaultVariants: {
