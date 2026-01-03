@@ -280,6 +280,10 @@
         SPEED_VARIATION: 20,    // Speed variation (was 100)
         HOP_DURATION: 0.12,     // Hop animation duration
         PARTICLE_COUNT: 50,     // Ambient particles
+        SNAKE_DELAY: 3.5,       // Seconds before snake appears when idle
+        SNAKE_SPEED: 2.5,       // Snake movement speed (cells per second)
+        LOG_TIP_THRESHOLD: 0.7, // How close to edge before log starts tipping
+        LOG_CAPSIZE_TIME: 1.5,  // Seconds on edge before log capsizes
       };
 
       // ============== CANVAS SETUP ==============
@@ -307,6 +311,9 @@
         particles: [],
         ripples: [],
         screenShake: 0,
+        snake: null,           // Danger snake that chases idle players
+        idleTime: 0,           // How long player has been idle
+        lastFrogPos: null,     // Track if frog moved
         time: 0,
         highestRow: 0,
       };
@@ -387,6 +394,8 @@
           this.onLog = null;
           this.squish = 1;
           this.landingGrace = 10; // Invincibility frames after landing
+          this.logEdgeTime = 0;   // Time spent on edge of log
+          this.logTilt = 0;       // Current log tilt angle
         }
 
         moveTo(col, row) {
@@ -521,6 +530,114 @@
         }
       }
 
+      // ============== DANGER SNAKE ==============
+      class Snake {
+        constructor() {
+          // Start from bottom of screen
+          this.col = Math.floor(CONFIG.COLS / 2);
+          this.row = CONFIG.ROWS + 1;
+          this.x = this.col * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
+          this.y = this.row * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
+          this.segments = []; // Trail segments
+          this.warningShown = false;
+        }
+
+        update(delta, targetCol, targetRow) {
+          // Move towards the frog
+          const dx = targetCol - this.col;
+          const dy = targetRow - this.row;
+          const dist = Math.sqrt(dx * dx + dy * dy);
+          
+          if (dist > 0.1) {
+            // Store old position for trail
+            if (this.segments.length < 8) {
+              this.segments.unshift({ x: this.x, y: this.y });
+            } else {
+              this.segments.pop();
+              this.segments.unshift({ x: this.x, y: this.y });
+            }
+            
+            const speed = CONFIG.SNAKE_SPEED * delta;
+            this.col += (dx / dist) * speed;
+            this.row += (dy / dist) * speed;
+            this.x = this.col * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
+            this.y = this.row * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
+          }
+          
+          // Check if caught the frog
+          if (dist < 0.6) {
+            return 'caught';
+          }
+          return null;
+        }
+
+        draw() {
+          // Draw trail segments
+          for (let i = this.segments.length - 1; i >= 0; i--) {
+            const seg = this.segments[i];
+            const size = 12 - i * 1.2;
+            const alpha = 1 - (i / this.segments.length) * 0.5;
+            ctx.fillStyle = `rgba(34, 197, 94, ${alpha})`;
+            ctx.beginPath();
+            ctx.arc(seg.x, seg.y, size, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          
+          // Draw snake head
+          ctx.save();
+          ctx.translate(this.x, this.y);
+          
+          // Glow effect
+          ctx.shadowColor = '#22c55e';
+          ctx.shadowBlur = 20;
+          
+          // Head
+          const headGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 18);
+          headGrad.addColorStop(0, '#4ade80');
+          headGrad.addColorStop(0.7, '#22c55e');
+          headGrad.addColorStop(1, '#15803d');
+          ctx.fillStyle = headGrad;
+          ctx.beginPath();
+          ctx.ellipse(0, 0, 18, 14, 0, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Pattern
+          ctx.fillStyle = '#166534';
+          ctx.beginPath();
+          ctx.ellipse(-5, -2, 4, 6, 0.3, 0, Math.PI * 2);
+          ctx.ellipse(5, -2, 4, 6, -0.3, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Eyes (menacing)
+          ctx.shadowBlur = 0;
+          ctx.fillStyle = '#fef08a';
+          ctx.beginPath();
+          ctx.ellipse(-7, -6, 5, 4, 0, 0, Math.PI * 2);
+          ctx.ellipse(7, -6, 5, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Slit pupils
+          ctx.fillStyle = '#1a1a1a';
+          ctx.beginPath();
+          ctx.ellipse(-7, -6, 1.5, 4, 0, 0, Math.PI * 2);
+          ctx.ellipse(7, -6, 1.5, 4, 0, 0, Math.PI * 2);
+          ctx.fill();
+          
+          // Tongue
+          ctx.strokeStyle = '#ef4444';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(0, 8);
+          ctx.lineTo(0, 16);
+          ctx.lineTo(-4, 20);
+          ctx.moveTo(0, 16);
+          ctx.lineTo(4, 20);
+          ctx.stroke();
+          
+          ctx.restore();
+        }
+      }
+
       // ============== LANE GENERATION ==============
       function generateLanes() {
         state.lanes = [];
@@ -549,26 +666,39 @@
           const items = [];
           
           if (type === 'road') {
-            // Cars - guaranteed 2-3 cars per lane, evenly spaced
+            // Cars - varied types: motorcycle, car, SUV, truck, bus
+            // Different sizes move at different speeds (bigger = slower but deadlier)
+            const carTypes = [
+              { width: 1.2, color: '#f97316', name: 'motorcycle', speedMod: 1.4 },
+              { width: 1.8, color: '#ef4444', name: 'compact', speedMod: 1.2 },
+              { width: 2.2, color: '#3b82f6', name: 'sedan', speedMod: 1.0 },
+              { width: 2.8, color: '#8b5cf6', name: 'suv', speedMod: 0.85 },
+              { width: 3.5, color: '#f59e0b', name: 'truck', speedMod: 0.7 },
+              { width: 4.5, color: '#10b981', name: 'bus', speedMod: 0.5 },
+            ];
+            
             const carCount = 2 + Math.floor(Math.random() * 2);
             const spacing = CONFIG.COLS / carCount;
             for (let j = 0; j < carCount; j++) {
-              const carType = Math.floor(Math.random() * 4);
+              const carType = carTypes[Math.floor(Math.random() * carTypes.length)];
               items.push({
                 col: j * spacing + Math.random() * (spacing * 0.3),
-                width: [2, 2.5, 3, 1.5][carType],
-                color: ['#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6'][carType],
-                type: carType,
+                width: carType.width,
+                color: carType.color,
+                type: carType.name,
+                speedMod: carType.speedMod,
               });
             }
           } else {
-            // Logs - guaranteed 3-4 logs per lane, must cover enough space for frog to jump
+            // Logs - varied sizes, smaller logs are tippier
             const logCount = 3 + Math.floor(Math.random() * 2);
             const spacing = CONFIG.COLS / logCount;
             for (let j = 0; j < logCount; j++) {
+              const logWidth = 2.5 + Math.random() * 2.5; // 2.5 to 5 cells wide
               items.push({
                 col: j * spacing + Math.random() * (spacing * 0.2),
-                width: 3 + Math.random() * 1.5,
+                width: logWidth,
+                tippiness: Math.max(0.3, 1 - logWidth / 5), // Smaller logs tip easier
               });
             }
           }
@@ -855,6 +985,16 @@
         
         ctx.save();
         
+        // Apply tilt if frog is on this log and on edge
+        const frog = state.frog;
+        if (frog && frog.currentLog === log && frog.logTilt > 0) {
+          const tiltAngle = frog.logTilt * 0.15; // Max 15 degree tilt
+          const tiltDir = frog.col < log.col + log.width / 2 ? -1 : 1;
+          ctx.translate(x + width / 2, ly + height / 2);
+          ctx.rotate(tiltAngle * tiltDir);
+          ctx.translate(-(x + width / 2), -(ly + height / 2));
+        }
+        
         // Water shadow
         ctx.fillStyle = 'rgba(0, 50, 80, 0.4)';
         ctx.beginPath();
@@ -1002,6 +1142,7 @@
             if (frog.col >= logLeft && frog.col <= logRight) {
               onLog = true;
               frog.onLog = { speed: lane.speed, direction: lane.direction };
+              frog.currentLog = log; // Store log reference for tipping
               // Add ripple effect
               if (Math.random() > 0.95) {
                 state.ripples.push(new Ripple(
@@ -1014,10 +1155,12 @@
           }
           if (!onLog) {
             frog.onLog = null;
+            frog.currentLog = null;
             return 'drowned';
           }
         } else {
           frog.onLog = null;
+          frog.currentLog = null;
         }
         
         return null;
@@ -1064,6 +1207,64 @@
         if (frogResult === 'drowned') {
           gameOver('drowned');
           return;
+        }
+        
+        // ============== IDLE SNAKE LOGIC ==============
+        // Track if frog has moved
+        const frog = state.frog;
+        const currentPos = `${Math.round(frog.col)},${Math.round(frog.row)}`;
+        
+        if (state.lastFrogPos === currentPos && !frog.hopping) {
+          state.idleTime += delta;
+          
+          // Spawn snake after being idle too long
+          if (state.idleTime >= CONFIG.SNAKE_DELAY && !state.snake) {
+            state.snake = new Snake();
+          }
+        } else {
+          state.idleTime = 0;
+          state.lastFrogPos = currentPos;
+          // Snake slowly retreats when player moves
+          if (state.snake && state.snake.row > CONFIG.ROWS) {
+            state.snake = null;
+          }
+        }
+        
+        // Update snake
+        if (state.snake) {
+          const snakeResult = state.snake.update(delta, frog.col, frog.row);
+          if (snakeResult === 'caught') {
+            gameOver('snake');
+            return;
+          }
+        }
+        
+        // ============== LOG TIPPING LOGIC ==============
+        if (frog.onLog && frog.currentLog) {
+          const log = frog.currentLog;
+          const logCenter = log.col + log.width / 2;
+          const distFromCenter = Math.abs(frog.col - logCenter);
+          const edgeThreshold = (log.width / 2) * CONFIG.LOG_TIP_THRESHOLD;
+          
+          if (distFromCenter > edgeThreshold) {
+            // On the edge - log starts tipping
+            const tippiness = log.tippiness || 0.5;
+            frog.logEdgeTime += delta * tippiness;
+            frog.logTilt = Math.min(1, frog.logEdgeTime / CONFIG.LOG_CAPSIZE_TIME);
+            
+            // Capsized!
+            if (frog.logEdgeTime >= CONFIG.LOG_CAPSIZE_TIME) {
+              gameOver('capsized');
+              return;
+            }
+          } else {
+            // Safe in the middle - recover
+            frog.logEdgeTime = Math.max(0, frog.logEdgeTime - delta * 2);
+            frog.logTilt = Math.max(0, frog.logTilt - delta * 2);
+          }
+        } else {
+          frog.logEdgeTime = 0;
+          frog.logTilt = 0;
         }
         
         // Check collisions
@@ -1126,6 +1327,33 @@
           state.frog.draw();
         }
         
+        // Draw snake
+        if (state.snake) {
+          state.snake.draw();
+        }
+        
+        // Draw snake warning
+        if (state.idleTime > CONFIG.SNAKE_DELAY * 0.6 && !state.snake) {
+          ctx.save();
+          ctx.globalAlpha = 0.5 + 0.5 * Math.sin(state.time * 10);
+          ctx.fillStyle = '#ef4444';
+          ctx.font = 'bold 20px Fredoka';
+          ctx.textAlign = 'center';
+          ctx.fillText('🐍 MOVE! Snake approaching...', canvas.width / 2, 40);
+          ctx.restore();
+        }
+        
+        // Draw log tipping warning
+        if (state.frog && state.frog.logTilt > 0.3) {
+          ctx.save();
+          ctx.globalAlpha = state.frog.logTilt;
+          ctx.fillStyle = '#f59e0b';
+          ctx.font = 'bold 18px Fredoka';
+          ctx.textAlign = 'center';
+          ctx.fillText('⚠️ Log tipping! Move to center!', canvas.width / 2, 60);
+          ctx.restore();
+        }
+        
         ctx.restore();
       }
 
@@ -1141,10 +1369,14 @@
       function gameOver(reason) {
         state.running = false;
         state.screenShake = 20;
+        state.snake = null; // Reset snake
+        state.idleTime = 0;
         
         const messages = {
-          hit: "You got hit by a car! 🚗",
+          hit: "You got hit by a vehicle! 🚗",
           drowned: "You fell in the water! 🌊",
+          snake: "The snake got you! 🐍 Don't stay still!",
+          capsized: "The log capsized! 🪵 Stay in the middle!",
         };
         
         gameOverText.textContent = `${messages[reason] || 'Game Over!'} Score: ${state.score}`;
@@ -1178,6 +1410,9 @@
         state.highestRow = CONFIG.ROWS - 2;
         state.frog = new Frog(Math.floor(CONFIG.COLS / 2), CONFIG.ROWS - 2);
         state.ripples = [];
+        state.snake = null;
+        state.idleTime = 0;
+        state.lastFrogPos = null;
         generateLanes();
         updateHUD();
         
