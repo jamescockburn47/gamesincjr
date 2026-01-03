@@ -386,6 +386,7 @@
           this.direction = 0; // 0=up, 1=right, 2=down, 3=left
           this.onLog = null;
           this.squish = 1;
+          this.landingGrace = 10; // Invincibility frames after landing
         }
 
         moveTo(col, row) {
@@ -419,6 +420,7 @@
               this.hopping = false;
               this.x = this.targetX;
               this.y = this.targetY;
+              this.landingGrace = 8; // Brief invincibility after landing
             } else {
               // Smooth hop with arc
               const t = this.hopProgress;
@@ -963,7 +965,15 @@
 
       function checkCollisions() {
         const frog = state.frog;
+        
+        // Don't check collisions while hopping - gives player reaction time
         if (frog.hopping) return null;
+        
+        // Grace period after landing (invincibility frames)
+        if (frog.landingGrace > 0) {
+          frog.landingGrace--;
+          return null;
+        }
         
         const laneIndex = CONFIG.ROWS - 1 - frog.row;
         if (laneIndex < 0 || laneIndex >= state.lanes.length) return null;
@@ -972,14 +982,24 @@
         
         if (lane.type === 'road') {
           for (const car of lane.items) {
-            if (frog.col >= car.col - 0.4 && frog.col <= car.col + car.width + 0.4) {
+            // Smarter collision: tight box, no buffer behind the car
+            // Car hitbox is slightly smaller than visual for fairness
+            const carLeft = car.col + 0.2;  // Shrink hitbox from left edge
+            const carRight = car.col + car.width - 0.2;  // Shrink from right edge
+            
+            // Only count as hit if frog center is inside the car bounds
+            if (frog.col >= carLeft && frog.col <= carRight) {
               return 'hit';
             }
           }
         } else if (lane.type === 'river') {
           let onLog = false;
           for (const log of lane.items) {
-            if (frog.col >= log.col - 0.2 && frog.col <= log.col + log.width - 0.3) {
+            // More forgiving log detection - easier to land on logs
+            const logLeft = log.col - 0.3;  // Extend grab range slightly
+            const logRight = log.col + log.width + 0.1;
+            
+            if (frog.col >= logLeft && frog.col <= logRight) {
               onLog = true;
               frog.onLog = { speed: lane.speed, direction: lane.direction };
               // Add ripple effect
