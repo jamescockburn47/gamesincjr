@@ -178,7 +178,15 @@
       left: 50%;
       transform: translateX(-50%);
       gap: 8px;
-      z-index: 100;
+      z-index: 15;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .touch-controls.active {
+      pointer-events: auto;
+      opacity: 1;
     }
 
     .touch-btn {
@@ -299,6 +307,7 @@
       const retryBtn = document.getElementById('retryBtn');
       const scoreEl = document.getElementById('score');
       const bestEl = document.getElementById('best');
+      const touchControls = document.querySelector('.touch-controls');
 
       // ============== GAME STATE ==============
       const state = {
@@ -1371,6 +1380,7 @@
         state.screenShake = 20;
         state.snake = null; // Reset snake
         state.idleTime = 0;
+        touchControls.classList.remove('active'); // Hide touch controls
         
         const messages = {
           hit: "You got hit by a vehicle! 🚗",
@@ -1418,6 +1428,7 @@
         
         startOverlay.classList.add('hidden');
         gameOverOverlay.classList.add('hidden');
+        touchControls.classList.add('active'); // Show touch controls
         
         // Reset timing to prevent huge delta on first frame
         lastTime = 0;
