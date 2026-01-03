@@ -1164,12 +1164,23 @@
         startOverlay.classList.add('hidden');
         gameOverOverlay.classList.add('hidden');
         
+        // Reset timing to prevent huge delta on first frame
+        lastTime = 0;
         loop();
       }
 
       let lastTime = 0;
       function loop(timestamp = 0) {
         if (!state.running) return;
+        
+        // On first frame after restart, just set lastTime and skip update
+        // This prevents a huge delta that would teleport all items off screen
+        if (lastTime === 0 || timestamp - lastTime > 1000) {
+          lastTime = timestamp;
+          render();
+          requestAnimationFrame(loop);
+          return;
+        }
         
         const delta = Math.min((timestamp - lastTime) / 1000, 0.05);
         lastTime = timestamp;
