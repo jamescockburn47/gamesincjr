@@ -532,50 +532,46 @@
           });
         }
         
-        // Alternating road and river sections
-        const patterns = [
-          ['road', 'road', 'road'],
-          ['river', 'river', 'river'],
-          ['road', 'road'],
-          ['river', 'river'],
-        ];
+        // Calculate how many obstacle lanes we need
+        const obstacleRows = CONFIG.ROWS - CONFIG.SAFE_ROWS - CONFIG.GOAL_ROWS;
         
-        let currentRow = CONFIG.SAFE_ROWS;
-        while (currentRow < CONFIG.ROWS - CONFIG.GOAL_ROWS) {
-          const pattern = patterns[Math.floor(Math.random() * patterns.length)];
-          for (const type of pattern) {
-            if (currentRow >= CONFIG.ROWS - CONFIG.GOAL_ROWS) break;
-            
-            const direction = Math.random() > 0.5 ? 1 : -1;
-            const speed = CONFIG.BASE_SPEED + Math.random() * CONFIG.SPEED_VARIATION;
-            const items = [];
-            
-            if (type === 'road') {
-              // Cars - fewer and slower
-              const carCount = 2 + Math.floor(Math.random() * 2);
-              for (let j = 0; j < carCount; j++) {
-                const carType = Math.floor(Math.random() * 4);
-                items.push({
-                  col: j * (CONFIG.COLS / carCount) + Math.random() * 2,
-                  width: [2, 2.5, 3, 1.5][carType],
-                  color: ['#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6'][carType],
-                  type: carType,
-                });
-              }
-            } else {
-              // Logs - longer and more spaced
-              const logCount = 2 + Math.floor(Math.random() * 2);
-              for (let j = 0; j < logCount; j++) {
-                items.push({
-                  col: j * (CONFIG.COLS / logCount) + Math.random() * 3,
-                  width: 3 + Math.random() * 2,
-                });
-              }
+        // Generate obstacle lanes with guaranteed items
+        for (let i = 0; i < obstacleRows; i++) {
+          // Alternate between road and river sections
+          const isRoad = (Math.floor(i / 2) % 2 === 0);
+          const type = isRoad ? 'road' : 'river';
+          
+          // Alternate direction each lane for variety
+          const direction = (i % 2 === 0) ? 1 : -1;
+          const speed = CONFIG.BASE_SPEED + Math.random() * CONFIG.SPEED_VARIATION;
+          const items = [];
+          
+          if (type === 'road') {
+            // Cars - guaranteed 2-3 cars per lane, evenly spaced
+            const carCount = 2 + Math.floor(Math.random() * 2);
+            const spacing = CONFIG.COLS / carCount;
+            for (let j = 0; j < carCount; j++) {
+              const carType = Math.floor(Math.random() * 4);
+              items.push({
+                col: j * spacing + Math.random() * (spacing * 0.3),
+                width: [2, 2.5, 3, 1.5][carType],
+                color: ['#ef4444', '#3b82f6', '#f59e0b', '#8b5cf6'][carType],
+                type: carType,
+              });
             }
-            
-            state.lanes.push({ type, items, direction, speed });
-            currentRow++;
+          } else {
+            // Logs - guaranteed 3-4 logs per lane, must cover enough space for frog to jump
+            const logCount = 3 + Math.floor(Math.random() * 2);
+            const spacing = CONFIG.COLS / logCount;
+            for (let j = 0; j < logCount; j++) {
+              items.push({
+                col: j * spacing + Math.random() * (spacing * 0.2),
+                width: 3 + Math.random() * 1.5,
+              });
+            }
           }
+          
+          state.lanes.push({ type, items, direction, speed });
         }
         
         // Goal zone with lily pads
@@ -1142,7 +1138,21 @@
         }
       }
 
+      function requestFullscreen() {
+        const elem = document.documentElement;
+        if (elem.requestFullscreen) {
+          elem.requestFullscreen().catch(() => {});
+        } else if (elem.webkitRequestFullscreen) {
+          elem.webkitRequestFullscreen();
+        } else if (elem.msRequestFullscreen) {
+          elem.msRequestFullscreen();
+        }
+      }
+
       function startGame() {
+        // Go fullscreen
+        requestFullscreen();
+        
         state.running = true;
         state.score = 0;
         state.highestRow = CONFIG.ROWS - 2;
