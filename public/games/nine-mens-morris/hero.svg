@@ -5,11 +5,19 @@
       <stop offset="0%" style="stop-color:#2d3561;stop-opacity:1" />
       <stop offset="100%" style="stop-color:#1a1a2e;stop-opacity:1" />
     </linearGradient>
+    <radialGradient id="blueGrad" cx="30%" cy="30%">
+      <stop offset="0%" style="stop-color:#6dd5ff;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#2196f3;stop-opacity:1" />
+    </radialGradient>
+    <radialGradient id="redGrad" cx="30%" cy="30%">
+      <stop offset="0%" style="stop-color:#ff8a80;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#f44336;stop-opacity:1" />
+    </radialGradient>
   </defs>
   
   <rect width="800" height="450" fill="url(#bg)"/>
   
-  <!-- Board representation - 3 concentric squares -->
+  <!-- Board representation - 3 concentric squares (traditional) -->
   <g transform="translate(400, 225)">
     <!-- Outer square -->
     <rect x="-150" y="-150" width="300" height="300" fill="none" stroke="#e8e8e8" stroke-width="3"/>
@@ -18,24 +26,29 @@
     <!-- Inner square -->
     <rect x="-50" y="-50" width="100" height="100" fill="none" stroke="#e8e8e8" stroke-width="3"/>
     
-    <!-- Connecting lines -->
+    <!-- Connecting lines (top, right, bottom, left) -->
     <line x1="0" y1="-150" x2="0" y2="-50" stroke="#e8e8e8" stroke-width="2"/>
-    <line x1="0" y1="50" x2="0" y2="150" stroke="#e8e8e8" stroke-width="2"/>
+    <line x1="150" y1="0" x2="50" y2="0" stroke="#e8e8e8" stroke-width="2"/>
+    <line x1="0" y1="150" x2="0" y2="50" stroke="#e8e8e8" stroke-width="2"/>
     <line x1="-150" y1="0" x2="-50" y2="0" stroke="#e8e8e8" stroke-width="2"/>
-    <line x1="50" y1="0" x2="150" y2="0" stroke="#e8e8e8" stroke-width="2"/>
     
-    <!-- Example pieces - white -->
-    <circle cx="-150" cy="-150" r="12" fill="#ffffff" stroke="#333" stroke-width="2"/>
-    <circle cx="0" cy="-150" r="12" fill="#ffffff" stroke="#333" stroke-width="2"/>
-    <circle cx="150" cy="0" r="12" fill="#ffffff" stroke="#333" stroke-width="2"/>
+    <!-- Example pieces - player (blue) -->
+    <circle cx="-150" cy="-150" r="14" fill="url(#blueGrad)" stroke="#fff" stroke-width="2"/>
+    <circle cx="0" cy="-150" r="14" fill="url(#blueGrad)" stroke="#fff" stroke-width="2"/>
+    <circle cx="150" cy="0" r="14" fill="url(#blueGrad)" stroke="#fff" stroke-width="2"/>
     
-    <!-- Example pieces - black -->
-    <circle cx="150" cy="-150" r="12" fill="#1a1a2e" stroke="#e8e8e8" stroke-width="2"/>
-    <circle cx="0" cy="150" r="12" fill="#1a1a2e" stroke="#e8e8e8" stroke-width="2"/>
-    <circle cx="-150" cy="150" r="12" fill="#1a1a2e" stroke="#e8e8e8" stroke-width="2"/>
+    <!-- Example pieces - AI (red) -->
+    <circle cx="150" cy="-150" r="14" fill="url(#redGrad)" stroke="#fff" stroke-width="2"/>
+    <circle cx="0" cy="150" r="14" fill="url(#redGrad)" stroke="#fff" stroke-width="2"/>
+    <circle cx="-150" cy="150" r="14" fill="url(#redGrad)" stroke="#fff" stroke-width="2"/>
+    
+    <!-- Position markers -->
+    <circle cx="-150" cy="0" r="6" fill="#444" opacity="0.6"/>
+    <circle cx="150" cy="150" r="6" fill="#444" opacity="0.6"/>
+    <circle cx="-100" cy="-100" r="6" fill="#444" opacity="0.6"/>
   </g>
   
   <!-- Title -->
   <text x="400" y="50" font-family="Arial, sans-serif" font-size="36" font-weight="bold" fill="#ffffff" text-anchor="middle">Nine Men's Morris</text>
-  <text x="400" y="410" font-family="Arial, sans-serif" font-size="18" fill="#aaaaaa" text-anchor="middle">Ancient Strategy Game - Coming Soon</text>
+  <text x="400" y="410" font-family="Arial, sans-serif" font-size="18" fill="#aaaaaa" text-anchor="middle">Classic Strategy • AI Opponent • 3 Difficulty Levels</text>
 </svg>

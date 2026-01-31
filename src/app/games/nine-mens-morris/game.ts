@@ -63,8 +63,10 @@ export class NineMensMorrisGame extends GameEngine {
   
   // Game mode & difficulty
   private mode: GameMode = 'easy';
+  private difficulty: 'easy' | 'medium' | 'hard' = 'easy';
   private tutorialMode = false;
   private tutorialStep = 0;
+  private showDifficultyMenu = true;
   
   // Visual effects
   private particles: Particle[] = [];
@@ -129,21 +131,34 @@ export class NineMensMorrisGame extends GameEngine {
   }
 
   private initializePositions(): void {
-    // Create position coordinates in circular layout
-    const ringPositions = [8, 8, 8]; // 8 positions per ring
+    // Create position coordinates for traditional square layout
+    // 24 positions: 8 per square (3 concentric squares)
+    const squareSizes = [200, 140, 80]; // Outer, middle, inner square sizes
     
     for (let ring = 0; ring < 3; ring++) {
-      const radius = this.RING_RADII[ring];
-      const positions = ringPositions[ring];
-      const angleOffset = ring === 0 ? 0 : Math.PI / 8;
+      const size = squareSizes[ring];
+      const halfSize = size;
       
-      for (let i = 0; i < positions; i++) {
-        const angle = (i / positions) * Math.PI * 2 + angleOffset;
-        const x = this.BOARD_CENTER_X + Math.cos(angle) * radius;
-        const y = this.BOARD_CENTER_Y + Math.sin(angle) * radius;
-        
-        this.positions.push({ x, y, ring, index: i });
-      }
+      // 8 positions per square: corners + midpoints
+      const positions = [
+        { x: -halfSize, y: -halfSize }, // Top-left corner
+        { x: 0, y: -halfSize },          // Top-middle
+        { x: halfSize, y: -halfSize },   // Top-right corner
+        { x: halfSize, y: 0 },           // Right-middle
+        { x: halfSize, y: halfSize },    // Bottom-right corner
+        { x: 0, y: halfSize },           // Bottom-middle
+        { x: -halfSize, y: halfSize },   // Bottom-left corner
+        { x: -halfSize, y: 0 },          // Left-middle
+      ];
+      
+      positions.forEach((pos, i) => {
+        this.positions.push({
+          x: this.BOARD_CENTER_X + pos.x,
+          y: this.BOARD_CENTER_Y + pos.y,
+          ring,
+          index: i
+        });
+      });
     }
   }
 
@@ -170,17 +185,46 @@ export class NineMensMorrisGame extends GameEngine {
   };
 
   private handleClick = (e: MouseEvent): void => {
-    if (this.currentPlayer !== 'player' || this.aiThinking) return;
-    
     const rect = this.canvas.getBoundingClientRect();
     const x = (e.clientX - rect.left) * (this.CANVAS_WIDTH / rect.width);
     const y = (e.clientY - rect.top) * (this.CANVAS_HEIGHT / rect.height);
+    
+    // Check for difficulty button clicks
+    if (this.showDifficultyMenu) {
+      if (this.isDifficultyButtonClicked(x, y, 'easy')) {
+        this.difficulty = 'easy';
+        this.showDifficultyMenu = false;
+        this.showMessage('Easy mode selected - AI makes random moves');
+        return;
+      }
+      if (this.isDifficultyButtonClicked(x, y, 'medium')) {
+        this.difficulty = 'medium';
+        this.showDifficultyMenu = false;
+        this.showMessage('Medium mode selected - AI tries to form mills');
+        return;
+      }
+      if (this.isDifficultyButtonClicked(x, y, 'hard')) {
+        this.difficulty = 'hard';
+        this.showDifficultyMenu = false;
+        this.showMessage('Hard mode selected - AI uses strategy!');
+        return;
+      }
+      return; // Don't allow gameplay during menu
+    }
+    
+    if (this.currentPlayer !== 'player' || this.aiThinking) return;
     
     const pos = this.getPositionAt(x, y);
     if (pos === null) return;
     
     this.handlePlayerAction(pos);
   };
+  
+  private isDifficultyButtonClicked(x: number, y: number, difficulty: 'easy' | 'medium' | 'hard'): boolean {
+    const buttonY = this.BOARD_CENTER_Y - 60 + (difficulty === 'easy' ? 0 : difficulty === 'medium' ? 60 : 120);
+    const buttonX = this.BOARD_CENTER_X - 80;
+    return x >= buttonX && x <= buttonX + 160 && y >= buttonY && y <= buttonY + 45;
+  }
 
   private getPositionAt(x: number, y: number): number | null {
     for (let i = 0; i < this.positions.length; i++) {
@@ -370,28 +414,118 @@ export class NineMensMorrisGame extends GameEngine {
     const empty = this.board.map((p, i) => p === null ? i : -1).filter(i => i >= 0);
     if (empty.length === 0) return;
     
-    const pos = empty[Math.floor(Math.random() * empty.length)];
+    let pos: number;
+    
+    if (this.difficulty === 'easy') {
+      // Random placement
+      pos = empty[Math.floor(Math.random() * empty.length)];
+    } else if (this.difficulty === 'medium') {
+      // Try to form a mill or block player mill
+      pos = this.findMillFormingMove('ai', empty) || 
+            this.findMillFormingMove('player', empty) || 
+            empty[Math.floor(Math.random() * empty.length)];
+    } else {
+      // Hard: Strategic placement (center positions, mill formation, blocking)
+      pos = this.findMillFormingMove('ai', empty) ||
+            this.findMillFormingMove('player', empty) ||
+            this.findStrategicPosition(empty) ||
+            empty[Math.floor(Math.random() * empty.length)];
+    }
+    
     this.placePiece(pos, 'ai');
+  }
+  
+  private findMillFormingMove(player: Player, emptyPositions: number[]): number | null {
+    // Check if placing on any empty position would form a mill
+    for (const pos of emptyPositions) {
+      this.board[pos] = player;
+      const formsMill = this.checkMill(pos, player);
+      this.board[pos] = null;
+      if (formsMill) return pos;
+    }
+    return null;
+  }
+  
+  private findStrategicPosition(emptyPositions: number[]): number | null {
+    // Prefer center positions and corners (positions 1, 3, 5, 7 on each square)
+    const strategicPositions = [1, 3, 5, 7, 9, 11, 13, 15];
+    const strategic = emptyPositions.filter(p => strategicPositions.includes(p));
+    return strategic.length > 0 ? strategic[Math.floor(Math.random() * strategic.length)] : null;
   }
 
   private aiMovePiece(): void {
     const aiPieces = this.board.map((p, i) => p === 'ai' ? i : -1).filter(i => i >= 0);
     if (aiPieces.length === 0) return;
     
-    const from = aiPieces[Math.floor(Math.random() * aiPieces.length)];
-    this.selectedPos = from;
-    this.currentPlayer = 'ai';
-    this.calculateValidMoves();
+    let bestFrom = -1;
+    let bestTo = -1;
     
-    if (this.validMoves.size === 0) {
-      this.selectedPos = null;
-      return;
+    if (this.difficulty === 'easy') {
+      // Random move
+      const from = aiPieces[Math.floor(Math.random() * aiPieces.length)];
+      this.selectedPos = from;
+      this.currentPlayer = 'ai';
+      this.calculateValidMoves();
+      
+      if (this.validMoves.size === 0) {
+        this.selectedPos = null;
+        return;
+      }
+      
+      const moves = Array.from(this.validMoves);
+      bestTo = moves[Math.floor(Math.random() * moves.length)];
+      bestFrom = from;
+    } else {
+      // Medium/Hard: Try to form mills or block player
+      for (const from of aiPieces) {
+        this.selectedPos = from;
+        this.currentPlayer = 'ai';
+        this.calculateValidMoves();
+        
+        for (const to of this.validMoves) {
+          // Simulate move
+          const originalPiece = this.board[from];
+          this.board[from] = null;
+          this.board[to] = 'ai';
+          
+          const formsMill = this.checkMill(to, 'ai');
+          
+          // Restore board
+          this.board[from] = originalPiece;
+          this.board[to] = null;
+          
+          if (formsMill) {
+            bestFrom = from;
+            bestTo = to;
+            break;
+          }
+          
+          // For medium, accept first valid move after checking mills
+          if (this.difficulty === 'medium' && bestFrom === -1) {
+            bestFrom = from;
+            bestTo = to;
+          }
+        }
+        
+        if (bestFrom !== -1 && bestTo !== -1 && this.checkMill(bestTo, 'ai')) break;
+      }
+      
+      // If no mill-forming move found, pick a strategic move
+      if (bestFrom === -1) {
+        const from = aiPieces[Math.floor(Math.random() * aiPieces.length)];
+        this.selectedPos = from;
+        this.currentPlayer = 'ai';
+        this.calculateValidMoves();
+        const moves = Array.from(this.validMoves);
+        bestTo = moves.length > 0 ? moves[Math.floor(Math.random() * moves.length)] : -1;
+        bestFrom = from;
+      }
     }
     
-    const moves = Array.from(this.validMoves);
-    const to = moves[Math.floor(Math.random() * moves.length)];
+    if (bestFrom !== -1 && bestTo !== -1) {
+      this.movePiece(bestFrom, bestTo, 'ai');
+    }
     
-    this.movePiece(from, to, 'ai');
     this.selectedPos = null;
     this.validMoves.clear();
   }
@@ -510,6 +644,12 @@ export class NineMensMorrisGame extends GameEngine {
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
     
+    // Draw difficulty selection menu
+    if (this.showDifficultyMenu) {
+      this.drawDifficultyMenu(ctx);
+      return;
+    }
+    
     // Draw board
     this.drawBoard(ctx);
     
@@ -522,30 +662,81 @@ export class NineMensMorrisGame extends GameEngine {
     // Draw UI
     this.drawUI(ctx);
   }
+  
+  private drawDifficultyMenu(ctx: CanvasRenderingContext2D): void {
+    // Draw title
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 36px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText("Nine Men's Morris", this.BOARD_CENTER_X, 100);
+    
+    // Draw subtitle
+    ctx.font = '20px Arial';
+    ctx.fillStyle = '#aaaaaa';
+    ctx.fillText('Select AI Difficulty', this.BOARD_CENTER_X, 140);
+    
+    // Draw difficulty buttons
+    const difficulties: Array<{level: 'easy' | 'medium' | 'hard', label: string, desc: string, color: string}> = [
+      { level: 'easy', label: 'Easy', desc: 'AI makes random moves', color: '#4db8ff' },
+      { level: 'medium', label: 'Medium', desc: 'AI tries to form mills', color: '#ffaa00' },
+      { level: 'hard', label: 'Hard', desc: 'AI uses strategy', color: '#ff6b6b' },
+    ];
+    
+    difficulties.forEach((diff, i) => {
+      const y = this.BOARD_CENTER_Y - 60 + i * 60;
+      const x = this.BOARD_CENTER_X - 80;
+      
+      // Button background
+      ctx.fillStyle = diff.color;
+      ctx.fillRect(x, y, 160, 45);
+      
+      // Button border
+      ctx.strokeStyle = '#ffffff';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(x, y, 160, 45);
+      
+      // Button text
+      ctx.fillStyle = '#ffffff';
+      ctx.font = 'bold 20px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(diff.label, this.BOARD_CENTER_X, y + 28);
+      
+      // Description
+      ctx.font = '14px Arial';
+      ctx.fillStyle = '#aaaaaa';
+      ctx.fillText(diff.desc, this.BOARD_CENTER_X, y + 70);
+    });
+  }
 
   private drawBoard(ctx: CanvasRenderingContext2D): void {
     ctx.strokeStyle = '#e8e8e8';
     ctx.lineWidth = 3;
     
-    // Draw rings
-    for (const radius of this.RING_RADII) {
-      ctx.beginPath();
-      ctx.arc(this.BOARD_CENTER_X, this.BOARD_CENTER_Y, radius, 0, Math.PI * 2);
-      ctx.stroke();
+    // Draw three concentric squares
+    const squareSizes = [200, 140, 80];
+    for (const size of squareSizes) {
+      ctx.strokeRect(
+        this.BOARD_CENTER_X - size,
+        this.BOARD_CENTER_Y - size,
+        size * 2,
+        size * 2
+      );
     }
     
-    // Draw connecting lines
+    // Draw connecting lines between squares (from middle of each side)
     ctx.lineWidth = 2;
     const connections = [
-      [1, 4], [7, 4], [10, 4], [16, 4], // Cardinal directions
+      [1, 9, 17],   // Top middle (outer → middle → inner)
+      [3, 11, 19],  // Right middle
+      [5, 13, 21],  // Bottom middle
+      [7, 15, 23],  // Left middle
     ];
     
-    for (const [i, j] of connections) {
-      const p1 = this.positions[i];
-      const p2 = this.positions[j];
+    for (const line of connections) {
       ctx.beginPath();
-      ctx.moveTo(p1.x, p1.y);
-      ctx.lineTo(p2.x, p2.y);
+      ctx.moveTo(this.positions[line[0]].x, this.positions[line[0]].y);
+      ctx.lineTo(this.positions[line[1]].x, this.positions[line[1]].y);
+      ctx.lineTo(this.positions[line[2]].x, this.positions[line[2]].y);
       ctx.stroke();
     }
     
