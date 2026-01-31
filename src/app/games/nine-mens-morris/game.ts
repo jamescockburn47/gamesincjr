@@ -279,6 +279,12 @@ export class NineMensMorrisGame extends GameEngine {
       this.millCelebrationTime = 1.0;
       this.phase = 'removing';
       this.showMessage(player === 'player' ? 'Mill! Remove an opponent piece' : 'AI formed a mill!');
+      
+      // If AI formed the mill, trigger it to remove a piece
+      if (player === 'ai') {
+        this.aiThinking = true;
+        this.aiThinkTime = 0.3; // Shorter delay for removal
+      }
     } else {
       this.switchPlayer();
       if (this.playerPiecesToPlace === 0 && this.aiPiecesToPlace === 0) {
@@ -301,6 +307,12 @@ export class NineMensMorrisGame extends GameEngine {
       this.millCelebrationTime = 1.0;
       this.phase = 'removing';
       this.showMessage(player === 'player' ? 'Mill! Remove an opponent piece' : 'AI formed a mill!');
+      
+      // If AI formed the mill, trigger it to remove a piece
+      if (player === 'ai') {
+        this.aiThinking = true;
+        this.aiThinkTime = 0.3; // Shorter delay for removal
+      }
     } else {
       this.switchPlayer();
     }
@@ -417,12 +429,15 @@ export class NineMensMorrisGame extends GameEngine {
     let pos: number;
     
     if (this.difficulty === 'easy') {
-      // Random placement
-      pos = empty[Math.floor(Math.random() * empty.length)];
+      // Easy: Try to block player mills, otherwise strategic positions
+      pos = this.findMillFormingMove('player', empty) || 
+            this.findStrategicPosition(empty) ||
+            empty[Math.floor(Math.random() * empty.length)];
     } else if (this.difficulty === 'medium') {
-      // Try to form a mill or block player mill
+      // Medium: Try to form a mill or block player mill
       pos = this.findMillFormingMove('ai', empty) || 
             this.findMillFormingMove('player', empty) || 
+            this.findStrategicPosition(empty) ||
             empty[Math.floor(Math.random() * empty.length)];
     } else {
       // Hard: Strategic placement (center positions, mill formation, blocking)
