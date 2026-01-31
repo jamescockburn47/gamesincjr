@@ -194,7 +194,7 @@ export class NineMensMorrisGame extends GameEngine {
       if (this.isDifficultyButtonClicked(x, y, 'easy')) {
         this.difficulty = 'easy';
         this.showDifficultyMenu = false;
-        this.showMessage('Easy mode selected - AI makes random moves');
+        this.showMessage('Easy mode selected - AI blocks your mills');
         return;
       }
       if (this.isDifficultyButtonClicked(x, y, 'medium')) {
@@ -210,6 +210,15 @@ export class NineMensMorrisGame extends GameEngine {
         return;
       }
       return; // Don't allow gameplay during menu
+    }
+    
+    // Allow removal phase even when it's technically AI's turn
+    if (this.phase === 'removing' && this.currentPlayer === 'player') {
+      const pos = this.getPositionAt(x, y);
+      if (pos !== null) {
+        this.handlePlayerAction(pos);
+      }
+      return;
     }
     
     if (this.currentPlayer !== 'player' || this.aiThinking) return;
@@ -563,17 +572,18 @@ export class NineMensMorrisGame extends GameEngine {
 
   private createPlacementParticles(pos: number, player: Player): void {
     const p = this.positions[pos];
-    const color = player === 'player' ? '#4db8ff' : '#ff6b6b';
+    const colors = player === 'player' ? ['#4db8ff', '#64b5f6', '#ffffff'] : ['#ff6b6b', '#ff8a80', '#ffffff'];
     
-    for (let i = 0; i < 12; i++) {
-      const angle = (i / 12) * Math.PI * 2;
+    for (let i = 0; i < 20; i++) {
+      const angle = (i / 20) * Math.PI * 2;
+      const speed = 80 + Math.random() * 60;
       this.particles.push({
         x: p.x,
         y: p.y,
-        vx: Math.cos(angle) * 100,
-        vy: Math.sin(angle) * 100,
-        life: 0.5,
-        color
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        life: 0.6 + Math.random() * 0.3,
+        color: colors[Math.floor(Math.random() * colors.length)]
       });
     }
   }
@@ -597,18 +607,20 @@ export class NineMensMorrisGame extends GameEngine {
 
   private createCaptureParticles(pos: number, player: Player): void {
     const p = this.positions[pos];
-    const color = player === 'player' ? '#4db8ff' : '#ff6b6b';
+    const colors = player === 'player' ? ['#4db8ff', '#64b5f6', '#90caf9', '#ffffff'] : 
+                                        ['#ff6b6b', '#ff8a80', '#ffab91', '#ffffff'];
     
-    for (let i = 0; i < 20; i++) {
+    // Big explosion
+    for (let i = 0; i < 30; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 80 + Math.random() * 80;
+      const speed = 100 + Math.random() * 120;
       this.particles.push({
         x: p.x,
         y: p.y,
         vx: Math.cos(angle) * speed,
         vy: Math.sin(angle) * speed,
-        life: 0.8,
-        color
+        life: 0.8 + Math.random() * 0.4,
+        color: colors[Math.floor(Math.random() * colors.length)]
       });
     }
   }
@@ -645,19 +657,29 @@ export class NineMensMorrisGame extends GameEngine {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    // Clear background
-    ctx.fillStyle = '#1a1a2e';
+    // Clear background with deep space theme
+    ctx.fillStyle = '#0a0a1a';
     ctx.fillRect(0, 0, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
     
-    // Draw gradient background
+    // Draw animated gradient background
+    const time = Date.now() / 2000;
     const gradient = ctx.createRadialGradient(
       this.BOARD_CENTER_X, this.BOARD_CENTER_Y, 0,
-      this.BOARD_CENTER_X, this.BOARD_CENTER_Y, 250
+      this.BOARD_CENTER_X, this.BOARD_CENTER_Y, 300
     );
-    gradient.addColorStop(0, '#2d3561');
-    gradient.addColorStop(1, '#1a1a2e');
+    gradient.addColorStop(0, '#3d5a80');
+    gradient.addColorStop(0.5, '#293241');
+    gradient.addColorStop(1, '#0a0a1a');
     ctx.fillStyle = gradient;
     ctx.fillRect(0, 0, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
+    
+    // Add subtle stars/dots in background
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+    for (let i = 0; i < 50; i++) {
+      const x = (i * 47) % this.CANVAS_WIDTH;
+      const y = (i * 83 + Math.sin(time + i) * 5) % this.CANVAS_HEIGHT;
+      ctx.fillRect(x, y, 2, 2);
+    }
     
     // Draw difficulty selection menu
     if (this.showDifficultyMenu) {
@@ -724,43 +746,99 @@ export class NineMensMorrisGame extends GameEngine {
   }
 
   private drawBoard(ctx: CanvasRenderingContext2D): void {
-    ctx.strokeStyle = '#e8e8e8';
-    ctx.lineWidth = 3;
+    // Draw board platform background
+    ctx.fillStyle = 'rgba(30, 30, 50, 0.3)';
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
+    ctx.shadowBlur = 30;
+    ctx.fillRect(
+      this.BOARD_CENTER_X - 200,
+      this.BOARD_CENTER_Y - 200,
+      400,
+      400
+    );
+    ctx.shadowBlur = 0;
     
-    // Draw three concentric squares
+    // Draw three concentric squares with glowing effect
     const squareSizes = [160, 110, 60];
-    for (const size of squareSizes) {
+    squareSizes.forEach((size, idx) => {
+      // Outer glow
+      ctx.strokeStyle = idx === 0 ? 'rgba(100, 200, 255, 0.3)' : 
+                       idx === 1 ? 'rgba(100, 200, 255, 0.2)' : 
+                       'rgba(100, 200, 255, 0.15)';
+      ctx.lineWidth = 6;
       ctx.strokeRect(
         this.BOARD_CENTER_X - size,
         this.BOARD_CENTER_Y - size,
         size * 2,
         size * 2
       );
-    }
+      
+      // Main line with gradient
+      const gradient = ctx.createLinearGradient(
+        this.BOARD_CENTER_X - size,
+        this.BOARD_CENTER_Y - size,
+        this.BOARD_CENTER_X + size,
+        this.BOARD_CENTER_Y + size
+      );
+      gradient.addColorStop(0, '#64b5f6');
+      gradient.addColorStop(0.5, '#ffffff');
+      gradient.addColorStop(1, '#64b5f6');
+      ctx.strokeStyle = gradient;
+      ctx.lineWidth = 3;
+      ctx.shadowColor = '#64b5f6';
+      ctx.shadowBlur = 8;
+      ctx.strokeRect(
+        this.BOARD_CENTER_X - size,
+        this.BOARD_CENTER_Y - size,
+        size * 2,
+        size * 2
+      );
+    });
+    ctx.shadowBlur = 0;
     
-    // Draw connecting lines between squares (from middle of each side)
-    ctx.lineWidth = 2;
+    // Draw connecting lines with glow
+    ctx.lineWidth = 3;
     const connections = [
-      [1, 9, 17],   // Top middle (outer → middle → inner)
+      [1, 9, 17],   // Top middle
       [3, 11, 19],  // Right middle
       [5, 13, 21],  // Bottom middle
       [7, 15, 23],  // Left middle
     ];
     
     for (const line of connections) {
+      ctx.strokeStyle = '#90caf9';
+      ctx.shadowColor = '#64b5f6';
+      ctx.shadowBlur = 6;
       ctx.beginPath();
       ctx.moveTo(this.positions[line[0]].x, this.positions[line[0]].y);
       ctx.lineTo(this.positions[line[1]].x, this.positions[line[1]].y);
       ctx.lineTo(this.positions[line[2]].x, this.positions[line[2]].y);
       ctx.stroke();
     }
+    ctx.shadowBlur = 0;
     
-    // Draw position markers
+    // Draw position markers with enhanced visuals
     this.positions.forEach((pos, i) => {
       const isValid = this.validMoves.has(i);
       const isHovered = this.hoverPos === i;
       const isMill = this.lastMill?.includes(i) && this.millCelebrationTime > 0;
+      const isRemovable = this.phase === 'removing' && this.currentPlayer === 'player' && this.board[i] === 'ai';
+      const pulse = isMill ? 1 + Math.sin(Date.now() / 150) * 0.3 : 1;
       
+      // Outer glow for special states
+      if (isValid || isMill || isRemovable) {
+        ctx.shadowColor = isValid ? '#44ff44' : isRemovable ? '#ff4444' : '#ffd700';
+        ctx.shadowBlur = 15 * pulse;
+        ctx.fillStyle = isValid ? 'rgba(68, 255, 68, 0.3)' : 
+                       isRemovable ? 'rgba(255, 68, 68, 0.3)' :
+                       'rgba(255, 215, 0, 0.4)';
+        ctx.beginPath();
+        ctx.arc(pos.x, pos.y, 12 * pulse, 0, Math.PI * 2);
+        ctx.fill();
+      }
+      ctx.shadowBlur = 0;
+      
+      // Draw position marker
       ctx.beginPath();
       ctx.arc(pos.x, pos.y, 8, 0, Math.PI * 2);
       
@@ -770,12 +848,15 @@ export class NineMensMorrisGame extends GameEngine {
       } else if (isValid) {
         ctx.fillStyle = '#44ff44';
         ctx.strokeStyle = '#22aa22';
+      } else if (isRemovable) {
+        ctx.fillStyle = '#ff4444';
+        ctx.strokeStyle = '#cc2222';
       } else if (isHovered && this.board[i] === null) {
-        ctx.fillStyle = '#555';
-        ctx.strokeStyle = '#888';
+        ctx.fillStyle = '#666';
+        ctx.strokeStyle = '#999';
       } else {
-        ctx.fillStyle = '#333';
-        ctx.strokeStyle = '#666';
+        ctx.fillStyle = '#2a2a3a';
+        ctx.strokeStyle = '#555';
       }
       
       ctx.fill();
@@ -788,26 +869,43 @@ export class NineMensMorrisGame extends GameEngine {
     this.pieces.forEach((piece, pos) => {
       const p = this.positions[pos];
       const isSelected = this.selectedPos === pos;
+      const isMill = this.lastMill?.includes(pos) && this.millCelebrationTime > 0;
       const scale = Math.min(1, piece.animProgress);
+      const pulse = isMill ? 1 + Math.sin(Date.now() / 200) * 0.1 : 1;
       
       ctx.save();
       ctx.translate(p.x, p.y);
-      ctx.scale(scale, scale);
+      ctx.scale(scale * pulse, scale * pulse);
       
-      // Draw piece shadow
-      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      // Draw outer glow for selected or mill pieces
+      if (isSelected || isMill) {
+        ctx.shadowColor = isSelected ? '#ffd700' : '#00ff88';
+        ctx.shadowBlur = 20;
+        ctx.fillStyle = isSelected ? 'rgba(255, 215, 0, 0.3)' : 'rgba(0, 255, 136, 0.3)';
+        ctx.beginPath();
+        ctx.arc(0, 0, this.PIECE_RADIUS + 8, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+      }
+      
+      // Draw piece shadow (larger, softer)
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
       ctx.beginPath();
-      ctx.arc(2, 2, this.PIECE_RADIUS, 0, Math.PI * 2);
+      ctx.arc(3, 3, this.PIECE_RADIUS, 0, Math.PI * 2);
       ctx.fill();
       
-      // Draw piece
-      const gradient = ctx.createRadialGradient(-5, -5, 0, 0, 0, this.PIECE_RADIUS);
+      // Draw piece with enhanced gradient
+      const gradient = ctx.createRadialGradient(-8, -8, 0, 0, 0, this.PIECE_RADIUS);
       if (piece.player === 'player') {
-        gradient.addColorStop(0, '#6dd5ff');
-        gradient.addColorStop(1, '#2196f3');
+        gradient.addColorStop(0, '#ffffff');
+        gradient.addColorStop(0.3, '#6dd5ff');
+        gradient.addColorStop(0.7, '#2196f3');
+        gradient.addColorStop(1, '#0d47a1');
       } else {
-        gradient.addColorStop(0, '#ff8a80');
-        gradient.addColorStop(1, '#f44336');
+        gradient.addColorStop(0, '#ffffff');
+        gradient.addColorStop(0.3, '#ff8a80');
+        gradient.addColorStop(0.7, '#f44336');
+        gradient.addColorStop(1, '#b71c1c');
       }
       
       ctx.fillStyle = gradient;
@@ -815,15 +913,18 @@ export class NineMensMorrisGame extends GameEngine {
       ctx.arc(0, 0, this.PIECE_RADIUS, 0, Math.PI * 2);
       ctx.fill();
       
-      // Draw piece border
-      ctx.strokeStyle = isSelected ? '#ffd700' : '#ffffff';
-      ctx.lineWidth = isSelected ? 4 : 2;
+      // Draw metallic border
+      ctx.strokeStyle = isSelected ? '#ffd700' : isMill ? '#00ff88' : '#e0e0e0';
+      ctx.lineWidth = isSelected ? 5 : 3;
+      ctx.shadowColor = ctx.strokeStyle;
+      ctx.shadowBlur = isSelected || isMill ? 10 : 0;
       ctx.stroke();
+      ctx.shadowBlur = 0;
       
-      // Draw piece highlight
-      ctx.fillStyle = 'rgba(255, 255, 255, 0.4)';
+      // Draw bright highlight spot
+      ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
       ctx.beginPath();
-      ctx.arc(-6, -6, 6, 0, Math.PI * 2);
+      ctx.arc(-7, -7, 5, 0, Math.PI * 2);
       ctx.fill();
       
       ctx.restore();
@@ -832,65 +933,126 @@ export class NineMensMorrisGame extends GameEngine {
 
   private drawParticles(ctx: CanvasRenderingContext2D): void {
     this.particles.forEach(p => {
+      const size = 2 + p.life * 3;
+      
+      // Glow effect
+      ctx.shadowColor = p.color;
+      ctx.shadowBlur = 10 * p.life;
       ctx.fillStyle = p.color;
       ctx.globalAlpha = p.life;
+      
       ctx.beginPath();
-      ctx.arc(p.x, p.y, 3, 0, Math.PI * 2);
+      ctx.arc(p.x, p.y, size, 0, Math.PI * 2);
       ctx.fill();
     });
+    ctx.shadowBlur = 0;
     ctx.globalAlpha = 1;
   }
 
   private drawUI(ctx: CanvasRenderingContext2D): void {
-    // Draw title
+    // Draw title with glow
+    ctx.shadowColor = '#64b5f6';
+    ctx.shadowBlur = 15;
     ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 32px Arial';
+    ctx.font = 'bold 36px Arial';
     ctx.textAlign = 'center';
-    ctx.fillText("Nine Men's Morris", this.BOARD_CENTER_X, 40);
+    ctx.fillText("Nine Men's Morris", this.BOARD_CENTER_X, 45);
+    ctx.shadowBlur = 0;
     
-    // Draw phase indicator
-    ctx.font = '20px Arial';
-    ctx.fillStyle = '#aaaaaa';
-    const phaseText = this.phase === 'placing' ? 'Placing Phase' : 
-                     this.phase === 'removing' ? 'Remove Opponent Piece' :
-                     this.phase === 'flying' ? 'Flying Phase' : 'Moving Phase';
-    ctx.fillText(phaseText, this.BOARD_CENTER_X, this.CANVAS_HEIGHT - 20);
+    // Draw phase indicator with colored background
+    const phaseText = this.phase === 'placing' ? 'PLACING PHASE' : 
+                     this.phase === 'removing' ? '⚡ REMOVE OPPONENT PIECE ⚡' :
+                     this.phase === 'flying' ? '✈ FLYING PHASE ✈' : 'MOVING PHASE';
+    const phaseColor = this.phase === 'removing' ? '#ff4444' : '#64b5f6';
     
-    // Draw piece counts
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.6)';
+    ctx.fillRect(this.BOARD_CENTER_X - 200, this.CANVAS_HEIGHT - 40, 400, 30);
+    
+    ctx.font = 'bold 18px Arial';
+    ctx.fillStyle = phaseColor;
+    ctx.shadowColor = phaseColor;
+    ctx.shadowBlur = 10;
+    ctx.textAlign = 'center';
+    ctx.fillText(phaseText, this.BOARD_CENTER_X, this.CANVAS_HEIGHT - 18);
+    ctx.shadowBlur = 0;
+    
+    // Draw piece counts with modern styling
     ctx.textAlign = 'left';
-    ctx.font = '18px Arial';
+    ctx.font = 'bold 20px Arial';
+    
+    // Player info box
+    ctx.fillStyle = 'rgba(77, 184, 255, 0.2)';
+    ctx.fillRect(10, 60, 180, 60);
+    ctx.strokeStyle = '#4db8ff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(10, 60, 180, 60);
+    
     ctx.fillStyle = '#4db8ff';
-    ctx.fillText(`Your pieces: ${this.playerPiecesOnBoard}`, 20, 80);
+    ctx.shadowColor = '#4db8ff';
+    ctx.shadowBlur = 5;
+    ctx.fillText(`⚫ You: ${this.playerPiecesOnBoard}`, 20, 85);
     if (this.playerPiecesToPlace > 0) {
-      ctx.fillText(`To place: ${this.playerPiecesToPlace}`, 20, 105);
+      ctx.font = '16px Arial';
+      ctx.fillText(`To place: ${this.playerPiecesToPlace}`, 20, 108);
+      ctx.font = 'bold 20px Arial';
     }
+    ctx.shadowBlur = 0;
+    
+    // AI info box
+    ctx.fillStyle = 'rgba(255, 107, 107, 0.2)';
+    ctx.fillRect(this.CANVAS_WIDTH - 190, 60, 180, 60);
+    ctx.strokeStyle = '#ff6b6b';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(this.CANVAS_WIDTH - 190, 60, 180, 60);
     
     ctx.textAlign = 'right';
     ctx.fillStyle = '#ff6b6b';
-    ctx.fillText(`AI pieces: ${this.aiPiecesOnBoard}`, this.CANVAS_WIDTH - 20, 80);
+    ctx.shadowColor = '#ff6b6b';
+    ctx.shadowBlur = 5;
+    ctx.fillText(`AI: ${this.aiPiecesOnBoard} ⚫`, this.CANVAS_WIDTH - 20, 85);
     if (this.aiPiecesToPlace > 0) {
-      ctx.fillText(`To place: ${this.aiPiecesToPlace}`, this.CANVAS_WIDTH - 20, 105);
+      ctx.font = '16px Arial';
+      ctx.fillText(`To place: ${this.aiPiecesToPlace}`, this.CANVAS_WIDTH - 20, 108);
+      ctx.font = 'bold 20px Arial';
     }
+    ctx.shadowBlur = 0;
     
-    // Draw current player indicator
+    // Draw current player indicator with animation
     ctx.textAlign = 'center';
-    ctx.font = 'bold 24px Arial';
+    ctx.font = 'bold 28px Arial';
+    const pulse = 1 + Math.sin(Date.now() / 300) * 0.1;
+    
     if (this.aiThinking) {
       ctx.fillStyle = '#ffaa00';
-      ctx.fillText('AI Thinking...', this.BOARD_CENTER_X, this.CANVAS_HEIGHT - 50);
-    } else if (this.currentPlayer === 'player') {
+      ctx.shadowColor = '#ffaa00';
+      ctx.shadowBlur = 15 * pulse;
+      ctx.fillText('🤖 AI Thinking...', this.BOARD_CENTER_X, 550);
+    } else if (this.currentPlayer === 'player' || this.phase === 'removing') {
       ctx.fillStyle = '#4db8ff';
-      ctx.fillText('Your Turn', this.BOARD_CENTER_X, this.CANVAS_HEIGHT - 50);
+      ctx.shadowColor = '#4db8ff';
+      ctx.shadowBlur = 15 * pulse;
+      ctx.fillText('👤 Your Turn', this.BOARD_CENTER_X, 550);
     } else {
       ctx.fillStyle = '#ff6b6b';
-      ctx.fillText('AI Turn', this.BOARD_CENTER_X, this.CANVAS_HEIGHT - 50);
+      ctx.shadowColor = '#ff6b6b';
+      ctx.shadowBlur = 15 * pulse;
+      ctx.fillText('🤖 AI Turn', this.BOARD_CENTER_X, 550);
     }
+    ctx.shadowBlur = 0;
     
-    // Draw message
+    // Draw message with background
     if (this.messageTime > 0) {
-      ctx.fillStyle = `rgba(255, 255, 255, ${Math.min(1, this.messageTime)})`;
-      ctx.font = '20px Arial';
-      ctx.fillText(this.message, this.BOARD_CENTER_X, 80);
+      const alpha = Math.min(1, this.messageTime);
+      ctx.fillStyle = `rgba(0, 0, 0, ${alpha * 0.8})`;
+      ctx.fillRect(this.BOARD_CENTER_X - 250, 130, 500, 40);
+      
+      ctx.fillStyle = `rgba(255, 255, 255, ${alpha})`;
+      ctx.shadowColor = '#ffffff';
+      ctx.shadowBlur = 10;
+      ctx.font = 'bold 22px Arial';
+      ctx.textAlign = 'center';
+      ctx.fillText(this.message, this.BOARD_CENTER_X, 157);
+      ctx.shadowBlur = 0;
     }
   }
 
