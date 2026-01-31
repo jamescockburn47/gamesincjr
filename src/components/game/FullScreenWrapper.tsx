@@ -17,7 +17,7 @@ export function FullScreenWrapper({ children, onExit }: Props) {
         await containerRef.current.requestFullscreen();
         setIsFullscreen(true);
       } catch {
-        containerRef.current.classList.add('fixed', 'inset-0', 'z-50', 'bg-black');
+        // Fullscreen not supported or denied - use fixed positioning instead
         setIsFullscreen(true);
       }
     }
@@ -26,8 +26,6 @@ export function FullScreenWrapper({ children, onExit }: Props) {
   const exitFullscreen = useCallback(async () => {
     if (document.fullscreenElement) {
       await document.exitFullscreen();
-    } else {
-      containerRef.current?.classList.remove('fixed', 'inset-0', 'z-50', 'bg-black');
     }
     setIsFullscreen(false);
     onExit();
@@ -57,15 +55,24 @@ export function FullScreenWrapper({ children, onExit }: Props) {
 
   useEffect(() => {
     enterFullscreen();
+    // Prevent body scroll on mobile when game is active
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
   }, []);
 
   return (
-    <div ref={containerRef} className="relative w-full h-screen bg-black">
+    <div 
+      ref={containerRef} 
+      className="fixed inset-0 z-[9999] bg-black flex items-center justify-center"
+      style={{ touchAction: 'none' }}
+    >
       {children}
       {isFullscreen && (
         <button
           onClick={exitFullscreen}
-          className="absolute top-4 right-4 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 z-50"
+          className="absolute top-2 right-2 md:top-4 md:right-4 px-3 py-1 md:px-4 md:py-2 bg-red-600 text-white text-sm md:text-base rounded-lg hover:bg-red-700 z-[10000] touch-manipulation"
         >
           Exit (ESC)
         </button>

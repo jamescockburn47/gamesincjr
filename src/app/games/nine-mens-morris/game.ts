@@ -169,8 +169,13 @@ export class NineMensMorrisGame extends GameEngine {
   
   start(canvas: HTMLCanvasElement): void {
     this.canvas = canvas;
+    // Mouse events
     canvas.addEventListener('mousemove', this.handleMouseMove);
     canvas.addEventListener('click', this.handleClick);
+    // Touch events for mobile
+    canvas.addEventListener('touchstart', this.handleTouchStart, { passive: false });
+    canvas.addEventListener('touchend', this.handleTouchEnd, { passive: false });
+    canvas.addEventListener('touchmove', this.handleTouchMove, { passive: false });
     super.start(canvas);
   }
 
@@ -228,11 +233,45 @@ export class NineMensMorrisGame extends GameEngine {
     this.hoverPos = this.getPositionAt(x, y);
   };
 
-  private handleClick = (e: MouseEvent): void => {
-    const rect = this.canvas.getBoundingClientRect();
-    const x = (e.clientX - rect.left) * (this.CANVAS_WIDTH / rect.width);
-    const y = (e.clientY - rect.top) * (this.CANVAS_HEIGHT / rect.height);
-    
+  // Touch event handlers for mobile
+  private handleTouchStart = (e: TouchEvent): void => {
+    e.preventDefault(); // Prevent scrolling
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      const rect = this.canvas.getBoundingClientRect();
+      const x = (touch.clientX - rect.left) * (this.CANVAS_WIDTH / rect.width);
+      const y = (touch.clientY - rect.top) * (this.CANVAS_HEIGHT / rect.height);
+      this.hoverPos = this.getPositionAt(x, y);
+    }
+  };
+
+  private handleTouchMove = (e: TouchEvent): void => {
+    e.preventDefault(); // Prevent scrolling
+    if (e.touches.length > 0) {
+      const touch = e.touches[0];
+      const rect = this.canvas.getBoundingClientRect();
+      const x = (touch.clientX - rect.left) * (this.CANVAS_WIDTH / rect.width);
+      const y = (touch.clientY - rect.top) * (this.CANVAS_HEIGHT / rect.height);
+      this.hoverPos = this.getPositionAt(x, y);
+    }
+  };
+
+  private handleTouchEnd = (e: TouchEvent): void => {
+    e.preventDefault(); // Prevent default behavior
+    // Use changedTouches for touchend (the touch that was released)
+    if (e.changedTouches.length > 0) {
+      const touch = e.changedTouches[0];
+      const rect = this.canvas.getBoundingClientRect();
+      const x = (touch.clientX - rect.left) * (this.CANVAS_WIDTH / rect.width);
+      const y = (touch.clientY - rect.top) * (this.CANVAS_HEIGHT / rect.height);
+      
+      // Simulate a click at this position
+      this.processClick(x, y);
+    }
+  };
+
+  // Shared click processing logic for both mouse and touch
+  private processClick(x: number, y: number): void {
     // Check for difficulty button clicks
     if (this.showDifficultyMenu) {
       if (this.isDifficultyButtonClicked(x, y, 'easy')) {
@@ -271,19 +310,34 @@ export class NineMensMorrisGame extends GameEngine {
     if (pos === null) return;
     
     this.handlePlayerAction(pos);
+  }
+
+  private handleClick = (e: MouseEvent): void => {
+    const rect = this.canvas.getBoundingClientRect();
+    const x = (e.clientX - rect.left) * (this.CANVAS_WIDTH / rect.width);
+    const y = (e.clientY - rect.top) * (this.CANVAS_HEIGHT / rect.height);
+    this.processClick(x, y);
   };
   
   private isDifficultyButtonClicked(x: number, y: number, difficulty: 'easy' | 'medium' | 'hard'): boolean {
-    const buttonY = this.BOARD_CENTER_Y - 60 + (difficulty === 'easy' ? 0 : difficulty === 'medium' ? 60 : 120);
-    const buttonX = this.BOARD_CENTER_X - 80;
-    return x >= buttonX && x <= buttonX + 160 && y >= buttonY && y <= buttonY + 45;
+    // Larger buttons for touch devices
+    const buttonWidth = 200;
+    const buttonHeight = 55;
+    const buttonSpacing = 70;
+    const buttonY = this.BOARD_CENTER_Y - 60 + (difficulty === 'easy' ? 0 : difficulty === 'medium' ? buttonSpacing : buttonSpacing * 2);
+    const buttonX = this.BOARD_CENTER_X - buttonWidth / 2;
+    return x >= buttonX && x <= buttonX + buttonWidth && y >= buttonY && y <= buttonY + buttonHeight;
   }
 
   private getPositionAt(x: number, y: number): number | null {
+    // Use larger hit area for touch devices
+    const isTouchDevice = 'ontouchstart' in window || navigator.maxTouchPoints > 0;
+    const hitRadius = isTouchDevice ? this.PIECE_RADIUS + 25 : this.PIECE_RADIUS + 15;
+    
     for (let i = 0; i < this.positions.length; i++) {
       const p = this.positions[i];
       const dist = Math.sqrt((x - p.x) ** 2 + (y - p.y) ** 2);
-      if (dist < this.PIECE_RADIUS + 15) return i;
+      if (dist < hitRadius) return i;
     }
     return null;
   }
@@ -445,6 +499,22 @@ export class NineMensMorrisGame extends GameEngine {
   private switchPlayer(): void {
     this.currentPlayer = this.currentPlayer === 'player' ? 'ai' : 'player';
     
+    // Check if the new current player has any valid moves (only in moving phase)
+    if (this.phase === 'moving' || this.phase === 'flying') {
+      if (!this.hasValidMoves(this.currentPlayer)) {
+        if (this.currentPlayer === 'player') {
+          this.showMessage('You cannot move - AI Wins!');
+        } else {
+          this.showMessage('AI cannot move - You Win!');
+        }
+        setTimeout(() => {
+          this.showDifficultyMenu = true;
+          this.setupGame();
+        }, 3000);
+        return;
+      }
+    }
+    
     if (this.currentPlayer === 'ai') {
       this.aiThinking = true;
       this.aiThinkTime = 0.5 + Math.random() * 0.5;
@@ -452,15 +522,43 @@ export class NineMensMorrisGame extends GameEngine {
   }
 
   private checkWinCondition(): boolean {
-    if (this.playerPiecesOnBoard < 3) {
-      this.showMessage('AI Wins!');
-      setTimeout(() => this.setupGame(), 3000);
-      return true;
+    // Check piece count win conditions (only after placing phase)
+    if (this.playerPiecesToPlace === 0 && this.aiPiecesToPlace === 0) {
+      if (this.playerPiecesOnBoard < 3) {
+        this.showMessage('AI Wins! You have less than 3 pieces.');
+        setTimeout(() => {
+          this.showDifficultyMenu = true;
+          this.setupGame();
+        }, 3000);
+        return true;
+      }
+      if (this.aiPiecesOnBoard < 3) {
+        this.showMessage('You Win! AI has less than 3 pieces.');
+        setTimeout(() => {
+          this.showDifficultyMenu = true;
+          this.setupGame();
+        }, 3000);
+        return true;
+      }
     }
-    if (this.aiPiecesOnBoard < 3) {
-      this.showMessage('You Win!');
-      setTimeout(() => this.setupGame(), 3000);
-      return true;
+    return false;
+  }
+  
+  // Check if a player has any valid moves
+  private hasValidMoves(player: Player): boolean {
+    const pieces = this.board.map((p, i) => p === player ? i : -1).filter(i => i >= 0);
+    
+    // In flying phase (3 pieces), can always move if there's an empty spot
+    if (pieces.length === 3) {
+      return this.board.some(p => p === null);
+    }
+    
+    // Check if any piece has an adjacent empty spot
+    for (const pos of pieces) {
+      const adjacent = this.ADJACENT[pos];
+      for (const adj of adjacent) {
+        if (this.board[adj] === null) return true;
+      }
     }
     return false;
   }
@@ -525,77 +623,64 @@ export class NineMensMorrisGame extends GameEngine {
     const aiPieces = this.board.map((p, i) => p === 'ai' ? i : -1).filter(i => i >= 0);
     if (aiPieces.length === 0) return;
     
-    let bestFrom = -1;
-    let bestTo = -1;
+    // First, check if AI is in flying phase (3 pieces)
+    if (aiPieces.length === 3 && this.phase === 'moving') {
+      this.phase = 'flying';
+    }
     
-    if (this.difficulty === 'easy') {
-      // Random move
-      const from = aiPieces[Math.floor(Math.random() * aiPieces.length)];
+    // Collect all possible moves for AI
+    const allMoves: Array<{from: number, to: number, formsMill: boolean}> = [];
+    
+    for (const from of aiPieces) {
       this.selectedPos = from;
       this.currentPlayer = 'ai';
       this.calculateValidMoves();
       
-      if (this.validMoves.size === 0) {
-        this.selectedPos = null;
-        return;
-      }
-      
-      const moves = Array.from(this.validMoves);
-      bestTo = moves[Math.floor(Math.random() * moves.length)];
-      bestFrom = from;
-    } else {
-      // Medium/Hard: Try to form mills or block player
-      for (const from of aiPieces) {
-        this.selectedPos = from;
-        this.currentPlayer = 'ai';
-        this.calculateValidMoves();
+      for (const to of this.validMoves) {
+        // Simulate move to check if it forms a mill
+        this.board[from] = null;
+        this.board[to] = 'ai';
+        const formsMill = this.checkMill(to, 'ai');
+        // Restore board
+        this.board[from] = 'ai';
+        this.board[to] = null;
         
-        for (const to of this.validMoves) {
-          // Simulate move
-          const originalPiece = this.board[from];
-          this.board[from] = null;
-          this.board[to] = 'ai';
-          
-          const formsMill = this.checkMill(to, 'ai');
-          
-          // Restore board
-          this.board[from] = originalPiece;
-          this.board[to] = null;
-          
-          if (formsMill) {
-            bestFrom = from;
-            bestTo = to;
-            break;
-          }
-          
-          // For medium, accept first valid move after checking mills
-          if (this.difficulty === 'medium' && bestFrom === -1) {
-            bestFrom = from;
-            bestTo = to;
-          }
-        }
-        
-        if (bestFrom !== -1 && bestTo !== -1 && this.checkMill(bestTo, 'ai')) break;
+        allMoves.push({ from, to, formsMill });
       }
-      
-      // If no mill-forming move found, pick a strategic move
-      if (bestFrom === -1) {
-        const from = aiPieces[Math.floor(Math.random() * aiPieces.length)];
-        this.selectedPos = from;
-        this.currentPlayer = 'ai';
-        this.calculateValidMoves();
-        const moves = Array.from(this.validMoves);
-        bestTo = moves.length > 0 ? moves[Math.floor(Math.random() * moves.length)] : -1;
-        bestFrom = from;
-      }
-    }
-    
-    if (bestFrom !== -1 && bestTo !== -1) {
-      this.movePiece(bestFrom, bestTo, 'ai');
     }
     
     this.selectedPos = null;
     this.validMoves.clear();
+    
+    // If AI has no valid moves, player wins!
+    if (allMoves.length === 0) {
+      this.showMessage('AI cannot move - You Win!');
+      setTimeout(() => {
+        this.showDifficultyMenu = true;
+        this.setupGame();
+      }, 3000);
+      return;
+    }
+    
+    let bestMove: {from: number, to: number} | null = null;
+    
+    if (this.difficulty === 'easy') {
+      // Easy: Random move from all available
+      bestMove = allMoves[Math.floor(Math.random() * allMoves.length)];
+    } else {
+      // Medium/Hard: Prioritize mill-forming moves
+      const millMoves = allMoves.filter(m => m.formsMill);
+      if (millMoves.length > 0) {
+        bestMove = millMoves[Math.floor(Math.random() * millMoves.length)];
+      } else {
+        // No mill moves, pick random
+        bestMove = allMoves[Math.floor(Math.random() * allMoves.length)];
+      }
+    }
+    
+    if (bestMove) {
+      this.movePiece(bestMove.from, bestMove.to, 'ai');
+    }
   }
 
   private aiRemovePiece(): void {
@@ -756,36 +841,52 @@ export class NineMensMorrisGame extends GameEngine {
     ctx.fillStyle = '#aaaaaa';
     ctx.fillText('Select AI Difficulty', this.BOARD_CENTER_X, 140);
     
-    // Draw difficulty buttons
+    // Draw tap instruction for mobile
+    ctx.font = '16px Arial';
+    ctx.fillStyle = '#64b5f6';
+    ctx.fillText('Tap to select', this.BOARD_CENTER_X, 170);
+    
+    // Draw difficulty buttons - larger for touch
+    const buttonWidth = 200;
+    const buttonHeight = 55;
+    const buttonSpacing = 70;
+    
     const difficulties: Array<{level: 'easy' | 'medium' | 'hard', label: string, desc: string, color: string}> = [
-      { level: 'easy', label: 'Easy', desc: 'AI makes random moves', color: '#4db8ff' },
+      { level: 'easy', label: 'Easy', desc: 'AI blocks your mills', color: '#4db8ff' },
       { level: 'medium', label: 'Medium', desc: 'AI tries to form mills', color: '#ffaa00' },
       { level: 'hard', label: 'Hard', desc: 'AI uses strategy', color: '#ff6b6b' },
     ];
     
     difficulties.forEach((diff, i) => {
-      const y = this.BOARD_CENTER_Y - 60 + i * 60;
-      const x = this.BOARD_CENTER_X - 80;
+      const y = this.BOARD_CENTER_Y - 60 + i * buttonSpacing;
+      const x = this.BOARD_CENTER_X - buttonWidth / 2;
       
-      // Button background
+      // Button shadow
+      ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+      ctx.fillRect(x + 4, y + 4, buttonWidth, buttonHeight);
+      
+      // Button background with rounded corners effect
       ctx.fillStyle = diff.color;
-      ctx.fillRect(x, y, 160, 45);
+      ctx.fillRect(x, y, buttonWidth, buttonHeight);
       
       // Button border
       ctx.strokeStyle = '#ffffff';
-      ctx.lineWidth = 2;
-      ctx.strokeRect(x, y, 160, 45);
+      ctx.lineWidth = 3;
+      ctx.strokeRect(x, y, buttonWidth, buttonHeight);
       
       // Button text
       ctx.fillStyle = '#ffffff';
-      ctx.font = 'bold 20px Arial';
+      ctx.font = 'bold 24px Arial';
       ctx.textAlign = 'center';
-      ctx.fillText(diff.label, this.BOARD_CENTER_X, y + 28);
-      
-      // Description
-      ctx.font = '14px Arial';
-      ctx.fillStyle = '#aaaaaa';
-      ctx.fillText(diff.desc, this.BOARD_CENTER_X, y + 70);
+      ctx.fillText(diff.label, this.BOARD_CENTER_X, y + 35);
+    });
+    
+    // Draw descriptions below buttons
+    ctx.font = '14px Arial';
+    ctx.fillStyle = '#888888';
+    difficulties.forEach((diff, i) => {
+      const y = this.BOARD_CENTER_Y - 60 + i * buttonSpacing + buttonHeight + 12;
+      ctx.fillText(diff.desc, this.BOARD_CENTER_X, y);
     });
   }
 
@@ -1103,5 +1204,8 @@ export class NineMensMorrisGame extends GameEngine {
   cleanup(): void {
     this.canvas.removeEventListener('mousemove', this.handleMouseMove);
     this.canvas.removeEventListener('click', this.handleClick);
+    this.canvas.removeEventListener('touchstart', this.handleTouchStart);
+    this.canvas.removeEventListener('touchend', this.handleTouchEnd);
+    this.canvas.removeEventListener('touchmove', this.handleTouchMove);
   }
 }
