@@ -1,4 +1,8 @@
+'use client';
+
 import { GameMetadata } from '@/lib/game-framework/types';
+import { useEffect, useState } from 'react';
+import { createPortal } from 'react-dom';
 
 interface Props {
   game: GameMetadata;
@@ -6,8 +10,30 @@ interface Props {
 }
 
 export function InstructionsOverlay({ game, onStartGame }: Props) {
-  return (
-    <div className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/95 p-4 overflow-y-auto">
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const content = (
+    <div 
+      style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        right: 0,
+        bottom: 0,
+        zIndex: 2147483647,
+        display: 'flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.95)',
+        padding: '16px',
+        overflowY: 'auto',
+        isolation: 'isolate',
+      }}
+    >
       <div className="max-w-2xl w-full mx-auto p-4 md:p-8 bg-gradient-to-br from-indigo-900 to-purple-900 rounded-2xl md:rounded-3xl border-2 border-pink-400 my-auto">
         <h2 className="text-2xl md:text-3xl font-bold text-white mb-3 md:mb-4">How to Play</h2>
         
@@ -39,4 +65,7 @@ export function InstructionsOverlay({ game, onStartGame }: Props) {
       </div>
     </div>
   );
+
+  if (!mounted) return null;
+  return createPortal(content, document.body);
 }
