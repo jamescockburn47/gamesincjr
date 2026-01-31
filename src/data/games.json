@@ -383,5 +383,25 @@
     "status": "released",
     "internal": true,
     "birthday": "Henry"
+  },
+  {
+    "slug": "nine-mens-morris",
+    "title": "Nine Men's Morris",
+    "tags": [
+      "strategy",
+      "board-game",
+      "classic"
+    ],
+    "description": "Ancient strategy board game - place your pieces, form mills, and capture your opponent's pieces to win!",
+    "description_it": "Antico gioco di strategia - posiziona i tuoi pezzi, forma mulini e cattura i pezzi dell'avversario per vincere!",
+    "hero": "/games/nine-mens-morris/hero.svg",
+    "screenshots": [
+      "/games/nine-mens-morris/s1.svg"
+    ],
+    "demoPath": "/demos/nine-mens-morris/index.html",
+    "gameType": "html5",
+    "engine": "vanilla-js",
+    "version": "1.0.0",
+    "status": "released"
   }
 ]

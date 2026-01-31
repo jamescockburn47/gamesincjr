@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nine Men's Morris - Coming Soon</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      width: 100vw;
+      height: 100vh;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      background: linear-gradient(135deg, #1a1a2e 0%, #2d3561 100%);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      color: #ffffff;
+      overflow: hidden;
+    }
+    
+    .container {
+      text-align: center;
+      padding: 2rem;
+    }
+    
+    h1 {
+      font-size: 3rem;
+      margin-bottom: 1rem;
+      text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+    }
+    
+    p {
+      font-size: 1.2rem;
+      color: #aaaaaa;
+      margin-bottom: 2rem;
+    }
+    
+    .board-preview {
+      width: 300px;
+      height: 300px;
+      margin: 2rem auto;
+      position: relative;
+    }
+    
+    .board-preview svg {
+      width: 100%;
+      height: 100%;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.3));
+    }
+    
+    .info {
+      background: rgba(255,255,255,0.1);
+      border-radius: 12px;
+      padding: 1.5rem;
+      max-width: 500px;
+      margin: 0 auto;
+      backdrop-filter: blur(10px);
+    }
+    
+    .info h2 {
+      margin-bottom: 0.5rem;
+      font-size: 1.5rem;
+    }
+    
+    .info ul {
+      text-align: left;
+      list-style: none;
+      padding: 0;
+      color: #e8e8e8;
+    }
+    
+    .info li {
+      padding: 0.5rem 0;
+      border-bottom: 1px solid rgba(255,255,255,0.1);
+    }
+    
+    .info li:last-child {
+      border-bottom: none;
+    }
+    
+    .info li::before {
+      content: "→ ";
+      color: #64ffda;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Nine Men's Morris</h1>
+    <p>Game implementation coming soon...</p>
+    
+    <div class="board-preview">
+      <svg viewBox="0 0 300 300" xmlns="http://www.w3.org/2000/svg">
+        <!-- Board representation -->
+        <g transform="translate(150, 150)">
+          <!-- Outer square -->
+          <rect x="-130" y="-130" width="260" height="260" fill="none" stroke="#e8e8e8" stroke-width="3"/>
+          <!-- Middle square -->
+          <rect x="-90" y="-90" width="180" height="180" fill="none" stroke="#e8e8e8" stroke-width="3"/>
+          <!-- Inner square -->
+          <rect x="-50" y="-50" width="100" height="100" fill="none" stroke="#e8e8e8" stroke-width="3"/>
+          
+          <!-- Connecting lines -->
+          <line x1="0" y1="-130" x2="0" y2="-50" stroke="#e8e8e8" stroke-width="2"/>
+          <line x1="0" y1="50" x2="0" y2="130" stroke="#e8e8e8" stroke-width="2"/>
+          <line x1="-130" y1="0" x2="-50" y2="0" stroke="#e8e8e8" stroke-width="2"/>
+          <line x1="50" y1="0" x2="130" y2="0" stroke="#e8e8e8" stroke-width="2"/>
+        </g>
+      </svg>
+    </div>
+    
+    <div class="info">
+      <h2>Game Rules</h2>
+      <ul>
+        <li>Place your 9 pieces on the board</li>
+        <li>Form mills (3 in a row) to capture opponent pieces</li>
+        <li>Move pieces to adjacent positions</li>
+        <li>Win by reducing opponent to 2 pieces</li>
+      </ul>
+    </div>
+  </div>
+</body>
+</html>
