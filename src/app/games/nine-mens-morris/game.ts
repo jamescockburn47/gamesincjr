@@ -385,7 +385,15 @@ export class NineMensMorrisGame extends GameEngine {
       this.lastMill = this.getMillPositions(pos, player);
       this.millCelebrationTime = 1.0;
       this.phase = 'removing';
-      this.showMessage(player === 'player' ? 'Mill! Remove an opponent piece' : 'AI formed a mill!');
+      if (player === 'player') {
+        // Check if AI has non-mill pieces to explain the rule
+        const canOnlyRemoveNonMill = this.hasNonMillPieces('ai');
+        this.showMessage(canOnlyRemoveNonMill ? 
+          'Mill! Tap a RED highlighted piece to remove' : 
+          'Mill! All AI pieces are in mills - remove any!');
+      } else {
+        this.showMessage('AI formed a mill!');
+      }
       
       // If AI formed the mill, trigger it to remove a piece
       if (player === 'ai') {
@@ -413,7 +421,14 @@ export class NineMensMorrisGame extends GameEngine {
       this.lastMill = this.getMillPositions(to, player);
       this.millCelebrationTime = 1.0;
       this.phase = 'removing';
-      this.showMessage(player === 'player' ? 'Mill! Remove an opponent piece' : 'AI formed a mill!');
+      if (player === 'player') {
+        const canOnlyRemoveNonMill = this.hasNonMillPieces('ai');
+        this.showMessage(canOnlyRemoveNonMill ? 
+          'Mill! Tap a RED highlighted piece to remove' : 
+          'Mill! All AI pieces are in mills - remove any!');
+      } else {
+        this.showMessage('AI formed a mill!');
+      }
       
       // If AI formed the mill, trigger it to remove a piece
       if (player === 'ai') {
@@ -967,7 +982,14 @@ export class NineMensMorrisGame extends GameEngine {
       const isValid = this.validMoves.has(i);
       const isHovered = this.hoverPos === i;
       const isMill = this.lastMill?.includes(i) && this.millCelebrationTime > 0;
-      const isRemovable = this.phase === 'removing' && this.currentPlayer === 'player' && this.board[i] === 'ai';
+      // A piece is only removable if:
+      // 1. We're in removing phase and it's player's turn
+      // 2. The piece belongs to AI
+      // 3. EITHER the piece is NOT in a mill, OR all AI pieces are in mills
+      const isRemovable = this.phase === 'removing' && 
+                         this.currentPlayer === 'player' && 
+                         this.board[i] === 'ai' &&
+                         (!this.isInMill(i, 'ai') || !this.hasNonMillPieces('ai'));
       const pulse = isMill ? 1 + Math.sin(Date.now() / 150) * 0.3 : 1;
       
       // Outer glow for special states
