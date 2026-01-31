@@ -91,31 +91,75 @@ export class NineMensMorrisGame extends GameEngine {
   private readonly PIECE_RADIUS = 20;
   
   // Mills - all possible 3-in-a-row combinations
+  // Board layout with position numbers:
+  //      0--------1--------2
+  //      |        |        |
+  //      |  8-----9----10  |
+  //      |  |     |     |  |
+  //      |  | 16-17-18  |  |
+  //      |  |  |     |  |  |
+  //      7-15-23    19-11--3
+  //      |  |  |     |  |  |
+  //      |  | 22-21-20  |  |
+  //      |  |     |     |  |
+  //      | 14----13----12  |
+  //      |        |        |
+  //      6--------5--------4
   private readonly MILLS: Mill[] = [
-    // Outer ring
-    { positions: [0, 1, 2] }, { positions: [6, 7, 8] },
-    { positions: [12, 13, 14] }, { positions: [18, 19, 20] },
-    // Middle ring
-    { positions: [3, 4, 5] }, { positions: [9, 10, 11] },
-    { positions: [15, 16, 17] }, { positions: [21, 22, 23] },
-    // Inner ring
-    { positions: [0, 9, 21] }, { positions: [3, 10, 18] },
-    { positions: [6, 14, 22] }, { positions: [1, 4, 7] },
-    // Cross connections
-    { positions: [8, 12, 17] }, { positions: [5, 13, 20] },
-    { positions: [11, 16, 23] }, { positions: [2, 15, 19] },
+    // Outer square (ring 0: positions 0-7)
+    { positions: [0, 1, 2] },   // top horizontal
+    { positions: [2, 3, 4] },   // right vertical
+    { positions: [4, 5, 6] },   // bottom horizontal
+    { positions: [6, 7, 0] },   // left vertical
+    // Middle square (ring 1: positions 8-15)
+    { positions: [8, 9, 10] },  // top horizontal
+    { positions: [10, 11, 12] }, // right vertical
+    { positions: [12, 13, 14] }, // bottom horizontal
+    { positions: [14, 15, 8] },  // left vertical
+    // Inner square (ring 2: positions 16-23)
+    { positions: [16, 17, 18] }, // top horizontal
+    { positions: [18, 19, 20] }, // right vertical
+    { positions: [20, 21, 22] }, // bottom horizontal
+    { positions: [22, 23, 16] }, // left vertical
+    // Cross-ring connections (through midpoints)
+    { positions: [1, 9, 17] },   // top vertical (connects all 3 squares)
+    { positions: [3, 11, 19] },  // right horizontal
+    { positions: [5, 13, 21] },  // bottom vertical
+    { positions: [7, 15, 23] },  // left horizontal
   ];
   
-  // Adjacent positions map
+  // Adjacent positions map - which positions can move to each other
   private readonly ADJACENT: { [key: number]: number[] } = {
-    0: [1, 9], 1: [0, 2, 4], 2: [1, 15],
-    3: [4, 10], 4: [1, 3, 5, 7], 5: [4, 13],
-    6: [7, 14], 7: [4, 6, 8], 8: [7, 12],
-    9: [0, 10, 21], 10: [3, 9, 11, 18], 11: [10, 16],
-    12: [8, 13, 17], 13: [5, 12, 14, 20], 14: [6, 13, 22],
-    15: [2, 16, 19], 16: [11, 15, 17, 23], 17: [12, 16],
-    18: [10, 19], 19: [15, 18, 20], 20: [13, 19],
-    21: [9, 22], 22: [14, 21, 23], 23: [16, 22],
+    // Outer square corners (only 2 adjacent)
+    0: [1, 7],
+    2: [1, 3],
+    4: [3, 5],
+    6: [5, 7],
+    // Outer square midpoints (3 adjacent - 2 on same ring, 1 on middle ring)
+    1: [0, 2, 9],
+    3: [2, 4, 11],
+    5: [4, 6, 13],
+    7: [6, 0, 15],
+    // Middle square corners (only 2 adjacent)
+    8: [9, 15],
+    10: [9, 11],
+    12: [11, 13],
+    14: [13, 15],
+    // Middle square midpoints (4 adjacent - 2 on same ring, 1 outer, 1 inner)
+    9: [8, 10, 1, 17],
+    11: [10, 12, 3, 19],
+    13: [12, 14, 5, 21],
+    15: [14, 8, 7, 23],
+    // Inner square corners (only 2 adjacent)
+    16: [17, 23],
+    18: [17, 19],
+    20: [19, 21],
+    22: [21, 23],
+    // Inner square midpoints (3 adjacent - 2 on same ring, 1 on middle ring)
+    17: [16, 18, 9],
+    19: [18, 20, 11],
+    21: [20, 22, 13],
+    23: [22, 16, 15],
   };
 
   init(): void {
@@ -796,13 +840,13 @@ export class NineMensMorrisGame extends GameEngine {
     });
     ctx.shadowBlur = 0;
     
-    // Draw connecting lines with glow
+    // Draw connecting lines with glow (cross-ring connections through midpoints)
     ctx.lineWidth = 3;
     const connections = [
-      [1, 9, 17],   // Top middle
-      [3, 11, 19],  // Right middle
-      [5, 13, 21],  // Bottom middle
-      [7, 15, 23],  // Left middle
+      [1, 9, 17],   // Top vertical (outer->middle->inner top midpoints)
+      [3, 11, 19],  // Right horizontal (outer->middle->inner right midpoints)
+      [5, 13, 21],  // Bottom vertical (outer->middle->inner bottom midpoints)
+      [7, 15, 23],  // Left horizontal (outer->middle->inner left midpoints)
     ];
     
     for (const line of connections) {
