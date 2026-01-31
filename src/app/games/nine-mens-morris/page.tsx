@@ -45,7 +45,7 @@ export default function Page() {
 
       {state === 'playing' && (
         <FullScreenWrapper onExit={() => setState('landing')}>
-          <GameCanvas GameClass={NineMensMorrisGame} />
+          <GameCanvas GameClass={NineMensMorrisGame} width={800} height={600} />
         </FullScreenWrapper>
       )}
     </>

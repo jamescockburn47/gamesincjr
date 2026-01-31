@@ -86,9 +86,9 @@ export class NineMensMorrisGame extends GameEngine {
   private readonly CANVAS_WIDTH = 800;
   private readonly CANVAS_HEIGHT = 600;
   private readonly BOARD_CENTER_X = 400;
-  private readonly BOARD_CENTER_Y = 300;
+  private readonly BOARD_CENTER_Y = 320;
   private readonly RING_RADII = [200, 140, 80];
-  private readonly PIECE_RADIUS = 18;
+  private readonly PIECE_RADIUS = 20;
   
   // Mills - all possible 3-in-a-row combinations
   private readonly MILLS: Mill[] = [
@@ -133,7 +133,7 @@ export class NineMensMorrisGame extends GameEngine {
   private initializePositions(): void {
     // Create position coordinates for traditional square layout
     // 24 positions: 8 per square (3 concentric squares)
-    const squareSizes = [200, 140, 80]; // Outer, middle, inner square sizes
+    const squareSizes = [160, 110, 60]; // Outer, middle, inner square sizes
     
     for (let ring = 0; ring < 3; ring++) {
       const size = squareSizes[ring];
@@ -230,7 +230,7 @@ export class NineMensMorrisGame extends GameEngine {
     for (let i = 0; i < this.positions.length; i++) {
       const p = this.positions[i];
       const dist = Math.sqrt((x - p.x) ** 2 + (y - p.y) ** 2);
-      if (dist < this.PIECE_RADIUS + 10) return i;
+      if (dist < this.PIECE_RADIUS + 15) return i;
     }
     return null;
   }
@@ -713,7 +713,7 @@ export class NineMensMorrisGame extends GameEngine {
     ctx.lineWidth = 3;
     
     // Draw three concentric squares
-    const squareSizes = [200, 140, 80];
+    const squareSizes = [160, 110, 60];
     for (const size of squareSizes) {
       ctx.strokeRect(
         this.BOARD_CENTER_X - size,
