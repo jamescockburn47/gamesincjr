@@ -801,28 +801,86 @@ export class NineMensMorrisGame extends GameEngine {
   }
 
   render(ctx: CanvasRenderingContext2D): void {
-    // Clear background with deep space theme
-    ctx.fillStyle = '#0a0a1a';
+    const time = Date.now() / 1000;
+    
+    // Epic battlefield sky gradient
+    const skyGradient = ctx.createLinearGradient(0, 0, 0, this.CANVAS_HEIGHT);
+    skyGradient.addColorStop(0, '#1a0a2e');      // Deep purple top
+    skyGradient.addColorStop(0.3, '#2d1b4e');    // Purple
+    skyGradient.addColorStop(0.5, '#4a1942');    // Dark magenta
+    skyGradient.addColorStop(0.7, '#6b2038');    // Blood red
+    skyGradient.addColorStop(1, '#1a0505');      // Almost black bottom
+    ctx.fillStyle = skyGradient;
     ctx.fillRect(0, 0, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
     
-    // Draw animated gradient background
-    const time = Date.now() / 2000;
-    const gradient = ctx.createRadialGradient(
+    // Animated war clouds
+    for (let i = 0; i < 8; i++) {
+      const cloudX = ((time * 15 + i * 120) % (this.CANVAS_WIDTH + 200)) - 100;
+      const cloudY = 30 + i * 25 + Math.sin(time + i) * 10;
+      const cloudAlpha = 0.15 + Math.sin(time * 0.5 + i) * 0.05;
+      
+      ctx.fillStyle = `rgba(80, 40, 60, ${cloudAlpha})`;
+      ctx.beginPath();
+      ctx.ellipse(cloudX, cloudY, 80 + i * 10, 20 + i * 3, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    
+    // Rising embers/sparks
+    for (let i = 0; i < 30; i++) {
+      const emberX = (i * 67 + time * 20) % this.CANVAS_WIDTH;
+      const emberY = this.CANVAS_HEIGHT - ((time * 40 + i * 30) % (this.CANVAS_HEIGHT + 50));
+      const emberSize = 1 + Math.sin(time * 3 + i) * 0.5;
+      const emberAlpha = 0.3 + Math.sin(time * 2 + i * 0.5) * 0.2;
+      
+      // Ember glow
+      ctx.shadowColor = '#ff6600';
+      ctx.shadowBlur = 8;
+      ctx.fillStyle = `rgba(255, ${150 + Math.floor(Math.sin(time + i) * 50)}, 50, ${emberAlpha})`;
+      ctx.beginPath();
+      ctx.arc(emberX, emberY, emberSize, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.shadowBlur = 0;
+    
+    // Battle banners on left side (Blue army)
+    this.drawBanner(ctx, 35, 150, '#2196f3', '#0d47a1', time, '⚔');
+    this.drawBanner(ctx, 55, 350, '#2196f3', '#0d47a1', time + 0.5, '🛡');
+    
+    // Battle banners on right side (Red army)
+    this.drawBanner(ctx, this.CANVAS_WIDTH - 35, 150, '#f44336', '#b71c1c', time + 0.3, '⚔');
+    this.drawBanner(ctx, this.CANVAS_WIDTH - 55, 350, '#f44336', '#b71c1c', time + 0.8, '🛡');
+    
+    // Dramatic center spotlight
+    const spotlightGradient = ctx.createRadialGradient(
       this.BOARD_CENTER_X, this.BOARD_CENTER_Y, 0,
-      this.BOARD_CENTER_X, this.BOARD_CENTER_Y, 300
+      this.BOARD_CENTER_X, this.BOARD_CENTER_Y, 250
     );
-    gradient.addColorStop(0, '#3d5a80');
-    gradient.addColorStop(0.5, '#293241');
-    gradient.addColorStop(1, '#0a0a1a');
-    ctx.fillStyle = gradient;
+    spotlightGradient.addColorStop(0, 'rgba(255, 200, 150, 0.15)');
+    spotlightGradient.addColorStop(0.5, 'rgba(255, 150, 100, 0.08)');
+    spotlightGradient.addColorStop(1, 'rgba(0, 0, 0, 0)');
+    ctx.fillStyle = spotlightGradient;
     ctx.fillRect(0, 0, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
     
-    // Add subtle stars/dots in background
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
-    for (let i = 0; i < 50; i++) {
-      const x = (i * 47) % this.CANVAS_WIDTH;
-      const y = (i * 83 + Math.sin(time + i) * 5) % this.CANVAS_HEIGHT;
-      ctx.fillRect(x, y, 2, 2);
+    // Vignette effect (dark edges)
+    const vignetteGradient = ctx.createRadialGradient(
+      this.BOARD_CENTER_X, this.BOARD_CENTER_Y, 200,
+      this.BOARD_CENTER_X, this.BOARD_CENTER_Y, 450
+    );
+    vignetteGradient.addColorStop(0, 'rgba(0, 0, 0, 0)');
+    vignetteGradient.addColorStop(1, 'rgba(0, 0, 0, 0.6)');
+    ctx.fillStyle = vignetteGradient;
+    ctx.fillRect(0, 0, this.CANVAS_WIDTH, this.CANVAS_HEIGHT);
+    
+    // Twinkling stars (for the night sky feel)
+    for (let i = 0; i < 40; i++) {
+      const starX = (i * 47) % this.CANVAS_WIDTH;
+      const starY = (i * 31) % (this.CANVAS_HEIGHT * 0.4);
+      const twinkle = 0.3 + Math.sin(time * 3 + i * 2) * 0.3;
+      
+      ctx.fillStyle = `rgba(255, 255, 255, ${twinkle})`;
+      ctx.beginPath();
+      ctx.arc(starX, starY, 1, 0, Math.PI * 2);
+      ctx.fill();
     }
     
     // Draw difficulty selection menu
@@ -842,6 +900,52 @@ export class NineMensMorrisGame extends GameEngine {
     
     // Draw UI
     this.drawUI(ctx);
+  }
+  
+  // Draw animated battle banner
+  private drawBanner(ctx: CanvasRenderingContext2D, x: number, y: number, color1: string, color2: string, timeOffset: number, symbol: string): void {
+    const time = Date.now() / 1000;
+    const wave = Math.sin(time * 2 + timeOffset) * 3;
+    
+    // Banner pole
+    ctx.fillStyle = '#8B4513';
+    ctx.fillRect(x - 3, y - 30, 6, 180);
+    
+    // Pole top ornament
+    ctx.fillStyle = '#FFD700';
+    ctx.beginPath();
+    ctx.arc(x, y - 35, 8, 0, Math.PI * 2);
+    ctx.fill();
+    
+    // Banner fabric with wave effect
+    ctx.save();
+    ctx.translate(x, y);
+    
+    const bannerGradient = ctx.createLinearGradient(0, 0, 40, 0);
+    bannerGradient.addColorStop(0, color1);
+    bannerGradient.addColorStop(1, color2);
+    ctx.fillStyle = bannerGradient;
+    
+    ctx.beginPath();
+    ctx.moveTo(5, 0);
+    ctx.quadraticCurveTo(25 + wave, 25, 45 + wave * 1.5, 0);
+    ctx.quadraticCurveTo(25 + wave, 35, 45 + wave * 1.5, 70);
+    ctx.quadraticCurveTo(25 + wave * 0.5, 60, 5, 70);
+    ctx.closePath();
+    ctx.fill();
+    
+    // Banner border
+    ctx.strokeStyle = '#FFD700';
+    ctx.lineWidth = 2;
+    ctx.stroke();
+    
+    // Banner symbol
+    ctx.font = '20px Arial';
+    ctx.fillStyle = '#FFD700';
+    ctx.textAlign = 'center';
+    ctx.fillText(symbol, 25 + wave * 0.5, 42);
+    
+    ctx.restore();
   }
   
   private drawDifficultyMenu(ctx: CanvasRenderingContext2D): void {
@@ -906,17 +1010,55 @@ export class NineMensMorrisGame extends GameEngine {
   }
 
   private drawBoard(ctx: CanvasRenderingContext2D): void {
-    // Draw board platform background
-    ctx.fillStyle = 'rgba(30, 30, 50, 0.3)';
-    ctx.shadowColor = 'rgba(0, 0, 0, 0.5)';
-    ctx.shadowBlur = 30;
-    ctx.fillRect(
-      this.BOARD_CENTER_X - 200,
-      this.BOARD_CENTER_Y - 200,
-      400,
-      400
+    // Draw stone arena platform
+    const platformGradient = ctx.createRadialGradient(
+      this.BOARD_CENTER_X, this.BOARD_CENTER_Y, 0,
+      this.BOARD_CENTER_X, this.BOARD_CENTER_Y, 220
     );
+    platformGradient.addColorStop(0, 'rgba(60, 50, 40, 0.9)');
+    platformGradient.addColorStop(0.7, 'rgba(40, 35, 30, 0.85)');
+    platformGradient.addColorStop(1, 'rgba(20, 15, 10, 0.8)');
+    
+    // Platform shadow
+    ctx.shadowColor = 'rgba(0, 0, 0, 0.8)';
+    ctx.shadowBlur = 40;
+    ctx.shadowOffsetY = 10;
+    
+    // Draw circular arena platform
+    ctx.fillStyle = platformGradient;
+    ctx.beginPath();
+    ctx.arc(this.BOARD_CENTER_X, this.BOARD_CENTER_Y, 200, 0, Math.PI * 2);
+    ctx.fill();
     ctx.shadowBlur = 0;
+    ctx.shadowOffsetY = 0;
+    
+    // Arena edge ring (gold trim)
+    ctx.strokeStyle = '#8B6914';
+    ctx.lineWidth = 8;
+    ctx.beginPath();
+    ctx.arc(this.BOARD_CENTER_X, this.BOARD_CENTER_Y, 200, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Inner decorative ring
+    ctx.strokeStyle = 'rgba(255, 215, 0, 0.3)';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(this.BOARD_CENTER_X, this.BOARD_CENTER_Y, 190, 0, Math.PI * 2);
+    ctx.stroke();
+    
+    // Stone texture lines
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.2)';
+    ctx.lineWidth = 1;
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      ctx.beginPath();
+      ctx.moveTo(this.BOARD_CENTER_X, this.BOARD_CENTER_Y);
+      ctx.lineTo(
+        this.BOARD_CENTER_X + Math.cos(angle) * 195,
+        this.BOARD_CENTER_Y + Math.sin(angle) * 195
+      );
+      ctx.stroke();
+    }
     
     // Draw three concentric squares with glowing effect
     const squareSizes = [160, 110, 60];
