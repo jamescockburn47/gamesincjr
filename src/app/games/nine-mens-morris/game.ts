@@ -82,6 +82,12 @@ export class NineMensMorrisGame extends GameEngine {
   private message = '';
   private messageTime = 0;
   
+  // Audio state
+  private audioContext: AudioContext | null = null;
+  private musicPlaying = false;
+  private masterGain: GainNode | null = null;
+  private musicStartTime = 0;
+  
   // Constants
   private readonly CANVAS_WIDTH = 800;
   private readonly CANVAS_HEIGHT = 600;
@@ -278,18 +284,24 @@ export class NineMensMorrisGame extends GameEngine {
         this.difficulty = 'easy';
         this.showDifficultyMenu = false;
         this.showMessage('Easy mode selected - AI blocks your mills');
+        this.initAudio();
+        this.startEpicTheme();
         return;
       }
       if (this.isDifficultyButtonClicked(x, y, 'medium')) {
         this.difficulty = 'medium';
         this.showDifficultyMenu = false;
         this.showMessage('Medium mode selected - AI tries to form mills');
+        this.initAudio();
+        this.startEpicTheme();
         return;
       }
       if (this.isDifficultyButtonClicked(x, y, 'hard')) {
         this.difficulty = 'hard';
         this.showDifficultyMenu = false;
         this.showMessage('Hard mode selected - AI uses strategy!');
+        this.initAudio();
+        this.startEpicTheme();
         return;
       }
       return; // Don't allow gameplay during menu
@@ -380,8 +392,10 @@ export class NineMensMorrisGame extends GameEngine {
     }
     
     this.createPlacementParticles(pos, player);
+    this.playPlaceSound();
     
     if (this.checkMill(pos, player)) {
+      this.playMillSound();
       this.lastMill = this.getMillPositions(pos, player);
       this.millCelebrationTime = 1.0;
       this.phase = 'removing';
@@ -416,8 +430,10 @@ export class NineMensMorrisGame extends GameEngine {
     this.pieces.set(to, { player, position: to, animProgress: 0 });
     
     this.createMoveParticles(from, to, player);
+    this.playPlaceSound();
     
     if (this.checkMill(to, player)) {
+      this.playMillSound();
       this.lastMill = this.getMillPositions(to, player);
       this.millCelebrationTime = 1.0;
       this.phase = 'removing';
@@ -453,6 +469,7 @@ export class NineMensMorrisGame extends GameEngine {
     else this.aiPiecesOnBoard--;
     
     this.createCaptureParticles(pos, target);
+    this.playCaptureSound();
     this.phase = this.playerPiecesToPlace === 0 && this.aiPiecesToPlace === 0 ? 'moving' : 'placing';
     this.lastMill = null;
     
@@ -1365,7 +1382,340 @@ export class NineMensMorrisGame extends GameEngine {
     }
   }
 
+  // ==================== EPIC THEME MUSIC ====================
+  
+  private initAudio(): void {
+    if (this.audioContext) return;
+    
+    try {
+      this.audioContext = new (window.AudioContext || (window as typeof window & { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+      this.masterGain = this.audioContext.createGain();
+      this.masterGain.gain.value = 0.3; // Master volume
+      this.masterGain.connect(this.audioContext.destination);
+    } catch {
+      console.log('Audio not supported');
+    }
+  }
+  
+  private startEpicTheme(): void {
+    if (!this.audioContext || this.musicPlaying) return;
+    
+    this.musicPlaying = true;
+    this.musicStartTime = this.audioContext.currentTime;
+    
+    // Start the epic loop
+    this.playEpicLoop();
+  }
+  
+  private playEpicLoop(): void {
+    if (!this.audioContext || !this.masterGain || !this.musicPlaying) return;
+    
+    const ctx = this.audioContext;
+    const now = ctx.currentTime;
+    const bpm = 70; // Slow, dramatic tempo
+    const beatDuration = 60 / bpm;
+    
+    // Epic Star Wars / Traitors style progression
+    // D minor - Bb - Gm - A (classic dramatic progression)
+    const chordProgression = [
+      { root: 146.83, notes: [146.83, 174.61, 220.00] }, // Dm
+      { root: 116.54, notes: [116.54, 146.83, 174.61] }, // Bb
+      { root: 98.00, notes: [98.00, 116.54, 146.83] },   // Gm  
+      { root: 110.00, notes: [110.00, 138.59, 164.81] }, // A
+    ];
+    
+    // Schedule 4 bars (16 beats)
+    for (let bar = 0; bar < 4; bar++) {
+      const chord = chordProgression[bar];
+      const barStart = now + (bar * 4 * beatDuration);
+      
+      // Deep bass drone (Star Wars style)
+      this.playBass(chord.root / 2, barStart, beatDuration * 4, 0.4);
+      
+      // Ominous pad/strings (Traitors style)
+      chord.notes.forEach((freq, i) => {
+        this.playPad(freq, barStart, beatDuration * 4, 0.15 - i * 0.03);
+      });
+      
+      // Dramatic brass stabs on beats 1 and 3
+      this.playBrass(chord.root, barStart, beatDuration * 0.5, 0.25);
+      this.playBrass(chord.root * 1.5, barStart + beatDuration * 2, beatDuration * 0.5, 0.2);
+      
+      // Timpani hits
+      this.playTimpani(barStart, 0.3);
+      this.playTimpani(barStart + beatDuration * 2.5, 0.15);
+      
+      // Suspenseful high strings (Traitors whispers feel)
+      if (bar % 2 === 0) {
+        this.playHighStrings(chord.notes[2] * 2, barStart + beatDuration, beatDuration * 2, 0.1);
+      }
+    }
+    
+    // Schedule the next loop
+    const loopDuration = 4 * 4 * beatDuration;
+    setTimeout(() => {
+      if (this.musicPlaying) {
+        this.playEpicLoop();
+      }
+    }, loopDuration * 1000 - 100); // Slight overlap for seamless loop
+  }
+  
+  private playBass(freq: number, startTime: number, duration: number, volume: number): void {
+    if (!this.audioContext || !this.masterGain) return;
+    
+    const osc = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
+    const filter = this.audioContext.createBiquadFilter();
+    
+    osc.type = 'sawtooth';
+    osc.frequency.value = freq;
+    
+    filter.type = 'lowpass';
+    filter.frequency.value = 150;
+    filter.Q.value = 2;
+    
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(volume, startTime + 0.1);
+    gain.gain.setValueAtTime(volume, startTime + duration - 0.3);
+    gain.gain.linearRampToValueAtTime(0, startTime + duration);
+    
+    osc.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+    
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+  }
+  
+  private playPad(freq: number, startTime: number, duration: number, volume: number): void {
+    if (!this.audioContext || !this.masterGain) return;
+    
+    // Create rich pad with multiple oscillators
+    for (let i = 0; i < 3; i++) {
+      const osc = this.audioContext.createOscillator();
+      const gain = this.audioContext.createGain();
+      const filter = this.audioContext.createBiquadFilter();
+      
+      osc.type = i === 0 ? 'sine' : 'triangle';
+      osc.frequency.value = freq * (1 + i * 0.002); // Slight detune for richness
+      
+      filter.type = 'lowpass';
+      filter.frequency.value = 800 + i * 200;
+      
+      // Slow attack, sustain, slow release (string pad feel)
+      gain.gain.setValueAtTime(0, startTime);
+      gain.gain.linearRampToValueAtTime(volume / 3, startTime + 0.5);
+      gain.gain.setValueAtTime(volume / 3, startTime + duration - 0.8);
+      gain.gain.linearRampToValueAtTime(0, startTime + duration);
+      
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(this.masterGain);
+      
+      osc.start(startTime);
+      osc.stop(startTime + duration + 0.1);
+    }
+  }
+  
+  private playBrass(freq: number, startTime: number, duration: number, volume: number): void {
+    if (!this.audioContext || !this.masterGain) return;
+    
+    const osc = this.audioContext.createOscillator();
+    const osc2 = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
+    const filter = this.audioContext.createBiquadFilter();
+    
+    osc.type = 'sawtooth';
+    osc.frequency.value = freq;
+    osc2.type = 'square';
+    osc2.frequency.value = freq * 1.001;
+    
+    filter.type = 'lowpass';
+    filter.frequency.setValueAtTime(300, startTime);
+    filter.frequency.linearRampToValueAtTime(2000, startTime + 0.05);
+    filter.frequency.linearRampToValueAtTime(800, startTime + duration);
+    
+    // Punchy brass attack
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(volume, startTime + 0.02);
+    gain.gain.setValueAtTime(volume * 0.7, startTime + 0.1);
+    gain.gain.linearRampToValueAtTime(0, startTime + duration);
+    
+    osc.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+    
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+    osc2.start(startTime);
+    osc2.stop(startTime + duration);
+  }
+  
+  private playTimpani(startTime: number, volume: number): void {
+    if (!this.audioContext || !this.masterGain) return;
+    
+    const osc = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
+    
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(80, startTime);
+    osc.frequency.exponentialRampToValueAtTime(50, startTime + 0.3);
+    
+    gain.gain.setValueAtTime(volume, startTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.8);
+    
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    
+    osc.start(startTime);
+    osc.stop(startTime + 0.8);
+    
+    // Add noise burst for attack
+    const bufferSize = this.audioContext.sampleRate * 0.05;
+    const buffer = this.audioContext.createBuffer(1, bufferSize, this.audioContext.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) {
+      data[i] = (Math.random() * 2 - 1) * (1 - i / bufferSize);
+    }
+    
+    const noise = this.audioContext.createBufferSource();
+    const noiseGain = this.audioContext.createGain();
+    const noiseFilter = this.audioContext.createBiquadFilter();
+    
+    noise.buffer = buffer;
+    noiseFilter.type = 'lowpass';
+    noiseFilter.frequency.value = 200;
+    noiseGain.gain.value = volume * 0.5;
+    
+    noise.connect(noiseFilter);
+    noiseFilter.connect(noiseGain);
+    noiseGain.connect(this.masterGain);
+    
+    noise.start(startTime);
+  }
+  
+  private playHighStrings(freq: number, startTime: number, duration: number, volume: number): void {
+    if (!this.audioContext || !this.masterGain) return;
+    
+    // Eerie high strings (Traitors suspense feel)
+    const osc = this.audioContext.createOscillator();
+    const osc2 = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
+    const filter = this.audioContext.createBiquadFilter();
+    
+    osc.type = 'sine';
+    osc.frequency.value = freq;
+    osc2.type = 'triangle';
+    osc2.frequency.value = freq * 1.5; // Fifth above
+    
+    // Tremolo/vibrato effect
+    const lfo = this.audioContext.createOscillator();
+    const lfoGain = this.audioContext.createGain();
+    lfo.frequency.value = 5; // Vibrato speed
+    lfoGain.gain.value = 5; // Vibrato depth
+    lfo.connect(lfoGain);
+    lfoGain.connect(osc.frequency);
+    
+    filter.type = 'bandpass';
+    filter.frequency.value = freq;
+    filter.Q.value = 5;
+    
+    gain.gain.setValueAtTime(0, startTime);
+    gain.gain.linearRampToValueAtTime(volume, startTime + 0.3);
+    gain.gain.setValueAtTime(volume, startTime + duration - 0.5);
+    gain.gain.linearRampToValueAtTime(0, startTime + duration);
+    
+    osc.connect(filter);
+    osc2.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.masterGain);
+    
+    lfo.start(startTime);
+    lfo.stop(startTime + duration);
+    osc.start(startTime);
+    osc.stop(startTime + duration);
+    osc2.start(startTime);
+    osc2.stop(startTime + duration);
+  }
+  
+  // Sound effects
+  playPlaceSound(): void {
+    if (!this.audioContext || !this.masterGain) return;
+    
+    const osc = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
+    
+    osc.frequency.setValueAtTime(300, this.audioContext.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(150, this.audioContext.currentTime + 0.1);
+    
+    gain.gain.setValueAtTime(0.2, this.audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.15);
+    
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    
+    osc.start();
+    osc.stop(this.audioContext.currentTime + 0.15);
+  }
+  
+  playMillSound(): void {
+    if (!this.audioContext || !this.masterGain) return;
+    
+    // Triumphant fanfare for forming a mill
+    const notes = [392, 523.25, 659.25, 783.99]; // G, C, E, G (major chord arpeggio)
+    
+    notes.forEach((freq, i) => {
+      const osc = this.audioContext!.createOscillator();
+      const gain = this.audioContext!.createGain();
+      
+      osc.type = 'square';
+      osc.frequency.value = freq;
+      
+      const startTime = this.audioContext!.currentTime + i * 0.08;
+      gain.gain.setValueAtTime(0.15, startTime);
+      gain.gain.exponentialRampToValueAtTime(0.001, startTime + 0.3);
+      
+      osc.connect(gain);
+      gain.connect(this.masterGain!);
+      
+      osc.start(startTime);
+      osc.stop(startTime + 0.3);
+    });
+  }
+  
+  playCaptureSound(): void {
+    if (!this.audioContext || !this.masterGain) return;
+    
+    // Dramatic capture sound
+    const osc = this.audioContext.createOscillator();
+    const gain = this.audioContext.createGain();
+    
+    osc.type = 'sawtooth';
+    osc.frequency.setValueAtTime(400, this.audioContext.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(80, this.audioContext.currentTime + 0.3);
+    
+    gain.gain.setValueAtTime(0.25, this.audioContext.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, this.audioContext.currentTime + 0.4);
+    
+    osc.connect(gain);
+    gain.connect(this.masterGain);
+    
+    osc.start();
+    osc.stop(this.audioContext.currentTime + 0.4);
+  }
+  
+  private stopMusic(): void {
+    this.musicPlaying = false;
+    if (this.audioContext) {
+      this.audioContext.close();
+      this.audioContext = null;
+      this.masterGain = null;
+    }
+  }
+
   cleanup(): void {
+    this.stopMusic();
     this.canvas.removeEventListener('mousemove', this.handleMouseMove);
     this.canvas.removeEventListener('click', this.handleClick);
     this.canvas.removeEventListener('touchstart', this.handleTouchStart);
