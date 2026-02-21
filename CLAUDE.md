@@ -189,13 +189,6 @@ timer   -= 1;
   - Projectile:       400–800 px/s
   - Slow background:   20–80 px/s
 
-### Converting old code
-
-  If you encounter per-frame values in an existing game:
-  - px/frame → px/s: multiply by 60
-  - Gravity/frame² → px/s²: multiply by 3600 (but usually ~300–600 works)
-  - Frame countdown → seconds: divide by 60
-
 ### Never use prompt() or alert()
 
   NEVER call `alert()` or `prompt()` for game feedback.
@@ -218,10 +211,6 @@ Mandatory per game:
   ✅ Score persistence — `game.addScore()` and `game.endGame()` handle this
   ✅ 60 FPS stable — never create O(n²) loops or synchronous heavy work
   ✅ No console errors in production
-
-Difficulty formula:
-  difficulty = 1.0 + (survivalSeconds / 60) * 0.05   // +5% per minute
-  cap at 2.5×
 
 ═══════════════════════════════════════════════════════════════
 CATALOG INTEGRATION (Mandatory for Every New Game)
@@ -300,23 +289,6 @@ When touching ANY existing demo HTML file, verify:
   □ Scores go through `game.addScore()` / `game.endGame()`
 
 If ANY box is unchecked, fix it before adding new features.
-
-═══════════════════════════════════════════════════════════════
-COMMON PITFALLS — AUTO-AVOID
-═══════════════════════════════════════════════════════════════
-
-❌ Writing overlay HTML from scratch → copy game-template.html
-❌ physics without dt → ALWAYS multiply by dt
-❌ alert() / prompt() → draw on canvas or use game.endGame()
-❌ Reinventing collision → use GameUtils.hitTest(a, b, 0.7)
-❌ Reinventing particles → use ParticleSystem.burst()
-❌ Reinventing score/highscore → use game.addScore() / game.getHigh()
-❌ Reinventing mobile controls → declare in GAME.controls array
-❌ Flat colour background → add gradient or parallax layer
-❌ Static rectangle "sprites" → animate with 3+ canvas shapes or frames
-❌ Pixel-perfect hitboxes → use 0.7 forgiveness in hitTest
-❌ Forgetting games.json → game won't appear on site
-❌ Hardcoded dt=0.016 → use the actual measured dt from onUpdate
 
 ═══════════════════════════════════════════════════════════════
 GAMEPLAY PARAMETERS — USE THESE STARTING VALUES
@@ -495,17 +467,29 @@ DO NOT reference `/docs/GAME_TEMPLATE_EXACT.html` — it is superseded by
 `/public/game-framework/game-template.html`.
 
 ═══════════════════════════════════════════════════════════════
-END OF CONFIGURATION
+SESSION RECOVERY — USE WHEN AI STARTS DRIFTING
 ═══════════════════════════════════════════════════════════════
 
-Universal Principles:
-  - Quality over speed
-  - Polish matters — target age 8–12
-  - Make it fun, fair, and forgiving
-  - Use the framework. Always. No exceptions.
-  - Serverless deployment (Vercel) — no local database
-  - Physics must use dt. Always.
-  - No alert() or prompt(). Ever.
+Symptoms of context collapse (after ~30 prompts or ~1000-line files):
+  - AI reintroduces flat-colour backgrounds
+  - Physics drops the * dt multiplier
+  - alert() or prompt() reappears
+  - Framework IDs get renamed or overlays rewritten from scratch
 
-This configuration applies to EVERY game built.
-No exceptions. Complete consistency.
+Re-orientation prompt (paste this verbatim):
+  "Read the current game file in full. Confirm:
+   (a) all velocity/position updates multiply by dt
+   (b) framework CSS and JS links are present
+   (c) overlay IDs use gij-* naming
+   (d) game uses game.addScore() / game.endGame() — no custom score vars
+   List any violations, fix them, then continue."
+
+Session summary prompt (use at end of a long session to hand off):
+  "Write a 150-word 'game state summary' covering:
+   current game objects and their properties,
+   active mechanics, known issues, and next planned step.
+   I will paste this at the start of the next session."
+
+═══════════════════════════════════════════════════════════════
+END OF CONFIGURATION
+═══════════════════════════════════════════════════════════════
