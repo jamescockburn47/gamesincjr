@@ -19,20 +19,20 @@ export default async function Header() {
   return (
     <header className="sticky top-0 z-50 bg-[#FFFBF5]/80 backdrop-blur-lg border-b-2 border-slate-100">
       <div className="container mx-auto px-4">
-        <div className="flex items-center justify-between h-20">
+        <div className="flex items-center justify-between h-16 md:h-20">
           {/* Logo Area */}
           <Link
             href="/"
             className="flex items-center gap-3 group"
           >
             <div className="relative transition-transform group-hover:scale-110 group-hover:rotate-3 duration-300">
-              <Logo size="md" />
+              <Logo size="sm" />
             </div>
             <div className="flex flex-col">
-              <span className="text-2xl font-heading font-bold text-slate-800 leading-none tracking-tight group-hover:text-primary transition-colors">
+              <span className="text-xl md:text-2xl font-heading font-bold text-slate-800 leading-none tracking-tight group-hover:text-primary transition-colors">
                 Games Inc<span className="text-primary">.</span>
               </span>
-              <span className="text-sm font-heading font-bold text-primary leading-none uppercase tracking-widest">
+              <span className="text-xs md:text-sm font-heading font-bold text-primary leading-none uppercase tracking-widest">
                 Junior
               </span>
             </div>

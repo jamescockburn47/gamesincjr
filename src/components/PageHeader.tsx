@@ -28,18 +28,18 @@ export default function PageHeader({
   const alignment = align === "center" ? "items-center text-center" : "items-start text-left";
 
   return (
-    <header className={cn("flex flex-col gap-6 sm:gap-8", alignment)}>
-      <div className="flex flex-col gap-4">
+    <header className={cn("flex flex-col gap-4 sm:gap-8", alignment)}>
+      <div className="flex flex-col gap-2 sm:gap-4">
         {eyebrow && (
-          <span className="inline-flex items-center justify-center rounded-full bg-white/80 px-4 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-sky-600 shadow-sm ring-1 ring-sky-100">
+          <span className="inline-flex items-center justify-center rounded-full bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-[0.3em] text-sky-600 shadow-sm ring-1 ring-sky-100">
             {eyebrow}
           </span>
         )}
-        <h1 className="text-4xl font-bold tracking-tight text-slate-900 sm:text-5xl">
+        <h1 className="text-2xl font-bold tracking-tight text-slate-900 sm:text-4xl lg:text-5xl">
           {title}
         </h1>
         {description && (
-          <p className="max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
+          <p className="hidden sm:block max-w-3xl text-base leading-7 text-slate-600 sm:text-lg sm:leading-8">
             {description}
           </p>
         )}

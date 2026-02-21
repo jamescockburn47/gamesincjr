@@ -31,7 +31,7 @@ export default function PageShell({
         <div className="absolute bottom-[-6rem] left-1/4 h-96 w-96 rounded-full bg-rose-200/30 blur-3xl" />
         <div className="absolute top-1/2 left-[-4rem] h-72 w-72 -translate-y-1/2 rounded-full bg-amber-200/25 blur-3xl" />
       </div>
-      <div className={cn("container mx-auto px-4 py-16 sm:py-20 lg:py-24", className)}>
+      <div className={cn("container mx-auto px-4 py-8 sm:py-14 lg:py-20", className)}>
         {children}
       </div>
     </main>

@@ -36,65 +36,65 @@ export default async function Home() {
       </div>
 
       {/* Hero Section */}
-      <section className="relative pt-20 pb-24 px-4 text-center lg:pt-32 lg:pb-32">
+      <section className="relative pt-6 pb-8 px-4 text-center sm:pt-12 sm:pb-16 lg:pt-24 lg:pb-24">
         <div className="container mx-auto max-w-5xl">
           {/* Eyebrow Badge */}
-          <div className="inline-flex items-center gap-2 rounded-full bg-white/60 backdrop-blur-md px-5 py-2 text-sm font-bold text-primary shadow-lg ring-1 ring-primary/20 mb-8 animate-bounce-in">
-            <Sparkles className="w-4 h-4 animate-pulse" />
+          <div className="inline-flex items-center gap-2 rounded-full bg-white/60 backdrop-blur-md px-4 py-1.5 text-xs sm:text-sm font-bold text-primary shadow-lg ring-1 ring-primary/20 mb-4 sm:mb-6 animate-bounce-in">
+            <Sparkles className="w-3 h-3 sm:w-4 sm:h-4 animate-pulse" />
             {hero.eyebrow}
           </div>
 
-          {/* Main Title */}
-          <h1 className="text-6xl font-black tracking-tight text-slate-900 sm:text-7xl lg:text-8xl mb-8 drop-shadow-sm leading-tight animate-fade-in-up delay-100">
+          {/* Main Title — compact on mobile */}
+          <h1 className="text-3xl font-black tracking-tight text-slate-900 sm:text-5xl lg:text-7xl mb-3 sm:mb-5 drop-shadow-sm leading-tight animate-fade-in-up delay-100">
             <span className="text-gradient">{hero.title}</span>
           </h1>
 
-          {/* Description */}
-          <p className="text-xl md:text-2xl text-slate-600 mb-12 max-w-3xl mx-auto leading-relaxed animate-fade-in-up delay-200">
+          {/* Description — hidden on very small, visible from sm */}
+          <p className="hidden sm:block text-lg md:text-xl text-slate-600 mb-6 sm:mb-8 max-w-2xl mx-auto leading-relaxed animate-fade-in-up delay-200">
             {hero.description}
           </p>
 
-          {/* CTA Buttons */}
-          <div className="flex flex-wrap items-center justify-center gap-6 animate-fade-in-up delay-300">
+          {/* CTA Buttons — stacked on mobile, row on sm+ */}
+          <div className="flex flex-col sm:flex-row items-center justify-center gap-3 sm:gap-6 animate-fade-in-up delay-300">
             <Link href="#games">
-              <Button variant="fun" size="jumbo" className="rounded-full shadow-xl shadow-primary/25">
-                Play Now <Gamepad2 className="ml-3 w-6 h-6" />
+              <Button variant="fun" size="lg" className="rounded-full shadow-xl shadow-primary/25 w-full sm:w-auto">
+                Play Now <Gamepad2 className="ml-2 w-5 h-5" />
               </Button>
             </Link>
             <Link href="/imaginary-friends">
-              <Button variant="bubble" size="jumbo" className="rounded-full">
-                Magic Friends <Sparkles className="ml-3 w-6 h-6" />
+              <Button variant="bubble" size="lg" className="rounded-full w-full sm:w-auto">
+                Magic Friends <Sparkles className="ml-2 w-5 h-5" />
               </Button>
             </Link>
           </div>
 
-          {/* Stats Banner */}
-          <div className="flex flex-wrap items-center justify-center gap-8 mt-16 animate-fade-in-up delay-500">
-            <div className="flex items-center gap-3 px-6 py-3 bg-white/60 backdrop-blur rounded-2xl shadow-sm">
+          {/* Stats Banner — hidden on mobile to save space */}
+          <div className="hidden sm:flex flex-wrap items-center justify-center gap-6 mt-10 animate-fade-in-up delay-500">
+            <div className="flex items-center gap-3 px-5 py-2.5 bg-white/60 backdrop-blur rounded-2xl shadow-sm">
               <div className="p-2 rounded-xl bg-primary/10">
-                <Gamepad2 className="w-5 h-5 text-primary" />
+                <Gamepad2 className="w-4 h-4 text-primary" />
               </div>
               <div className="text-left">
-                <div className="text-2xl font-black text-slate-900">{displayGames.length}+</div>
-                <div className="text-sm text-slate-500 font-medium">Games</div>
+                <div className="text-xl font-black text-slate-900">{displayGames.length}+</div>
+                <div className="text-xs text-slate-500 font-medium">Games</div>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-6 py-3 bg-white/60 backdrop-blur rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 px-5 py-2.5 bg-white/60 backdrop-blur rounded-2xl shadow-sm">
               <div className="p-2 rounded-xl bg-secondary/10">
-                <Users className="w-5 h-5 text-secondary" />
+                <Users className="w-4 h-4 text-secondary" />
               </div>
               <div className="text-left">
-                <div className="text-2xl font-black text-slate-900">1000+</div>
-                <div className="text-sm text-slate-500 font-medium">Players</div>
+                <div className="text-xl font-black text-slate-900">1000+</div>
+                <div className="text-xs text-slate-500 font-medium">Players</div>
               </div>
             </div>
-            <div className="flex items-center gap-3 px-6 py-3 bg-white/60 backdrop-blur rounded-2xl shadow-sm">
+            <div className="flex items-center gap-3 px-5 py-2.5 bg-white/60 backdrop-blur rounded-2xl shadow-sm">
               <div className="p-2 rounded-xl bg-accent/10">
-                <Trophy className="w-5 h-5 text-accent" />
+                <Trophy className="w-4 h-4 text-accent" />
               </div>
               <div className="text-left">
-                <div className="text-2xl font-black text-slate-900">Fun</div>
-                <div className="text-sm text-slate-500 font-medium">Guaranteed</div>
+                <div className="text-xl font-black text-slate-900">Fun</div>
+                <div className="text-xs text-slate-500 font-medium">Guaranteed</div>
               </div>
             </div>
           </div>
@@ -103,7 +103,7 @@ export default async function Home() {
 
       {/* Featured Game Spotlight */}
       {featuredGame && (
-        <section className="py-12 px-4">
+        <section className="py-6 sm:py-12 px-4">
           <div className="container mx-auto max-w-7xl">
             <Link href={`/games/${featuredGame.slug}`} className="group block">
               <Card className="overflow-hidden border-0 bg-white shadow-2xl hover:shadow-3xl transition-all duration-500 rounded-[2.5rem]">
@@ -153,11 +153,11 @@ export default async function Home() {
       )}
 
       {/* Games Grid */}
-      <section id="games" className="py-24 px-4 bg-white/30 backdrop-blur-sm">
+      <section id="games" className="py-10 sm:py-16 lg:py-24 px-4 bg-white/30 backdrop-blur-sm">
         <div className="container mx-auto max-w-7xl">
-          <div className="flex items-center justify-between mb-16">
-            <h2 className="text-4xl font-black text-slate-900 flex items-center gap-4">
-              <span className="p-3 rounded-2xl bg-primary/10 text-primary"><Gamepad2 className="w-8 h-8" /></span>
+          <div className="flex items-center justify-between mb-8 sm:mb-12 lg:mb-16">
+            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 flex items-center gap-3">
+              <span className="p-2 sm:p-3 rounded-2xl bg-primary/10 text-primary"><Gamepad2 className="w-6 h-6 sm:w-8 sm:h-8" /></span>
               All Games
             </h2>
             <Link href="/games" className="text-primary font-bold hover:underline flex items-center gap-2">
