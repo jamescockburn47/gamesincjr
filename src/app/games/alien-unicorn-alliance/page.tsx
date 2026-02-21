@@ -11,47 +11,42 @@ import { InputManager } from '@/lib/game-framework/mechanics/input';
 
 const GAME_METADATA = {
   title: 'Alien Unicorn Alliance',
-  description: 'Pilot an aurora unicorn through alien raids, collecting harmony crystals!',
+  description: 'Pilot aurora unicorn Astra through an alien rift — collect harmony crystals, pulse-convert drones, and keep your streak alive!',
   instructions: [
-    'Use arrow keys or WASD to move left and right',
-    'Press Space to jump',
-    'Collect cyan crystals for points and streaks',
-    'Avoid red drones or lose shields',
-    'Game ends when all shields are lost'
+    'Arrow Keys / WASD — fly in any direction (no gravity!)',
+    'Space — Starlight Pulse: vaporises nearby drones and turns them into bonus crystals (5s cooldown)',
+    'Collect glowing harmony crystals to score points and build your streak multiplier',
+    'Avoid alien drones — red shooter drones fire aimed shots at you',
+    'You have 3 shields. Lose them all and the mission ends',
+    'Press SPACE or R at game over to fly again',
   ],
   controls: {
-    keyboard: ['Arrow Keys', 'WASD', 'Space'],
-    touch: 'On-screen buttons for movement and jump'
-  }
+    keyboard: ['Arrow Keys / WASD', 'Space (Pulse)'],
+    touch: 'On-screen D-pad + Pulse button',
+  },
 };
 
 const TOUCH_BUTTONS = [
-  { id: 'left', label: '←', position: 'bottom-left' as const, action: 'left' },
+  { id: 'up',    label: '↑', position: 'bottom-left'  as const, action: 'up'    },
+  { id: 'down',  label: '↓', position: 'bottom-left'  as const, action: 'down'  },
+  { id: 'left',  label: '←', position: 'bottom-left'  as const, action: 'left'  },
   { id: 'right', label: '→', position: 'bottom-right' as const, action: 'right' },
-  { id: 'jump', label: '↑', position: 'top-right' as const, action: 'space' }
+  { id: 'pulse', label: '✨', position: 'bottom-right' as const, action: 'space' },
 ];
 
 export default function Page() {
   const [state, setState] = useState<'landing' | 'instructions' | 'playing'>('landing');
   const [inputManager] = useState(() => new InputManager());
 
-  const handleTouchPress = (action: string) => {
-    inputManager.addTouchAction(action);
-  };
-
-  const handleTouchRelease = (action: string) => {
-    inputManager.removeTouchAction(action);
-  };
-
   return (
     <>
       {state === 'landing' && (
-        <GameLandingPage 
-          game={GAME_METADATA} 
-          onStart={() => setState('instructions')} 
+        <GameLandingPage
+          game={GAME_METADATA}
+          onStart={() => setState('instructions')}
         />
       )}
-      
+
       {state === 'instructions' && (
         <InstructionsOverlay
           game={GAME_METADATA}
@@ -61,11 +56,11 @@ export default function Page() {
 
       {state === 'playing' && (
         <FullScreenWrapper onExit={() => setState('landing')}>
-          <GameCanvas GameClass={AlienUnicornGame} />
+          <GameCanvas GameClass={AlienUnicornGame} width={960} height={540} />
           <TouchControls
             buttons={TOUCH_BUTTONS}
-            onButtonPress={handleTouchPress}
-            onButtonRelease={handleTouchRelease}
+            onButtonPress={action  => inputManager.addTouchAction(action)}
+            onButtonRelease={action => inputManager.removeTouchAction(action)}
           />
         </FullScreenWrapper>
       )}
