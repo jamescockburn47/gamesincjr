@@ -305,8 +305,19 @@
             drawAsteroids();
         }
 
+        // #region agent log
+        let _srFrames=0,_srLast=performance.now();
+        // #endregion
         // Game loop
-        function gameLoop() {
+        function gameLoop(now) {
+            // #region agent log
+            _srFrames++;
+            if(_srFrames===90){
+              const elapsed=now-_srLast;
+              const avgFt=elapsed/90;
+              fetch('http://127.0.0.1:7245/ingest/21c7b4be-62c9-4a72-9713-3ad5f82a3a6e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'space-runner/index.html:gameLoop',message:'Physics framerate dependency check',data:{avgFrameTimeMs:avgFt.toFixed(2),playerSpeedFixed:player.speed,asteroidSpeedFixed:asteroidSpeed,usesDeltaTime:false,touchDetected:isTouch,requiresFocusForKeys:true,mobileBug:'Touch controls set gameFocused=true but keys requires focus - works'},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
+            }
+            // #endregion
             if (gameState === 'playing' && gameRunning && gameFocused) {
                 updatePlayer();
                 updateAsteroids();

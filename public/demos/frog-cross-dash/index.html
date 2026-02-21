@@ -1435,9 +1435,15 @@
         loop();
       }
 
+      // #region agent log
+      let _fcdLogged=false;
+      // #endregion
       let lastTime = 0;
       function loop(timestamp = 0) {
         if (!state.running) return;
+        // #region agent log
+        if(!_fcdLogged && timestamp>500){_fcdLogged=true;const tc=document.querySelector('.touch-btn');fetch('http://127.0.0.1:7245/ingest/21c7b4be-62c9-4a72-9713-3ad5f82a3a6e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'frog-cross-dash/index.html:loop',message:'Loop running + touch control check',data:{usesDeltaTime:true,hasTouchBtns:!!tc,touchBtnCount:document.querySelectorAll('.touch-btn').length,overlayPattern:'custom-absolute-inside-container',overlayMatchesFramework:false,usesFrameworkCSS:false},timestamp:Date.now(),hypothesisId:'H3_H4'})}).catch(()=>{})}
+        // #endregion
         
         // On first frame after restart, just set lastTime and skip update
         // This prevents a huge delta that would teleport all items off screen

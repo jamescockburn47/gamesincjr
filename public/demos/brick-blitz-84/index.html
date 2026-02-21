@@ -158,8 +158,23 @@
     const iv=setInterval(()=>{ t-=1; countdownEl.textContent=String(t); if(t<=0){ clearInterval(iv); countdownEl.style.display='none'; state='playing'; focused=true; } },1000);
   });
 
-  function loop(){ update(); draw(); requestAnimationFrame(loop); }
-  paddle.y=canvas.height-24; spawnLevel(); loop();
+  // #region agent log
+  let _logFrameCount=0, _logLastTime=performance.now(), _logFrameTimes=[];
+  // #endregion
+  function loop(now){
+    // #region agent log
+    _logFrameCount++;
+    const _ft = now - _logLastTime; _logLastTime = now;
+    if(_logFrameCount > 5) _logFrameTimes.push(_ft);
+    if(_logFrameCount===90){
+      const avgFt=_logFrameTimes.reduce((a,b)=>a+b,0)/_logFrameTimes.length;
+      const expectedBallSpeedAtFt=Math.abs(ball.dx)*60/1000; // pixels/sec if 60fps
+      fetch('http://127.0.0.1:7245/ingest/21c7b4be-62c9-4a72-9713-3ad5f82a3a6e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'brick-blitz-84/index.html:loop',message:'Physics framerate dependency check',data:{avgFrameTimeMs:avgFt.toFixed(2),ballDxFixed:ball.dx,ballDyFixed:ball.dy,usesDeltaTime:false,expectedSpeedAt60fps:`${expectedBallSpeedAtFt.toFixed(0)}px/s`,touchDeviceDetected:isTouch,mobileControlsVisible:document.querySelector('.mobile')?.style.display||'(media-query-only)'},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
+    }
+    // #endregion
+    update(); draw(); requestAnimationFrame(loop);
+  }
+  paddle.y=canvas.height-24; spawnLevel(); requestAnimationFrame(loop);
   </script>
 </body>
 </html>
