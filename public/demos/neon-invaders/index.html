@@ -60,11 +60,12 @@
 const GAME = {
   slug:  'neon-invaders',
   title: 'Neon Invaders',
-  description: 'Blast through waves of neon invaders!',
+  description: 'Blast through waves of neon invaders in this retro arcade shooter!',
   instructions: [
     '<strong>← → / A D:</strong> Move your ship',
-    '<strong>Space:</strong> Shoot',
-    '<strong>Goal:</strong> Clear all invaders before they reach you — they speed up!',
+    '<strong>Space / Fire:</strong> Shoot',
+    '<strong>Goal:</strong> Clear all invaders before they reach the bottom!',
+    '<strong>Tip:</strong> They speed up each wave — don\'t let them get past you!',
   ],
   controls: [
     { label: '◀', action: 'left'  },
@@ -81,30 +82,62 @@ const fx     = new ParticleSystem();
 
 const W = game.W, H = game.H;
 
+// ── Sprite loading (Kenney Space Shooter Redux, CC0) ──────────
+const assets = new AssetLoader();
+let spritesReady = false;
+const ENEMY_TYPES = ['enemyBlack1', 'enemyBlue2', 'enemyGreen3', 'enemyRed1'];
+
+assets.load({
+  playerShip:   '/assets/kenney/space/playerShip2_blue.png',
+  enemyBlack1:  '/assets/kenney/space/enemyBlack1.png',
+  enemyBlue2:   '/assets/kenney/space/enemyBlue2.png',
+  enemyGreen3:  '/assets/kenney/space/enemyGreen3.png',
+  enemyRed1:    '/assets/kenney/space/enemyRed1.png',
+  laserBlue:    '/assets/kenney/space/laserBlue01.png',
+  laserRed:     '/assets/kenney/space/laserRed01.png',
+  ufo:          '/assets/kenney/space/ufoRed.png',
+}, {
+  playerShip: 0.5,   // scale to ~55×42px
+  enemyBlack1: 0.5, enemyBlue2: 0.5, enemyGreen3: 0.5, enemyRed1: 0.5,
+  laserBlue: 1.0, laserRed: 1.0,
+  ufo: 0.45,
+}).then(() => { spritesReady = true; });
+
 // ── Game state ─────────────────────────────────────────────
 let lives, wave, fleet, lasers;
 let fleetDir, fleetStepTimer, fleetStepInterval;
 let shootCooldown;
 
-const player = { x: W/2-18, y: H - 50, w: 36, h: 18, speed: 340 };
+// Player dimensions tuned to match sprite size; hitbox = 30% of visual width (shmup standard)
+const player = { x: W/2-27, y: H - 60, w: 54, h: 42,
+                 speed: GAMEPLAY_PRESETS.shmup.playerSpeed };  // 380 px/s
 
 function spawnWave(w) {
   fleet = [];
   const nCols = 10, nRows = Math.min(5, 3 + Math.floor(w / 2));
-  const startX = 80, startY = 80, gapX = 60, gapY = 44;
+  // Use sprite size for spacing when sprites loaded, else fallback
+  const sprSize = spritesReady && assets.size('enemyBlack1');
+  const ew = sprSize ? sprSize.w : 36;
+  const eh = sprSize ? sprSize.h : 28;
+  const gapX = ew + 24, gapY = eh + 18;
+  const startX = Math.max(20, (W - nCols * gapX) / 2);
+  const startY = 60;
   for (let r = 0; r < nRows; r++) {
+    // Each row gets a different enemy type for variety
+    const sprKey = ENEMY_TYPES[r % ENEMY_TYPES.length];
     for (let c = 0; c < nCols; c++) {
       fleet.push({
         x: startX + c * gapX, y: startY + r * gapY,
-        w: 30, h: 20,
+        w: ew, h: eh,
         hp: 1 + Math.floor(w / 3),
-        hue: 120 - r * 20, // colour by row
+        hue: 120 - r * 20,  // colour tint for glow effect
+        sprKey,
       });
     }
   }
   fleetDir          = 1;
   fleetStepTimer    = 0;
-  fleetStepInterval = Math.max(0.08, 0.45 - w * 0.03); // seconds per step
+  fleetStepInterval = Math.max(0.08, 0.45 - w * 0.03);
 }
 
 function reset() {
@@ -212,50 +245,77 @@ game.onUpdate((dt) => {
 
 // ── Render ──────────────────────────────────────────────────
 game.onRender((ctx) => {
-  ctx.fillStyle = '#0a0f1c';
+  // Background
+  ctx.fillStyle = '#08091a';
   ctx.fillRect(0, 0, W, H);
 
-  // Subtle grid
-  ctx.strokeStyle = 'rgba(255,255,255,0.03)';
+  // Radial glow at top
+  const topGlow = ctx.createRadialGradient(W/2, -60, 30, W/2, -60, 400);
+  topGlow.addColorStop(0, 'rgba(26,44,87,0.7)');
+  topGlow.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = topGlow; ctx.fillRect(0, 0, W, H);
+
+  // Scanline grid
+  ctx.strokeStyle = 'rgba(255,255,255,0.025)';
   ctx.lineWidth = 1;
   for (let y = 0; y < H; y += 40) {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   }
 
-  // Player (ship triangle)
-  const px = player.x, py = player.y;
-  ctx.shadowColor = '#33aaff';
-  ctx.shadowBlur  = 14;
-  ctx.fillStyle   = '#33aaff';
-  ctx.beginPath();
-  ctx.moveTo(px + player.w/2, py);
-  ctx.lineTo(px + player.w, py + player.h);
-  ctx.lineTo(px + player.w * 0.6, py + player.h * 0.7);
-  ctx.lineTo(px + player.w * 0.4, py + player.h * 0.7);
-  ctx.lineTo(px, py + player.h);
-  ctx.closePath();
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  // Fleet
-  for (const e of fleet) {
-    ctx.shadowColor = `hsl(${e.hue},100%,60%)`;
-    ctx.shadowBlur  = 10;
-    ctx.fillStyle   = `hsl(${e.hue},100%,60%)`;
-    // Crab-like invader
-    ctx.fillRect(e.x + 4, e.y + 2, e.w - 8, e.h - 4);
-    ctx.fillRect(e.x, e.y + 6, 6, e.h - 10);
-    ctx.fillRect(e.x + e.w - 6, e.y + 6, 6, e.h - 10);
-    ctx.shadowBlur = 0;
+  // Player — Kenney sprite or triangle fallback
+  const pcx = player.x + player.w / 2, pcy = player.y + player.h / 2;
+  if (spritesReady && assets.has('playerShip')) {
+    ctx.globalCompositeOperation = 'screen';
+    const eg = ctx.createRadialGradient(pcx, pcy + player.h * 0.55, 0, pcx, pcy + player.h * 0.55, 18);
+    eg.addColorStop(0, 'rgba(80,200,255,0.9)'); eg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(pcx, pcy + player.h * 0.55, 18, 0, Math.PI * 2); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    assets.draw(ctx, 'playerShip', pcx, pcy);
+  } else {
+    ctx.shadowColor = '#33aaff'; ctx.shadowBlur = 14; ctx.fillStyle = '#33aaff';
+    ctx.beginPath();
+    ctx.moveTo(pcx, pcy - player.h/2);
+    ctx.lineTo(pcx + player.w/2, pcy + player.h/2);
+    ctx.lineTo(pcx + player.w*0.1, pcy + player.h*0.2);
+    ctx.lineTo(pcx - player.w*0.1, pcy + player.h*0.2);
+    ctx.lineTo(pcx - player.w/2, pcy + player.h/2);
+    ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0;
   }
 
-  // Lasers
+  // Fleet — Kenney sprites + neon glow
+  for (const e of fleet) {
+    const ecx = e.x + e.w / 2, ecy = e.y + e.h / 2;
+    ctx.globalCompositeOperation = 'screen';
+    const glowR = Math.max(e.w, e.h) * 0.7;
+    const eg2 = ctx.createRadialGradient(ecx, ecy, 0, ecx, ecy, glowR);
+    eg2.addColorStop(0, `hsla(${e.hue},100%,60%,0.35)`); eg2.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = eg2; ctx.beginPath(); ctx.arc(ecx, ecy, glowR, 0, Math.PI * 2); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    if (spritesReady && assets.has(e.sprKey)) {
+      assets.draw(ctx, e.sprKey, ecx, ecy);
+    } else {
+      ctx.shadowColor = `hsl(${e.hue},100%,60%)`; ctx.shadowBlur = 10;
+      ctx.fillStyle   = `hsl(${e.hue},100%,60%)`;
+      ctx.fillRect(e.x + 4, e.y + 2, e.w - 8, e.h - 4);
+      ctx.fillRect(e.x, e.y + 6, 6, e.h - 10);
+      ctx.fillRect(e.x + e.w - 6, e.y + 6, 6, e.h - 10);
+      ctx.shadowBlur = 0;
+    }
+  }
+
+  // Lasers — Kenney sprites or glowing rects
   for (const l of lasers) {
-    ctx.shadowColor = l.owner === 'player' ? '#ff2d95' : '#ffad2d';
-    ctx.shadowBlur  = 10;
-    ctx.fillStyle   = l.owner === 'player' ? '#ff2d95' : '#ffad2d';
-    ctx.fillRect(l.x, l.y, l.w, l.h);
-    ctx.shadowBlur = 0;
+    const lKey = l.owner === 'player' ? 'laserBlue' : 'laserRed';
+    const lcx = l.x + l.w / 2, lcy = l.y + l.h / 2;
+    if (spritesReady && assets.has(lKey)) {
+      ctx.globalCompositeOperation = 'screen';
+      assets.draw(ctx, lKey, lcx, lcy);
+      ctx.globalCompositeOperation = 'source-over';
+    } else {
+      ctx.shadowColor = l.owner === 'player' ? '#ff2d95' : '#ffad2d';
+      ctx.shadowBlur = 10; ctx.fillStyle = l.owner === 'player' ? '#ff2d95' : '#ffad2d';
+      ctx.fillRect(l.x, l.y, l.w, l.h); ctx.shadowBlur = 0;
+    }
   }
 
   fx.draw(ctx);

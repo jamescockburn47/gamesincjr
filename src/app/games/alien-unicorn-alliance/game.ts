@@ -77,9 +77,9 @@ export class AlienUnicornGame extends GameEngine {
   // ── Player state
   private px = 180; private py = 270;
   private pvx = 0;  private pvy = 0;
-  private readonly SPEED   = 300;
-  private readonly ACCEL   = 1050;
-  private readonly DAMP    = 0.87;
+  private readonly SPEED   = 380;   // px/s — faster for snappy shmup feel
+  private readonly ACCEL   = 820;   // px/s² — snappier acceleration
+  private readonly DAMP    = 0.90;  // per-60Hz-frame damping — slightly less drift
 
   private shields       = 3;
   private invincible    = 0;
@@ -110,7 +110,7 @@ export class AlienUnicornGame extends GameEngine {
   private bestStreak   = 0;
   private score        = 0;
   private crystalTimer = 0.9;
-  private droneTimer   = 3.2;
+  private droneTimer   = 2.0;  // first drone spawns sooner
   private gameOver     = false;
   private restartCd    = 0;
   private prevPulse    = false;
@@ -223,7 +223,7 @@ export class AlienUnicornGame extends GameEngine {
     this.droneTimer -= dt;
     if (this.droneTimer <= 0) {
       this.spawnDrone();
-      this.droneTimer = (1.8 + Math.random() * 1.3) / Math.min(1 + this.elapsed * 0.05, 2.5);
+      this.droneTimer = (1.5 + Math.random() * 1.0) / Math.min(1 + this.elapsed * 0.05, 2.5);  // 0.55s floor
     }
     this.gemTimer -= dt;
     if (this.gemTimer <= 0) {
@@ -361,7 +361,7 @@ export class AlienUnicornGame extends GameEngine {
     const allianceCount = this.allies.filter(a => a.present).length;
     const dur = allianceCount >= 2 ? 0.8 : 0.55;
     this.pulseActive   = dur;
-    this.pulseCooldown = allianceCount >= 2 ? 4.0 : 5.5;
+    this.pulseCooldown = allianceCount >= 2 ? 3.0 : 4.0;  // reduced cooldowns — encourages using pulse
     for (let i = 0; i < 32; i++) this.emit(this.px, this.py, 'pulse', 240 + Math.random() * 60);
     this.allies.forEach(a => { if (a.present) a.pulseActive = dur; });
   }
@@ -419,7 +419,7 @@ export class AlienUnicornGame extends GameEngine {
 
   private spawnDrone(): void {
     const type: Drone['type'] = this.elapsed < 20 ? 'basic' : Math.random() < 0.22 ? 'shooter' : Math.random() < 0.35 ? 'fast' : 'basic';
-    const spd = type === 'fast' ? 210 + this.elapsed * 4 : 110 + Math.random() * 45 + this.elapsed * 4;
+    const spd = type === 'fast' ? 230 + this.elapsed * 5 : 130 + Math.random() * 60 + this.elapsed * 4;  // 130-190 base → 280+ at peak
     const y = 55 + Math.random() * (this.H - 110);
     this.drones.push({
       x: this.W + 80, y, baseY: y, vx: -spd,
@@ -438,7 +438,7 @@ export class AlienUnicornGame extends GameEngine {
     this.score = 0; this.scoreManager.reset();
     this.px = 180; this.py = this.H / 2; this.pvx = 0; this.pvy = 0;
     this.invincible = 0; this.pulseCooldown = 0; this.pulseActive = 0;
-    this.tailTime = 0; this.crystalTimer = 0.9; this.droneTimer = 3.2;
+    this.tailTime = 0; this.crystalTimer = 0.9; this.droneTimer = 2.0;
     this.gemTimer = 8; this.gameOver = false; this.prevPulse = false;
   }
 
@@ -919,7 +919,7 @@ export class AlienUnicornGame extends GameEngine {
     const lean = Physics.clamp(this.pvx / this.SPEED, -1, 1) * 0.18;
     ctx.save();
     ctx.translate(this.px, this.py);
-    this.drawUnicornShape(ctx, t, 1.0, 300, 180, '#f5eeff', 'rgb(120,80,255)',
+    this.drawUnicornShape(ctx, t, 0.72, 300, 180, '#f5eeff', 'rgb(120,80,255)',
       this.playerTrail, bob, lean, this.pulseActive, this.invincible);
     ctx.restore();
   }
@@ -931,7 +931,7 @@ export class AlienUnicornGame extends GameEngine {
     const lean = 0;
     ctx.save();
     ctx.translate(ally.x, ally.y);
-    this.drawUnicornShape(ctx, t + idx * 1.5, 0.7, ally.hue1, ally.hue2,
+    this.drawUnicornShape(ctx, t + idx * 1.5, 0.55, ally.hue1, ally.hue2,
       ally.bodyColor, ally.trailColor, ally.trail, bob, lean, ally.pulseActive, ally.invincible);
     ctx.restore();
   }

@@ -183,3 +183,73 @@ class ParticleSystem {
   get count() { return this.particles.length; }
   clear()     { this.particles.length = 0; }
 }
+
+// ─── GAMEPLAY_PRESETS ─────────────────────────────────────────────────────────
+/**
+ * Canonical gameplay parameter reference for all game types.
+ * Use these values as your starting point when building any new game.
+ * They encode tested, playable feel across our library.
+ *
+ * Key principles:
+ *  - Player sprite should be 6-8% of canvas width (e.g. 58-77px at 960px wide)
+ *  - Shmup circle hitboxes: radius = 25-35% of visual sprite width
+ *  - Platformer/runner AABB hitboxes: 70% of sprite size (GameUtils.hitTest default)
+ *  - All velocities in px/s — always multiply by dt in update()
+ *
+ * See CLAUDE.md §GAMEPLAY PARAMETERS for full documentation.
+ */
+const GAMEPLAY_PRESETS = {
+
+  // Side-scrolling shooter (Neon Invaders, Space Runner, Alien Unicorn Alliance)
+  shmup: {
+    playerSpeed:          380,   // px/s max velocity
+    playerAccel:          820,   // px/s²
+    playerDamp:           0.90,  // per-60Hz-frame exponential damping
+    hitboxRadius:         0.30,  // circle radius as fraction of visual sprite width
+    enemySpeedMin:        130,   // px/s at game start
+    enemySpeedMax:        280,   // px/s at peak difficulty
+    bulletSpeed:          380,   // px/s — enemy projectiles
+    difficultyRamp:       0.05,  // speed multiplier per 10s elapsed
+    spawnIntervalStart:   2.0,   // seconds between enemy spawns at start
+    spawnIntervalFloor:   0.55,  // minimum spawn interval (hard cap)
+    spriteWidthFraction:  0.07,  // player sprite width as fraction of canvas width
+  },
+
+  // Platform / beat-em-up (Robots vs Unicorns, Kung Fu Duels)
+  platformer: {
+    runSpeed:     260,    // px/s horizontal movement
+    jumpVelocity: -520,   // px/s — negative = upward
+    gravity:      780,    // px/s²
+    hitboxRatio:  0.70,   // AABB: use GameUtils.hitTest(a, b, 0.70)
+    coyoteTime:   0.08,   // seconds of jump grace after walking off edge
+    jumpBuffer:   0.10,   // seconds — accept jump input before landing
+  },
+
+  // Endless runner / obstacle dodger (Pixel Pac Run, Frog Cross Dash)
+  runner: {
+    obstacleSpeedStart:   240,   // px/s initial
+    obstacleSpeedMax:     440,   // px/s cap
+    speedRamp:            15,    // px/s added per second of play
+    gravity:              900,   // px/s²
+    jumpVelocity:        -520,   // px/s
+    hitboxRatio:          0.75,  // slightly forgiving AABB
+  },
+
+  // Breakout / brick-breaker (Brick Blitz '84)
+  breakout: {
+    paddleSpeed:   420,   // px/s
+    ballSpeedBase: 340,   // px/s starting ball speed
+    ballSpeedMax:  600,   // px/s after many hits
+    hitboxRatio:   1.0,   // precise — ball physics cause frustration, not hitboxes
+  },
+
+  // Collect / catcher (Banana Bonanza, Frog Fly Feast)
+  catcher: {
+    playerSpeed:   380,   // px/s horizontal
+    objectFallMin: 160,   // px/s min fall speed
+    objectFallMax: 340,   // px/s max fall speed at difficulty peak
+    hitboxRatio:   0.80,  // slightly forgiving AABB
+    spawnRate:     1.2,   // objects per second at start
+    spawnRateMax:  4.0,   // objects per second cap
+  },
+};

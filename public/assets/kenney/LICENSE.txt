@@ -1,0 +1,15 @@
+Kenney Game Assets - Creative Commons Zero (CC0) License
+https://kenney.nl
+
+All assets in this directory are licensed under CC0 1.0 Universal.
+No attribution required. Free for any use including commercial.
+
+Packs included:
+- Space Shooter Redux (kenney.nl/assets/space-shooter-redux)
+  Contents: space/ directory
+- Animal Pack Redux (kenney.nl/assets/animal-pack-redux)  
+  Contents: animals/ directory
+- Platformer Pack Redux (kenney.nl/assets/platformer-pack-redux)
+  Contents: platformer/ directory
+
+See https://creativecommons.org/publicdomain/zero/1.0/

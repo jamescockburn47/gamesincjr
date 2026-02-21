@@ -6,8 +6,8 @@
   <title>Space Runner · Games Inc Jr</title>
   <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
   <style>
-    #gij-stage { background: #000; }
-    canvas { background: #000; }
+    #gij-stage { background: #000008; }
+    canvas { background: #000008; }
   </style>
 </head>
 <body>
@@ -16,7 +16,7 @@
   <div id="gij-try-overlay" class="gij-overlay">
     <div class="gij-modal">
       <h1 data-game-title>Space Runner</h1>
-      <p id="gij-description">Dodge asteroids and survive as long as you can!</p>
+      <p id="gij-description">Weave through waves of asteroids. How long can you survive?</p>
       <button id="gij-try-btn" class="gij-btn gij-btn-primary">▶ Play Now</button>
     </div>
   </div>
@@ -59,9 +59,9 @@ const GAME = {
   title: 'Space Runner',
   description: 'Weave through waves of asteroids. How long can you survive?',
   instructions: [
-    '<strong>Arrow Keys / WASD:</strong> Move your ship',
+    '<strong>Arrow Keys / WASD:</strong> Move your ship in any direction',
     '<strong>Goal:</strong> Dodge asteroids — score rises every second',
-    '<strong>Tip:</strong> Asteroids speed up over time!',
+    '<strong>Tip:</strong> Asteroids get faster and more frequent over time!',
   ],
   controls: [
     { label: '◀', action: 'left'  },
@@ -79,148 +79,217 @@ const fx     = new ParticleSystem();
 
 const W = game.W, H = game.H;
 
-// ── Game state ─────────────────────────────────────────────
-let asteroids, stars, spawnTimer, survivalTime, difficulty;
+// ── Sprite loading (Kenney Space Shooter Redux, CC0) ──────────
+const assets = new AssetLoader();
+let spritesReady = false;
 
-const ship = { x: 0, y: 0, w: 28, h: 28, vx: 0, vy: 0, speed: 280 };
+assets.load({
+  ship:        '/assets/kenney/space/playerShip1_blue.png',
+  meteorBig1:  '/assets/kenney/space/meteorBrown_big1.png',
+  meteorBig2:  '/assets/kenney/space/meteorBrown_big2.png',
+  meteorMed:   '/assets/kenney/space/meteorBrown_med1.png',
+  meteorSm:    '/assets/kenney/space/meteorBrown_small1.png',
+  meteorGrey:  '/assets/kenney/space/meteorGrey_big1.png',
+}, {
+  // Pre-scale to avoid runtime scaling in drawImage
+  ship:        0.55,   // ship image ~99x75 → ~54x41px in game
+  meteorBig1:  0.55,
+  meteorBig2:  0.55,
+  meteorMed:   0.6,
+  meteorSm:    0.7,
+  meteorGrey:  0.50,
+}).then(() => { spritesReady = true; });
+
+// ── Game state ─────────────────────────────────────────────────
+let asteroids, stars, spawnTimer, survivalTime, difficulty;
+let thrustFlicker = 0;
+
+// Ship: hitbox based on GAMEPLAY_PRESETS.shmup — 30% of ~54px visual = ~16px radius
+const ship = { x: 0, y: 0, w: 54, h: 41, vx: 0, vy: 0 };
+// Speed from GAMEPLAY_PRESETS.shmup
+const SHIP_SPEED = GAMEPLAY_PRESETS.shmup.playerSpeed;  // 380 px/s
+
+const METEOR_TYPES = ['meteorBig1', 'meteorBig2', 'meteorMed', 'meteorSm', 'meteorGrey'];
 
 function reset() {
-  ship.x = W / 2 - 14;
-  ship.y = H - 80;
+  ship.x = W / 2 - ship.w / 2;
+  ship.y = H - 100;
   ship.vx = ship.vy = 0;
   asteroids    = [];
   spawnTimer   = 0;
   survivalTime = 0;
   difficulty   = 1;
+  thrustFlicker = 0;
   fx.clear();
-  stars = Array.from({ length: 130 }, () => ({
+  stars = Array.from({ length: 160 }, () => ({
     x: Math.random() * W,
     y: Math.random() * H,
-    s: Math.random() * 2 + 0.5,
-    spd: Math.random() * 40 + 20,
+    s: Math.random() * 2.2 + 0.5,
+    spd: Math.random() * 45 + 15,
+    hue: Math.random() * 60 + 180,
+    phase: Math.random() * Math.PI * 2,
   }));
 }
 
 game.onRestart(reset);
 
-// ── Update ─────────────────────────────────────────────────
+// ── Update ──────────────────────────────────────────────────────
 game.onUpdate((dt) => {
   if (game.state !== 'playing') return;
 
   survivalTime += dt;
-  difficulty    = 1 + survivalTime * 0.04; // ramps up gently
+  difficulty    = 1 + survivalTime * 0.04;
+  thrustFlicker += dt * 18;
 
-  // Ship movement — no "focus" needed, controls always active
+  // Ship movement (from GAMEPLAY_PRESETS.shmup)
   ship.vx = 0; ship.vy = 0;
-  if (input.isPressed('left'))  ship.vx = -ship.speed;
-  if (input.isPressed('right')) ship.vx =  ship.speed;
-  if (input.isPressed('up'))    ship.vy = -ship.speed;
-  if (input.isPressed('down'))  ship.vy =  ship.speed;
+  if (input.isPressed('left'))  ship.vx = -SHIP_SPEED;
+  if (input.isPressed('right')) ship.vx =  SHIP_SPEED;
+  if (input.isPressed('up'))    ship.vy = -SHIP_SPEED;
+  if (input.isPressed('down'))  ship.vy =  SHIP_SPEED;
+
+  // Diagonal — normalise so diagonal isn't faster
+  if (ship.vx !== 0 && ship.vy !== 0) {
+    ship.vx *= 0.707; ship.vy *= 0.707;
+  }
 
   GameUtils.applyVelocity(ship, dt);
   GameUtils.clampToCanvas(ship, W, H);
 
-  // Starfield scroll
+  // Stars scroll
   stars.forEach(st => {
     st.y += st.spd * dt;
-    if (st.y > H) { st.y = -2; st.x = Math.random() * W; }
+    if (st.y > H) { st.y = -3; st.x = Math.random() * W; }
   });
 
-  // Asteroid spawning
+  // Spawn asteroids — interval from GAMEPLAY_PRESETS.shmup
   spawnTimer += dt;
-  const interval = Math.max(0.3, 1.5 - survivalTime * 0.02);
+  const interval = Math.max(
+    GAMEPLAY_PRESETS.shmup.spawnIntervalFloor,
+    1.4 - survivalTime * 0.02
+  );
   if (spawnTimer >= interval) {
     spawnTimer = 0;
-    const baseSpeed = 90 + difficulty * 30;
+    const typeKey = METEOR_TYPES[Math.floor(Math.random() * METEOR_TYPES.length)];
+    const sizeRef = assets.size(typeKey);
+    const mw = sizeRef ? sizeRef.w : 44;
+    const mh = sizeRef ? sizeRef.h : 44;
+    const baseSpd = GAMEPLAY_PRESETS.shmup.enemySpeedMin + difficulty * 28;
     asteroids.push({
-      x: Math.random() * (W - 36),
-      y: -40,
-      w: 28 + Math.random() * 20,
-      h: 28 + Math.random() * 20,
-      vy: baseSpeed + Math.random() * 60,
-      rot: 0,
-      rotSpeed: (Math.random() - 0.5) * 4,
+      x: Math.random() * (W - mw),
+      y: -(mh + 10),
+      w: mw, h: mh,
+      vy: Math.min(baseSpd + Math.random() * 60, GAMEPLAY_PRESETS.shmup.enemySpeedMax),
+      rot: Math.random() * Math.PI * 2,
+      rotSpeed: (Math.random() - 0.5) * 3,
+      type: typeKey,
     });
   }
 
-  // Asteroids move
+  // Move asteroids + collision
   for (let i = asteroids.length - 1; i >= 0; i--) {
     const a = asteroids[i];
     a.y   += a.vy  * dt;
     a.rot += a.rotSpeed * dt;
-    if (a.y > H + 50) { asteroids.splice(i, 1); continue; }
+    if (a.y > H + 80) { asteroids.splice(i, 1); continue; }
 
-    if (GameUtils.hitTest(ship, a, 0.65)) {
-      fx.burst(ship.x + ship.w/2, ship.y + ship.h/2, 30, {
-        colors: ['#ff8800','#ffff00','#ff2200'],
-        minSpeed: 80, maxSpeed: 300, gravity: 60,
+    // Circle hitbox: radius = 30% of ship visual width (SOTA shmup standard)
+    const shipCx = ship.x + ship.w / 2, shipCy = ship.y + ship.h / 2;
+    const mCx    = a.x + a.w / 2,      mCy    = a.y + a.h / 2;
+    const shipR  = ship.w * 0.30;       // ~16px
+    const metR   = a.w   * 0.38;
+    const dx = shipCx - mCx, dy = shipCy - mCy;
+    if (dx * dx + dy * dy < (shipR + metR) * (shipR + metR)) {
+      fx.burst(shipCx, shipCy, 36, {
+        colors: ['#ff8800','#ffff00','#ff3300','#ffffff'],
+        minSpeed: 80, maxSpeed: 320, gravity: 40,
       });
-      game.shake(10, 0.4);
+      game.shake(12, 0.45);
       game.endGame();
       return;
     }
   }
 
-  // Score every 0.5 seconds of survival
+  // Score: 1 per 0.5s, scales with difficulty
   if (Math.floor(survivalTime * 2) > Math.floor((survivalTime - dt) * 2))
     game.addScore(Math.ceil(difficulty));
 
   fx.update(dt);
 });
 
-// ── Render ──────────────────────────────────────────────────
+// ── Render ───────────────────────────────────────────────────────
 game.onRender((ctx) => {
+  // Deep space background
   ctx.fillStyle = '#000008';
   ctx.fillRect(0, 0, W, H);
 
-  // Stars
-  ctx.fillStyle = '#ffffff';
+  // Stars with twinkle
+  const now = performance.now() / 1000;
   stars.forEach(st => {
-    ctx.globalAlpha = 0.4 + Math.random() * 0.3;
-    ctx.fillRect(st.x, st.y, st.s, st.s);
+    const tw = 0.4 + 0.3 * Math.sin(now * 1.6 + st.phase);
+    ctx.fillStyle = `hsla(${st.hue}, 70%, 80%, ${tw})`;
+    ctx.fillRect(Math.floor(st.x), Math.floor(st.y), st.s, st.s);
   });
-  ctx.globalAlpha = 1;
 
-  // Asteroids
+  // Distant nebula hint
+  const neb = ctx.createRadialGradient(W * 0.7, H * 0.3, 20, W * 0.7, H * 0.3, 200);
+  neb.addColorStop(0, 'rgba(80,30,140,0.12)');
+  neb.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = neb; ctx.fillRect(0, 0, W, H);
+
+  // Asteroids — Kenney sprites or procedural fallback
   for (const a of asteroids) {
     ctx.save();
     ctx.translate(a.x + a.w / 2, a.y + a.h / 2);
     ctx.rotate(a.rot);
-    ctx.fillStyle   = '#6b6b6b';
-    ctx.shadowColor = '#aaaaaa';
-    ctx.shadowBlur  = 6;
-    // Rough rock shape
-    ctx.beginPath();
-    const sides = 7, r = a.w / 2;
-    for (let s = 0; s < sides; s++) {
-      const ang  = (s / sides) * Math.PI * 2;
-      const dist = r * (0.75 + Math.sin(s * 2.3) * 0.25);
-      s === 0
-        ? ctx.moveTo(Math.cos(ang) * dist, Math.sin(ang) * dist)
-        : ctx.lineTo(Math.cos(ang) * dist, Math.sin(ang) * dist);
+    if (spritesReady && assets.has(a.type)) {
+      assets.draw(ctx, a.type, 0, 0);
+    } else {
+      // Procedural fallback
+      ctx.fillStyle   = '#7a6a5a';
+      ctx.shadowColor = '#aaa'; ctx.shadowBlur = 6;
+      ctx.beginPath();
+      const r = a.w / 2;
+      for (let s = 0; s < 7; s++) {
+        const ang  = (s / 7) * Math.PI * 2;
+        const dist = r * (0.75 + Math.sin(s * 2.3) * 0.25);
+        s === 0 ? ctx.moveTo(Math.cos(ang)*dist, Math.sin(ang)*dist)
+                : ctx.lineTo(Math.cos(ang)*dist, Math.sin(ang)*dist);
+      }
+      ctx.closePath(); ctx.fill();
+      ctx.shadowBlur = 0;
     }
-    ctx.closePath();
-    ctx.fill();
-    ctx.shadowBlur = 0;
     ctx.restore();
   }
 
-  // Ship
+  // Ship — Kenney sprite or procedural fallback
   const cx = ship.x + ship.w / 2, cy = ship.y + ship.h / 2;
-  ctx.save();
-  ctx.translate(cx, cy);
-  ctx.shadowColor = '#00e5ff';
-  ctx.shadowBlur  = 16;
-  ctx.fillStyle   = '#00e5ff';
-  ctx.beginPath();
-  ctx.moveTo(0, -ship.h / 2);
-  ctx.lineTo(ship.w / 2, ship.h / 2);
-  ctx.lineTo(0, ship.h / 3);
-  ctx.lineTo(-ship.w / 2, ship.h / 2);
-  ctx.closePath();
-  ctx.fill();
-  ctx.shadowBlur = 0;
-  ctx.restore();
+  if (spritesReady && assets.has('ship')) {
+    // Engine exhaust glow (behind ship)
+    const thrustSize = 12 + 5 * Math.sin(thrustFlicker);
+    ctx.globalCompositeOperation = 'screen';
+    const eg = ctx.createRadialGradient(cx, cy + ship.h * 0.6, 0, cx, cy + ship.h * 0.6, thrustSize * 2);
+    eg.addColorStop(0, 'rgba(80,200,255,0.8)');
+    eg.addColorStop(0.5, 'rgba(40,100,255,0.4)');
+    eg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(cx, cy + ship.h * 0.6, thrustSize * 2, 0, Math.PI * 2); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Draw sprite (already pre-scaled to 54×41 via AssetLoader)
+    assets.draw(ctx, 'ship', cx, cy);
+  } else {
+    // Procedural triangle fallback
+    ctx.save(); ctx.translate(cx, cy);
+    ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 16;
+    ctx.fillStyle   = '#00e5ff';
+    ctx.beginPath();
+    ctx.moveTo(0, -ship.h / 2);
+    ctx.lineTo(ship.w / 2, ship.h / 2);
+    ctx.lineTo(0, ship.h / 3);
+    ctx.lineTo(-ship.w / 2, ship.h / 2);
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0; ctx.restore();
+  }
 
   fx.draw(ctx);
 });

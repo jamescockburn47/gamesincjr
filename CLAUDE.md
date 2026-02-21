@@ -319,6 +319,118 @@ COMMON PITFALLS — AUTO-AVOID
 ❌ Hardcoded dt=0.016 → use the actual measured dt from onUpdate
 
 ═══════════════════════════════════════════════════════════════
+GAMEPLAY PARAMETERS — USE THESE STARTING VALUES
+═══════════════════════════════════════════════════════════════
+
+These values are encoded in `GAMEPLAY_PRESETS` in `game-utils.js` and
+represent tested, playable feel across the library. Start here — tune ±20%
+for your specific game, but do NOT start from scratch.
+
+### Player sprite sizing
+  Player sprite should fill 6-8% of canvas width.
+    800px canvas  → 48–64px player width
+    960px canvas  → 58–77px player width
+  Larger than this and movement FEELS slow even at high px/s.
+
+### Hitbox rules (DIFFERENT by genre — do not apply uniformly)
+  Shmup / shooter:   Circle radius = 30% of sprite width (very forgiving — rewards skill)
+  Platformer / beat-em-up: AABB 70% of sprite (GameUtils.hitTest default)
+  Runner:             AABB 75% of sprite
+  Breakout / precise: AABB 100% (exact) — frustration comes from ball physics, not hitboxes
+
+### Canonical values by genre
+
+  SHMUP (Space Runner, Neon Invaders, Alien Unicorn Alliance):
+    playerSpeed:        380 px/s
+    playerAccel:        820 px/s²
+    playerDamp:         0.90 (per-60Hz-frame)
+    hitboxRadius:       30% of visual width
+    enemySpeedMin:      130 px/s at game start
+    enemySpeedMax:      280 px/s at difficulty peak
+    bulletSpeed:        380 px/s
+    spawnIntervalStart: 2.0 s
+    spawnIntervalFloor: 0.55 s (hard cap)
+
+  PLATFORMER (Robots vs Unicorns):
+    runSpeed:     260 px/s
+    jumpVelocity: -520 px/s (negative = upward)
+    gravity:      780 px/s²
+    hitboxRatio:  0.70
+
+  RUNNER (Pixel Pac Run, Frog Cross Dash):
+    obstacleSpeedStart: 240 px/s
+    obstacleSpeedMax:   440 px/s
+    speedRamp:          15 px/s per second
+    gravity:            900 px/s²
+    jumpVelocity:       -520 px/s
+
+  BREAKOUT (Brick Blitz '84):
+    paddleSpeed:   420 px/s
+    ballSpeedBase: 340 px/s
+    ballSpeedMax:  600 px/s
+
+  CATCHER (Banana Bonanza):
+    playerSpeed:   380 px/s
+    objectFallMin: 160 px/s
+    objectFallMax: 340 px/s
+
+### Difficulty ramp formula (use in ALL games)
+  difficulty = 1.0 + (elapsedSeconds / 60) * 0.3  // 30% faster per minute
+  enemySpeed = baseSpeed * difficulty
+  Cap difficulty at 2.5 (150% increase max)
+
+═══════════════════════════════════════════════════════════════
+SPRITE STRATEGY — WHEN TO USE KENNEY VS CANVAS DRAWING
+═══════════════════════════════════════════════════════════════
+
+Free CC0 sprite packs are committed to `/public/assets/kenney/`.
+They come from kenney.nl (CC0 — no attribution required).
+
+  /public/assets/kenney/space/      ← Space Shooter Redux (ships, enemies, asteroids, lasers)
+  /public/assets/kenney/animals/    ← Animal Pack Redux (frog, bear, monkey, horse, snake…)
+  /public/assets/kenney/platformer/ ← Platformer Pack Redux (characters, enemies, coins, gems)
+
+### When to USE Kenney sprites
+  - Generic game objects where visual distinctiveness doesn't matter much:
+    spaceships, asteroids, platformer tiles, coins, gems, basic enemies
+  - When the game genre matches a Kenney pack (space shooter → kenney/space/)
+  - Saves development time and produces higher quality than basic canvas shapes
+
+### When to USE canvas drawing (and NOT Kenney sprites)
+  - The character IS the brand/creative centrepiece: unicorn, custom protagonist
+  - You need animation that PNGs cannot express: flowing mane, glowing horn, pulsing aura
+  - The aesthetic requires procedural effects: glow, gradients, `globalCompositeOperation`
+  - The game's visual identity depends on a specific look (Nine Men's Morris board, etc.)
+
+### How to load sprites (AssetLoader — in game-engine.js)
+
+```javascript
+const assets = new AssetLoader();
+await assets.load({
+  ship:     '/assets/kenney/space/playerShip1_blue.png',
+  asteroid: '/assets/kenney/space/meteorBrown_big1.png',
+}, {
+  ship:     0.55,   // pre-scale to ~54×41px at load time (never scale in drawImage)
+  asteroid: 0.55,
+});
+
+// In onRender:
+assets.draw(ctx, 'ship', centerX, centerY);     // draws centred at cx,cy
+assets.draw(ctx, 'ship', cx, cy, width, height); // override display size
+```
+
+  - ALWAYS pre-scale at load time via the second argument (scales map)
+  - NEVER pass unscaled images into drawImage() in the render loop
+  - Always provide procedural fallback for when sprites fail to load
+  - Use `spritesReady && assets.has('name')` to guard sprite draws
+
+### Adding new sprites
+  1. Download from kenney.nl — verify CC0 license
+  2. Copy the specific PNGs needed to `/public/assets/kenney/[category]/`
+  3. Document in the LICENSE.txt in that directory
+  4. Use `AssetLoader.load()` with appropriate pre-scale factors
+
+═══════════════════════════════════════════════════════════════
 FINAL CHECKLIST — EVERY GAME MUST PASS
 ═══════════════════════════════════════════════════════════════
 
@@ -335,13 +447,24 @@ Physics:
   □ No alert() or prompt()
   □ No framerate-dependent counters (frames % n)
 
+Gameplay feel:
+  □ Player sprite 6-8% of canvas width
+  □ Speeds from GAMEPLAY_PRESETS (or justified deviation)
+  □ Hitbox uses correct ratio for game type (shmup=30% circle, platformer=70% AABB)
+  □ Difficulty ramps over time (not flat from start to finish)
+  □ First 30s tutorial-easy (90% success rate for new player)
+
 Quality:
-  □ Animated sprites (3+ frames)
+  □ Animated sprites (3+ frames) OR Kenney sprites used
   □ Particles on key events
   □ Background has depth
-  □ Hitboxes use 70% forgiveness
-  □ First 30s tutorial-easy
   □ 60 FPS stable, no console errors
+
+Sprites:
+  □ Generic objects (ships, rocks, coins) use Kenney sprites from /assets/kenney/
+  □ Unique characters (unicorn, frog, monkey) use canvas drawing with animation
+  □ AssetLoader used for all PNG sprites — pre-scaled at load, not at draw time
+  □ Procedural fallback exists for when sprites fail to load
 
 Integration:
   □ Entry added to games.json
@@ -360,12 +483,13 @@ REFERENCE FILES (Priority Order)
 ═══════════════════════════════════════════════════════════════
 
 1. `/public/game-framework/game-template.html`  ← MANDATORY starting point
-2. `/public/game-framework/game-engine.js`      ← GameEngine + InputManager API
-3. `/public/game-framework/game-utils.js`       ← GameUtils + ParticleSystem API
+2. `/public/game-framework/game-engine.js`      ← GameEngine + InputManager + AssetLoader API
+3. `/public/game-framework/game-utils.js`       ← GameUtils + ParticleSystem + GAMEPLAY_PRESETS
 4. `/public/game-framework/overlay-styles.css`  ← CSS classes reference
-5. THIS FILE (CLAUDE.md)                        ← Standards + workflow
-6. `/docs/GAME_DESIGN_SPEC.md`                  ← Full design specification
-7. `/docs/GAME_MECHANICS_LIBRARY.md`            ← Reusable gameplay patterns
+5. `/public/assets/kenney/`                     ← Free CC0 sprite packs (space, animals, platformer)
+6. THIS FILE (CLAUDE.md)                        ← Standards + workflow + gameplay params
+7. `/docs/GAME_DESIGN_SPEC.md`                  ← Full design specification
+8. `/docs/GAME_MECHANICS_LIBRARY.md`            ← Reusable gameplay patterns
 
 DO NOT reference `/docs/GAME_TEMPLATE_EXACT.html` — it is superseded by
 `/public/game-framework/game-template.html`.

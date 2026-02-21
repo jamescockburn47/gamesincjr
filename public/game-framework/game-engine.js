@@ -352,3 +352,89 @@ class InputManager {
   removeTouch(action) { this.touchActions.delete(action); }
   clearTouch()        { this.touchActions.clear();        }
 }
+
+// ─── AssetLoader ──────────────────────────────────────────────────────────────
+/**
+ * Async sprite loader with OffscreenCanvas pre-rendering.
+ *
+ * Usage in a game demo:
+ *   const assets = new AssetLoader();
+ *   await assets.load({
+ *     ship:     '/assets/kenney/space/playerShip1_blue.png',
+ *     asteroid: '/assets/kenney/space/meteorBrown_big1.png',
+ *   });
+ *   // In render loop:
+ *   ctx.drawImage(assets.get('ship'), x - w/2, y - h/2, w, h);
+ *
+ * Pre-renders each image to an OffscreenCanvas so drawImage() is a fast
+ * GPU blit with no per-frame decoding. Never pass raw Image elements to
+ * drawImage() in the hot path — always go through AssetLoader.
+ *
+ * For scaled variants (e.g. enemy at 50% size), pre-scale at load time:
+ *   await assets.load({ enemySm: '/assets/kenney/space/enemy.png' }, { enemySm: 0.5 });
+ */
+class AssetLoader {
+  constructor() {
+    this._cache = new Map();
+    this.ready  = false;
+    this.errors = [];
+  }
+
+  /**
+   * Load all assets in the manifest.
+   * @param {Record<string, string>} manifest  name → URL
+   * @param {Record<string, number>} [scales]  name → scale factor (optional, default 1)
+   * @returns {Promise<AssetLoader>}
+   */
+  async load(manifest, scales = {}) {
+    await Promise.all(
+      Object.entries(manifest).map(([name, url]) =>
+        new Promise(resolve => {
+          const img = new Image();
+          img.onload = () => {
+            const scale = scales[name] || 1;
+            const w = Math.round(img.width  * scale);
+            const h = Math.round(img.height * scale);
+            const oc  = new OffscreenCanvas(w, h);
+            const ctx = oc.getContext('2d');
+            ctx.drawImage(img, 0, 0, w, h);
+            this._cache.set(name, { canvas: oc, w, h });
+            resolve();
+          };
+          img.onerror = () => {
+            // Graceful fallback — store null so callers can use has() to check
+            console.warn('[AssetLoader] Failed to load:', url);
+            this.errors.push(url);
+            this._cache.set(name, null);
+            resolve(); // don't reject — keep rest of assets loading
+          };
+          img.src = url;
+        })
+      )
+    );
+    this.ready = true;
+    return this;
+  }
+
+  /**
+   * Draw the named asset centered at (cx, cy) at its stored size.
+   * Pass w/h to override the display size (the pre-rendered source is unchanged).
+   */
+  draw(ctx, name, cx, cy, w, h) {
+    const entry = this._cache.get(name);
+    if (!entry) return false;
+    const dw = w !== undefined ? w : entry.w;
+    const dh = h !== undefined ? h : entry.h;
+    ctx.drawImage(entry.canvas, Math.round(cx - dw / 2), Math.round(cy - dh / 2), dw, dh);
+    return true;
+  }
+
+  /** Returns the OffscreenCanvas for a named asset, or null if not loaded. */
+  get(name)     { const e = this._cache.get(name); return e ? e.canvas : null; }
+  /** Returns { w, h } for a named asset, or null if not loaded. */
+  size(name)    { const e = this._cache.get(name); return e ? { w: e.w, h: e.h } : null; }
+  /** True if the asset loaded successfully. */
+  has(name)     { return this._cache.get(name) != null; }
+  /** True if all assets in the manifest loaded without error. */
+  get allReady(){ return this.errors.length === 0 && this.ready; }
+}
