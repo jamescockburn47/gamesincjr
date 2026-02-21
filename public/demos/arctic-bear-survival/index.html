@@ -835,8 +835,11 @@
             }
         }
 
-        function loop() {
-            update(0.016);
+        let _lastLoopTime = 0;
+        function loop(timestamp = 0) {
+            const dt = _lastLoopTime ? Math.min((timestamp - _lastLoopTime) / 1000, 0.05) : 0.016;
+            _lastLoopTime = timestamp;
+            update(dt);
             render();
             requestAnimationFrame(loop);
         }

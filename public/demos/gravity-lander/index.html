@@ -3,247 +3,283 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Gravity Lander - Demo</title>
+  <title>Gravity Lander · Games Inc Jr</title>
+  <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
   <style>
-    html,body{ height:100%; }
-    body{ margin:0; background:#05070d; color:#d9e1ff; font-family:Arial, Helvetica, sans-serif; display:flex; flex-direction:column; align-items:center; }
-    h1{ margin:16px 0 8px; }
-    .hud{ display:flex; gap:16px; margin-bottom:8px; }
-    .badge{ background:#121a31; padding:6px 10px; border-radius:8px; border:1px solid #223061; }
-    .stage{ position:relative; width:100%; max-width:900px; aspect-ratio:4/3; }
-    canvas{ position:absolute; inset:0; width:100%; height:100%; border:2px solid #1c2b57; background:linear-gradient(#071021,#0b1530); image-rendering:pixelated; touch-action:none; }
-    .mobile{ position:fixed; bottom:16px; left:50%; transform:translateX(-50%); display:none; gap:10px; z-index:50; background:rgba(0,0,0,.25); border:1px solid #274a93; border-radius:12px; padding:10px; backdrop-filter:blur(6px); }
-    .mobile button{ width:64px; height:64px; border-radius:12px; border:1px solid #274a93; background:#142446; color:#d9e1ff; font-size:18px; }
-    @media (pointer:coarse){ .mobile{ display:flex; } }
+    #gij-stage { background: linear-gradient(#071021, #0b1530); }
+    canvas { background: linear-gradient(#071021, #0b1530); }
   </style>
-  </head>
-  <body>
-    <h1>Gravity Lander</h1>
-    <div class="hud">
-      <div class="badge">Fuel: <span id="fuel">100</span></div>
-      <div class="badge">V-Speed: <span id="vs">0.0</span></div>
-      <div class="badge">Score: <span id="score">0</span></div>
+</head>
+<body>
+<div id="gij-wrap">
+
+  <div id="gij-try-overlay" class="gij-overlay">
+    <div class="gij-modal">
+      <h1 data-game-title>Gravity Lander</h1>
+      <p id="gij-description">Guide your lander to a safe touchdown — don't crash!</p>
+      <button id="gij-try-btn" class="gij-btn gij-btn-primary">▶ Play Now</button>
     </div>
-    <div id="tryOverlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:1000;">
-      <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:680px;color:#fff;text-align:center">
-        <h2 style="margin:0 0 8px">Gravity Lander</h2>
-        <p style="margin:0 0 12px">Guide your lander to a safe touchdown on the platform!</p>
-        <button id="tryBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Try Now</button>
+  </div>
+
+  <div id="gij-instructions-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>How to Play</h2>
+      <ul id="gij-instructions" class="gij-list"></ul>
+      <button id="gij-start-btn" class="gij-btn gij-btn-primary">Launch!</button>
+    </div>
+  </div>
+
+  <div id="gij-gameover-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>Crashed!</h2>
+      <div class="gij-score-row">
+        <span id="gij-final-score">Score: 0</span>
+        <span id="gij-final-hs">Best: 0</span>
       </div>
+      <button id="gij-restart-btn" class="gij-btn gij-btn-primary">Try Again</button>
     </div>
-    <div id="startOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:1000;">
-      <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:680px;color:#fff;text-align:center">
-        <h2 style="margin:0 0 8px">How to Play</h2>
-        <p style="margin:0 0 6px"><strong>Goal:</strong> Land softly on the green platform. Keep your V-Speed LOW!</p>
-        <p style="margin:0 0 6px"><strong>Controls:</strong> Arrow keys - Left/Right rotate, Up thrusts.</p>
-        <p style="margin:0 0 4px"><strong>Speed Guide:</strong> <span style="color:#2ee6a6">Green = Safe</span>, <span style="color:#ffaa00">Yellow = Caution</span>, <span style="color:#ff4444">Red = Too Fast!</span></p>
-        <p style="margin:0 0 12px"><strong>Tip:</strong> Land with V-Speed under 4.5 and you'll succeed! (Green = Perfect)</p>
-        <button id="startBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Start</button>
-      </div>
+  </div>
+
+  <div id="gij-stage">
+    <div id="gij-hud" class="hidden">
+      <div class="gij-badge">⭐ <strong id="gij-score">0</strong></div>
+      <div class="gij-badge">🏆 <strong id="gij-highscore">0</strong></div>
+      <div class="gij-badge">⛽ <strong id="fuel-disp">100</strong></div>
+      <div class="gij-badge" id="vspeed-badge">↕ <strong id="vs-disp">0.0</strong></div>
     </div>
-    <div class="stage"><canvas id="game" width="800" height="600" aria-label="Gravity Lander"></canvas></div>
-    <div class="mobile" aria-label="Mobile controls">
-      <button id="left">◀︎</button>
-      <button id="thrust">▲</button>
-      <button id="right">▶︎</button>
-    </div>
+    <canvas id="gij-canvas"></canvas>
+    <div id="gij-controls"></div>
+  </div>
 
-    <script>
-      const canvas=document.getElementById('game');
-      const ctx=canvas.getContext('2d');
-      const fuelEl=document.getElementById('fuel');
-      const vsEl=document.getElementById('vs');
-      const scoreEl=document.getElementById('score');
-      const isTouch = matchMedia('(pointer:coarse)').matches || 'ontouchstart' in window;
+</div>
 
-      const g = 0.004; // EXTREMELY gentle gravity - half previous value
-      const thrustPower = 0.08; // much weaker thrust to compensate
-      const rotPower = 0.06; // fast rotation
-      const TERMINAL_VELOCITY = 1.2; // MUCH lower terminal velocity
-      const STALL_DURATION = 5.0; // LONGER stall - 5 seconds
-      let wind = 0.0;
+<script src="/game-framework/game-engine.js"></script>
+<script src="/game-framework/game-utils.js"></script>
+<script>
+const GAME = {
+  slug:  'gravity-lander',
+  title: 'Gravity Lander',
+  description: 'Guide your lander to a safe touchdown on the green platform.',
+  instructions: [
+    '<strong>← → / A D:</strong> Rotate the lander',
+    '<strong>↑ / W:</strong> Fire thrusters',
+    '<strong>Goal:</strong> Land softly on the green pad — keep V-Speed in the <span style="color:#2ee6a6">green</span>',
+    '<strong>Tip:</strong> Less than 4.5 V-Speed = safe landing!',
+  ],
+  controls: [
+    { label: '◀', action: 'left'  },
+    { label: '🔥', action: 'up', cls: 'gij-ctrl-space'   },
+    { label: '▶', action: 'right' },
+  ],
+  width: 800, height: 600,
+};
 
-      const lander={ x:400, y:80, vx:0, vy:0, angle:0, fuel:100, alive:false, spawnTime:0 };
-      let pad={ x: 540, y: 520, w: 120 };
-      let score=0;
+const canvas = document.getElementById('gij-canvas');
+const game   = new GameEngine(canvas).setup(GAME);
+const input  = new InputManager();
+const fx     = new ParticleSystem();
 
-      const keys={};
-      document.addEventListener('keydown', e=>{ keys[e.key.toLowerCase()] = true; if(e.key===' '){ e.preventDefault(); }});
-      document.addEventListener('keyup', e=>{ keys[e.key.toLowerCase()] = false; });
-      if(isTouch){
-        const bind=(id,on,off)=>{
-          const el=document.getElementById(id);
-          el.addEventListener('touchstart', e=>{ e.preventDefault(); on(); }, {passive:false});
-          el.addEventListener('touchend', e=>{ e.preventDefault(); off(); }, {passive:false});
-          el.addEventListener('mousedown', on);
-          el.addEventListener('mouseup', off);
-          el.addEventListener('mouseleave', off);
-        };
-        bind('left', ()=>keys['arrowleft']=true, ()=>keys['arrowleft']=false);
-        bind('right', ()=>keys['arrowright']=true, ()=>keys['arrowright']=false);
-        bind('thrust', ()=>keys['arrowup']=true, ()=>keys['arrowup']=false);
-      }
+const W = game.W, H = game.H;
 
-      function reset(){
-        lander.x = 200 + Math.random()*400;
-        lander.y = 80;
-        lander.vx = (Math.random()-0.5)*1.2;
-        lander.vy = 0;
-        lander.angle = 0;
-        lander.fuel = 200; // lots of fuel for practice
-        lander.alive = true;
-        lander.spawnTime = Date.now();
-        wind = 0; // no wind in Level 1 (too unpredictable for age 10)
-        pad = { x: 100 + Math.random()*600, y: 520, w: 100 + Math.random()*80 };
-      }
+// ── Game constants ─────────────────────────────────────────
+const GRAVITY          = 18;   // px/s² (gentle)
+const THRUST_POWER     = 120;  // px/s² thrust acceleration
+const ROT_SPEED        = 2.8;  // rad/s
+const TERMINAL_VEL     = 200;  // px/s max fall speed
+const STALL_DURATION   = 4.0;  // s before gravity activates
+const FUEL_MAX         = 200;
+const FUEL_DRAIN       = 8;    // units/s
+const SAFE_VY          = 60;   // px/s max safe landing v-speed
+const SAFE_VX          = 40;
+const SAFE_ANGLE       = 0.4;  // rad
 
-      function update(){
-        if(!lander.alive) return;
-        
-        // Check if stall period is over - with frame counter for reliability
-        const elapsed = (Date.now() - lander.spawnTime) / 1000;
-        const stallComplete = elapsed > STALL_DURATION;
-        
-        // DEBUG: Log actual elapsed time (remove after testing)
-        if(!stallComplete && Math.random() < 0.01){
-          console.log('Stall active, elapsed:', elapsed.toFixed(2), 's');
-        }
-        
-        // rotation (always active)
-        if(keys['arrowleft']||keys['a']) lander.angle -= rotPower;
-        if(keys['arrowright']||keys['d']) lander.angle += rotPower;
-        // thrust
-        if((keys['arrowup']||keys['w']) && lander.fuel>0){
-          lander.vx += Math.sin(lander.angle)*thrustPower;
-          lander.vy -= Math.cos(lander.angle)*thrustPower;
-          lander.fuel = Math.max(0, lander.fuel - 0.1); // very slow fuel drain
-        }
-        // gravity ONLY after stall, WITH terminal velocity cap
-        if(stallComplete){
-          lander.vy += g;
-          lander.vy = Math.min(lander.vy, TERMINAL_VELOCITY);
-        }
-        // wind
-        lander.vx += wind;
-        // integrate
-        lander.x += lander.vx;
-        lander.y += lander.vy;
+// ── State ──────────────────────────────────────────────────
+let lander, pad, landingMsg, msgTimer;
 
-        // bounds
-        if(lander.x<20){ lander.x=20; lander.vx=0; }
-        if(lander.x>canvas.width-20){ lander.x=canvas.width-20; lander.vx=0; }
+function reset() {
+  lander = {
+    x: 200 + Math.random() * 400, y: 80,
+    vx: (Math.random() - 0.5) * 40,
+    vy: 0,
+    angle: 0,
+    fuel: FUEL_MAX,
+    alive: true,
+    spawnTime: 0,
+  };
+  pad = { x: 80 + Math.random() * 540, y: 520, w: 100 + Math.random() * 80 };
+  landingMsg = '';
+  msgTimer   = 0;
+  fx.clear();
+}
 
-        // landing / crash
-        if(lander.y>pad.y-10){
-          const within = lander.x>pad.x && lander.x<pad.x+pad.w;
-          const soft = Math.abs(lander.vy) < 4.5 && Math.abs(lander.vx) < 3.0 && Math.abs(lander.angle) < 1.0; // VERY forgiving - almost any landing works
-          if(within && soft){
-            score += Math.max(0, Math.floor(1000 - (Math.abs(lander.vy)*200 + (100-lander.fuel)*2)));
-            scoreEl.textContent = score;
-            alert('Successful Landing!');
-            const name = prompt('Enter your name to submit score (optional):', '');
-            if (name !== null) {
-              fetch('/api/scores/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ slug:'gravity-lander', score, name }) });
-            }
-            reset();
-          } else {
-            lander.alive=false;
-            alert('Crash!');
-            const name = prompt('Enter your name to submit score (optional):', '');
-            if (name !== null) {
-              fetch('/api/scores/save', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ slug:'gravity-lander', score, name }) });
-            }
-            reset();
-          }
-        }
+game.onRestart(reset);
 
-        fuelEl.textContent = Math.round(lander.fuel).toString();
-        
-        // Color-code V-Speed for visual feedback
-        const vSpeed = Math.abs(lander.vy);
-        if (vSpeed > 4.0) {
-          vsEl.style.color = '#ff4444'; // red (danger)
-        } else if (vSpeed > 2.5) {
-          vsEl.style.color = '#ffaa00'; // yellow (caution)
-        } else {
-          vsEl.style.color = '#2ee6a6'; // green (safe)
-        }
-        vsEl.textContent = lander.vy.toFixed(2);
-      }
+// ── Update ─────────────────────────────────────────────────
+game.onUpdate((dt) => {
+  if (game.state !== 'playing') return;
+  if (!lander.alive) return;
 
-      function render(){
-        ctx.clearRect(0,0,canvas.width,canvas.height);
-        
-        // Stall countdown display - ALWAYS show for debugging
-        const elapsed = (Date.now() - lander.spawnTime) / 1000;
-        if(elapsed < STALL_DURATION){
-          const remaining = Math.ceil(STALL_DURATION - elapsed);
-          ctx.save();
-          ctx.font = 'bold 40px Arial';
-          ctx.fillStyle = '#ffaa00';
-          ctx.strokeStyle = '#000';
-          ctx.lineWidth = 4;
-          ctx.textAlign = 'center';
-          ctx.strokeText(`GRAVITY IN: ${remaining}s`, canvas.width/2, 80);
-          ctx.fillText(`GRAVITY IN: ${remaining}s`, canvas.width/2, 80);
-          
-          // Show exact elapsed time for debugging
-          ctx.font = '16px Arial';
-          ctx.fillStyle = '#ffffff';
-          ctx.fillText(`Debug: ${elapsed.toFixed(2)}s elapsed`, canvas.width/2, 110);
-          ctx.restore();
-        }
-        
-        // ground
-        ctx.fillStyle='#0f1a35';
-        ctx.fillRect(0,540,canvas.width,60);
-        // landing pad
-        ctx.fillStyle='#2ee6a6';
-        ctx.fillRect(pad.x, pad.y, pad.w, 6);
-        // lander
-        ctx.save();
-        ctx.translate(lander.x, lander.y);
-        ctx.rotate(lander.angle);
-        ctx.fillStyle='#d9e1ff';
-        ctx.fillRect(-8,-10,16,20);
-        ctx.fillStyle='#39ff14'; ctx.fillRect(-6,10,12,2); // legs
-        ctx.restore();
-      }
+  lander.spawnTime += dt;
+  const stallOver = lander.spawnTime > STALL_DURATION;
 
-      function resize(){
-        const rect = canvas.parentElement.getBoundingClientRect();
-        const dpr = Math.min(window.devicePixelRatio || 1, 2);
-        canvas.width = Math.floor(rect.width * dpr);
-        canvas.height = Math.floor(rect.height * dpr);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      }
-      window.addEventListener('resize', resize);
-      resize();
+  // Rotation
+  if (input.isPressed('left'))  lander.angle -= ROT_SPEED * dt;
+  if (input.isPressed('right')) lander.angle += ROT_SPEED * dt;
 
-      const tryOverlay=document.getElementById('tryOverlay');
-      const startOverlay=document.getElementById('startOverlay');
-      const tryBtn=document.getElementById('tryBtn');
-      const startBtn=document.getElementById('startBtn');
-      function requestFs(){
-        const el=document.documentElement;
-        if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
-        else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen().catch(()=>{});
-        else if(el.msRequestFullscreen) el.msRequestFullscreen().catch(()=>{});
-      }
-      tryBtn.addEventListener('click', ()=>{
-        requestFs();
-        tryOverlay.style.display='none';
-        startOverlay.style.display='flex';
-      });
-      startBtn.addEventListener('click', ()=>{
-        startOverlay.style.display='none';
-        lander.alive=true;
-      });
+  // Thrust
+  if (input.isPressed('up') && lander.fuel > 0) {
+    lander.vx += Math.sin(lander.angle) * THRUST_POWER * dt;
+    lander.vy -= Math.cos(lander.angle) * THRUST_POWER * dt;
+    lander.fuel = Math.max(0, lander.fuel - FUEL_DRAIN * dt);
+    // Thruster particles
+    if (Math.random() < 0.6) {
+      fx.burst(
+        lander.x + Math.sin(lander.angle + Math.PI) * 14,
+        lander.y - Math.cos(lander.angle + Math.PI) * 14,
+        2, { colors: ['#ff8800','#ffff00'], minSpeed: 40, maxSpeed: 120,
+              spread: 0.6, angle: lander.angle + Math.PI, gravity: 30, lifetime: 0.4 }
+      );
+    }
+  }
 
-      function loop(){ update(); render(); requestAnimationFrame(loop); }
-      reset(); loop();
-    </script>
-  </body>
-  </html>
+  // Gravity (after stall)
+  if (stallOver) {
+    lander.vy += GRAVITY * dt;
+    lander.vy  = Math.min(lander.vy, TERMINAL_VEL);
+  }
 
+  // Integrate
+  lander.x += lander.vx * dt;
+  lander.y += lander.vy * dt;
 
+  // Wall bounds
+  lander.x = GameUtils.clamp(lander.x, 20, W - 20);
+
+  // HUD
+  document.getElementById('fuel-disp').textContent = Math.round(lander.fuel);
+  const vs = Math.abs(lander.vy);
+  const vsBadge = document.getElementById('vspeed-badge');
+  document.getElementById('vs-disp').textContent = lander.vy.toFixed(1);
+  if (vs > SAFE_VY)      vsBadge.style.color = '#ff4444';
+  else if (vs > SAFE_VY * 0.6) vsBadge.style.color = '#ffaa00';
+  else                   vsBadge.style.color = '#2ee6a6';
+
+  // Landing / crash
+  if (lander.y + 12 >= pad.y && lander.y < pad.y + 20) {
+    const onPad = lander.x > pad.x - 4 && lander.x < pad.x + pad.w + 4;
+    const soft  = Math.abs(lander.vy) < SAFE_VY &&
+                  Math.abs(lander.vx) < SAFE_VX &&
+                  Math.abs(lander.angle) < SAFE_ANGLE;
+    lander.alive = false;
+    if (onPad && soft) {
+      // Successful landing
+      const pts = Math.max(0, Math.floor(1000 - Math.abs(lander.vy) * 5 + lander.fuel * 2));
+      game.addScore(pts);
+      landingMsg = '✅ Safe Landing! +' + pts;
+      fx.burst(lander.x, lander.y, 20, { colors: ['#2ee6a6','#ffffff'], gravity: -20, lifetime: 1.2 });
+      msgTimer = 2.5;
+      setTimeout(() => { reset(); lander.spawnTime = 0; }, 2500);
+    } else {
+      landingMsg = onPad ? '💥 Too Fast!' : '💥 Missed the Pad!';
+      fx.burst(lander.x, lander.y, 30, { colors: ['#ff4400','#ffff00','#ff8800'], gravity: 60 });
+      game.shake(10, 0.4);
+      msgTimer = 2.0;
+      setTimeout(() => game.endGame(), 1800);
+    }
+  }
+
+  // Fell off bottom
+  if (lander.y > H + 60) {
+    lander.alive = false;
+    game.endGame();
+  }
+
+  // Message timer
+  if (msgTimer > 0) msgTimer -= dt;
+
+  fx.update(dt);
+});
+
+// ── Render ──────────────────────────────────────────────────
+game.onRender((ctx) => {
+  ctx.fillStyle = '#071021';
+  ctx.fillRect(0, 0, W, H);
+
+  // Stars
+  if (!game._stars) {
+    game._stars = Array.from({ length: 80 }, () => ({
+      x: Math.random() * W, y: Math.random() * 500, s: Math.random() * 1.5 + 0.5,
+    }));
+  }
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  game._stars.forEach(s => ctx.fillRect(s.x, s.y, s.s, s.s));
+
+  // Ground
+  ctx.fillStyle = '#0f1a35';
+  ctx.fillRect(0, 540, W, 60);
+
+  // Landing pad
+  const padGrad = ctx.createLinearGradient(pad.x, 0, pad.x + pad.w, 0);
+  padGrad.addColorStop(0, '#1a6644');
+  padGrad.addColorStop(0.5, '#2ee6a6');
+  padGrad.addColorStop(1, '#1a6644');
+  ctx.fillStyle   = padGrad;
+  ctx.shadowColor = '#2ee6a6';
+  ctx.shadowBlur  = 12;
+  ctx.fillRect(pad.x, pad.y, pad.w, 6);
+  ctx.shadowBlur = 0;
+
+  // Lander
+  if (lander.alive) {
+    ctx.save();
+    ctx.translate(lander.x, lander.y);
+    ctx.rotate(lander.angle);
+    // Body
+    ctx.fillStyle   = '#d9e1ff';
+    ctx.shadowColor = '#6699ff';
+    ctx.shadowBlur  = 8;
+    ctx.fillRect(-8, -12, 16, 22);
+    // Legs
+    ctx.fillStyle = '#2ee6a6';
+    ctx.fillRect(-12, 10, 6, 3);
+    ctx.fillRect(6, 10, 6, 3);
+    // Thrust nozzle
+    ctx.fillStyle = '#ff8800';
+    ctx.fillRect(-4, 10, 8, 4);
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  fx.draw(ctx);
+
+  // Stall countdown
+  if (lander.alive && lander.spawnTime < STALL_DURATION) {
+    const remaining = Math.ceil(STALL_DURATION - lander.spawnTime);
+    ctx.fillStyle   = '#ffaa00';
+    ctx.font        = 'bold 28px Arial';
+    ctx.textAlign   = 'center';
+    ctx.shadowColor = '#ffaa00';
+    ctx.shadowBlur  = 16;
+    ctx.fillText('Gravity in: ' + remaining + 's', W / 2, 55);
+    ctx.shadowBlur = 0;
+  }
+
+  // Landing message
+  if (landingMsg && msgTimer > 0) {
+    const a = Math.min(1, msgTimer);
+    ctx.globalAlpha = a;
+    ctx.fillStyle   = '#ffffff';
+    ctx.font        = 'bold 36px Arial';
+    ctx.textAlign   = 'center';
+    ctx.shadowColor = '#ffffff';
+    ctx.shadowBlur  = 20;
+    ctx.fillText(landingMsg, W / 2, H / 2);
+    ctx.shadowBlur  = 0;
+    ctx.globalAlpha = 1;
+  }
+});
+
+reset();
+</script>
+</body>
+</html>

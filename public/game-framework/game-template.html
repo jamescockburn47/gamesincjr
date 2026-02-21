@@ -1,220 +1,153 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>{{GAME_TITLE}}</title>
-  <link rel="stylesheet" href="/game-framework/overlay-styles.css">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>My Game · Games Inc Jr</title>
+  <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
 </head>
 <body>
-  <div id="tryNowOverlay" class="overlay">
-    <div class="modal">
-      <h1>{{GAME_TITLE}}</h1>
-      <p>{{GAME_DESCRIPTION}}</p>
-      <button onclick="startGame()">Try Now</button>
+<div id="gij-wrap">
+
+  <!-- ── Try-Now Overlay ── -->
+  <div id="gij-try-overlay" class="gij-overlay">
+    <div class="gij-modal">
+      <h1 data-game-title>My Game</h1>
+      <p id="gij-description">One-sentence hook about the game.</p>
+      <button id="gij-try-btn" class="gij-btn gij-btn-primary">▶ Play Now</button>
     </div>
   </div>
 
-  <div id="instructionsOverlay" class="overlay hidden">
-    <div class="modal">
-      <h1>How to Play</h1>
-      <p>{{GAME_GOAL}}</p>
-      <ul class="instructions-list">
-        <li><strong>Desktop:</strong> {{GAME_CONTROLS}}</li>
-        <li><strong>Mobile:</strong> Use on-screen buttons</li>
-      </ul>
-      <button onclick="hideInstructions()">Got It!</button>
+  <!-- ── Instructions Overlay ── -->
+  <div id="gij-instructions-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>How to Play</h2>
+      <ul id="gij-instructions" class="gij-list"></ul>
+      <button id="gij-start-btn" class="gij-btn gij-btn-primary">Let's Go!</button>
     </div>
   </div>
 
-  <div id="gameOverOverlay" class="overlay hidden">
-    <div class="modal">
-      <h1>Game Over!</h1>
-      <p id="finalScore">Score: 0</p>
-      <button onclick="restartGame()">Play Again</button>
+  <!-- ── Game-Over Overlay ── -->
+  <div id="gij-gameover-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>Game Over</h2>
+      <div class="gij-score-row">
+        <span id="gij-final-score">Score: 0</span>
+        <span id="gij-final-hs">Best: 0</span>
+      </div>
+      <button id="gij-restart-btn" class="gij-btn gij-btn-primary">Play Again</button>
     </div>
   </div>
 
-  <div id="gameContainer">
-    <canvas id="gameCanvas" width="800" height="600"></canvas>
-  </div>
+  <!-- ── Stage ── -->
+  <div id="gij-stage">
 
-  <div class="hud">
-    <div id="scoreDisplay">Score: 0</div>
-    <div id="livesDisplay">Lives: 3</div>
-  </div>
+    <!-- HUD (shown after game starts) -->
+    <div id="gij-hud" class="hidden">
+      <div class="gij-badge">⭐ <strong id="gij-score">0</strong></div>
+      <div class="gij-badge">🏆 <strong id="gij-highscore">0</strong></div>
+      <!-- Add extra game-specific badges here, e.g.: -->
+      <!-- <div class="gij-badge">❤️ <strong id="lives">3</strong></div> -->
+    </div>
 
-  <div class="mobile-controls" id="mobileControls">
-  </div>
+    <canvas id="gij-canvas"></canvas>
 
-  <script src="/game-framework/game-engine.js"></script>
-  <script src="/game-framework/game-utils.js"></script>
-  <script src="/game-framework/drawing-library.js"></script>
+    <!-- Auto-built mobile controls -->
+    <div id="gij-controls"></div>
 
-  <script>
-    const canvas = document.getElementById('gameCanvas');
-    const ctx = canvas.getContext('2d');
-    
-    const game = new GameEngine(canvas);
-    const input = new InputManager();
-    
-    let score = 0;
-    let lives = 3;
-    let gameState = 'waiting';
-    
-    const player = {
-      x: 400,
-      y: 500,
-      width: 40,
-      height: 40,
-      vx: 0,
-      vy: 0,
-      speed: 300
-    };
-    
-    const enemies = [];
-    let enemySpawnTimer = 0;
-    const ENEMY_SPAWN_INTERVAL = 2.0;
-    
-    function startGame() {
-      document.getElementById('tryNowOverlay').classList.add('hidden');
-      document.getElementById('instructionsOverlay').classList.remove('hidden');
-    }
-    
-    function hideInstructions() {
-      document.getElementById('instructionsOverlay').classList.add('hidden');
-      gameState = 'playing';
-      game.start();
-      setupMobileControls();
-    }
-    
-    function restartGame() {
-      score = 0;
-      lives = 3;
-      enemies.length = 0;
-      enemySpawnTimer = 0;
-      player.x = 400;
-      player.y = 500;
-      player.vx = 0;
-      player.vy = 0;
-      
-      document.getElementById('gameOverOverlay').classList.add('hidden');
-      gameState = 'playing';
-      game.resume();
-    }
-    
-    function gameOver() {
-      gameState = 'gameOver';
-      game.pause();
-      document.getElementById('finalScore').textContent = `Score: ${score}`;
-      document.getElementById('gameOverOverlay').classList.remove('hidden');
-    }
-    
-    function setupMobileControls() {
-      const isMobile = 'ontouchstart' in window;
-      if (!isMobile) return;
-      
-      const controls = document.getElementById('mobileControls');
-      const buttons = [
-        { label: '←', action: 'left' },
-        { label: '↑', action: 'up' },
-        { label: '↓', action: 'down' },
-        { label: '→', action: 'right' },
-        { label: '⚡', action: 'space' }
-      ];
-      
-      buttons.forEach(btn => {
-        const button = document.createElement('button');
-        button.textContent = btn.label;
-        button.addEventListener('touchstart', (e) => {
-          e.preventDefault();
-          input.addTouch(btn.action);
-        });
-        button.addEventListener('touchend', (e) => {
-          e.preventDefault();
-          input.removeTouch(btn.action);
-        });
-        controls.appendChild(button);
-      });
-    }
-    
-    game.onUpdate((dt) => {
-      if (gameState !== 'playing') return;
-      
-      player.vx = 0;
-      
-      if (input.isPressed('left')) {
-        player.vx = -player.speed;
-      }
-      if (input.isPressed('right')) {
-        player.vx = player.speed;
-      }
-      
-      GameUtils.applyVelocity(player, dt);
-      
-      player.x = GameUtils.clamp(player.x, 0, canvas.width - player.width);
-      player.y = GameUtils.clamp(player.y, 0, canvas.height - player.height);
-      
-      enemySpawnTimer += dt;
-      if (enemySpawnTimer >= ENEMY_SPAWN_INTERVAL) {
-        enemySpawnTimer = 0;
-        enemies.push({
-          x: Math.random() * (canvas.width - 40),
-          y: -40,
-          width: 40,
-          height: 40,
-          vy: 150
-        });
-      }
-      
-      for (let i = enemies.length - 1; i >= 0; i--) {
-        const enemy = enemies[i];
-        GameUtils.applyVelocity(enemy, dt);
-        
-        if (GameUtils.checkCollision(player, enemy, 0.7)) {
-          enemies.splice(i, 1);
-          lives--;
-          if (lives <= 0) {
-            gameOver();
-          }
-        } else if (enemy.y > canvas.height) {
-          enemies.splice(i, 1);
-          score += 10;
-        }
-      }
-      
-      document.getElementById('scoreDisplay').textContent = `Score: ${score}`;
-      document.getElementById('livesDisplay').textContent = `Lives: ${lives}`;
-    });
-    
-    game.onRender((ctx) => {
-      ctx.fillStyle = '#001122';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      drawPlayer(ctx, player.x, player.y);
-      
-      enemies.forEach(enemy => {
-        drawEnemy(ctx, enemy.x, enemy.y);
-      });
-    });
-    
-    function drawPlayer(ctx, x, y) {
-      ctx.fillStyle = '#00ff00';
-      ctx.fillRect(x, y, player.width, player.height);
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x + 10, y + 10, 5, 5);
-      ctx.fillRect(x + 25, y + 10, 5, 5);
-    }
-    
-    function drawEnemy(ctx, x, y) {
-      ctx.fillStyle = '#ff0000';
-      ctx.fillRect(x, y, 40, 40);
-      
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(x + 10, y + 15, 5, 5);
-      ctx.fillRect(x + 25, y + 15, 5, 5);
-    }
-  </script>
+  </div><!-- /gij-stage -->
+</div><!-- /gij-wrap -->
+
+<script src="/game-framework/game-engine.js"></script>
+<script src="/game-framework/game-utils.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════
+//  STEP 1 — Configure your game
+// ════════════════════════════════════════════════════════════
+const GAME = {
+  slug:        'my-game',          // Must match games.json slug
+  title:       'My Game',
+  description: 'Short description.',
+  instructions: [
+    '<strong>Arrow Keys / WASD:</strong> Move',
+    '<strong>Space:</strong> Action',
+    '<strong>Goal:</strong> Describe the win condition',
+  ],
+  controls: [
+    { label: '◀', action: 'left'  },
+    { label: '▶', action: 'right' },
+    { label: '▲', action: 'up'   },
+    { label: '⚡', action: 'space', cls: 'gij-ctrl-space' },
+  ],
+  width:  800,   // logical canvas width
+  height: 600,   // logical canvas height
+};
+
+// ════════════════════════════════════════════════════════════
+//  STEP 2 — Initialise framework objects
+// ════════════════════════════════════════════════════════════
+const canvas    = document.getElementById('gij-canvas');
+const game      = new GameEngine(canvas).setup(GAME);
+const input     = new InputManager();
+const particles = new ParticleSystem();
+
+// ════════════════════════════════════════════════════════════
+//  STEP 3 — Define game state
+// ════════════════════════════════════════════════════════════
+const player = {
+  x: GAME.width / 2 - 16, y: GAME.height - 80,
+  w: 32, h: 32,
+  vx: 0, vy: 0,
+  speed: 260,    // pixels per second — NOT pixels per frame
+};
+
+function resetGame() {
+  player.x = GAME.width / 2 - 16;
+  player.y = GAME.height - 80;
+  player.vx = player.vy = 0;
+  particles.clear();
+  // reset your other game state here
+}
+
+game.onRestart(resetGame);
+
+// ════════════════════════════════════════════════════════════
+//  STEP 4 — Update  (fixed 60 Hz, dt = 1/60 sec)
+// ════════════════════════════════════════════════════════════
+game.onUpdate((dt) => {
+  if (game.state !== 'playing') return;
+
+  // Input
+  player.vx = 0;
+  if (input.isPressed('left'))  player.vx = -player.speed;
+  if (input.isPressed('right')) player.vx =  player.speed;
+
+  // Physics — always multiply by dt
+  GameUtils.applyVelocity(player, dt);
+  GameUtils.clampToCanvas(player, game.W, game.H);
+
+  particles.update(dt);
+
+  // Scoring / game over
+  // game.addScore(10);
+  // game.shake(6, 0.2);
+  // game.endGame();
+});
+
+// ════════════════════════════════════════════════════════════
+//  STEP 5 — Render  (every animation frame)
+// ════════════════════════════════════════════════════════════
+game.onRender((ctx) => {
+  // Background
+  ctx.fillStyle = '#010818';
+  ctx.fillRect(0, 0, game.W, game.H);
+
+  // Player
+  ctx.fillStyle = '#00e5ff';
+  ctx.fillRect(player.x, player.y, player.w, player.h);
+
+  particles.draw(ctx);
+});
+</script>
 </body>
 </html>

@@ -1,376 +1,231 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Space Runner - Demo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Space Runner · Games Inc Jr</title>
+  <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
   <style>
-        html, body { height: 100%; }
-        body {
-            margin: 0;
-            padding: 16px;
-            background: #000;
-            color: #fff;
-            font-family: Arial, sans-serif;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            min-height: 100vh;
-        }
-        
-        .stage { position: relative; width: 100%; max-width: 900px; aspect-ratio: 16/9; }
-        canvas { position: absolute; inset: 0; width: 100%; height: 100%; border: 2px solid #333; background: #111; display: block; }
-        
-        .controls {
-            margin-top: 20px;
-            text-align: center;
-        }
-        
-        .score {
-            font-size: 24px;
-            margin-bottom: 10px;
-        }
-        
-        .game-status {
-            font-size: 18px;
-            margin-bottom: 10px;
-            padding: 10px;
-            border-radius: 5px;
-            transition: all 0.3s ease;
-        }
-        
-        .game-status.focused {
-            background: #00ff00;
-            color: #000;
-        }
-        
-        .game-status.unfocused {
-            background: #ff6600;
-            color: #fff;
-        }
-        
-        canvas {
-            cursor: pointer;
-            touch-action: none; /* avoid scrolling while touching canvas */
-        }
-
-        /* Mobile controls */
-        .mobile-controls { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); display: none; gap: 12px; z-index: 50; background: rgba(0,0,0,0.35); padding: 10px; border-radius: 12px; backdrop-filter: blur(6px); }
-        .mobile-controls button { width: 56px; height: 56px; border-radius: 50%; border: 1px solid #555; background: #222; color: #fff; font-size: 20px; }
-        @media (pointer: coarse) { .mobile-controls { display: grid; grid-template-columns: repeat(3, 56px); grid-template-rows: repeat(2, 56px); grid-auto-flow: dense; } .btn-up { grid-column: 2; grid-row: 1; } .btn-left { grid-column: 1; grid-row: 2; } .btn-down { grid-column: 2; grid-row: 2; } .btn-right { grid-column: 3; grid-row: 2; } }
+    #gij-stage { background: #000; }
+    canvas { background: #000; }
   </style>
 </head>
 <body>
-    <h1>Space Runner</h1>
-    <div class="score">Score: <span id="score">0</span></div>
-    <div class="game-status unfocused" id="gameStatus">Click Start to play</div>
-    <div id="tryOverlay" style="position:fixed;inset:0;display:flex;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);z-index:1000;">
-      <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:700px;color:#fff;text-align:center">
-        <h2 style="margin:0 0 10px">Space Runner</h2>
-        <p style="margin:0 0 12px">Dodge asteroids and survive as long as you can!</p>
-        <button id="tryBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Try Now</button>
+<div id="gij-wrap">
+
+  <div id="gij-try-overlay" class="gij-overlay">
+    <div class="gij-modal">
+      <h1 data-game-title>Space Runner</h1>
+      <p id="gij-description">Dodge asteroids and survive as long as you can!</p>
+      <button id="gij-try-btn" class="gij-btn gij-btn-primary">▶ Play Now</button>
+    </div>
+  </div>
+
+  <div id="gij-instructions-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>How to Play</h2>
+      <ul id="gij-instructions" class="gij-list"></ul>
+      <button id="gij-start-btn" class="gij-btn gij-btn-primary">Launch!</button>
+    </div>
+  </div>
+
+  <div id="gij-gameover-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>Destroyed!</h2>
+      <div class="gij-score-row">
+        <span id="gij-final-score">Score: 0</span>
+        <span id="gij-final-hs">Best: 0</span>
       </div>
+      <button id="gij-restart-btn" class="gij-btn gij-btn-primary">Try Again</button>
     </div>
-    <div id="startOverlay" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.75);z-index:1000;">
-      <div style="background:#111;border:1px solid #444;border-radius:12px;padding:24px;max-width:700px;color:#fff;text-align:center">
-        <h2 style="margin:0 0 10px">Ready to Fly?</h2>
-        <p style="margin:0 0 6px">Goal: dodge asteroids and score points.</p>
-        <p style="margin:0 0 6px">Desktop: Arrow keys / WASD to move.</p>
-        <p style="margin:0 0 12px">Mobile: use on‑screen buttons below.</p>
-        <button id="startBtn" style="padding:10px 16px;border-radius:8px;border:1px solid #2a5bd7;background:#2e6bff;color:#fff;cursor:pointer">Start</button>
-      </div>
+  </div>
+
+  <div id="gij-stage" data-aspect="16:9">
+    <div id="gij-hud" class="hidden">
+      <div class="gij-badge">⭐ <strong id="gij-score">0</strong></div>
+      <div class="gij-badge">🏆 <strong id="gij-highscore">0</strong></div>
     </div>
-    <div id="countdown" style="position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.6);z-index:999;color:#fff;font-size:64px;font-family:Arial,Helvetica,sans-serif">5</div>
-    <div class="stage"><canvas id="gameCanvas" width="800" height="450"></canvas></div>
-    <div class="mobile-controls" id="mobileControls" aria-label="Mobile controls">
-      <button class="btn-up" aria-label="Up">⬆️</button>
-      <button class="btn-left" aria-label="Left">⬅️</button>
-      <button class="btn-down" aria-label="Down">⬇️</button>
-      <button class="btn-right" aria-label="Right">➡️</button>
-    </div>
-    <div class="controls">
-        <p>Use ARROW KEYS or WASD to move</p>
-        <p>Dodge the asteroids!</p>
-        <p><strong>Click the game area to focus controls, click outside to unfocus</strong></p>
-    </div>
+    <canvas id="gij-canvas"></canvas>
+    <div id="gij-controls"></div>
+  </div>
 
-  <script>
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d');
-        const scoreElement = document.getElementById('score');
-        const gameStatusElement = document.getElementById('gameStatus');
+</div>
 
-        // Game state
-        let score = 0;
-        let gameRunning = true;
-        let gameFocused = false;
-        let gameState = 'menu'; // menu | countdown | playing
-        let keys = {};
+<script src="/game-framework/game-engine.js"></script>
+<script src="/game-framework/game-utils.js"></script>
+<script>
+const GAME = {
+  slug:  'space-runner',
+  title: 'Space Runner',
+  description: 'Weave through waves of asteroids. How long can you survive?',
+  instructions: [
+    '<strong>Arrow Keys / WASD:</strong> Move your ship',
+    '<strong>Goal:</strong> Dodge asteroids — score rises every second',
+    '<strong>Tip:</strong> Asteroids speed up over time!',
+  ],
+  controls: [
+    { label: '◀', action: 'left'  },
+    { label: '▲', action: 'up'   },
+    { label: '▼', action: 'down' },
+    { label: '▶', action: 'right' },
+  ],
+  width: 800, height: 450,
+};
 
-        // Player
-        const player = {
-            x: canvas.width / 2,
-            y: canvas.height - 50,
-            width: 20,
-            height: 20,
-            speed: 5
-        };
+const canvas = document.getElementById('gij-canvas');
+const game   = new GameEngine(canvas).setup(GAME);
+const input  = new InputManager();
+const fx     = new ParticleSystem();
 
-        // Asteroids
-        let asteroids = [];
-        const asteroidSpeed = 1.4; // slower baseline
-        let starfield = Array.from({length:120},()=>({x:Math.random()*canvas.width,y:Math.random()*canvas.height,s:Math.random()*2+0.5}));
+const W = game.W, H = game.H;
 
-        // Event listeners
-        document.addEventListener('keydown', (e) => {
-            if (gameFocused) {
-                keys[e.key.toLowerCase()] = true;
-            }
-        });
+// ── Game state ─────────────────────────────────────────────
+let asteroids, stars, spawnTimer, survivalTime, difficulty;
 
-        document.addEventListener('keyup', (e) => {
-            if (gameFocused) {
-                keys[e.key.toLowerCase()] = false;
-            }
-        });
+const ship = { x: 0, y: 0, w: 28, h: 28, vx: 0, vy: 0, speed: 280 };
 
-        // Start + fullscreen + countdown
-        const tryOverlay = document.getElementById('tryOverlay');
-        const startOverlay = document.getElementById('startOverlay');
-        const tryBtn = document.getElementById('tryBtn');
-        const startBtn = document.getElementById('startBtn');
-        const countdownEl = document.getElementById('countdown');
+function reset() {
+  ship.x = W / 2 - 14;
+  ship.y = H - 80;
+  ship.vx = ship.vy = 0;
+  asteroids    = [];
+  spawnTimer   = 0;
+  survivalTime = 0;
+  difficulty   = 1;
+  fx.clear();
+  stars = Array.from({ length: 130 }, () => ({
+    x: Math.random() * W,
+    y: Math.random() * H,
+    s: Math.random() * 2 + 0.5,
+    spd: Math.random() * 40 + 20,
+  }));
+}
 
-        function requestFs() {
-          const el = document.documentElement;
-          if (el.requestFullscreen) el.requestFullscreen().catch(()=>{});
-        }
+game.onRestart(reset);
 
-        tryBtn.addEventListener('click', () => {
-          requestFs();
-          tryOverlay.style.display = 'none';
-          startOverlay.style.display = 'flex';
-        });
+// ── Update ─────────────────────────────────────────────────
+game.onUpdate((dt) => {
+  if (game.state !== 'playing') return;
 
-        startBtn.addEventListener('click', () => {
-          startOverlay.style.display = 'none';
-          gameState = 'countdown';
-          let t = 5;
-          countdownEl.style.display = 'flex';
-          countdownEl.textContent = String(t);
-          const iv = setInterval(()=>{
-            t -= 1;
-            countdownEl.textContent = String(t);
-            if (t <= 0) {
-              clearInterval(iv);
-              countdownEl.style.display = 'none';
-              gameState = 'playing';
-              gameFocused = true;
-              gameStatusElement.textContent = 'Controls active';
-              gameStatusElement.className = 'game-status focused';
-              canvas.style.border = '2px solid #00ff00';
-            }
-          }, 1000);
-        });
+  survivalTime += dt;
+  difficulty    = 1 + survivalTime * 0.04; // ramps up gently
 
-        // Canvas focus events
-        canvas.addEventListener('click', () => {
-            if (gameState !== 'playing') return;
-            gameFocused = true;
-            gameStatusElement.textContent = 'Controls active';
-            gameStatusElement.className = 'game-status focused';
-            canvas.style.border = '2px solid #00ff00';
-        });
+  // Ship movement — no "focus" needed, controls always active
+  ship.vx = 0; ship.vy = 0;
+  if (input.isPressed('left'))  ship.vx = -ship.speed;
+  if (input.isPressed('right')) ship.vx =  ship.speed;
+  if (input.isPressed('up'))    ship.vy = -ship.speed;
+  if (input.isPressed('down'))  ship.vy =  ship.speed;
 
-        // Click outside to unfocus
-        document.addEventListener('click', (e) => {
-            if (!canvas.contains(e.target)) {
-                gameFocused = false;
-                if (gameState === 'playing') gameStatusElement.textContent = 'Game paused - Click to resume';
-                gameStatusElement.className = 'game-status unfocused';
-                canvas.style.border = '2px solid #333';
-                // Clear all keys when unfocusing
-                keys = {};
-            }
-        });
+  GameUtils.applyVelocity(ship, dt);
+  GameUtils.clampToCanvas(ship, W, H);
 
-        // Create asteroid
-        function createAsteroid() {
-            asteroids.push({
-                x: Math.random() * (canvas.width - 30),
-                y: -30,
-                width: 30,
-                height: 30,
-                speed: asteroidSpeed + Math.random() * 2
-            });
-        }
+  // Starfield scroll
+  stars.forEach(st => {
+    st.y += st.spd * dt;
+    if (st.y > H) { st.y = -2; st.x = Math.random() * W; }
+  });
 
-        // Update player position
-        function updatePlayer() {
-            if (gameFocused) {
-                if (keys['arrowleft'] || keys['a']) {
-                    player.x = Math.max(0, player.x - player.speed);
-                }
-                if (keys['arrowright'] || keys['d']) {
-                    player.x = Math.min(canvas.width - player.width, player.x + player.speed);
-                }
-                if (keys['arrowup'] || keys['w']) {
-                    player.y = Math.max(0, player.y - player.speed);
-                }
-                if (keys['arrowdown'] || keys['s']) {
-                    player.y = Math.min(canvas.height - player.height, player.y + player.speed);
-                }
-            }
-        }
+  // Asteroid spawning
+  spawnTimer += dt;
+  const interval = Math.max(0.3, 1.5 - survivalTime * 0.02);
+  if (spawnTimer >= interval) {
+    spawnTimer = 0;
+    const baseSpeed = 90 + difficulty * 30;
+    asteroids.push({
+      x: Math.random() * (W - 36),
+      y: -40,
+      w: 28 + Math.random() * 20,
+      h: 28 + Math.random() * 20,
+      vy: baseSpeed + Math.random() * 60,
+      rot: 0,
+      rotSpeed: (Math.random() - 0.5) * 4,
+    });
+  }
 
-        // Update asteroids
-        function updateAsteroids() {
-            for (let i = asteroids.length - 1; i >= 0; i--) {
-                const asteroid = asteroids[i];
-                asteroid.y += asteroid.speed;
+  // Asteroids move
+  for (let i = asteroids.length - 1; i >= 0; i--) {
+    const a = asteroids[i];
+    a.y   += a.vy  * dt;
+    a.rot += a.rotSpeed * dt;
+    if (a.y > H + 50) { asteroids.splice(i, 1); continue; }
 
-                // Remove asteroids that are off screen
-                if (asteroid.y > canvas.height) {
-                    asteroids.splice(i, 1);
-                    score += 10;
-                    scoreElement.textContent = score;
-                }
-
-                // Check collision
-                if (asteroid.x < player.x + player.width &&
-                    asteroid.x + asteroid.width > player.x &&
-                    asteroid.y < player.y + player.height &&
-                    asteroid.y + asteroid.height > player.y) {
-                    gameRunning = false;
-                    const final = score;
-                    const name = prompt('Game Over! Final Score: ' + final + '\nEnter your name to submit score (optional):', '');
-                    if (name !== null) {
-                      fetch('/api/scores/save', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ slug: 'space-runner', score: final, name }) });
-                    }
-                    resetGame();
-                }
-            }
-        }
-
-        // Reset game
-        function resetGame() {
-            score = 0;
-            scoreElement.textContent = score;
-            asteroids = [];
-            player.x = canvas.width / 2;
-            player.y = canvas.height - 50;
-            gameRunning = true;
-            gameFocused = false;
-            gameStatusElement.textContent = 'Click Start to play';
-            gameStatusElement.className = 'game-status unfocused';
-            canvas.style.border = '2px solid #333';
-            keys = {};
-        }
-
-        // Draw functions
-        function drawPlayer() {
-            // glow ship
-            ctx.fillStyle = '#00ff00';
-            ctx.shadowColor = '#00ff00';
-            ctx.shadowBlur = 10;
-            ctx.fillRect(player.x, player.y, player.width, player.height);
-            ctx.shadowBlur = 0;
-        }
-
-        function drawAsteroids() {
-            ctx.fillStyle = '#ff6600';
-            asteroids.forEach(asteroid => {
-                ctx.fillRect(asteroid.x, asteroid.y, asteroid.width, asteroid.height);
-            });
-        }
-
-        function drawStars(){
-            ctx.fillStyle = '#222';
-            ctx.fillRect(0,0,canvas.width,canvas.height);
-            ctx.fillStyle = '#ffffff';
-            starfield.forEach(st=>{
-                ctx.globalAlpha = 0.5 + Math.random()*0.5;
-                ctx.fillRect(st.x, st.y, st.s, st.s);
-                ctx.globalAlpha = 1;
-                st.y += st.s*0.4; if(st.y>canvas.height){ st.y= -2; st.x=Math.random()*canvas.width; }
-            });
-        }
-
-        function draw() {
-            // Starfield background
-            drawStars();
-
-            // Draw game objects
-            drawPlayer();
-            drawAsteroids();
-        }
-
-        // #region agent log
-        let _srFrames=0,_srLast=performance.now();
-        // #endregion
-        // Game loop
-        function gameLoop(now) {
-            // #region agent log
-            _srFrames++;
-            if(_srFrames===90){
-              const elapsed=now-_srLast;
-              const avgFt=elapsed/90;
-              fetch('http://127.0.0.1:7245/ingest/21c7b4be-62c9-4a72-9713-3ad5f82a3a6e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'space-runner/index.html:gameLoop',message:'Physics framerate dependency check',data:{avgFrameTimeMs:avgFt.toFixed(2),playerSpeedFixed:player.speed,asteroidSpeedFixed:asteroidSpeed,usesDeltaTime:false,touchDetected:isTouch,requiresFocusForKeys:true,mobileBug:'Touch controls set gameFocused=true but keys requires focus - works'},timestamp:Date.now(),hypothesisId:'H2'})}).catch(()=>{});
-            }
-            // #endregion
-            if (gameState === 'playing' && gameRunning && gameFocused) {
-                updatePlayer();
-                updateAsteroids();
-
-                // Create new asteroids occasionally
-                if (Math.random() < 0.04) {
-                    createAsteroid();
-                }
-
-                draw();
-            } else if (gameState === 'playing' && gameRunning && !gameFocused) {
-                // Game is running but not focused - just draw the current state
-                draw();
-            }
-
-      requestAnimationFrame(gameLoop);
+    if (GameUtils.hitTest(ship, a, 0.65)) {
+      fx.burst(ship.x + ship.w/2, ship.y + ship.h/2, 30, {
+        colors: ['#ff8800','#ffff00','#ff2200'],
+        minSpeed: 80, maxSpeed: 300, gravity: 60,
+      });
+      game.shake(10, 0.4);
+      game.endGame();
+      return;
     }
+  }
 
-        // Mobile controls
-        const mobileControls = document.getElementById('mobileControls');
-        const isTouch = matchMedia('(pointer: coarse)').matches || 'ontouchstart' in window;
-        function pressKey(code, pressed) { keys[code] = pressed; }
-        if (isTouch) {
-          const bind = (selector, code) => {
-            const el = mobileControls.querySelector(selector);
-            const start = (e) => { e.preventDefault(); gameFocused = true; pressKey(code, true); };
-            const end = (e) => { e.preventDefault(); pressKey(code, false); };
-            el.addEventListener('touchstart', start, { passive: false });
-            el.addEventListener('touchend', end, { passive: false });
-            el.addEventListener('touchcancel', end, { passive: false });
-            el.addEventListener('mousedown', start);
-            el.addEventListener('mouseup', end);
-            el.addEventListener('mouseleave', end);
-          };
-          bind('.btn-up', 'arrowup');
-          bind('.btn-down', 'arrowdown');
-          bind('.btn-left', 'arrowleft');
-          bind('.btn-right', 'arrowright');
-        }
+  // Score every 0.5 seconds of survival
+  if (Math.floor(survivalTime * 2) > Math.floor((survivalTime - dt) * 2))
+    game.addScore(Math.ceil(difficulty));
 
-        // Resize handling for DPR and container size
-        function resizeCanvas() {
-          const rect = canvas.parentElement.getBoundingClientRect();
-          const dpr = Math.min(window.devicePixelRatio || 1, 2);
-          canvas.width = Math.floor(rect.width * dpr);
-          canvas.height = Math.floor(rect.height * dpr);
-          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        }
-        window.addEventListener('resize', resizeCanvas);
-        resizeCanvas();
+  fx.update(dt);
+});
 
-        // Start the game
-        gameLoop();
-  </script>
+// ── Render ──────────────────────────────────────────────────
+game.onRender((ctx) => {
+  ctx.fillStyle = '#000008';
+  ctx.fillRect(0, 0, W, H);
+
+  // Stars
+  ctx.fillStyle = '#ffffff';
+  stars.forEach(st => {
+    ctx.globalAlpha = 0.4 + Math.random() * 0.3;
+    ctx.fillRect(st.x, st.y, st.s, st.s);
+  });
+  ctx.globalAlpha = 1;
+
+  // Asteroids
+  for (const a of asteroids) {
+    ctx.save();
+    ctx.translate(a.x + a.w / 2, a.y + a.h / 2);
+    ctx.rotate(a.rot);
+    ctx.fillStyle   = '#6b6b6b';
+    ctx.shadowColor = '#aaaaaa';
+    ctx.shadowBlur  = 6;
+    // Rough rock shape
+    ctx.beginPath();
+    const sides = 7, r = a.w / 2;
+    for (let s = 0; s < sides; s++) {
+      const ang  = (s / sides) * Math.PI * 2;
+      const dist = r * (0.75 + Math.sin(s * 2.3) * 0.25);
+      s === 0
+        ? ctx.moveTo(Math.cos(ang) * dist, Math.sin(ang) * dist)
+        : ctx.lineTo(Math.cos(ang) * dist, Math.sin(ang) * dist);
+    }
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  // Ship
+  const cx = ship.x + ship.w / 2, cy = ship.y + ship.h / 2;
+  ctx.save();
+  ctx.translate(cx, cy);
+  ctx.shadowColor = '#00e5ff';
+  ctx.shadowBlur  = 16;
+  ctx.fillStyle   = '#00e5ff';
+  ctx.beginPath();
+  ctx.moveTo(0, -ship.h / 2);
+  ctx.lineTo(ship.w / 2, ship.h / 2);
+  ctx.lineTo(0, ship.h / 3);
+  ctx.lineTo(-ship.w / 2, ship.h / 2);
+  ctx.closePath();
+  ctx.fill();
+  ctx.shadowBlur = 0;
+  ctx.restore();
+
+  fx.draw(ctx);
+});
+
+reset();
+</script>
 </body>
 </html>

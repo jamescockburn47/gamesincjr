@@ -345,9 +345,9 @@
             setTimeout(() => el.style.transform = 'translate(-50%, -50%) scale(0)', 500);
         }
 
-        function update() {
+        function update(dtf = 1) {
             if (!gameActive) return;
-            frames++;
+            frames += dtf;
 
             // Difficulty Scaling
             if (frames % 1000 === 0) {
@@ -370,8 +370,8 @@
                 keys.JumpPressed = false; // Consume input
             }
 
-            player.dy += GRAVITY;
-            player.y += player.dy;
+            player.dy += GRAVITY * dtf;
+            player.y += player.dy * dtf;
 
             // Ground collision
             const groundLevel = height - 90;
@@ -382,8 +382,7 @@
                 player.jumps = 0;
             }
 
-            // Invincibility frames
-            if (player.invincible > 0) player.invincible--;
+            // Invincibility (decremented below with dtf)
 
             // Shooting
             if (keys.ShootPressed) {
@@ -401,15 +400,15 @@
                 let e = entities[i];
 
                 if (e.group === 'bullet') {
-                    e.x += e.vx;
-                    e.life--;
+                    e.x += e.vx * dtf;
+                    e.life -= dtf;
                     if (e.life <= 0) entities.splice(i, 1);
                     // Add trail
                     createParticles(e.x, e.y + 4, 1, '#0ff');
                 }
                 else if (e.group === 'enemy') {
-                    e.x -= (e.vx * gameSpeed);
-                    if (e.type === 'drone') e.y += Math.sin(frames * 0.1) * 2;
+                    e.x -= (e.vx * gameSpeed * dtf);
+                    if (e.type === 'drone') e.y += Math.sin(frames * 0.1) * 2 * dtf;
 
                     // Cleanup offscreen
                     if (e.x < -100) entities.splice(i, 1);
@@ -435,30 +434,33 @@
                     // Collision: Player vs Enemy
                     if (rectIntersect(player, e) && player.invincible <= 0) {
                         takeDamage(20);
-                        player.invincible = 60;
+                        player.invincible = 60; // ~1 second worth of frames
                         shake = 20;
                         createParticles(player.x, player.y, 20, '#ff0000');
                         destroyEnemy(e, i); // Enemy explodes on impact
                     }
                 }
                 else if (e.group === 'particle') {
-                    e.x += e.vx;
-                    e.y += e.vy;
-                    e.vy += 0.5; // Gravity
-                    e.life -= 0.05;
+                    e.x += e.vx * dtf;
+                    e.y += e.vy * dtf;
+                    e.vy += 0.5 * dtf;
+                    e.life -= 0.05 * dtf;
                     if (e.life <= 0) entities.splice(i, 1);
                 }
             }
 
             // Background Stars
             stars.forEach(s => {
-                s.x -= s.speed * gameSpeed;
+                s.x -= s.speed * gameSpeed * dtf;
                 if (s.x < 0) s.x = width;
             });
 
             // Screen Shake Decay
-            if (shake > 0) shake *= 0.9;
+            if (shake > 0) shake *= Math.pow(0.9, dtf);
             if (shake < 0.5) shake = 0;
+
+            // Invincibility decay
+            if (player.invincible > 0) player.invincible -= dtf;
 
             updateUI();
         }
@@ -681,9 +683,12 @@
             else hpBar.style.background = 'linear-gradient(90deg, #00ff00, #adff2f)';
         }
 
-        function loop() {
+        let _rvuLastTime = 0;
+        function loop(timestamp = 0) {
             if (!gameActive) return;
-            update();
+            const _dt = _rvuLastTime ? Math.min((timestamp - _rvuLastTime) / 1000, 0.05) : 1/60;
+            _rvuLastTime = timestamp;
+            update(_dt * 60); // pass dtf: 1.0 at 60fps, 0.5 at 120fps etc.
             draw();
             requestAnimationFrame(loop);
         }
