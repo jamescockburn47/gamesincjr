@@ -54,27 +54,78 @@
 
 ## 🎮 Game-Specific Rules
 
-### Creating New Games
-1. Place demo in `/public/demos/[slug]/index.html`
-2. Self-contained: inline CSS/JS or CDN imports only
-3. Must have keyboard controls (WASD or arrows)
-4. Must have touch controls for mobile
-5. Must submit scores to `/api/scores/save` (optional but recommended)
-6. Add entry to `/src/data/games.json` with Zod-validated fields
+> **The unified framework at `/public/game-framework/` is mandatory for ALL games.**
+> No game may be created or edited without it. See `CLAUDE.md` for the full spec.
+
+### Creating New Games — Required Steps
+
+1. **Read** `/public/game-framework/game-template.html` first — do not skip this
+2. **Copy** it verbatim to `/public/demos/[slug]/index.html`
+3. **Fill** the `GAME` config object (slug, title, description, instructions, controls)
+4. **Write** game logic ONLY in `onRestart` / `onUpdate(dt)` / `onRender(ctx)`
+5. **Add** entry to `/src/data/games.json`
+6. **Create** hero + screenshot assets
+
+**The three framework files that MUST be linked in every game:**
+```html
+<link rel="stylesheet" href="/game-framework/overlay-styles.css" />
+<script src="/game-framework/game-engine.js"></script>
+<script src="/game-framework/game-utils.js"></script>
+```
+
+### The Physics Law — Never Broken
+
+Every movement, timer, and counter MUST multiply by `dt`:
+
+```javascript
+// ✅ CORRECT
+obj.x  += obj.vx * dt;        // px/s × seconds = pixels
+obj.vy += GRAVITY * dt;       // px/s² × seconds = px/s
+timer  -= dt;                 // countdown in real seconds
+
+// ❌ NEVER DO THIS — framerate-dependent
+obj.x  += obj.vx;             // breaks at 120Hz, 144Hz
+obj.vy += GRAVITY;            // wrong on every screen
+```
+
+Speeds are in **px/s** (not px/frame). Multiply old px/frame values × 60 to convert.
+
+### Framework API — What Every Game Uses
+
+| Object | Key Methods |
+|---|---|
+| `game` | `.addScore(n)`, `.setScore(n)`, `.endGame()`, `.shake(i,d)`, `.state`, `.W`, `.H` |
+| `input` | `.isPressed('left'/'right'/'up'/'down'/'space'/'fire')` |
+| `particles` | `.burst(x,y,n,opts)`, `.update(dt)`, `.draw(ctx)`, `.clear()` |
+| `GameUtils` | `.hitTest(a,b,0.7)`, `.applyGravity(obj,G,dt)`, `.applyVelocity(obj,dt)` |
+| `GameUtils` | `.clampToCanvas(obj,W,H)`, `.bounceOffWalls(obj,W,H)`, `.wrap(obj,W,H)` |
+| `GameUtils` | `.distance(x1,y1,x2,y2)`, `.lerp(a,b,t)`, `.randomRange(a,b)` |
+
+### Absolute Rules (No Exceptions)
+
+- ❌ Never write overlays from scratch — use the template
+- ❌ Never call `alert()` or `prompt()` in game code — draw on canvas or use `game.endGame()`
+- ❌ Never write a custom score/highscore system — use `game.addScore()` / `game.getHigh()`
+- ❌ Never build mobile controls manually — declare in `GAME.controls` array
+- ❌ Never use `position += velocity` without `* dt`
+- ❌ Never use `frames % n === 0` logic — use a seconds timer (`timer -= dt; if (timer <= 0)`)
+- ✅ Always use `GameUtils.hitTest(a, b, 0.7)` with 70% forgiveness for collisions
+- ✅ Always use `particles.burst()` for hit/collect/death feedback
+- ✅ Always call `game.endGame()` to end — never set state manually
 
 ### Game Data Schema
 ```typescript
 {
-  slug: string;           // lowercase-with-hyphens
-  title: string;          // Display name
-  description: string;    // English description (max 200 chars)
+  slug: string;            // lowercase-with-hyphens, matches demo folder
+  title: string;           // Display name
+  description: string;     // English description (max 200 chars)
   description_it?: string; // Italian translation (optional)
-  demoPath: string;       // /demos/[slug]/index.html
+  demoPath: string;        // /demos/[slug]/index.html
   status: 'released' | 'coming-soon';
   gameType: 'html5' | 'video-preview' | 'download' | 'ai-powered';
-  tags: string[];         // e.g., ["action", "arcade", "8+"]
-  hero: string;           // /games/[slug]/hero.svg
-  screenshots?: string[]; // /games/[slug]/s1.svg, etc.
+  tags: string[];          // e.g., ["action", "arcade", "8+"]
+  hero: string;            // /games/[slug]/hero.svg
+  screenshots?: string[];  // /games/[slug]/s1.svg, etc.
 }
 ```
 
@@ -238,14 +289,21 @@ await kvPipeline([
 
 ### Add a New Game
 ```bash
-# 1. Create demo
-touch public/demos/my-game/index.html
+# 1. Copy the canonical template
+cp public/game-framework/game-template.html public/demos/my-game/index.html
 
-# 2. Add to games.json
-# 3. Test locally
-pnpm dev
+# 2. Edit the GAME config object at the top of the file
+#    - slug, title, description, instructions[], controls[]
 
-# 4. Commit and push
+# 3. Implement onRestart / onUpdate(dt) / onRender(ctx)
+#    - ALL physics must use dt (px/s, not px/frame)
+#    - Use GameUtils.*, ParticleSystem, game.addScore(), game.endGame()
+
+# 4. Add entry to src/data/games.json
+
+# 5. Create assets: public/games/my-game/hero.svg + s1.svg
+
+# 6. Commit and push (triggers Vercel deploy)
 git add .
 git commit -m "feat: add my-game"
 git push origin master
@@ -281,15 +339,26 @@ pnpm build && pnpm dev
 
 ## ⚠️ DO NOT
 
+**TypeScript / Next.js:**
 - ❌ Use `any` type in TypeScript
 - ❌ Add `--turbopack` to production build
 - ❌ Commit secrets to git (use `.env.local`)
 - ❌ Weaken CSP headers without justification
 - ❌ Skip input validation on API routes
-- ❌ Use external dependencies in game demos (keep self-contained)
-- ❌ Modify Prisma schema without documenting (it's for Times Tables feature)
+- ❌ Modify Prisma schema without documenting
 - ❌ Delete `/it` routes without deciding on i18n strategy
 - ❌ Add large dependencies (>100KB) without justification
+
+**Game demos — absolute prohibitions:**
+- ❌ Write game HTML without using `/public/game-framework/game-template.html`
+- ❌ Write overlay HTML from scratch (must use `gij-*` IDs from template)
+- ❌ Use `position += velocity` without multiplying by `dt`
+- ❌ Use `frames % n === 0` for timing — use `timer -= dt` instead
+- ❌ Call `alert()` or `prompt()` — use canvas messages or `game.endGame()`
+- ❌ Build a custom score/highscore system — use `game.addScore()` / `game.getHigh()`
+- ❌ Build mobile controls manually — use `GAME.controls[]` array in config
+- ❌ Link external CDN JS/CSS in game demos (framework files are local)
+- ❌ Modify framework files (`game-engine.js`, `game-utils.js`, `overlay-styles.css`) without explicit instruction
 
 ---
 
@@ -329,6 +398,9 @@ pnpm build && pnpm dev
 
 ---
 
-**Last updated**: 2025-10-22  
+**Last updated**: 2026-01-31  
 **Project Owner**: James Cockburn  
-**Email**: hello@gamesincjr.com
+**Email**: hello@gamesincjr.com  
+
+**Game Framework v2** — canonical source of truth for all game demos:  
+`/public/game-framework/` (game-template.html · game-engine.js · game-utils.js · overlay-styles.css)

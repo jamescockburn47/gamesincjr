@@ -1,183 +1,233 @@
-# Claude Code - Games Inc Jr Configuration
+# Claude Code — Games Inc Jr Configuration
 # Auto-loaded on every session start
 
 /init
 
 ═══════════════════════════════════════════════════════════════
-CRITICAL INSTRUCTION - READ FIRST
+CRITICAL INSTRUCTION — READ THIS BEFORE TOUCHING ANY GAME CODE
 ═══════════════════════════════════════════════════════════════
 
-**BEFORE WRITING ANY CODE FOR ANY GAME:**
+**The unified game framework lives at `/public/game-framework/`.**
 
-1. Read `/docs/GAME_TEMPLATE_EXACT.html` 
-2. COPY IT VERBATIM as your starting point
-3. Replace ONLY the {{PLACEHOLDERS}} with game-specific values
-4. Add your game logic in the marked sections
+Every game — new OR existing — MUST use it. No exceptions, ever.
 
-**DO NOT write HTML/overlays from scratch. Use the template.**
+Framework files (DO NOT MODIFY these unless explicitly asked):
+  /public/game-framework/overlay-styles.css   ← shared UI/overlays
+  /public/game-framework/game-engine.js       ← GameEngine + InputManager
+  /public/game-framework/game-utils.js        ← GameUtils + ParticleSystem
+  /public/game-framework/game-template.html   ← canonical starting point
 
-This ensures 100% consistency across ALL games.
+**BEFORE WRITING ANY NEW GAME:**
+1. Read `/public/game-framework/game-template.html` in full
+2. Copy it verbatim to `/public/demos/[slug]/index.html`
+3. Fill in the GAME config object (slug, title, description, instructions, controls)
+4. Add game logic ONLY in the three marked sections: onRestart / onUpdate / onRender
+5. Never rewrite the HTML structure, overlay IDs, or framework script tags
 
-═══════════════════════════════════════════════════════════════
-DEPLOYMENT ENVIRONMENT (SERVERLESS - CRITICAL)
-═══════════════════════════════════════════════════════════════
-
-**THIS IS A SERVERLESS DEPLOYMENT ON VERCEL. THERE IS NO LOCAL DATABASE.**
-
-**Architecture:**
-- Vercel Serverless Functions (API routes)
-- Vercel Postgres (cloud database)
-- Prisma ORM with connection pooling
-- All processing happens in the cloud
-- Git push → auto-deploy to Vercel
-
-**Environment Variables (Must be in Vercel):**
-```
-DATABASE_URL="postgres://...?pgbouncer=true&connection_limit=1"
-DIRECT_URL="postgres://..."        # For migrations
-ANTHROPIC_API_KEY="sk-ant-api03-..."
-ADMIN_EMAIL="your@email.com"
-```
-
-**To add environment variables:**
-```bash
-vercel env add ANTHROPIC_API_KEY production
-vercel env add ADMIN_EMAIL production
-```
-
-**Database Schema:**
-- Located in `prisma/schema.prisma`
-- Includes `GameSubmission` model for "Make Your Game" feature
-- Uses connection pooling (required for serverless)
-
-**To run migrations:**
-```bash
-# Push schema changes to Vercel Postgres
-npx prisma db push
-
-# Or create formal migration
-npx prisma migrate dev --name add_feature
-git push  # Vercel auto-deploys
-```
-
-**Connection Pooling (CRITICAL):**
-```prisma
-datasource db {
-  provider = "postgresql"
-  url = env("DATABASE_URL")      // Pooled connection
-  directUrl = env("DIRECT_URL")  // Direct connection (migrations only)
-}
-```
-
-**Testing:**
-- ❌ Local testing NOT possible (no local database)
-- ✅ Use Vercel preview deployments
-- ✅ Use `vercel dev` (connects to cloud database)
+**BEFORE EDITING AN EXISTING GAME:**
+1. Confirm the game already links the framework CSS + JS (most do now)
+2. If it doesn't, add the links — see "Porting Checklist" below
+3. Never remove or bypass framework wiring already in place
 
 ═══════════════════════════════════════════════════════════════
-MANDATORY TEMPLATE USAGE
+DEPLOYMENT ENVIRONMENT (SERVERLESS — CRITICAL)
 ═══════════════════════════════════════════════════════════════
 
-**File: `/docs/GAME_TEMPLATE_EXACT.html`**
+THIS IS A SERVERLESS DEPLOYMENT ON VERCEL. THERE IS NO LOCAL DATABASE.
 
-This template contains the standardized structure used by ALL Games Inc Jr games.
+Architecture:
+  - Vercel Serverless Functions (API routes)
+  - Vercel Postgres (cloud database)
+  - Prisma ORM with connection pooling
+  - All processing happens in the cloud
+  - Git push → auto-deploy to Vercel
 
-**Your workflow for ANY game:**
+Environment Variables (must be in Vercel):
+  DATABASE_URL="postgres://...?pgbouncer=true&connection_limit=1"
+  DIRECT_URL="postgres://..."   # For migrations only
+  ANTHROPIC_API_KEY="sk-ant-api03-..."
+  ADMIN_EMAIL="your@email.com"
 
-### Step 1: Copy Template
-Read `/docs/GAME_TEMPLATE_EXACT.html` and copy entire contents
+Testing:
+  ❌ Local testing NOT possible (no local database)
+  ✅ Use Vercel preview deployments
+  ✅ Use `vercel dev` (connects to cloud database)
 
-### Step 2: Replace Placeholders
-Find and replace these {{PLACEHOLDERS}}:
+═══════════════════════════════════════════════════════════════
+FRAMEWORK API — WHAT EVERY GAME MUST USE
+═══════════════════════════════════════════════════════════════
 
-| Placeholder | Example | Purpose |
-|-------------|---------|---------|
-| {{GAME_TITLE}} | "Space Runner" | Title in h1 and overlays |
-| {{GAME_SLUG}} | "space-runner" | For score submission API |
-| {{ONE_SENTENCE_DESCRIPTION}} | "Dodge asteroids..." | Try Now overlay |
-| {{GAME_CONTEXT_PARAGRAPH}} | "You're the last pilot..." | Story/context |
-| {{CONTROL_X_NAME}} | "Arrow Keys" | Control labels |
-| {{CONTROL_X_DESC}} | "Move your ship..." | Control explanations |
+### HTML structure (copy from game-template.html — never write from scratch)
 
-### Step 3: Add Game Code
-Implement in marked sections only:
-- `resetGame()` - Initialize game state
-- `update(dt)` - Game logic per frame
-- `render()` - Draw game
-- `endGame()` - Set final metrics
+```html
+<div id="gij-wrap">
+  <div id="gij-try-overlay"          class="gij-overlay">         ... </div>
+  <div id="gij-instructions-overlay" class="gij-overlay hidden">  ... </div>
+  <div id="gij-gameover-overlay"     class="gij-overlay hidden">  ... </div>
+  <div id="gij-stage">
+    <div id="gij-hud" class="hidden"> ... </div>
+    <canvas id="gij-canvas"></canvas>
+    <div id="gij-controls"></div>
+  </div>
+</div>
+```
 
-### Step 4: DO NOT Modify
-❌ Overlay HTML structure
-❌ Overlay CSS
-❌ Initialization JavaScript
-❌ Button event handlers
-❌ State management
+Required `<head>` links (must appear in every game):
+```html
+<link rel="stylesheet" href="/game-framework/overlay-styles.css" />
+```
+
+Required `<script>` tags (must appear before game code):
+```html
+<script src="/game-framework/game-engine.js"></script>
+<script src="/game-framework/game-utils.js"></script>
+```
+
+### Initialisation (mandatory boilerplate)
+
+```javascript
+const GAME = {
+  slug:         'my-game',          // must match games.json slug
+  title:        'My Game',
+  description:  'One-sentence hook.',
+  instructions: [
+    '<strong>← →:</strong> Move',
+    '<strong>Space:</strong> Jump',
+    '<strong>Goal:</strong> Survive as long as possible',
+  ],
+  controls: [                        // shown on touch devices automatically
+    { label: '◀', action: 'left'  },
+    { label: '▶', action: 'right' },
+    { label: '⚡', action: 'space', cls: 'gij-ctrl-space' },
+  ],
+  width:  800,
+  height: 600,
+};
+
+const canvas    = document.getElementById('gij-canvas');
+const game      = new GameEngine(canvas).setup(GAME);  // wires ALL overlays
+const input     = new InputManager();                   // keyboard + touch
+const particles = new ParticleSystem();                 // particle pool
+```
+
+### Game loop (the only three functions you write)
+
+```javascript
+game.onRestart(() => {
+  // reset ALL game state back to initial values
+  particles.clear();
+});
+
+game.onUpdate((dt) => {                   // dt = 1/60 s, fixed timestep
+  if (game.state !== 'playing') return;
+  // ALL movement MUST use dt:  position += velocity * dt
+  GameUtils.applyVelocity(obj, dt);
+  GameUtils.clampToCanvas(obj, game.W, game.H);
+  particles.update(dt);
+});
+
+game.onRender((ctx) => {
+  ctx.fillRect(0, 0, game.W, game.H);    // clear background
+  particles.draw(ctx);
+});
+```
+
+### Framework API — quick reference
+
+| Call | What it does |
+|---|---|
+| `game.addScore(pts)` | Add points, updates HUD, auto-saves high score |
+| `game.setScore(n)` | Set score to exact value |
+| `game.getScore()` | Read current score |
+| `game.getHigh()` | Read all-time high score |
+| `game.endGame()` | Show game-over overlay, save high score, submit to API |
+| `game.shake(intensity, duration)` | Screen shake (intensity px, duration sec) |
+| `game.state` | `'waiting'` / `'playing'` / `'paused'` / `'gameover'` |
+| `game.W`, `game.H` | Logical canvas dimensions (800×600 default) |
+| `input.isPressed('left')` | True if left key/touch held |
+| `input.isPressed('up/down/right/space/fire')` | Same for other actions |
+| `particles.burst(x,y,n,opts)` | Spawn n particles from point |
+| `GameUtils.hitTest(a, b, 0.7)` | AABB collision, 70% forgiveness |
+| `GameUtils.applyGravity(obj, G, dt)` | obj.vy += G * dt |
+| `GameUtils.applyVelocity(obj, dt)` | obj.x/y += vx/vy * dt |
+| `GameUtils.clampToCanvas(obj, W, H)` | Keep object inside bounds |
+| `GameUtils.bounceOffWalls(obj, W, H)` | Bounce vx/vy on edges |
+| `GameUtils.wrap(obj, W, H)` | Wrap around edges |
+| `GameUtils.distance(x1,y1,x2,y2)` | Euclidean distance |
+| `GameUtils.lerp(a, b, t)` | Linear interpolation |
+| `GameUtils.randomRange(a, b)` | Random float in [a,b] |
+
+═══════════════════════════════════════════════════════════════
+PHYSICS RULES — NON-NEGOTIABLE
+═══════════════════════════════════════════════════════════════
+
+### The one rule that must NEVER be broken:
+
+  ALL movement, physics, timers, and counters MUST be multiplied by `dt`.
+
+```javascript
+// ✅ CORRECT — framerate-independent
+obj.x   += obj.vx * dt;
+obj.vy  += GRAVITY * dt;
+timer   -= dt;
+speed    = baseSpeed + elapsed * 0.05;
+
+// ❌ WRONG — runs faster on 120Hz than 60Hz
+obj.x   += obj.vx;
+obj.vy  += GRAVITY;
+timer   -= 1;
+```
+
+### Velocity units
+
+  All speeds are in **pixels per second** (px/s), NOT pixels per frame.
+
+  Typical values at game.W=800, game.H=600:
+  - Player movement:  200–400 px/s
+  - Gravity:          300–600 px/s²
+  - Jump velocity:   −400 to −700 px/s (upward = negative)
+  - Projectile:       400–800 px/s
+  - Slow background:   20–80 px/s
+
+### Converting old code
+
+  If you encounter per-frame values in an existing game:
+  - px/frame → px/s: multiply by 60
+  - Gravity/frame² → px/s²: multiply by 3600 (but usually ~300–600 works)
+  - Frame countdown → seconds: divide by 60
+
+### Never use prompt() or alert()
+
+  NEVER call `alert()` or `prompt()` for game feedback.
+  Use canvas-drawn text, the game-over overlay, or `game.endGame()`.
 
 ═══════════════════════════════════════════════════════════════
 GAME DESIGN STANDARDS (Apply to ALL Games)
 ═══════════════════════════════════════════════════════════════
 
-## Target Audience: Age 10
+Target Audience: Age 8–12
 
-**Cognitive:** 500ms reaction time, 3-4 instructions max
-**Motor:** 2 simultaneous inputs max, 44px touch targets
-**Emotional:** Low frustration tolerance, high reward sensitivity
+Mandatory per game:
+  ✅ Animated sprites — 3+ frames (NO static solid rectangles for main actors)
+  ✅ Particle effects — on collect, damage, death, and power-up events
+  ✅ Background depth — gradient, stars, or parallax (NO flat single-colour fill)
+  ✅ Forgiving hitboxes — `GameUtils.hitTest(a, b, 0.7)` (70% of visual size)
+  ✅ Tutorial-easy first 30s — 90% success rate for new players
+  ✅ Dual controls — keyboard AND auto-built touch buttons via GAME.controls
+  ✅ Screen shake on impact — `game.shake(intensity, duration)`
+  ✅ Score persistence — `game.addScore()` and `game.endGame()` handle this
+  ✅ 60 FPS stable — never create O(n²) loops or synchronous heavy work
+  ✅ No console errors in production
 
-## Mandatory Requirements (Every Game)
-
-✅ **Animated sprites** - 3+ frames (NO static rectangles)
-✅ **Particle effects** - on collect, damage, death, power-up
-✅ **Sound effects** - on ALL player actions
-✅ **Background depth** - gradients OR parallax (NO flat colors)
-✅ **Tutorial-easy first 30s** - 90% success rate
-✅ **Forgiving hitboxes** - 70% of visual sprite size
-✅ **Dual controls** - Keyboard AND touch support
-✅ **Instant restart** - R key, no menu navigation
-✅ **Score persistence** - localStorage for high scores
-✅ **60 FPS stable** - performance requirement
-
-## Difficulty Calibration Formula
-
-```javascript
-const baseDifficulty = 1.0;
-const minutesElapsed = gameTime / 60;
-const difficulty = baseDifficulty * (1 + minutesElapsed * 0.05);
-const maxDifficulty = baseDifficulty * 2.5;
-
-// Phases:
-// 0-0.5 min: Tutorial (90% win rate)
-// 0.5-2 min: Learning (70% win rate)
-// 2+ min: Gradual ramp (5% per minute)
-// Cap at 2.5x base difficulty
-```
-
-## Hitbox Formula (Use in ALL Games)
-
-```javascript
-const SPRITE_SIZE = 32;
-const HITBOX_SIZE = SPRITE_SIZE * 0.7; // 70% = forgiving
-const HITBOX_OFFSET = (SPRITE_SIZE - HITBOX_SIZE) / 2;
-
-function checkCollision(sprite1, sprite2) {
-  const x1 = sprite1.x + HITBOX_OFFSET;
-  const y1 = sprite1.y + HITBOX_OFFSET;
-  const x2 = sprite2.x + HITBOX_OFFSET;
-  const y2 = sprite2.y + HITBOX_OFFSET;
-  
-  return (
-    x1 < x2 + HITBOX_SIZE &&
-    x1 + HITBOX_SIZE > x2 &&
-    y1 < y2 + HITBOX_SIZE &&
-    y1 + HITBOX_SIZE > y2
-  );
-}
-```
+Difficulty formula:
+  difficulty = 1.0 + (survivalSeconds / 60) * 0.05   // +5% per minute
+  cap at 2.5×
 
 ═══════════════════════════════════════════════════════════════
-CATALOG INTEGRATION (Mandatory for Every Game)
+CATALOG INTEGRATION (Mandatory for Every New Game)
 ═══════════════════════════════════════════════════════════════
 
-After creating ANY game, add entry to `/src/data/games.json`:
+Add entry to `/src/data/games.json`:
 
 ```json
 {
@@ -196,154 +246,142 @@ After creating ANY game, add entry to `/src/data/games.json`:
 }
 ```
 
-**Required Assets:**
-1. Hero image: `/public/games/[slug]/hero.svg` (16:9, 800×450px)
-2. Screenshots: `/public/games/[slug]/s1.svg`, `s2.svg` (16:9)
+Required assets:
+  1. `/public/games/[slug]/hero.svg` (16:9, 800×450)
+  2. `/public/games/[slug]/s1.svg`, `s2.svg` (16:9)
 
 ═══════════════════════════════════════════════════════════════
-COMMON PITFALLS (Auto-Avoid These)
+DEVELOPMENT WORKFLOW — NEW GAME
 ═══════════════════════════════════════════════════════════════
 
-❌ Writing overlays from scratch → Use GAME_TEMPLATE_EXACT.html
-❌ Modifying overlay structure → Only add game logic in marked sections
-❌ Pixel-perfect hitboxes → Use 70% of sprite size
-❌ Flat color backgrounds → Use gradients or parallax
-❌ Static rectangle sprites → Animate with 3+ frames
-❌ No particle effects → Add on all key events
-❌ Framerate-dependent physics → Use delta time
-❌ Forgetting games.json entry → Game won't appear on website
+Phase 1: Bootstrap (5 minutes)
+  1. Read `/public/game-framework/game-template.html`
+  2. Copy to `/public/demos/[slug]/index.html`
+  3. Fill in GAME config object (slug, title, description, instructions, controls)
+  4. Confirm three framework links are present (CSS + 2× JS)
+
+Phase 2: Core loop (60–90 minutes)
+  5. Implement `game.onRestart(reset)` — initialise ALL state
+  6. Implement `game.onUpdate(dt)` — physics, input, collision
+     - All velocities × dt, all timers − dt
+     - Use `GameUtils.*` for physics helpers
+     - Call `game.addScore()`, `game.shake()`, `game.endGame()` at the right moments
+  7. Implement `game.onRender(ctx)` — draw background, sprites, particles
+  8. Add extra HUD badges inside `#gij-hud` if needed
+
+Phase 3: Polish (30–45 minutes)
+  9. Add `particles.burst()` calls on hit/collect/death
+  10. Animate sprites (3+ canvas-drawn frames or sprite sheet)
+  11. Add parallax or gradient background
+  12. Tune difficulty ramp
+  13. Playtest for 10 minutes — fix feel issues
+
+Phase 4: Integration (15 minutes)
+  14. Add games.json entry
+  15. Create hero.svg + screenshots
+  16. `git add . && git commit -m "feat: add [game-title]" && git push origin master`
+  17. Check Vercel deploy and test on production
 
 ═══════════════════════════════════════════════════════════════
-DEVELOPMENT WORKFLOW (For Any Game)
+PORTING CHECKLIST (Editing an Existing Game)
 ═══════════════════════════════════════════════════════════════
 
-### Phase 1: Setup (5 minutes)
-1. Read /docs/GAME_TEMPLATE_EXACT.html
-2. Copy to /public/demos/[slug]/index.html
-3. Replace all {{PLACEHOLDERS}}
+When touching ANY existing demo HTML file, verify:
 
-### Phase 2: Core Implementation (60-90 minutes)
-4. Implement resetGame() function
-5. Implement update(dt) function
-6. Implement render() function
-7. Add game-specific HUD badges
-8. Add mobile controls (if needed)
-9. Test core gameplay loop
+  □ `<link rel="stylesheet" href="/game-framework/overlay-styles.css" />` in <head>
+  □ `<script src="/game-framework/game-engine.js">` before game code
+  □ `<script src="/game-framework/game-utils.js">` before game code
+  □ `#gij-wrap` wraps the page
+  □ Overlays use `gij-try-overlay`, `gij-instructions-overlay`, `gij-gameover-overlay` IDs
+  □ Canvas is `<canvas id="gij-canvas">`
+  □ Mobile controls div is `<div id="gij-controls">`
+  □ No `alert()` / `prompt()` calls
+  □ All physics multiply by `dt`
+  □ Scores go through `game.addScore()` / `game.endGame()`
 
-### Phase 3: Polish (30-45 minutes)
-10. Add particle effects
-11. Add sound effects
-12. Add animations (3+ frames)
-13. Add background depth
-14. Tune difficulty progression
-15. Test 10-minute playtest session
-
-### Phase 4: Integration (15 minutes)
-16. Update endGame() with final metrics
-17. Add games.json entry
-18. Create hero.svg placeholder
-19. Create s1.svg, s2.svg placeholders
-20. Verify all slugs match
-
-### Phase 5: Deployment (5 minutes)
-21. Commit changes: `git add .`
-22. Commit: `git commit -m "Add [game-title]"`
-23. Push: `git push origin main`
-24. Vercel auto-deploys (watch at vercel.com/dashboard)
-25. Test live on production
-
-**Total time: 2-3 hours per game**
+If ANY box is unchecked, fix it before adding new features.
 
 ═══════════════════════════════════════════════════════════════
-MAKE YOUR GAME FEATURE STATUS
+COMMON PITFALLS — AUTO-AVOID
 ═══════════════════════════════════════════════════════════════
 
-**Phase 1: Frontend** ✅ COMPLETE
-✓ 7-step guided form (/make-your-game page)
-✓ Child-friendly copy and UI
-✓ Building screen animation
-✓ Success screen with sharing
-✓ Mobile responsive
-
-**Phase 2: Backend API** ✅ COMPLETE
-✓ /api/games/generate endpoint
-✓ Claude Haiku 4.5 integration
-✓ Enhanced prompt (500+ lines)
-✓ Code validation
-✓ Prisma schema (GameSubmission model)
-✓ Serverless-ready code
-
-**Phase 3: Deployment Setup** ⚠️ IN PROGRESS
-□ Add ANTHROPIC_API_KEY to Vercel
-□ Add ADMIN_EMAIL to Vercel
-□ Run Prisma migration on Vercel Postgres
-□ Test on preview deployment
-□ Verify Claude Haiku 4.5 API access
-
-**Phase 4: Admin Tools** ⏳ TODO
-□ Email notifications
-□ Admin review dashboard (optional)
-□ Deployment automation
+❌ Writing overlay HTML from scratch → copy game-template.html
+❌ physics without dt → ALWAYS multiply by dt
+❌ alert() / prompt() → draw on canvas or use game.endGame()
+❌ Reinventing collision → use GameUtils.hitTest(a, b, 0.7)
+❌ Reinventing particles → use ParticleSystem.burst()
+❌ Reinventing score/highscore → use game.addScore() / game.getHigh()
+❌ Reinventing mobile controls → declare in GAME.controls array
+❌ Flat colour background → add gradient or parallax layer
+❌ Static rectangle "sprites" → animate with 3+ canvas shapes or frames
+❌ Pixel-perfect hitboxes → use 0.7 forgiveness in hitTest
+❌ Forgetting games.json → game won't appear on site
+❌ Hardcoded dt=0.016 → use the actual measured dt from onUpdate
 
 ═══════════════════════════════════════════════════════════════
-FINAL CHECKLIST (Every Game Must Pass)
+FINAL CHECKLIST — EVERY GAME MUST PASS
 ═══════════════════════════════════════════════════════════════
 
-**Template Compliance:**
-□ Used GAME_TEMPLATE_EXACT.html as base
-□ Replaced all {{PLACEHOLDERS}}
-□ Added game logic ONLY in marked sections
-□ Did NOT modify overlay structure
+Framework compliance:
+  □ Copied game-template.html as starting point
+  □ GAME config object at top with slug/title/description/instructions/controls
+  □ Framework CSS + JS linked (3 tags)
+  □ HTML uses gij-* IDs throughout
+  □ onRestart / onUpdate(dt) / onRender(ctx) are the only logic sections
 
-**Game Quality:**
-□ Animated sprites (3+ frames)
-□ Particle effects on key events
-□ Sound effects on all actions
-□ Background has depth
-□ Hitboxes 70% of sprite size
-□ First 30s tutorial-easy (90% win rate)
-□ 60 FPS stable
-□ No console errors
+Physics:
+  □ ALL velocities and timers multiplied by dt
+  □ Speeds in px/s (not px/frame)
+  □ No alert() or prompt()
+  □ No framerate-dependent counters (frames % n)
 
-**Integration:**
-□ Entry added to games.json
-□ Hero image created
-□ 2+ screenshots created
-□ All slugs match
+Quality:
+  □ Animated sprites (3+ frames)
+  □ Particles on key events
+  □ Background has depth
+  □ Hitboxes use 70% forgiveness
+  □ First 30s tutorial-easy
+  □ 60 FPS stable, no console errors
 
-**Deployment:**
-□ Code committed to git
-□ Pushed to GitHub
-□ Vercel deployed successfully
-□ Game works on production
+Integration:
+  □ Entry added to games.json
+  □ Hero image + 2 screenshots created
+  □ All slugs match across files
 
-**NOT FINISHED until ALL boxes checked.**
+Deployment:
+  □ Committed and pushed to master
+  □ Vercel deployed successfully
+  □ Tested on production (desktop + mobile)
+
+NOT FINISHED until ALL boxes checked.
 
 ═══════════════════════════════════════════════════════════════
-REFERENCE FILES (In Order of Priority)
+REFERENCE FILES (Priority Order)
 ═══════════════════════════════════════════════════════════════
 
-1. `/docs/GAME_TEMPLATE_EXACT.html` - MANDATORY starting point
-2. THIS FILE (CLAUDE.md) - Core standards
-3. `/docs/GAME_DESIGN_SPEC.md` - Full specification
-4. `/docs/GAME_MECHANICS_LIBRARY.md` - Reusable patterns
-5. `/docs/WORKFLOW.md` - Development process
-6. `/docs/MAKE_YOUR_GAME_SYSTEM.md` - User-generated games feature
-7. `/docs/VERCEL_ENV_SETUP.md` - Environment setup guide
+1. `/public/game-framework/game-template.html`  ← MANDATORY starting point
+2. `/public/game-framework/game-engine.js`      ← GameEngine + InputManager API
+3. `/public/game-framework/game-utils.js`       ← GameUtils + ParticleSystem API
+4. `/public/game-framework/overlay-styles.css`  ← CSS classes reference
+5. THIS FILE (CLAUDE.md)                        ← Standards + workflow
+6. `/docs/GAME_DESIGN_SPEC.md`                  ← Full design specification
+7. `/docs/GAME_MECHANICS_LIBRARY.md`            ← Reusable gameplay patterns
+
+DO NOT reference `/docs/GAME_TEMPLATE_EXACT.html` — it is superseded by
+`/public/game-framework/game-template.html`.
 
 ═══════════════════════════════════════════════════════════════
 END OF CONFIGURATION
 ═══════════════════════════════════════════════════════════════
 
-**Universal Principles:**
-- Quality over speed
-- Polish matters
-- Target age 10
-- Make it fun, fair, and forgiving
-- Use the template
-- Test thoroughly
-- Serverless deployment (Vercel)
-- No local database
+Universal Principles:
+  - Quality over speed
+  - Polish matters — target age 8–12
+  - Make it fun, fair, and forgiving
+  - Use the framework. Always. No exceptions.
+  - Serverless deployment (Vercel) — no local database
+  - Physics must use dt. Always.
+  - No alert() or prompt(). Ever.
 
-**This configuration applies to EVERY game built.**
-**No exceptions. Complete consistency.**
+This configuration applies to EVERY game built.
+No exceptions. Complete consistency.

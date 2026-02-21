@@ -23,6 +23,18 @@ Constraints
 - No new deps without explicit approval.
 - Explain edits briefly (files touched + why).
 
+GAME FRAMEWORK (mandatory — no exceptions):
+- Every game demo MUST start from `/public/game-framework/game-template.html`.
+- Every game MUST link: overlay-styles.css + game-engine.js + game-utils.js from /game-framework/.
+- Every game MUST use `new GameEngine(canvas).setup(GAME)`, `new InputManager()`, `new ParticleSystem()`.
+- ALL physics/movement MUST multiply by `dt` (delta time in seconds). Never `pos += vel` without `* dt`.
+- All speeds in px/s (not px/frame). Convert old values: px/frame × 60 = px/s.
+- Never call `alert()` or `prompt()` in game code.
+- Never write a custom score/overlay/mobile-controls system — use the framework.
+- Scores: `game.addScore(n)`. Game over: `game.endGame()`. Screen shake: `game.shake(i, d)`.
+- Collision: `GameUtils.hitTest(a, b, 0.7)`. Physics: `GameUtils.applyVelocity(obj, dt)`.
+- See CLAUDE.md for full spec and API reference.
+
 Operational
 - Always push to Git after changes so Vercel redeploys.
 - Disable static caching for dynamic lists where needed (`revalidate = 0`).
@@ -58,7 +70,8 @@ Constraints:
 - Framework: Next.js App Router (TypeScript).
 - Styling: Tailwind CSS + shadcn/ui ONLY.
 - Data source: `src/data/games.json` (no DB unless explicitly requested).
-- Demos: iframe HTML builds from `/public/demos/<slug>/index.html` (write `<slug>` literally or show as code).
+- Demos: iframe HTML builds from `/public/demos/<slug>/index.html`.
+- Game demos MUST use `/public/game-framework/` (CSS + JS). See CLAUDE.md.
 - Images: `/public/games/<slug>/...`
 - Do NOT add extra dependencies, state managers, analytics, or scaffolding without being asked.
 - Keep components short, typed, accessible (semantic HTML, labels, alt text).
