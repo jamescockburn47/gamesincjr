@@ -13,12 +13,12 @@ const GAME_METADATA = {
   title: 'Alien Unicorn Alliance',
   description: 'Pilot aurora unicorn Astra through an alien rift — collect harmony crystals, pulse-convert drones, and keep your streak alive!',
   instructions: [
-    'Arrow Keys / WASD — fly in any direction (no gravity!)',
-    'Space — Starlight Pulse: vaporises nearby drones and turns them into bonus crystals (5s cooldown)',
-    'Collect glowing harmony crystals to score points and build your streak multiplier',
-    'Avoid alien drones — red shooter drones fire aimed shots at you',
-    'You have 3 shields. Lose them all and the mission ends',
-    'Press SPACE or R at game over to fly again',
+    'Arrow Keys / WASD — speedy free-flight control',
+    'Space — Starlight Pulse: blast enemies with shockwaves (4s cooldown)',
+    'GRAZE enemies and bullets by flying close to them to recharge your pulse faster!',
+    'Catch multiple enemies in a single pulse for massive combo points',
+    'Collect glowing harmony crystals to build your streak multiplier',
+    'Summon Nova and Ember to access the screen-clearing SUPER PULSE',
   ],
   controls: {
     keyboard: ['Arrow Keys / WASD', 'Space (Pulse)'],
@@ -27,9 +27,9 @@ const GAME_METADATA = {
 };
 
 const TOUCH_BUTTONS = [
-  { id: 'up',    label: '↑', position: 'bottom-left'  as const, action: 'up'    },
-  { id: 'down',  label: '↓', position: 'bottom-left'  as const, action: 'down'  },
-  { id: 'left',  label: '←', position: 'bottom-left'  as const, action: 'left'  },
+  { id: 'up', label: '↑', position: 'bottom-left' as const, action: 'up' },
+  { id: 'down', label: '↓', position: 'bottom-left' as const, action: 'down' },
+  { id: 'left', label: '←', position: 'bottom-left' as const, action: 'left' },
   { id: 'right', label: '→', position: 'bottom-right' as const, action: 'right' },
   { id: 'pulse', label: '✨', position: 'bottom-right' as const, action: 'space' },
 ];
@@ -59,7 +59,7 @@ export default function Page() {
           <GameCanvas GameClass={AlienUnicornGame} width={960} height={540} />
           <TouchControls
             buttons={TOUCH_BUTTONS}
-            onButtonPress={action  => inputManager.addTouchAction(action)}
+            onButtonPress={action => inputManager.addTouchAction(action)}
             onButtonRelease={action => inputManager.removeTouchAction(action)}
           />
         </FullScreenWrapper>

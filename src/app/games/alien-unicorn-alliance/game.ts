@@ -36,9 +36,10 @@ interface Drone {
   vx: number; phase: number; amplitude: number;
   type: 'basic' | 'fast' | 'shooter';
   shootTimer: number;
+  grazed?: boolean;
 }
 
-interface Bullet { x: number; y: number; vx: number; vy: number; }
+interface Bullet { x: number; y: number; vx: number; vy: number; grazed?: boolean; }
 
 interface Particle {
   x: number; y: number; vx: number; vy: number;
@@ -46,6 +47,9 @@ interface Particle {
   size: number; hue: number;
   type: 'trail' | 'hit' | 'pulse' | 'collect' | 'ally';
 }
+
+interface Shockwave { x: number; y: number; radius: number; maxRadius: number; life: number; maxLife: number; color: string; width: number; }
+interface FloatingText { x: number; y: number; text: string; life: number; maxLife: number; color: string; size: number; vx: number; vy: number; }
 
 interface TrailPoint { x: number; y: number; t: number; }
 
@@ -67,7 +71,7 @@ interface Star { x: number; y: number; size: number; speed: number; hue: number;
 // ─── Main class ──────────────────────────────────────────────────
 
 export class AlienUnicornGame extends GameEngine {
-  private input        = new InputManager();
+  private input = new InputManager();
   private scoreManager = new ScoreManager('alien-unicorn-alliance');
 
   private readonly W = 960;
@@ -76,45 +80,55 @@ export class AlienUnicornGame extends GameEngine {
 
   // ── Player state
   private px = 180; private py = 270;
-  private pvx = 0;  private pvy = 0;
-  private readonly SPEED   = 380;   // px/s — faster for snappy shmup feel
-  private readonly ACCEL   = 820;   // px/s² — snappier acceleration
-  private readonly DAMP    = 0.90;  // per-60Hz-frame damping — slightly less drift
+  private pvx = 0; private pvy = 0;
+  private readonly SPEED = 460;   // px/s — faster for snappy shmup feel (was 380)
+  private readonly ACCEL = 2800;  // px/s² — snappier acceleration (was 820)
+  private readonly DAMP = 0.82;  // per-60Hz-frame damping (was 0.90)
 
-  private shields       = 3;
-  private invincible    = 0;
+  private shields = 3;
+  private invincible = 0;
   private pulseCooldown = 0;
-  private pulseActive   = 0;
-  private tailTime      = 0;
+  private pulseActive = 0;
+  private tailTime = 0;
+  private pulseCombo = 0;
+  private graze = 0;
+  private hitStop = 0;
+  private screenShake = 0;
   private playerTrail: TrailPoint[] = [];
 
   // ── Alliance state
   private allies: Ally[] = [
-    { name: 'Ember',  present: false, x: 0, y: 0, targetX: 0, targetY: 0,
-      hue1: 15, hue2: 340,   bodyColor: '#ffe8d0', trailColor: '#ff8040', trail: [], pulseActive: 0, invincible: 0 },
-    { name: 'Nova',   present: false, x: 0, y: 0, targetX: 0, targetY: 0,
-      hue1: 210, hue2: 270,  bodyColor: '#d8e8ff', trailColor: '#4080ff', trail: [], pulseActive: 0, invincible: 0 },
+    {
+      name: 'Ember', present: false, x: 0, y: 0, targetX: 0, targetY: 0,
+      hue1: 15, hue2: 340, bodyColor: '#ffe8d0', trailColor: '#ff8040', trail: [], pulseActive: 0, invincible: 0
+    },
+    {
+      name: 'Nova', present: false, x: 0, y: 0, targetX: 0, targetY: 0,
+      hue1: 210, hue2: 270, bodyColor: '#d8e8ff', trailColor: '#4080ff', trail: [], pulseActive: 0, invincible: 0
+    },
   ];
   private allianceGems: AllianceGem[] = [];
-  private gemTimer     = 8.0;
+  private gemTimer = 8.0;
 
   // ── Entities
-  private crystals:  Crystal[]  = [];
-  private drones:    Drone[]    = [];
-  private bullets:   Bullet[]   = [];
+  private crystals: Crystal[] = [];
+  private drones: Drone[] = [];
+  private bullets: Bullet[] = [];
   private particles: Particle[] = [];
+  private shockwaves: Shockwave[] = [];
+  private floatingTexts: FloatingText[] = [];
 
   // ── Timers / scoring
-  private elapsed      = 0;
-  private streak       = 0;
-  private bestStreak   = 0;
-  private score        = 0;
+  private elapsed = 0;
+  private streak = 0;
+  private bestStreak = 0;
+  private score = 0;
   private crystalTimer = 0.9;
-  private droneTimer   = 2.0;  // first drone spawns sooner
-  private gameOver     = false;
-  private restartCd    = 0;
-  private prevPulse    = false;
-  private nebulaOff    = 0;
+  private droneTimer = 2.0;  // first drone spawns sooner
+  private gameOver = false;
+  private restartCd = 0;
+  private prevPulse = false;
+  private nebulaOff = 0;
 
   // ── Background
   private stars: Star[] = [];
@@ -125,9 +139,9 @@ export class AlienUnicornGame extends GameEngine {
       this.stars.push({
         x: Math.random() * this.W,
         y: Math.random() * this.H,
-        size:  Math.random() * 1.9 + 0.4,
+        size: Math.random() * 1.9 + 0.4,
         speed: Math.random() * 38 + 10,
-        hue:   Math.random() * 60 + 180,
+        hue: Math.random() * 60 + 180,
         phase: Math.random() * Math.PI * 2,
       });
     }
@@ -146,12 +160,18 @@ export class AlienUnicornGame extends GameEngine {
       return;
     }
 
+    if (this.hitStop > 0) {
+      this.hitStop -= dt;
+      return; // Freeze hit impact
+    }
+    this.screenShake = Math.max(0, this.screenShake - dt * 40);
+
     this.elapsed += dt;
     this.nebulaOff += dt * 16;
 
     // ── Player movement
     const ax = (this.input.isPressed('right') ? 1 : 0) - (this.input.isPressed('left') ? 1 : 0);
-    const ay = (this.input.isPressed('down')  ? 1 : 0) - (this.input.isPressed('up')   ? 1 : 0);
+    const ay = (this.input.isPressed('down') ? 1 : 0) - (this.input.isPressed('up') ? 1 : 0);
     this.pvx += ax * this.ACCEL * dt;
     this.pvy += ay * this.ACCEL * dt;
     const damp = Math.pow(this.DAMP, dt * 60);
@@ -169,9 +189,9 @@ export class AlienUnicornGame extends GameEngine {
     while (this.playerTrail.length > 22) this.playerTrail.shift();
 
     // ── Timers
-    this.invincible    = Math.max(0, this.invincible    - dt);
+    this.invincible = Math.max(0, this.invincible - dt);
     this.pulseCooldown = Math.max(0, this.pulseCooldown - dt);
-    this.pulseActive   = Math.max(0, this.pulseActive   - dt);
+    this.pulseActive = Math.max(0, this.pulseActive - dt);
 
     // ── Pulse (edge-triggered)
     const pulseKey = this.input.isPressed('space');
@@ -181,7 +201,7 @@ export class AlienUnicornGame extends GameEngine {
     // ── Update allies
     const allianceCount = this.allies.filter(a => a.present).length;
     const vFormation = [
-      { dx: -75, dy:  45 },   // Ember: lower-left
+      { dx: -75, dy: 45 },   // Ember: lower-left
       { dx: -75, dy: -45 },   // Nova:  upper-left
     ];
     this.allies.forEach((ally, idx) => {
@@ -283,24 +303,20 @@ export class AlienUnicornGame extends GameEngine {
       d.y = d.baseY + Math.sin(this.elapsed * 2.1 + d.phase) * d.amplitude;
       if (d.x < -120) { this.drones.splice(i, 1); continue; }
 
-      // Pulse check
-      if (this.pulseActive > 0) {
-        const range = allianceCount >= 2 ? 220 : 165; // Super pulse with full alliance
-        const dx = this.px - d.x, dy = this.py - d.y;
-        if (dx * dx + dy * dy < range * range) {
-          for (let p = 0; p < 16; p++) this.emit(d.x, d.y, 'pulse', 240 + Math.random() * 60);
-          this.score += 80; this.scoreManager.addPoints(80);
-          this.spawnCrystalBurst(d.x, d.y);
-          this.drones.splice(i, 1); continue;
-        }
-      }
+      // Pulse check is now handled via the Shockwave expansion over time
+      // This is left empty since shockwaves actually do the checking!
 
       if (d.type === 'shooter') {
         d.shootTimer -= dt;
         if (d.shootTimer <= 0) {
           d.shootTimer = 1.8 + Math.random() * 1.4;
           const ang = Math.atan2(this.py - d.y, this.px - d.x);
+          const spread = this.elapsed > 40 ? 0.35 : 0; // Starts doing 3-way spread later
           this.bullets.push({ x: d.x, y: d.y, vx: Math.cos(ang) * 220, vy: Math.sin(ang) * 220 });
+          if (spread > 0) {
+            this.bullets.push({ x: d.x, y: d.y, vx: Math.cos(ang - spread) * 220, vy: Math.sin(ang - spread) * 220 });
+            this.bullets.push({ x: d.x, y: d.y, vx: Math.cos(ang + spread) * 220, vy: Math.sin(ang + spread) * 220 });
+          }
         }
       }
 
@@ -319,6 +335,11 @@ export class AlienUnicornGame extends GameEngine {
         const dx = this.px - d.x, dy = this.py - d.y;
         if (dx * dx + dy * dy < (30 + 30) * (30 + 30)) {
           this.takeHit(); this.drones.splice(i, 1);
+        } else if (!d.grazed && dx * dx + dy * dy < 85 * 85) {
+          d.grazed = true; this.graze++;
+          this.score += 50; this.scoreManager.addPoints(50);
+          this.pulseCooldown = Math.max(0, this.pulseCooldown - 0.4);
+          this.floatingTexts.push({ x: this.px, y: this.py - 40, text: 'GRAZE', life: 0.6, maxLife: 0.6, color: '#aaffaa', size: 14, vx: 0, vy: -50 });
         }
       }
     }
@@ -334,8 +355,58 @@ export class AlienUnicornGame extends GameEngine {
         const dx = this.px - b.x, dy = this.py - b.y;
         if (dx * dx + dy * dy < (30 + 8) * (30 + 8)) {
           this.takeHit(); this.bullets.splice(i, 1);
+        } else if (!b.grazed && dx * dx + dy * dy < 70 * 70) {
+          b.grazed = true; this.graze++;
+          this.score += 50; this.scoreManager.addPoints(50);
+          this.pulseCooldown = Math.max(0, this.pulseCooldown - 0.25);
+          for (let p = 0; p < 4; p++) this.emit(this.px, this.py, 'hit', 120);
         }
       }
+    }
+
+    // ── Shockwaves
+    for (let i = this.shockwaves.length - 1; i >= 0; i--) {
+      const s = this.shockwaves[i];
+      s.life -= dt;
+      s.radius += (s.maxRadius - s.radius) * 12 * dt;  // springy pop
+      if (s.life <= 0) { this.shockwaves.splice(i, 1); continue; }
+
+      // Pulse kill checks during the first part of the shockwave
+      if (s.life > s.maxLife * 0.5) {
+        for (let j = this.drones.length - 1; j >= 0; j--) {
+          const d = this.drones[j];
+          const dx = s.x - d.x, dy = s.y - d.y;
+          if (dx * dx + dy * dy < s.radius * s.radius) {
+            for (let p = 0; p < 16; p++) this.emit(d.x, d.y, 'pulse', 240 + Math.random() * 60);
+            this.pulseCombo++;
+            const pts = 80 * this.pulseCombo;
+            this.score += pts; this.scoreManager.addPoints(pts);
+            this.spawnCrystalBurst(d.x, d.y);
+            if (this.pulseCombo > 1) {
+              this.floatingTexts.push({ x: d.x, y: d.y - 20, text: `${this.pulseCombo}x COMBO!`, life: 0.8, maxLife: 0.8, color: '#ffff44', size: 16 + this.pulseCombo * 2, vx: 0, vy: -30 });
+              this.hitStop = 0.05; // tiny micro-freeze per hit for combo impact!
+            }
+            this.drones.splice(j, 1);
+          }
+        }
+        for (let j = this.bullets.length - 1; j >= 0; j--) {
+          const b = this.bullets[j];
+          const dx = s.x - b.x, dy = s.y - b.y;
+          if (dx * dx + dy * dy < s.radius * s.radius) {
+            for (let p = 0; p < 3; p++) this.emit(b.x, b.y, 'pulse', 200 + Math.random() * 40);
+            this.score += 10; this.scoreManager.addPoints(10);
+            this.bullets.splice(j, 1);
+          }
+        }
+      }
+    }
+
+    // ── Floating Texts
+    for (let i = this.floatingTexts.length - 1; i >= 0; i--) {
+      const f = this.floatingTexts[i];
+      f.x += f.vx * dt; f.y += f.vy * dt;
+      f.life -= dt;
+      if (f.life <= 0) this.floatingTexts.splice(i, 1);
     }
 
     // ── Particles
@@ -360,16 +431,36 @@ export class AlienUnicornGame extends GameEngine {
   private triggerPulse(): void {
     const allianceCount = this.allies.filter(a => a.present).length;
     const dur = allianceCount >= 2 ? 0.8 : 0.55;
-    this.pulseActive   = dur;
+    this.pulseActive = dur;
     this.pulseCooldown = allianceCount >= 2 ? 3.0 : 4.0;  // reduced cooldowns — encourages using pulse
+    this.pulseCombo = 0;
+    this.screenShake = allianceCount >= 2 ? 18 : 10;
+    this.hitStop = 0.08;
+
+    const range = allianceCount >= 2 ? 300 : 200;
+    this.shockwaves.push({
+      x: this.px, y: this.py, radius: 20, maxRadius: range, life: 0.4, maxLife: 0.4,
+      color: allianceCount >= 2 ? '#ffccff' : '#ccffff', width: allianceCount >= 2 ? 16 : 8
+    });
+
     for (let i = 0; i < 32; i++) this.emit(this.px, this.py, 'pulse', 240 + Math.random() * 60);
-    this.allies.forEach(a => { if (a.present) a.pulseActive = dur; });
+    this.allies.forEach(a => {
+      if (a.present) {
+        a.pulseActive = dur;
+        this.shockwaves.push({
+          x: a.x, y: a.y, radius: 20, maxRadius: range * 0.7, life: 0.35, maxLife: 0.35,
+          color: a.name === 'Ember' ? '#ffcc88' : '#88ccff', width: 6
+        });
+      }
+    });
   }
 
   private takeHit(): void {
     this.shields--; this.streak = 0;
     this.invincible = 2.2;
-    for (let p = 0; p < 24; p++) this.emit(this.px, this.py, 'hit', 0);
+    this.screenShake = 30;
+    this.hitStop = 0.4; // MASSIVE hitstop on getting hit
+    for (let p = 0; p < 34; p++) this.emit(this.px, this.py, 'hit', 0);
     if (this.shields <= 0) {
       this.scoreManager.saveHighScore('alien-unicorn-alliance');
       this.gameOver = true; this.restartCd = 1.0;
@@ -437,8 +528,9 @@ export class AlienUnicornGame extends GameEngine {
     this.elapsed = 0; this.shields = 3; this.streak = 0; this.bestStreak = 0;
     this.score = 0; this.scoreManager.reset();
     this.px = 180; this.py = this.H / 2; this.pvx = 0; this.pvy = 0;
-    this.invincible = 0; this.pulseCooldown = 0; this.pulseActive = 0;
+    this.invincible = 0; this.pulseCooldown = 0; this.pulseActive = 0; this.pulseCombo = 0;
     this.tailTime = 0; this.crystalTimer = 0.9; this.droneTimer = 2.0;
+    this.graze = 0; this.hitStop = 0; this.screenShake = 0;
     this.gemTimer = 8; this.gameOver = false; this.prevPulse = false;
   }
 
@@ -446,16 +538,61 @@ export class AlienUnicornGame extends GameEngine {
 
   render(ctx: CanvasRenderingContext2D): void {
     const t = this.elapsed;
+    ctx.save();
+    if (this.screenShake > 0) {
+      ctx.translate((Math.random() - 0.5) * this.screenShake, (Math.random() - 0.5) * this.screenShake);
+    }
+
     this.drawBackground(ctx, t);
     this.drawParticles(ctx);
-    this.crystals.forEach(c   => this.drawCrystal(ctx, c, t));
+    this.crystals.forEach(c => this.drawCrystal(ctx, c, t));
     this.allianceGems.forEach(g => this.drawAllianceGem(ctx, g, t));
-    this.drones.forEach(d     => this.drawDrone(ctx, d, t));
+    this.drones.forEach(d => this.drawDrone(ctx, d, t));
     this.drawBullets(ctx);
+    this.drawShockwaves(ctx);
     this.allies.forEach((a, i) => { if (a.present) this.drawAlly(ctx, a, t, i); });
     this.drawPlayerUnicorn(ctx, t);
+    this.drawFloatingTexts(ctx);
+    ctx.restore(); // Restore after camera shake
+
     this.drawHUD(ctx, t);
     if (this.gameOver) this.drawGameOver(ctx, t);
+  }
+
+  private drawShockwaves(ctx: CanvasRenderingContext2D): void {
+    for (const s of this.shockwaves) {
+      const frac = Math.max(0, s.life / s.maxLife);
+      ctx.save();
+      ctx.globalCompositeOperation = 'screen';
+      ctx.strokeStyle = s.color.replace(')', `,${frac * 0.8})`).replace('rgb', 'rgba');
+      if (s.color.startsWith('#')) {
+        // Fallback if hex
+        ctx.strokeStyle = s.color;
+        ctx.globalAlpha = frac * 0.8;
+      }
+      ctx.lineWidth = s.width * frac;
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.radius, 0, this.TAU); ctx.stroke();
+
+      // inner ring
+      ctx.lineWidth = s.width * 0.3 * frac;
+      ctx.strokeStyle = '#ffffff';
+      ctx.beginPath(); ctx.arc(s.x, s.y, s.radius * 0.95, 0, this.TAU); ctx.stroke();
+      ctx.restore();
+    }
+  }
+
+  private drawFloatingTexts(ctx: CanvasRenderingContext2D): void {
+    ctx.save();
+    ctx.textAlign = 'center';
+    for (const f of this.floatingTexts) {
+      const frac = Math.max(0, f.life / f.maxLife);
+      ctx.globalAlpha = frac;
+      ctx.font = `bold ${f.size}px Arial`;
+      ctx.fillStyle = f.color;
+      ctx.shadowColor = '#000000'; ctx.shadowBlur = 4;
+      ctx.fillText(f.text, f.x, f.y);
+    }
+    ctx.restore();
   }
 
   // ─── Background ──────────────────────────────────────────────
@@ -466,7 +603,7 @@ export class AlienUnicornGame extends GameEngine {
     ctx.fillStyle = bg; ctx.fillRect(0, 0, this.W, this.H);
 
     // Nebulae (3 layers at different parallax speeds)
-    this.drawNebula(ctx, (this.W * 0.35 - this.nebulaOff * 0.09) % (this.W * 1.5) + this.W * 0.1, this.H * 0.30, 250, 95, 35, 200,  0.32);
+    this.drawNebula(ctx, (this.W * 0.35 - this.nebulaOff * 0.09) % (this.W * 1.5) + this.W * 0.1, this.H * 0.30, 250, 95, 35, 200, 0.32);
     this.drawNebula(ctx, (this.W * 0.78 - this.nebulaOff * 0.07) % (this.W * 1.5) + this.W * 0.1, this.H * 0.65, 280, 20, 155, 255, 0.24);
     this.drawNebula(ctx, (this.W * 0.60 - this.nebulaOff * 0.05) % (this.W * 1.5) + this.W * 0.1, this.H * 0.15, 200, 195, 75, 255, 0.20);
 
@@ -527,13 +664,13 @@ export class AlienUnicornGame extends GameEngine {
     g.addColorStop(0.4, `hsl(${c.hue},100%,70%)`);
     g.addColorStop(1, `hsl(${c.hue - 20},100%,52%)`);
     ctx.fillStyle = g;
-    ctx.beginPath(); ctx.moveTo(0,-24); ctx.lineTo(15,-3); ctx.lineTo(0,24); ctx.lineTo(-15,-3); ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(0, -24); ctx.lineTo(15, -3); ctx.lineTo(0, 24); ctx.lineTo(-15, -3); ctx.closePath(); ctx.fill();
     // Inner facet lines
     ctx.strokeStyle = 'rgba(255,255,255,0.55)'; ctx.lineWidth = 1;
-    ctx.beginPath(); ctx.moveTo(0,-24); ctx.lineTo(0,0); ctx.lineTo(15,-3); ctx.stroke();
-    ctx.beginPath(); ctx.moveTo(0,-24); ctx.lineTo(0,0); ctx.lineTo(-15,-3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -24); ctx.lineTo(0, 0); ctx.lineTo(15, -3); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(0, -24); ctx.lineTo(0, 0); ctx.lineTo(-15, -3); ctx.stroke();
     // Sparkle
-    ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.arc(5,-10,4.5,0,this.TAU); ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.7)'; ctx.beginPath(); ctx.arc(5, -10, 4.5, 0, this.TAU); ctx.fill();
     ctx.restore(); void t;
   }
 
@@ -614,8 +751,8 @@ export class AlienUnicornGame extends GameEngine {
 
     // Landing legs
     ctx.fillStyle = 'rgba(8,18,38,0.5)';
-    ctx.beginPath(); ctx.moveTo(-14,10); ctx.quadraticCurveTo(-22,30,-6,35); ctx.quadraticCurveTo(-16,18,-14,10); ctx.fill();
-    ctx.beginPath(); ctx.moveTo(14,10); ctx.quadraticCurveTo(22,30,6,35); ctx.quadraticCurveTo(16,18,14,10); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(-14, 10); ctx.quadraticCurveTo(-22, 30, -6, 35); ctx.quadraticCurveTo(-16, 18, -14, 10); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(14, 10); ctx.quadraticCurveTo(22, 30, 6, 35); ctx.quadraticCurveTo(16, 18, 14, 10); ctx.fill();
 
     ctx.shadowBlur = 0;
     ctx.restore();
@@ -680,10 +817,10 @@ export class AlienUnicornGame extends GameEngine {
       ctx.globalCompositeOperation = 'screen';
       const pr = (90 + 40 * Math.sin(t * 18)) / size;
       const pa = ctx.createRadialGradient(0, bob, 0, 0, bob, pr);
-      pa.addColorStop(0,   'rgba(255,255,255,0.55)');
+      pa.addColorStop(0, 'rgba(255,255,255,0.55)');
       pa.addColorStop(0.4, 'rgba(220,160,255,0.30)');
       pa.addColorStop(0.8, 'rgba(80,220,255,0.10)');
-      pa.addColorStop(1,   'rgba(0,0,0,0)');
+      pa.addColorStop(1, 'rgba(0,0,0,0)');
       ctx.fillStyle = pa; ctx.beginPath(); ctx.arc(0, bob, pr, 0, this.TAU); ctx.fill();
       ctx.globalCompositeOperation = 'source-over';
     }
@@ -701,9 +838,9 @@ export class AlienUnicornGame extends GameEngine {
     ctx.fillStyle = upperW;
     ctx.beginPath();
     ctx.moveTo(2, bob - 14);
-    ctx.bezierCurveTo(-8,  bob - 46, -25, bob - 68, -42, bob - 65);
+    ctx.bezierCurveTo(-8, bob - 46, -25, bob - 68, -42, bob - 65);
     ctx.bezierCurveTo(-58, bob - 58, -62, bob - 36, -50, bob - 18);
-    ctx.bezierCurveTo(-36, bob - 8,  2,   bob - 10,  2, bob - 14);
+    ctx.bezierCurveTo(-36, bob - 8, 2, bob - 10, 2, bob - 14);
     ctx.fill();
     // Feather tips on upper wing
     ctx.strokeStyle = `rgba(255,255,255,${wAlpha * 0.55})`; ctx.lineWidth = 1.2;
@@ -724,7 +861,7 @@ export class AlienUnicornGame extends GameEngine {
     ctx.moveTo(4, bob - 8);
     ctx.bezierCurveTo(16, bob - 42, 32, bob - 60, 48, bob - 56);
     ctx.bezierCurveTo(60, bob - 48, 55, bob - 26, 38, bob - 12);
-    ctx.bezierCurveTo(24, bob - 4,  4,  bob - 8,  4, bob - 8);
+    ctx.bezierCurveTo(24, bob - 4, 4, bob - 8, 4, bob - 8);
     ctx.fill();
     ctx.restore();
 
@@ -739,9 +876,9 @@ export class AlienUnicornGame extends GameEngine {
     // Horse-shaped body: widest at shoulder, tapers to rump
     ctx.moveTo(-30, bob - 10);                                    // lower back
     ctx.bezierCurveTo(-38, bob - 8, -36, bob + 16, -22, bob + 18); // rump curve
-    ctx.bezierCurveTo(-8,  bob + 20,  14, bob + 20,  22, bob + 16); // belly
-    ctx.bezierCurveTo(30,  bob + 12,  32, bob - 4,   26, bob - 12); // chest
-    ctx.bezierCurveTo(20,  bob - 18,  4,  bob - 20, -10, bob - 18); // back/withers
+    ctx.bezierCurveTo(-8, bob + 20, 14, bob + 20, 22, bob + 16); // belly
+    ctx.bezierCurveTo(30, bob + 12, 32, bob - 4, 26, bob - 12); // chest
+    ctx.bezierCurveTo(20, bob - 18, 4, bob - 20, -10, bob - 18); // back/withers
     ctx.bezierCurveTo(-20, bob - 16, -28, bob - 12, -30, bob - 10); // spine
     ctx.closePath(); ctx.fill();
     ctx.shadowBlur = 0;
@@ -762,7 +899,7 @@ export class AlienUnicornGame extends GameEngine {
     ctx.moveTo(20, bob - 8);                              // neck base left
     ctx.bezierCurveTo(28, bob - 28, 32, bob - 40, 30, bob - 46); // front of neck
     ctx.bezierCurveTo(36, bob - 42, 38, bob - 34, 36, bob - 22); // back of neck
-    ctx.bezierCurveTo(32, bob - 10, 24, bob - 8,  20, bob - 8);  // back to chest
+    ctx.bezierCurveTo(32, bob - 10, 24, bob - 8, 20, bob - 8);  // back to chest
     ctx.fill();
 
     // ── 6. Mane (3 vibrant flowing strands) ────────────────────
@@ -846,10 +983,10 @@ export class AlienUnicornGame extends GameEngine {
 
     // Horn body (iridescent spiral gradient)
     const hornG = ctx.createLinearGradient(-3, 0, 3, -44);
-    hornG.addColorStop(0,   `hsl(${(t * 80) % 360},100%,85%)`);
-    hornG.addColorStop(0.33,`hsl(${(t * 80 + 120) % 360},100%,75%)`);
-    hornG.addColorStop(0.66,`hsl(${(t * 80 + 240) % 360},100%,80%)`);
-    hornG.addColorStop(1,   '#ffffff');
+    hornG.addColorStop(0, `hsl(${(t * 80) % 360},100%,85%)`);
+    hornG.addColorStop(0.33, `hsl(${(t * 80 + 120) % 360},100%,75%)`);
+    hornG.addColorStop(0.66, `hsl(${(t * 80 + 240) % 360},100%,80%)`);
+    hornG.addColorStop(1, '#ffffff');
     ctx.fillStyle = hornG;
     ctx.shadowColor = `hsl(${(t * 60) % 360},100%,80%)`; ctx.shadowBlur = 12;
     ctx.beginPath(); ctx.moveTo(-5, 2); ctx.lineTo(5, 0); ctx.lineTo(2, -44); ctx.lineTo(-2, -44); ctx.closePath(); ctx.fill();
@@ -915,7 +1052,7 @@ export class AlienUnicornGame extends GameEngine {
   // ─── Player unicorn ───────────────────────────────────────────
 
   private drawPlayerUnicorn(ctx: CanvasRenderingContext2D, t: number): void {
-    const bob  = Math.sin(t * 2.6) * 3.5;
+    const bob = Math.sin(t * 2.6) * 3.5;
     const lean = Physics.clamp(this.pvx / this.SPEED, -1, 1) * 0.18;
     ctx.save();
     ctx.translate(this.px, this.py);
@@ -927,7 +1064,7 @@ export class AlienUnicornGame extends GameEngine {
   // ─── Ally unicorn ─────────────────────────────────────────────
 
   private drawAlly(ctx: CanvasRenderingContext2D, ally: Ally, t: number, idx: number): void {
-    const bob  = Math.sin(t * 2.6 + idx * 1.2) * 3;
+    const bob = Math.sin(t * 2.6 + idx * 1.2) * 3;
     const lean = 0;
     ctx.save();
     ctx.translate(ally.x, ally.y);
@@ -964,11 +1101,11 @@ export class AlienUnicornGame extends GameEngine {
       const frac = Math.max(0, p.life / p.maxLife);
       let col: string;
       switch (p.type) {
-        case 'trail':   col = `hsla(${p.hue},85%,75%,${frac * 0.35})`; break;
+        case 'trail': col = `hsla(${p.hue},85%,75%,${frac * 0.35})`; break;
         case 'collect': col = `hsla(${p.hue},100%,80%,${frac * 0.85})`; break;
-        case 'pulse':   col = `hsla(${p.hue},90%,82%,${frac * 0.70})`; break;
-        case 'ally':    col = `hsla(${p.hue},100%,78%,${frac * 0.80})`; break;
-        default:        col = `rgba(255,80,80,${frac * 0.70})`; break;
+        case 'pulse': col = `hsla(${p.hue},90%,82%,${frac * 0.70})`; break;
+        case 'ally': col = `hsla(${p.hue},100%,78%,${frac * 0.80})`; break;
+        default: col = `rgba(255,80,80,${frac * 0.70})`; break;
       }
       const g = ctx.createRadialGradient(p.x, p.y, 0, p.x, p.y, p.size * frac + 1);
       g.addColorStop(0, col); g.addColorStop(1, 'rgba(0,0,0,0)');
@@ -984,16 +1121,17 @@ export class AlienUnicornGame extends GameEngine {
 
     // Score panel
     ctx.fillStyle = 'rgba(5,8,22,0.78)';
-    ctx.beginPath(); ctx.roundRect(10, 10, 220, 96, 14); ctx.fill();
+    ctx.beginPath(); ctx.roundRect(10, 10, 250, 116, 14); ctx.fill();
     ctx.font = 'bold 23px Arial'; ctx.fillStyle = '#ffffff'; ctx.textAlign = 'left';
     ctx.fillText(`Score: ${this.score.toLocaleString()}`, 22, 37);
     ctx.font = '16px Arial'; ctx.fillStyle = '#6ef7ff';
-    ctx.fillText(`Streak ×${this.streak}`, 22, 58);
+    ctx.fillText(`Streak: ${this.streak} | Graze: ${this.graze}`, 22, 58);
     const hearts = '❤️'.repeat(Math.max(0, this.shields)) + '🤍'.repeat(Math.max(0, 3 - this.shields));
+    ctx.font = '16px Arial';
     ctx.fillText(hearts, 22, 78);
-    ctx.font = '13px Arial';
+    ctx.font = '14px Arial';
     ctx.fillStyle = allianceCount >= 2 ? '#ffd700' : allianceCount === 1 ? '#aaddff' : '#404870';
-    ctx.fillText(allianceCount === 0 ? 'Alliance: none' : allianceCount === 1 ? `Alliance: ${this.allies.find(a=>a.present)?.name}` : '✨ FULL ALLIANCE!', 22, 96);
+    ctx.fillText(allianceCount === 0 ? 'Alliance: None' : allianceCount === 1 ? `Alliance: ${this.allies.find(a => a.present)?.name}` : '✨ FULL ALLIANCE!', 22, 98);
 
     // Pulse indicator
     const ready = this.pulseCooldown <= 0;
@@ -1037,7 +1175,7 @@ export class AlienUnicornGame extends GameEngine {
     ctx.font = 'bold 36px Arial'; ctx.fillStyle = '#ffffff';
     ctx.fillText(`Score: ${this.score.toLocaleString()}`, cx, this.H * 0.42);
     ctx.font = '22px Arial'; ctx.fillStyle = '#6ef7ff';
-    ctx.fillText(`Best Streak: ${this.bestStreak}`, cx, this.H * 0.52);
+    ctx.fillText(`Best Streak: ${this.bestStreak} | Graze: ${this.graze}`, cx, this.H * 0.52);
     const hs = this.scoreManager.getHighScore();
     ctx.font = '20px Arial'; ctx.fillStyle = '#ffd700';
     ctx.fillText(`All-time Best: ${hs.toLocaleString()}`, cx, this.H * 0.61);
