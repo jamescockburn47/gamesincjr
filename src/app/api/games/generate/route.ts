@@ -349,10 +349,16 @@ async function generateGameAsync(
 }
 
 // Monitor function to clean up stale submissions (run periodically)
-export async function GET() {
+export async function GET(req: NextRequest) {
   try {
-    // This endpoint checks for stale BUILDING submissions and marks them as REJECTED
-    // Can be called by a cron job or scheduled task
+    // This endpoint checks for stale BUILDING submissions and marks them as REJECTED.
+    // Destructive, so it requires the cron secret — fail closed when unset.
+    if (!process.env.CRON_SECRET) {
+      return NextResponse.json({ error: 'Cleanup is not configured (CRON_SECRET missing)' }, { status: 503 });
+    }
+    if (req.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const staleThresholdMs = 6 * 60 * 1000; // 6 minutes
     const staleTime = new Date(Date.now() - staleThresholdMs);

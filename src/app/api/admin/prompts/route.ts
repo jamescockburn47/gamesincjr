@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { characterRolePrompts } from '@/app/api/imaginary-friends/_lib/prompts';
+import { isAdminAuthenticated } from '@/lib/admin-auth';
 import fs from 'fs/promises';
 import path from 'path';
 
@@ -22,6 +23,9 @@ async function saveOverrides(overrides: Record<string, string>) {
 }
 
 export async function GET() {
+    if (!(await isAdminAuthenticated())) {
+        return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
     const overrides = await getOverrides();
     // Merge defaults with overrides
     const combined = { ...characterRolePrompts, ...overrides };
@@ -30,6 +34,9 @@ export async function GET() {
 
 export async function POST(request: Request) {
     try {
+        if (!(await isAdminAuthenticated())) {
+            return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+        }
         const body = await request.json();
         const { characterId, prompt } = body;
 
@@ -49,6 +56,6 @@ export async function POST(request: Request) {
         return NextResponse.json({ success: true, prompts: { ...characterRolePrompts, ...overrides } });
     } catch (error) {
         console.error('Failed to update prompt', error);
-        return NextResponse.json({ error: 'Failed to update prompt: ' + String(error) }, { status: 500 });
+        return NextResponse.json({ error: 'Failed to update prompt' }, { status: 500 });
     }
 }

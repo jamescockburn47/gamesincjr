@@ -20,7 +20,7 @@ export default function LoginPage() {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, tier: 'champion' }), // Auto-grant champion tier for now
+        body: JSON.stringify({ email }), // Tier stays at default; pick one on the Account page
       });
 
       if (res.ok) {

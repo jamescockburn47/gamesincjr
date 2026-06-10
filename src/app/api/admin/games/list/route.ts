@@ -1,17 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/tables/db/prisma';
 import { SubmissionStatus } from '@prisma/client';
+import { isAdminAuthenticated } from '@/lib/admin-auth';
 
 export async function GET(request: NextRequest) {
   try {
-    // TODO: Re-enable auth after testing
-    // const isAuthenticated = await isAdminAuthenticated();
-    // if (!isAuthenticated) {
-    //   return NextResponse.json(
-    //     { error: 'Unauthorized' },
-    //     { status: 401 }
-    //   );
-    // }
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     // Get query parameters for filtering
     const searchParams = request.nextUrl.searchParams;

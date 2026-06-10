@@ -61,19 +61,31 @@ async function generateWithRetry(prompt: string, maxRetries = API_RETRY_ATTEMPTS
 
 // This cron job processes pending game submissions
 // Call it periodically (e.g., every minute) from vercel.json
+// Only pick up submissions stuck in BUILDING for longer than this.
+// Fresh submissions are generated inline by /api/games/generate; the cron
+// is a recovery sweeper, not a second generation path (avoids double AI runs).
+const STALE_BUILDING_MS = 10 * 60 * 1000; // 10 minutes
+
 export async function GET(request: NextRequest) {
   try {
-    // Verify it's actually a cron call (optional: check Authorization header)
+    // Fail closed: the cron endpoint triggers expensive AI work, so it is
+    // disabled entirely unless CRON_SECRET is configured.
+    if (!process.env.CRON_SECRET) {
+      return NextResponse.json({ error: 'Cron is not configured (CRON_SECRET missing)' }, { status: 503 });
+    }
     const authHeader = request.headers.get('authorization');
-    if (process.env.CRON_SECRET && authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
+    if (authHeader !== `Bearer ${process.env.CRON_SECRET}`) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     console.log('[Cron] Starting game generation processor...');
 
-    // Find submissions that are in BUILDING status
+    // Find submissions stuck in BUILDING status (inline generation failed or died)
     const buildingSubmissions = await prisma.gameSubmission.findMany({
-      where: { status: SubmissionStatus.BUILDING },
+      where: {
+        status: SubmissionStatus.BUILDING,
+        updatedAt: { lt: new Date(Date.now() - STALE_BUILDING_MS) },
+      },
       take: 5, // Process max 5 at a time to avoid timeout
     });
 

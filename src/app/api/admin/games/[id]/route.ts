@@ -1,19 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/tables/db/prisma';
+import { SubmissionStatus } from '@prisma/client';
+import { isAdminAuthenticated } from '@/lib/admin-auth';
 
 export async function GET(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // TODO: Re-enable auth after testing
-    // const isAuthenticated = await isAdminAuthenticated();
-    // if (!isAuthenticated) {
-    //   return NextResponse.json(
-    //     { error: 'Unauthorized' },
-    //     { status: 401 }
-    //   );
-    // }
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const params = await context.params;
     const submission = await prisma.gameSubmission.findUnique({
@@ -45,21 +42,31 @@ export async function PATCH(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // TODO: Re-enable auth after testing
-    // const isAuthenticated = await isAdminAuthenticated();
-    // if (!isAuthenticated) {
-    //   return NextResponse.json(
-    //     { error: 'Unauthorized' },
-    //     { status: 401 }
-    //   );
-    // }
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const params = await context.params;
     const body = await request.json();
 
+    // Whitelist updatable fields — never pass the raw body to Prisma.
+    const data: { status?: SubmissionStatus; reviewNotes?: string } = {};
+    if (typeof body.status === 'string') {
+      if (!Object.values(SubmissionStatus).includes(body.status as SubmissionStatus)) {
+        return NextResponse.json({ error: 'Invalid status' }, { status: 400 });
+      }
+      data.status = body.status as SubmissionStatus;
+    }
+    if (typeof body.reviewNotes === 'string') {
+      data.reviewNotes = body.reviewNotes.slice(0, 2000);
+    }
+    if (Object.keys(data).length === 0) {
+      return NextResponse.json({ error: 'No updatable fields provided' }, { status: 400 });
+    }
+
     const updated = await prisma.gameSubmission.update({
       where: { id: params.id },
-      data: body,
+      data,
     });
 
     return NextResponse.json({

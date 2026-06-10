@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/tables/db/prisma';
-// import { isAdminAuthenticated } from '@/lib/admin-auth'; // TODO: Re-enable for production
+import { isAdminAuthenticated } from '@/lib/admin-auth';
 import { SubmissionStatus } from '@prisma/client';
 import { promises as fs } from 'fs';
 import path from 'path';
@@ -13,14 +13,9 @@ export async function POST(
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // TODO: Re-enable auth after testing
-    // const isAuthenticated = await isAdminAuthenticated();
-    // if (!isAuthenticated) {
-    //   return NextResponse.json(
-    //     { error: 'Unauthorized' },
-    //     { status: 401 }
-    //   );
-    // }
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const params = await context.params;
     const submission = await prisma.gameSubmission.findUnique({
@@ -68,34 +63,12 @@ export async function POST(
             instructions: {
               setup: 'Add GITHUB_TOKEN to Vercel environment variables with repo permissions',
               manual: [
-                `1. Create: public/demos/${submission.gameSlug}/index.html`,
+                `1. Create: public/demos/${submission.gameSlug}/index.html (code is stored on the submission record)`,
                 `2. Add game entry to src/data/games.json`,
                 `3. Commit and push: git add . && git commit -m "Deploy game: ${submission.gameTitle}" && git push`,
               ],
             },
-            submission: updated,
-            gameData: {
-              slug: submission.gameSlug,
-              code: submission.generatedCode,
-              gameEntry: {
-                slug: submission.gameSlug,
-                title: submission.gameTitle,
-                tags: [submission.gameType, 'user-generated'],
-                description: submission.gameDescription,
-                description_it: submission.gameDescription,
-                hero: `/games/${submission.gameSlug}/hero.svg`,
-                screenshots: [
-                  `/games/${submission.gameSlug}/s1.svg`,
-                  `/games/${submission.gameSlug}/s2.svg`,
-                ],
-                demoPath: `/demos/${submission.gameSlug}/index.html`,
-                gameType: 'html5',
-                engine: 'vanilla-js',
-                version: '1.0.0',
-                status: 'released',
-                submissionId: submission.id,
-              },
-            },
+            submission: { id: updated.id, status: updated.status, gameSlug: updated.gameSlug },
           },
           { status: 400 }
         );
@@ -314,29 +287,7 @@ export async function POST(
           {
             error: 'GitHub API deployment failed',
             details: githubError instanceof Error ? githubError.message : 'Unknown error',
-            submission: updated,
-            gameData: {
-              slug: submission.gameSlug,
-              code: submission.generatedCode,
-              gameEntry: {
-                slug: submission.gameSlug,
-                title: submission.gameTitle,
-                tags: [submission.gameType, 'user-generated'],
-                description: submission.gameDescription,
-                description_it: submission.gameDescription,
-                hero: `/games/${submission.gameSlug}/hero.svg`,
-                screenshots: [
-                  `/games/${submission.gameSlug}/s1.svg`,
-                  `/games/${submission.gameSlug}/s2.svg`,
-                ],
-                demoPath: `/demos/${submission.gameSlug}/index.html`,
-                gameType: 'html5',
-                engine: 'vanilla-js',
-                version: '1.0.0',
-                status: 'released',
-                submissionId: submission.id,
-              },
-            },
+            submission: { id: updated.id, status: updated.status, gameSlug: updated.gameSlug },
           },
           { status: 500 }
         );

@@ -127,10 +127,18 @@ export default function GamePlayer({ game }: GamePlayerProps) {
             <div className="relative w-full h-full bg-black">
               <iframe
                 ref={gameContentRef}
-                src={`${game.demoPath}?v=${Date.now()}`}
+                src={game.demoPath}
                 className="absolute inset-0 w-full h-full border-0"
                 title={game.title}
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen"
+                // User-generated games (served from the DB via /api/...) run in a
+                // fully isolated opaque origin. First-party demos keep same-origin
+                // access so the framework can persist high scores.
+                sandbox={
+                  game.demoPath?.startsWith('/api/')
+                    ? 'allow-scripts allow-pointer-lock'
+                    : 'allow-scripts allow-same-origin allow-pointer-lock'
+                }
+                allow="autoplay; fullscreen"
                 allowFullScreen
                 onLoad={(e) => {
                   setIsLoading(false);

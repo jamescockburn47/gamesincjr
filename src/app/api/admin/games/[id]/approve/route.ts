@@ -1,20 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/tables/db/prisma';
 import { SubmissionStatus } from '@prisma/client';
+import { isAdminAuthenticated } from '@/lib/admin-auth';
 
 export async function POST(
   request: NextRequest,
   context: { params: Promise<{ id: string }> }
 ) {
   try {
-    // TODO: Re-enable auth after testing
-    // const isAuthenticated = await isAdminAuthenticated();
-    // if (!isAuthenticated) {
-    //   return NextResponse.json(
-    //     { error: 'Unauthorized' },
-    //     { status: 401 }
-    //   );
-    // }
+    if (!(await isAdminAuthenticated())) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
+    }
 
     const params = await context.params;
     const body = await request.json();

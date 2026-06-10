@@ -56,10 +56,12 @@ class GameEngine {
     this._logicalW = config.width  || 800;
     this._logicalH = config.height || 600;
 
-    // Load saved high score
+    // Load saved high score (localStorage is unavailable in sandboxed iframes)
     if (this._slug) {
-      const saved = localStorage.getItem('gij_hs_' + this._slug);
-      if (saved) this._highScore = parseInt(saved, 10) || 0;
+      try {
+        const saved = localStorage.getItem('gij_hs_' + this._slug);
+        if (saved) this._highScore = parseInt(saved, 10) || 0;
+      } catch (e) {}
     }
 
     // Fill overlay copy from config
@@ -131,8 +133,9 @@ class GameEngine {
 
     if (this._score > this._highScore) {
       this._highScore = this._score;
-      if (this._slug)
-        localStorage.setItem('gij_hs_' + this._slug, String(this._highScore));
+      if (this._slug) {
+        try { localStorage.setItem('gij_hs_' + this._slug, String(this._highScore)); } catch (e) {}
+      }
     }
 
     const fsEl  = document.getElementById('gij-final-score');
