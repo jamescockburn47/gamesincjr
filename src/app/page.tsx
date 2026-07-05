@@ -6,7 +6,7 @@ import ParentsCorner from '@/components/ParentsCorner';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardHeader, CardTitle } from '@/components/ui/card';
-import { ArrowRight, Gamepad2, Sparkles, Rocket, Star, Users, Trophy } from 'lucide-react';
+import { ArrowRight, Gamepad2, Sparkles, Rocket, Star, Trophy, Wand2, Mountain, GraduationCap } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -81,11 +81,11 @@ export default async function Home() {
             </div>
             <div className="flex items-center gap-3 px-5 py-2.5 bg-white/60 backdrop-blur rounded-2xl shadow-sm">
               <div className="p-2 rounded-xl bg-secondary/10">
-                <Users className="w-4 h-4 text-secondary" />
+                <Sparkles className="w-4 h-4 text-secondary" />
               </div>
               <div className="text-left">
-                <div className="text-xl font-black text-slate-900">1000+</div>
-                <div className="text-xs text-slate-500 font-medium">Players</div>
+                <div className="text-xl font-black text-slate-900">AI + Kids</div>
+                <div className="text-xs text-slate-500 font-medium">How every game is made</div>
               </div>
             </div>
             <div className="flex items-center gap-3 px-5 py-2.5 bg-white/60 backdrop-blur rounded-2xl shadow-sm">
@@ -241,6 +241,83 @@ export default async function Home() {
               </div>
             </>
           )}
+        </div>
+      </section>
+
+      {/* Learn to AI-code */}
+      <section className="py-12 sm:py-20 px-4">
+        <div className="container mx-auto max-w-7xl">
+          <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-14">
+            <div className="inline-flex items-center gap-2 rounded-full bg-white/60 backdrop-blur-md px-4 py-1.5 text-xs sm:text-sm font-bold text-primary shadow-lg ring-1 ring-primary/20 mb-4">
+              <GraduationCap className="w-4 h-4" />
+              The skill behind the games
+            </div>
+            <h2 className="text-2xl sm:text-4xl font-black text-slate-900 mb-4">
+              Making games teaches you to work with AI — on anything
+            </h2>
+            <p className="text-slate-600 text-base sm:text-lg leading-relaxed">
+              Building a game with AI is really practice in something much bigger: saying exactly
+              what you mean, testing the result against reality, improving it step by step, and not
+              giving up when the first try isn&apos;t right. Along the way you pick up real software
+              skills — code, architecture, debugging — because your game needs them.
+            </p>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-3">
+            <Link href="/tutorials" className="group block h-full">
+              <Card className="h-full border-0 bg-white shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 rounded-[2rem]">
+                <CardHeader className="p-8">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-primary/10">
+                    <GraduationCap className="w-7 h-7 text-primary" />
+                  </div>
+                  <CardTitle className="text-xl font-bold text-slate-900 group-hover:text-primary transition-colors mb-2">
+                    Learn with us
+                  </CardTitle>
+                  <p className="text-slate-500 text-sm leading-relaxed">
+                    Guided AI-coding sessions for curious kids: describe a game, watch it come to
+                    life, then make it better — and better again.
+                  </p>
+                </CardHeader>
+              </Card>
+            </Link>
+
+            <Link href="/make-your-game" className="group block h-full">
+              <Card className="h-full border-0 bg-white shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 rounded-[2rem]">
+                <CardHeader className="p-8">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-secondary/10">
+                    <Wand2 className="w-7 h-7 text-secondary" />
+                  </div>
+                  <CardTitle className="text-xl font-bold text-slate-900 group-hover:text-primary transition-colors mb-2">
+                    Make a game now
+                  </CardTitle>
+                  <p className="text-slate-500 text-sm leading-relaxed">
+                    Design your own game and our AI will build it. Approved games are published
+                    right here with your name on them.
+                  </p>
+                </CardHeader>
+              </Card>
+            </Link>
+
+            <a href="https://www.moorstead.app" target="_blank" rel="noopener noreferrer" className="group block h-full">
+              <Card className="h-full border-0 bg-gradient-to-br from-slate-900 to-slate-700 shadow-lg hover:shadow-2xl transition-all duration-500 hover:-translate-y-2 rounded-[2rem]">
+                <CardHeader className="p-8">
+                  <div className="mb-4 flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10">
+                    <Mountain className="w-7 h-7 text-emerald-300" />
+                  </div>
+                  <CardTitle className="text-xl font-bold text-white group-hover:text-emerald-300 transition-colors mb-2">
+                    Visit Moorstead
+                  </CardTitle>
+                  <p className="text-slate-300 text-sm leading-relaxed">
+                    A living 3D world on the North York Moors — every texture, sound and creature
+                    generated in code, built the same way we teach. See where this skill can take you.
+                  </p>
+                  <span className="mt-4 inline-flex items-center text-sm font-bold text-emerald-300">
+                    moorstead.app <ArrowRight className="ml-2 w-4 h-4" />
+                  </span>
+                </CardHeader>
+              </Card>
+            </a>
+          </div>
         </div>
       </section>
 

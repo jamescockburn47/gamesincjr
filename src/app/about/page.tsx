@@ -3,7 +3,7 @@ import PageShell from "@/components/PageShell";
 
 const tiers = [
   { name: "Starter", price: "£1 / year", access: "Play 1 full game" },
-  { name: "Explorer", price: "£2 / year", access: "Unlock 3 full games" },
+  { name: "Explorer", price: "£2 / year", access: "Unlock 6 full games" },
   { name: "Champion", price: "£3 / year", access: "Enjoy 10 full games" },
 ];
 

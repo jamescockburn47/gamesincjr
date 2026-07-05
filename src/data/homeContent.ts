@@ -140,10 +140,10 @@ export const homeContent: HomeContent = {
     },
   ],
   hero: {
-    eyebrow: 'Co-created with young designers and educators',
-    title: 'Play inventive games guided by kid-trained AI companions',
+    eyebrow: 'Every game here was built with AI — and you can learn to do it too',
+    title: 'Play our games. Then learn to build your own — with AI.',
     description:
-      'Games inc. Jr pairs original arcade, puzzle and story adventures with copilots that learn from the children who build them. Discover a library of bright worlds, each tuned by real playtest feedback.',
+      'Every game on this site was made by describing it to an AI, playing the result, and iterating until it was fun. That loop — say what you mean, test it against reality, improve it, persevere — is one of the most valuable skills a kid can learn. Games are just the first place we teach it.',
     primaryCta: {
       label: '🎯 Browse all games',
       href: '/games',

@@ -29,6 +29,20 @@ Framework files (DO NOT MODIFY these unless explicitly asked):
 2. If it doesn't, add the links — see "Porting Checklist" below
 3. Never remove or bypass framework wiring already in place
 
+**DESIGN DEPTH IS MANDATORY — `/docs/game-design/`:**
+The framework rules govern correctness; `/docs/game-design/` governs design. Before
+building OR fixing any game, read the mandatory core:
+  docs/game-design/DEPTH-STANDARD.md            ← 2 interacting verbs, decisions every ~10s,
+                                                   phases every 45-60s, meta-progression;
+                                                   ship only at 8/10 on its fun test
+  docs/game-design/JUICE-CHECKLIST.md           ← feedback + GameAudio on every event
+  docs/game-design/DIFFICULTY-AND-ONBOARDING.md ← easy first 30s, telegraphs, no cliffs
+For a NEW game, also pick coordinates in docs/game-design/VARIETY-MATRIX.md (must differ
+from every existing game on ≥2 of 3 axes) and update its ledger. Consult GENRE-PLAYBOOKS,
+ENEMY-BEHAVIOUR-PATTERNS and META-PROGRESSION-PATTERNS as needed.
+Audio: include `<script src="/game-framework/game-audio.js"></script>` alongside the other
+framework tags and call `GameAudio.play(...)` per the juice checklist. Silent games do not ship.
+
 ═══════════════════════════════════════════════════════════════
 DEPLOYMENT ENVIRONMENT (SERVERLESS — CRITICAL)
 ═══════════════════════════════════════════════════════════════
@@ -455,13 +469,15 @@ REFERENCE FILES (Priority Order)
 ═══════════════════════════════════════════════════════════════
 
 1. `/public/game-framework/game-template.html`  ← MANDATORY starting point
-2. `/public/game-framework/game-engine.js`      ← GameEngine + InputManager + AssetLoader API
-3. `/public/game-framework/game-utils.js`       ← GameUtils + ParticleSystem + GAMEPLAY_PRESETS
-4. `/public/game-framework/overlay-styles.css`  ← CSS classes reference
-5. `/public/assets/kenney/`                     ← Free CC0 sprite packs (space, animals, platformer)
-6. THIS FILE (CLAUDE.md)                        ← Standards + workflow + gameplay params
-7. `/docs/GAME_DESIGN_SPEC.md`                  ← Full design specification
-8. `/docs/GAME_MECHANICS_LIBRARY.md`            ← Reusable gameplay patterns
+2. `/docs/game-design/` (start at README.md)    ← MANDATORY design-depth standards
+3. `/public/game-framework/game-engine.js`      ← GameEngine + InputManager + AssetLoader API
+4. `/public/game-framework/game-utils.js`       ← GameUtils + ParticleSystem + GAMEPLAY_PRESETS
+5. `/public/game-framework/game-audio.js`       ← GameAudio procedural SFX (no asset files)
+6. `/public/game-framework/overlay-styles.css`  ← CSS classes reference
+7. `/public/assets/kenney/`                     ← Free CC0 sprite packs (space, animals, platformer)
+8. THIS FILE (CLAUDE.md)                        ← Standards + workflow + gameplay params
+9. `/docs/GAME_DESIGN_SPEC.md`                  ← Full design specification
+10. `/docs/GAME_MECHANICS_LIBRARY.md`           ← Reusable gameplay patterns
 
 DO NOT reference `/docs/GAME_TEMPLATE_EXACT.html` — it is superseded by
 `/public/game-framework/game-template.html`.

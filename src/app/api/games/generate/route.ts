@@ -548,6 +548,7 @@ Your HTML file MUST include these framework scripts in the <head>:
 <script src="/game-framework/game-engine.js"></script>
 <script src="/game-framework/game-utils.js"></script>
 <script src="/game-framework/drawing-library.js"></script>
+<script src="/game-framework/game-audio.js"></script>
 \`\`\`
 
 Your game script MUST follow this EXACT pattern:
@@ -912,6 +913,36 @@ ${submission.features.length > 0 ? `- Special Features: ${submission.features.jo
 ${buildArcadeFlavorAddition(submission)}
 
 ===========================================
+DESIGN DEPTH REQUIREMENTS (ANTI-SHALLOWNESS GATE)
+===========================================
+Shallow single-mechanic games are REJECTED at review. Your game MUST have:
+
+1. TWO INTERACTING VERBS: the player can do two meaningfully different things that
+   affect each other (e.g. dodge AND catch-to-throw-back; move AND bank a risky combo;
+   shoot AND deploy a shield that converts blocked shots to ammo). A second hazard is
+   NOT a second verb.
+2. A DECISION EVERY ~10 SECONDS: risk/reward the player weighs — best pickups placed
+   near the worst hazards, a streak multiplier that resets on damage (push or bank?),
+   one strong ability on a ~5s cooldown, or a route choice with different risk.
+3. PHASE STRUCTURE: every 45-60 seconds something QUALITATIVELY new appears — a new
+   enemy behaviour, a rule twist, a mini-boss with 3 HP and a telegraphed attack, or a
+   bonus round. Numeric speed scaling alone is NOT progression.
+4. ENEMY VARIETY: at least 2 distinct enemy behaviours (e.g. patroller + ambusher that
+   telegraphs 0.5s before lunging; or chaser with capped turn rate + turret with
+   telegraphed shots). Never only "drift toward player". EVERY threat is telegraphed
+   0.4-0.8s before it can hit; nothing spawning off-screen may hit within 0.5s.
+5. META-PROGRESSION: at least 3 unlockables (colour palettes, character skins, or a
+   hard mode) stored in localStorage under 'gij-meta:${gameSlug}', plus a visible
+   "Next goal: ..." line in the HUD or game-over screen.
+6. SESSION ARC: first 30s tutorial-easy (spawn interval x1.8, enemy speed x0.75), then
+   escalate; a good first-session run should last 4-8 minutes.
+
+AUDIO (REQUIRED): also include <script src="/game-framework/game-audio.js"></script>
+with the other framework scripts. Call GameAudio.play('collect'), 'hit', 'jump',
+'powerup', 'explosion', 'levelup', 'combo', 'gameover' at the matching events (it
+auto-initialises on first user gesture and is safe to call anywhere).
+
+===========================================
 HTML STRUCTURE REQUIREMENTS
 ===========================================
 Your HTML file MUST include:
@@ -944,7 +975,8 @@ Use this structure:
   <script src="/game-framework/game-engine.js"></script>
   <script src="/game-framework/game-utils.js"></script>
   <script src="/game-framework/drawing-library.js"></script>
-  
+  <script src="/game-framework/game-audio.js"></script>
+
   <script>
     // Game code here
   </script>
