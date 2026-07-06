@@ -1,946 +1,789 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Arctic Bear Survival - Remastered</title>
-    <style>
-        @import url('https://fonts.googleapis.com/css2?family=Nunito:wght@400;700;900&display=swap');
-
-        * { margin: 0; padding: 0; box-sizing: border-box; user-select: none; -webkit-user-select: none; }
-        body {
-            font-family: 'Nunito', sans-serif;
-            background: #1a2332;
-            color: white;
-            overflow: hidden;
-            height: 100vh;
-            width: 100vw;
-            touch-action: none;
-        }
-        
-        #gameContainer {
-            position: relative;
-            width: 100%;
-            height: 100%;
-            background: #87CEEB; /* Sky color fallback */
-        }
-
-        canvas {
-            display: block;
-            width: 100%;
-            height: 100%;
-        }
-
-        .ui-layer {
-            position: absolute;
-            top: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none;
-            padding: 20px;
-        }
-
-        /* Stats Bar (Top Left) */
-        .stats-bar {
-            position: absolute;
-            top: 20px;
-            left: 20px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            background: rgba(0, 20, 40, 0.85);
-            padding: 16px;
-            border-radius: 16px;
-            border: 2px solid rgba(255,255,255,0.15);
-            box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-            width: 260px;
-            backdrop-filter: blur(4px);
-        }
-
-        .stat-row {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-        }
-
-        .stat-icon {
-            font-size: 24px;
-            width: 30px;
-            text-align: center;
-        }
-
-        .progress-track {
-            flex: 1;
-            height: 14px;
-            background: rgba(0,0,0,0.5);
-            border-radius: 7px;
-            overflow: hidden;
-            position: relative;
-            border: 1px solid rgba(255,255,255,0.1);
-        }
-
-        .progress-fill {
-            height: 100%;
-            width: 100%;
-            transform-origin: left;
-            transition: transform 0.2s;
-        }
-
-        .fill-hp { background: linear-gradient(90deg, #ff5252, #d32f2f); }
-        .fill-warmth { background: linear-gradient(90deg, #ffab40, #ff6d00); }
-        .fill-hunger { background: linear-gradient(90deg, #69f0ae, #2e7d32); }
-
-        /* Inventory & Crafting (Top Right) */
-        .inventory-panel {
-            position: absolute;
-            top: 20px;
-            right: 20px;
-            background: rgba(255,255,255,0.95);
-            color: #263238;
-            padding: 16px;
-            border-radius: 16px;
-            box-shadow: 0 8px 32px rgba(0,0,0,0.2);
-            pointer-events: auto;
-            min-width: 240px;
-        }
-
-        .res-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-bottom: 16px;
-            text-align: center;
-        }
-
-        .res-item {
-            background: #eceff1;
-            padding: 8px;
-            border-radius: 8px;
-            font-weight: 900;
-            font-size: 18px;
-        }
-
-        .craft-btn {
-            width: 100%;
-            background: #fff;
-            border: 2px solid #cfd8dc;
-            padding: 10px 12px;
-            border-radius: 10px;
-            margin-bottom: 8px;
-            cursor: pointer;
-            text-align: left;
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            transition: all 0.1s;
-            font-weight: 700;
-            color: #546e7a;
-        }
-
-        .craft-btn:hover { background: #f5f5f5; }
-        .craft-btn:active { transform: scale(0.98); }
-
-        .craft-btn.possible {
-            background: #e0f7fa;
-            border-color: #4dd0e1;
-            color: #006064;
-        }
-
-        .craft-btn small { font-weight: 400; font-size: 12px; opacity: 0.8; }
-
-        /* Context Action (Bottom Center) */
-        .action-hint {
-            position: absolute;
-            bottom: 40px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.8);
-            color: white;
-            padding: 12px 24px;
-            border-radius: 50px;
-            font-weight: bold;
-            font-size: 18px;
-            border: 2px solid white;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
-            opacity: 0;
-            transition: opacity 0.2s, transform 0.2s;
-        }
-        .action-hint.visible {
-            opacity: 1;
-            transform: translateX(-50%) translateY(0);
-        }
-
-        /* Overlays */
-        .overlay {
-            position: absolute;
-            inset: 0;
-            background: rgba(10, 20, 30, 0.85);
-            backdrop-filter: blur(10px);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            z-index: 100;
-            pointer-events: auto;
-            transition: opacity 0.3s;
-        }
-        .overlay.hidden { opacity: 0; pointer-events: none; }
-
-        .card {
-            background: white;
-            padding: 40px;
-            border-radius: 24px;
-            text-align: center;
-            max-width: 480px;
-            width: 90%;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
-            color: #263238;
-        }
-
-        .btn-big {
-            background: #00bcd4;
-            color: white;
-            border: none;
-            padding: 16px 40px;
-            font-size: 20px;
-            font-weight: 900;
-            border-radius: 50px;
-            cursor: pointer;
-            margin-top: 20px;
-            box-shadow: 0 4px 0 #00838f;
-            transition: transform 0.1s;
-        }
-        .btn-big:active { transform: translateY(4px); box-shadow: none; }
-
-        /* Mobile Controls */
-        .touch-zone { display: none; }
-        @media (hover: none) and (pointer: coarse) {
-            .touch-zone { display: block; position: absolute; bottom: 20px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.1); border: 2px solid rgba(255,255,255,0.3); }
-            #stickL { left: 20px; pointer-events: auto; }
-            #btnAction { position: absolute; bottom: 30px; right: 20px; width: 90px; height: 90px; border-radius: 50%; background: rgba(255,255,255,0.2); border: 3px solid white; color: white; font-size: 32px; display: flex; justify-content: center; align-items: center; pointer-events: auto; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Arctic Bear Survival · Games Inc Jr</title>
+  <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
+  <style>
+    #gij-stage { background: #cfeef2; }
+    canvas { background: #e0f7fa; }
+  </style>
 </head>
 <body>
-    <div id="gameContainer">
-        <canvas id="gameCanvas"></canvas>
-        
-        <div class="ui-layer">
-            <!-- Stats -->
-            <div class="stats-bar">
-                <div class="stat-row">
-                    <span class="stat-icon">❤️</span>
-                    <div class="progress-track"><div id="barHp" class="progress-fill fill-hp"></div></div>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-icon">🔥</span>
-                    <div class="progress-track"><div id="barWarmth" class="progress-fill fill-warmth"></div></div>
-                </div>
-                <div class="stat-row">
-                    <span class="stat-icon">🍖</span>
-                    <div class="progress-track"><div id="barHunger" class="progress-fill fill-hunger"></div></div>
-                </div>
-                <div style="text-align: center; font-size: 14px; color: #90a4ae; margin-top: 4px;">
-                    Day <span id="txtDay" style="color: white; font-weight: bold;">1</span> • <span id="txtTime">08:00</span>
-                </div>
-            </div>
+<div id="gij-wrap">
 
-            <!-- Inventory -->
-            <div class="inventory-panel">
-                <div class="res-grid">
-                    <div class="res-item">🪵 <span id="txtWood">0</span></div>
-                    <div class="res-item">🍖 <span id="txtFood">0</span></div>
-                    <div class="res-item">🔩 <span id="txtMat">0</span></div>
-                </div>
-                
-                <button class="craft-btn" id="btnCraftTrap">
-                    <div>🪤 Trap</div>
-                    <small>3🪵 2🔩</small>
-                </button>
-                <button class="craft-btn" id="btnCraftBearTrap">
-                    <div>⚙️ Bear Trap</div>
-                    <small>5🪵 5🔩</small>
-                </button>
-                <button class="craft-btn" id="btnEat">
-                    <div>🍖 Eat Food</div>
-                    <small>Restore HP</small>
-                </button>
-            </div>
-
-            <!-- Action Prompt -->
-            <div id="actionHint" class="action-hint">
-                SPACE to Interact
-            </div>
-
-            <!-- Touch Controls -->
-            <div id="stickL" class="touch-zone"></div>
-            <div id="btnAction" class="touch-zone" style="display: none;">👋</div>
-        </div>
-
-        <!-- Screens -->
-        <div id="screenStart" class="overlay">
-            <div class="card">
-                <h1 style="color: #0097a7; font-size: 42px; margin-bottom: 16px;">Arctic Survival</h1>
-                <p style="font-size: 18px; color: #546e7a; margin-bottom: 32px;">
-                    Gather resources, build a warm <strong>Igloo</strong>, and keep the fire burning.<br>
-                    Avoid the bears or trap them if you dare!
-                </p>
-                <button class="btn-big" onclick="startGame()">PLAY NOW</button>
-            </div>
-        </div>
-
-        <div id="screenOver" class="overlay hidden">
-            <div class="card">
-                <h1 style="color: #d32f2f; font-size: 48px;">GAME OVER</h1>
-                <p style="font-size: 20px;">You survived for <strong id="scoreDay">0</strong> days.</p>
-                <button class="btn-big" onclick="location.reload()">TRY AGAIN</button>
-            </div>
-        </div>
+  <!-- ── Try-Now Overlay ── -->
+  <div id="gij-try-overlay" class="gij-overlay">
+    <div class="gij-modal">
+      <h1 data-game-title>Arctic Bear Survival</h1>
+      <p id="gij-description">Gather wood, build a warm igloo and keep the fire burning — avoid the bears, or trap them if you dare!</p>
+      <button id="gij-try-btn" class="gij-btn gij-btn-primary">▶ Play Now</button>
     </div>
+  </div>
 
-    <script>
-        // --- Canvas Setup ---
-        const canvas = document.getElementById('gameCanvas');
-        const ctx = canvas.getContext('2d', { alpha: false }); // Optimize
-        let width, height;
+  <!-- ── Instructions Overlay ── -->
+  <div id="gij-instructions-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>How to Play</h2>
+      <ul id="gij-instructions" class="gij-list"></ul>
+      <button id="gij-start-btn" class="gij-btn gij-btn-primary">Brave the Cold!</button>
+    </div>
+  </div>
 
-        function resize() {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            canvas.width = width;
-            canvas.height = height;
+  <!-- ── Game-Over Overlay ── -->
+  <div id="gij-gameover-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>❄️ The Arctic Wins…</h2>
+      <p id="survived-days">You survived 1 day.</p>
+      <div class="gij-score-row">
+        <span id="gij-final-score">Score: 0</span>
+        <span id="gij-final-hs">Best: 0</span>
+      </div>
+      <button id="gij-restart-btn" class="gij-btn gij-btn-primary">Try Again</button>
+    </div>
+  </div>
+
+  <!-- ── Stage ── -->
+  <div id="gij-stage">
+    <div id="gij-hud" class="hidden">
+      <div class="gij-badge">⭐ <strong id="gij-score">0</strong></div>
+      <div class="gij-badge">🏆 <strong id="gij-highscore">0</strong></div>
+      <div class="gij-badge">❤️ <strong id="hud-hp">100</strong></div>
+      <div class="gij-badge">🔥 <strong id="hud-warmth">100</strong></div>
+      <div class="gij-badge">🍖 <strong id="hud-hunger">100</strong></div>
+      <div class="gij-badge">📅 <strong id="hud-day">Day 1 · 08:00</strong></div>
+      <div class="gij-badge">🪵 <strong id="hud-wood">0</strong></div>
+      <div class="gij-badge">🍗 <strong id="hud-food">0</strong></div>
+      <div class="gij-badge">🔩 <strong id="hud-mat">0</strong></div>
+    </div>
+    <canvas id="gij-canvas"></canvas>
+    <div id="gij-controls"></div>
+  </div><!-- /gij-stage -->
+</div><!-- /gij-wrap -->
+
+<script src="/game-framework/game-engine.js"></script>
+<script src="/game-framework/game-utils.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════
+//  STEP 1 — Configure the game
+// ════════════════════════════════════════════════════════════
+const GAME = {
+  slug:        'arctic-bear-survival',
+  title:       'Arctic Bear Survival',
+  description: 'Gather wood, build a warm igloo and keep the fire burning — avoid the bears, or trap them if you dare!',
+  instructions: [
+    '<strong>Arrow Keys / WASD:</strong> Walk across the ice',
+    '<strong>Space:</strong> Chop trees, collect drops, build the igloo, fuel the fire',
+    '<strong>Z:</strong> Craft rabbit trap (3🪵 2🔩) — <strong>X:</strong> Craft bear trap (5🪵 5🔩)',
+    '<strong>C:</strong> Eat food to restore health and hunger',
+    '<strong>Stay warm:</strong> Fire and a finished igloo warm you up AND scare bears away',
+    '<strong>Goal:</strong> Survive as many days as you can — each new day is +25 points!',
+  ],
+  controls: [
+    { label: '◀', action: 'left'  },
+    { label: '▲', action: 'up'    },
+    { label: '▼', action: 'down'  },
+    { label: '▶', action: 'right' },
+    { label: '👋', action: 'space', cls: 'gij-ctrl-space' },
+    { label: '🪤', action: 'action1' },
+    { label: '⚙️', action: 'action2' },
+    { label: '🍗', action: 'eat' },
+  ],
+  width:  800,
+  height: 600,
+};
+
+// ════════════════════════════════════════════════════════════
+//  STEP 2 — Initialise framework objects
+// ════════════════════════════════════════════════════════════
+const canvas    = document.getElementById('gij-canvas');
+const game      = new GameEngine(canvas).setup(GAME);
+const input     = new InputManager();
+const particles = new ParticleSystem();
+
+// Extra survival key bindings (C/E = eat food)
+input.actions.eat = ['KeyC', 'KeyE'];
+
+const W = game.W, H = game.H;
+
+const hudEls = {
+  hp:     document.getElementById('hud-hp'),
+  warmth: document.getElementById('hud-warmth'),
+  hunger: document.getElementById('hud-hunger'),
+  day:    document.getElementById('hud-day'),
+  wood:   document.getElementById('hud-wood'),
+  food:   document.getElementById('hud-food'),
+  mat:    document.getElementById('hud-mat'),
+};
+
+// ════════════════════════════════════════════════════════════
+//  Vector art — original winter palette preserved
+// ════════════════════════════════════════════════════════════
+const Draw = {
+  circle(ctx, x, y, r, color) {
+    ctx.fillStyle = color;
+    ctx.beginPath();
+    ctx.arc(x, y, r, 0, Math.PI * 2);
+    ctx.fill();
+  },
+  player(ctx, x, y, angle, walkTime) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+
+    // Feet (animated while walking)
+    const step = Math.sin(walkTime * 12) * 5;
+    this.circle(ctx, -5 + step, 5, 6, '#37474f');
+    this.circle(ctx, 5 - step, 5, 6, '#37474f');
+
+    this.circle(ctx, 0, 0, 14, '#0288d1');  // Parka blue body
+    this.circle(ctx, 0, -2, 10, '#e1f5fe'); // Fur trim
+    this.circle(ctx, 0, -2, 8, '#ffccbc');  // Face
+
+    // Hands
+    this.circle(ctx, 12, 0, 5, '#0277bd');
+    this.circle(ctx, 12, 5, 5, '#0277bd');
+
+    ctx.restore();
+  },
+  tree(ctx, x, y) {
+    ctx.fillStyle = '#5d4037';
+    ctx.fillRect(x - 4, y, 8, 10);
+
+    ctx.fillStyle = '#2e7d32';
+    ctx.beginPath();
+    ctx.moveTo(x - 20, y);
+    ctx.lineTo(x, y - 50);
+    ctx.lineTo(x + 20, y);
+    ctx.fill();
+
+    // Snow on top
+    ctx.fillStyle = '#e0f2f1';
+    ctx.beginPath();
+    ctx.moveTo(x - 10, y - 25);
+    ctx.lineTo(x, y - 50);
+    ctx.lineTo(x + 10, y - 25);
+    ctx.fill();
+  },
+  bear(ctx, x, y, angle, animTime) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.rotate(angle);
+
+    const step = Math.sin(animTime * 9) * 8;
+    this.circle(ctx, 10, 10 + step, 8, '#5d4037');
+    this.circle(ctx, 10, -10 - step, 8, '#5d4037');
+    this.circle(ctx, -10, 10 - step, 8, '#5d4037');
+    this.circle(ctx, -10, -10 + step, 8, '#5d4037');
+
+    ctx.fillStyle = '#795548';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 25, 15, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    this.circle(ctx, 20, 0, 12, '#795548'); // Head
+    this.circle(ctx, 18, -10, 4, '#5d4037'); // Ears
+    this.circle(ctx, 18, 10, 4, '#5d4037');
+
+    ctx.restore();
+  },
+  rabbit(ctx, x, y, hop) {
+    ctx.save();
+    ctx.translate(x, y - hop);
+
+    ctx.fillStyle = '#fafafa';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 10, 6, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    this.circle(ctx, 5, -8, 2, '#f5f5f5');
+    this.circle(ctx, 0, -8, 2, '#f5f5f5');
+
+    ctx.restore();
+  },
+  igloo(ctx, x, y, progress) {
+    if (progress < 100) {
+      ctx.strokeStyle = '#81d4fa';
+      ctx.setLineDash([5, 5]);
+      ctx.beginPath();
+      ctx.arc(x, y, 40, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#0277bd';
+      ctx.font = 'bold 14px system-ui, sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText(Math.floor(progress) + '%', x, y);
+    } else {
+      ctx.fillStyle = '#e1f5fe';
+      ctx.strokeStyle = '#81d4fa';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(x, y, 40, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.stroke();
+
+      ctx.beginPath();
+      ctx.moveTo(x - 40, y);
+      ctx.lineTo(x + 40, y);
+      ctx.stroke();
+
+      ctx.fillStyle = '#455a64';
+      ctx.beginPath();
+      ctx.arc(x, y + 25, 12, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+  fire(ctx, x, y, lit, animTime) {
+    ctx.fillStyle = '#3e2723';
+    ctx.beginPath();
+    ctx.arc(x, y, 15, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#5d4037';
+    ctx.lineWidth = 4;
+    ctx.beginPath();
+    ctx.moveTo(x - 10, y - 5); ctx.lineTo(x + 10, y + 5);
+    ctx.moveTo(x + 10, y - 5); ctx.lineTo(x - 10, y + 5);
+    ctx.stroke();
+
+    if (lit) {
+      const s = 1 + Math.sin(animTime * 10) * 0.2;
+      ctx.fillStyle = '#ff5722';
+      ctx.beginPath();
+      ctx.arc(x, y - 5, 10 * s, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = '#ffeb3b';
+      ctx.beginPath();
+      ctx.arc(x, y - 2, 6 * s, 0, Math.PI * 2);
+      ctx.fill();
+    }
+  },
+};
+
+// ════════════════════════════════════════════════════════════
+//  STEP 3 — Game state
+// ════════════════════════════════════════════════════════════
+const state = {
+  day: 1,
+  time: 8,            // 24h cycle, advances at 0.5 game-hours per real second
+  anim: 0,            // global animation clock (seconds)
+  walkTime: 0,        // advances only while the player walks
+  hurtCooldown: 0,
+  cam: { x: 0, y: 0 },
+  player: {
+    x: 0, y: 0,
+    angle: 0,
+    hp: 100, warmth: 100, hunger: 100,
+    inv: { wood: 0, food: 0, mat: 0 },
+  },
+  ents: [],
+  effects: [],        // floating text feedback
+};
+let actionHint = '';
+
+// One-shot button presses (interact / craft / eat fire once per press)
+const prevPressed = {};
+function justPressed(action) {
+  const down = input.isPressed(action);
+  const was  = prevPressed[action] || false;
+  prevPressed[action] = down;
+  return down && !was;
+}
+
+function addEffect(x, y, text, color) {
+  state.effects.push({ x, y, text, color, life: 1.4, maxLife: 1.4 });
+}
+
+function spawnRabbit() {
+  const angle = Math.random() * Math.PI * 2;
+  const dist = 500 + Math.random() * 1200;
+  state.ents.push({
+    type: 'rabbit',
+    x: Math.cos(angle) * dist,
+    y: Math.sin(angle) * dist,
+    vx: 0, vy: 0,
+    timer: 0,
+  });
+}
+
+function spawnBear() {
+  const angle = Math.random() * Math.PI * 2;
+  const dist = 1000 + Math.random() * 1500;
+  state.ents.push({
+    type: 'bear',
+    x: Math.cos(angle) * dist,
+    y: Math.sin(angle) * dist,
+    mode: 'wander',
+    hp: 5,
+  });
+}
+
+function spawnDrop(type, x, y) {
+  state.ents.push({
+    type,
+    x: x + (Math.random() - 0.5) * 20,
+    y: y + (Math.random() - 0.5) * 20,
+  });
+}
+
+function resetGame() {
+  state.day = 1;
+  state.time = 8;
+  state.anim = 0;
+  state.walkTime = 0;
+  state.hurtCooldown = 0;
+  state.cam.x = 0;
+  state.cam.y = 0;
+  Object.assign(state.player, { x: 0, y: 0, angle: 0, hp: 100, warmth: 100, hunger: 100 });
+  state.player.inv = { wood: 0, food: 0, mat: 0 };
+  state.ents = [];
+  state.effects = [];
+  actionHint = '';
+  particles.clear();
+
+  // Igloo base + fire pit at the centre of the world
+  state.ents.push({ type: 'igloo', x: 0, y: -80, progress: 0, built: false });
+  state.ents.push({ type: 'fire', x: 0, y: 80, lit: false, fuel: 0 });
+
+  // Trees
+  for (let i = 0; i < 60; i++) {
+    const angle = Math.random() * Math.PI * 2;
+    const dist = 300 + Math.random() * 1500;
+    state.ents.push({
+      type: 'tree',
+      x: Math.cos(angle) * dist,
+      y: Math.sin(angle) * dist,
+      hp: 3,
+    });
+  }
+
+  for (let i = 0; i < 15; i++) spawnRabbit();
+  for (let i = 0; i < 4; i++) spawnBear();
+}
+
+game.onRestart(resetGame);
+
+// ════════════════════════════════════════════════════════════
+//  Interactions
+// ════════════════════════════════════════════════════════════
+const INTERACTABLE = ['tree', 'wood', 'food', 'igloo', 'fire'];
+
+function handleAction() {
+  const p = state.player;
+  const nearest = state.ents.find(e =>
+    INTERACTABLE.includes(e.type) &&
+    GameUtils.distance(e.x, e.y, p.x, p.y) < 60
+  );
+  if (!nearest) return;
+
+  if (nearest.type === 'tree') {
+    nearest.hp--;
+    particles.burst(nearest.x, nearest.y - 25, 8, {
+      colors: ['#5d4037', '#2e7d32', '#e0f2f1'], gravity: 300,
+    });
+    if (nearest.hp <= 0) {
+      nearest.dead = true;
+      spawnDrop('wood', nearest.x, nearest.y);
+      game.addScore(2);
+      if (Math.random() > 0.5) {
+        p.inv.mat++;
+        addEffect(nearest.x, nearest.y - 50, '+1 🔩', '#90a4ae');
+      }
+    }
+  }
+  else if (nearest.type === 'wood') {
+    nearest.dead = true;
+    p.inv.wood++;
+    game.addScore(1);
+    addEffect(nearest.x, nearest.y - 20, '+1 🪵', '#8d6e63');
+  }
+  else if (nearest.type === 'food') {
+    nearest.dead = true;
+    p.inv.food++;
+    game.addScore(1);
+    addEffect(nearest.x, nearest.y - 20, '+1 🍗', '#ef5350');
+  }
+  else if (nearest.type === 'igloo' && !nearest.built) {
+    if (p.inv.wood > 0) {
+      p.inv.wood--;
+      nearest.progress += 10;
+      particles.burst(nearest.x, nearest.y, 6, {
+        colors: ['#e1f5fe', '#81d4fa', '#ffffff'], gravity: 120,
+      });
+      if (nearest.progress >= 100) {
+        nearest.built = true;
+        game.addScore(20);
+        addEffect(nearest.x, nearest.y - 60, 'Igloo built! +20', '#4dd0e1');
+      }
+    } else {
+      addEffect(nearest.x, nearest.y - 60, 'Need 🪵 wood!', '#ef5350');
+    }
+  }
+  else if (nearest.type === 'fire') {
+    if (p.inv.wood > 0) {
+      p.inv.wood--;
+      nearest.lit = true;
+      nearest.fuel = Math.min(100, nearest.fuel + 30);
+      particles.burst(nearest.x, nearest.y - 8, 10, {
+        colors: ['#ff5722', '#ffeb3b', '#ff8800'], gravity: -120,
+      });
+    } else {
+      addEffect(nearest.x, nearest.y - 30, 'Need 🪵 wood!', '#ef5350');
+    }
+  }
+}
+
+function craft(type) {
+  const p = state.player;
+  if (type === 'trap') {
+    if (p.inv.wood >= 3 && p.inv.mat >= 2) {
+      p.inv.wood -= 3; p.inv.mat -= 2;
+      state.ents.push({ type: 'trap', x: p.x, y: p.y, caught: false });
+      addEffect(p.x, p.y - 30, '🪤 Trap set!', '#4dd0e1');
+    } else {
+      addEffect(p.x, p.y - 30, 'Need 3🪵 2🔩', '#ef5350');
+    }
+  }
+  if (type === 'bearTrap') {
+    if (p.inv.wood >= 5 && p.inv.mat >= 5) {
+      p.inv.wood -= 5; p.inv.mat -= 5;
+      state.ents.push({ type: 'bear_trap', x: p.x, y: p.y, caught: false });
+      addEffect(p.x, p.y - 30, '⚙️ Bear trap set!', '#4dd0e1');
+    } else {
+      addEffect(p.x, p.y - 30, 'Need 5🪵 5🔩', '#ef5350');
+    }
+  }
+}
+
+function eatFood() {
+  const p = state.player;
+  if (p.inv.food > 0) {
+    p.inv.food--;
+    p.hp = Math.min(100, p.hp + 20);
+    p.hunger = Math.min(100, p.hunger + 40);
+    addEffect(p.x, p.y - 30, '+20 ❤️ +40 🍖', '#69f0ae');
+    particles.burst(p.x, p.y, 8, { colors: ['#69f0ae', '#ffffff'], gravity: -80 });
+  } else {
+    addEffect(p.x, p.y - 30, 'No food!', '#ef5350');
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  STEP 4 — Update (fixed 60 Hz, dt in seconds)
+// ════════════════════════════════════════════════════════════
+game.onUpdate((dt) => {
+  if (game.state !== 'playing') return;
+
+  const p = state.player;
+  state.anim += dt;
+  state.hurtCooldown = Math.max(0, state.hurtCooldown - dt);
+
+  // ── Day / night cycle (2 real seconds = 1 game hour) ──
+  state.time += dt * 0.5;
+  if (state.time >= 24) {
+    state.time = 0;
+    state.day++;
+    game.addScore(25);
+    addEffect(p.x, p.y - 50, 'Day ' + state.day + '! +25', '#ffd54f');
+    if (Math.random() > 0.3) spawnRabbit();
+    if (Math.random() > 0.8) spawnBear();
+  }
+
+  // ── Movement ──
+  let dx = 0, dy = 0;
+  if (input.isPressed('up'))    dy = -1;
+  if (input.isPressed('down'))  dy = 1;
+  if (input.isPressed('left'))  dx = -1;
+  if (input.isPressed('right')) dx = 1;
+
+  const speed = 200; // px/s
+  if (dx || dy) {
+    const len = Math.hypot(dx, dy);
+    p.x += (dx / len) * speed * dt;
+    p.y += (dy / len) * speed * dt;
+    p.angle = Math.atan2(dy, dx);
+    state.walkTime += dt;
+  }
+
+  // ── Camera (framerate-independent smoothing) ──
+  const ease = 1 - Math.pow(0.9, dt * 60);
+  state.cam.x += (p.x - state.cam.x) * ease;
+  state.cam.y += (p.y - state.cam.y) * ease;
+
+  // ── Warmth / hunger drain ──
+  // Onboarding grace period (DIFFICULTY-AND-ONBOARDING): with zero grace, a
+  // first-time player reading the instructions and finding their first tree
+  // could freeze to death before ever completing one gather-wood cycle.
+  // Drain ramps from 25% to full strength over the first 45 played seconds.
+  const onboardBlend = GameUtils.clamp(state.anim / 45, 0.25, 1);
+
+  let isWarm = false;
+  const fire  = state.ents.find(e => e.type === 'fire' && e.lit);
+  const igloo = state.ents.find(e => e.type === 'igloo' && e.built);
+  if (fire  && GameUtils.distance(fire.x, fire.y, p.x, p.y)   < 150) isWarm = true;
+  if (igloo && GameUtils.distance(igloo.x, igloo.y, p.x, p.y) < 120) isWarm = true;
+
+  if (isWarm) p.warmth = Math.min(100, p.warmth + dt * 15);
+  else        p.warmth -= dt * 2.5 * onboardBlend;
+
+  p.hunger -= dt * 1.5 * onboardBlend;
+
+  if (p.warmth <= 0) p.hp -= dt * 5 * onboardBlend;
+  if (p.hunger <= 0) p.hp -= dt * 2 * onboardBlend;
+
+  // ── One-shot actions ──
+  if (justPressed('space'))   handleAction();
+  if (justPressed('action1')) craft('trap');
+  if (justPressed('action2')) craft('bearTrap');
+  if (justPressed('eat'))     eatFood();
+
+  // ── Entity AI ──
+  actionHint = '';
+
+  state.ents.forEach(e => {
+    const dist = GameUtils.distance(e.x, e.y, p.x, p.y);
+
+    if (dist < 60) {
+      if (e.type === 'tree') actionHint = 'CHOP (Space / 👋)';
+      if (e.type === 'wood') actionHint = 'COLLECT (Space / 👋)';
+      if (e.type === 'food') actionHint = 'COLLECT (Space / 👋)';
+      if (e.type === 'igloo' && !e.built) actionHint = 'BUILD (Space / 👋)';
+      if (e.type === 'fire') actionHint = 'ADD FUEL (Space / 👋)';
+    }
+
+    if (e.type === 'rabbit') {
+      if (dist < 150) {
+        const angle = Math.atan2(e.y - p.y, e.x - p.x); // flee
+        e.x += Math.cos(angle) * 180 * dt;
+        e.y += Math.sin(angle) * 180 * dt;
+        e.moving = true;
+      } else {
+        e.timer -= dt;
+        if (e.timer <= 0) {
+          e.timer = Math.random() * 2 + 1;
+          e.vx = (Math.random() - 0.5) * 50;
+          e.vy = (Math.random() - 0.5) * 50;
         }
-        window.addEventListener('resize', resize);
-        resize();
+        e.x += e.vx * dt;
+        e.y += e.vy * dt;
+        e.moving = !!(e.vx || e.vy);
+      }
 
-        // --- Game Constants ---
-        const TILE_SIZE = 64;
-        const MAP_SIZE = 3000;
-        const CAM_SPEED = 0.1;
+      const trap = state.ents.find(t =>
+        t.type === 'trap' && !t.caught &&
+        GameUtils.distance(t.x, t.y, e.x, e.y) < 20);
+      if (trap) {
+        trap.caught = true;
+        e.dead = true;
+        spawnDrop('food', e.x, e.y);
+        particles.burst(e.x, e.y, 10, { colors: ['#fafafa', '#ef5350'], gravity: 200 });
+      }
+    }
 
-        // --- Assets (Vector Drawing Functions) ---
-        // We use functions instead of images to ensure they load instantly and scale perfectly.
-        const Draw = {
-            circle(ctx, x, y, r, color) {
-                ctx.fillStyle = color;
-                ctx.beginPath();
-                ctx.arc(x, y, r, 0, Math.PI * 2);
-                ctx.fill();
-            },
-            player(ctx, x, y, angle, frame) {
-                ctx.save();
-                ctx.translate(x, y);
-                // Flip if facing left
-                if (Math.abs(angle) > Math.PI / 2) ctx.scale(1, 1); // Actually we rotate, don't scale
-                ctx.rotate(angle);
+    if (e.type === 'bear') {
+      if (dist < 350 && !isWarm) { // safe near fire/igloo
+        e.mode = 'chase';
+        const angle = Math.atan2(p.y - e.y, p.x - e.x);
+        e.x += Math.cos(angle) * 130 * dt;
+        e.y += Math.sin(angle) * 130 * dt;
 
-                // Feet (animate)
-                const step = Math.sin(frame * 0.2) * 5;
-                this.circle(ctx, -5 + step, 5, 6, '#37474f');
-                this.circle(ctx, 5 - step, 5, 6, '#37474f');
-
-                // Body
-                this.circle(ctx, 0, 0, 14, '#0288d1'); // Parka Blue
-                
-                // Hood/Head
-                this.circle(ctx, 0, -2, 10, '#e1f5fe'); // Fur trim
-                this.circle(ctx, 0, -2, 8, '#ffccbc');  // Face
-
-                // Hands
-                this.circle(ctx, 12, 0, 5, '#0277bd');
-                this.circle(ctx, 12, 5, 5, '#0277bd'); // Holding item position
-
-                ctx.restore();
-            },
-            tree(ctx, x, y) {
-                ctx.fillStyle = '#5d4037';
-                ctx.fillRect(x - 4, y, 8, 10); // Trunk
-                
-                ctx.fillStyle = '#2e7d32';
-                ctx.beginPath();
-                ctx.moveTo(x - 20, y);
-                ctx.lineTo(x, y - 50);
-                ctx.lineTo(x + 20, y);
-                ctx.fill();
-                
-                // Snow on top
-                ctx.fillStyle = '#e0f2f1';
-                ctx.beginPath();
-                ctx.moveTo(x - 10, y - 25);
-                ctx.lineTo(x, y - 50);
-                ctx.lineTo(x + 10, y - 25);
-                ctx.fill();
-            },
-            bear(ctx, x, y, angle, frame) {
-                ctx.save();
-                ctx.translate(x, y);
-                ctx.rotate(angle);
-                
-                // Legs
-                const step = Math.sin(frame * 0.15) * 8;
-                this.circle(ctx, 10, 10 + step, 8, '#5d4037');
-                this.circle(ctx, 10, -10 - step, 8, '#5d4037');
-                this.circle(ctx, -10, 10 - step, 8, '#5d4037');
-                this.circle(ctx, -10, -10 + step, 8, '#5d4037');
-
-                // Body
-                ctx.fillStyle = '#795548';
-                ctx.beginPath();
-                ctx.ellipse(0, 0, 25, 15, 0, 0, Math.PI * 2);
-                ctx.fill();
-
-                // Head
-                this.circle(ctx, 20, 0, 12, '#795548');
-                
-                // Ears
-                this.circle(ctx, 18, -10, 4, '#5d4037');
-                this.circle(ctx, 18, 10, 4, '#5d4037');
-
-                ctx.restore();
-            },
-            rabbit(ctx, x, y, angle, hop) {
-                ctx.save();
-                ctx.translate(x, y - hop); // Hop height
-                ctx.rotate(angle);
-                
-                ctx.fillStyle = '#fafafa';
-                ctx.beginPath();
-                ctx.ellipse(0, 0, 10, 6, 0, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Ears
-                this.circle(ctx, 5, -8, 2, '#f5f5f5'); 
-                this.circle(ctx, 0, -8, 2, '#f5f5f5'); 
-
-                ctx.restore();
-            },
-            igloo(ctx, x, y, progress) {
-                // Foundation
-                if (progress < 100) {
-                    ctx.strokeStyle = '#81d4fa';
-                    ctx.setLineDash([5, 5]);
-                    ctx.beginPath();
-                    ctx.arc(x, y, 40, 0, Math.PI * 2);
-                    ctx.stroke();
-                    ctx.setLineDash([]);
-                    
-                    ctx.fillStyle = '#0277bd';
-                    ctx.font = 'bold 14px Nunito';
-                    ctx.textAlign = 'center';
-                    ctx.fillText(`${Math.floor(progress)}%`, x, y);
-                } else {
-                    // Built
-                    ctx.fillStyle = '#e1f5fe';
-                    ctx.strokeStyle = '#81d4fa';
-                    ctx.lineWidth = 2;
-                    ctx.beginPath();
-                    ctx.arc(x, y, 40, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.stroke();
-                    
-                    // Blocks pattern
-                    ctx.beginPath();
-                    ctx.moveTo(x - 40, y);
-                    ctx.lineTo(x + 40, y);
-                    ctx.stroke();
-                    
-                    // Entrance
-                    ctx.fillStyle = '#455a64';
-                    ctx.beginPath();
-                    ctx.arc(x, y + 25, 12, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            },
-            fire(ctx, x, y, lit) {
-                // Pit
-                ctx.fillStyle = '#3e2723';
-                ctx.beginPath();
-                ctx.arc(x, y, 15, 0, Math.PI * 2);
-                ctx.fill();
-                
-                // Logs
-                ctx.strokeStyle = '#5d4037';
-                ctx.lineWidth = 4;
-                ctx.beginPath();
-                ctx.moveTo(x - 10, y - 5); ctx.lineTo(x + 10, y + 5);
-                ctx.moveTo(x + 10, y - 5); ctx.lineTo(x - 10, y + 5);
-                ctx.stroke();
-
-                if (lit) {
-                    // Simple flame pulse
-                    const s = 1 + Math.sin(Date.now() / 100) * 0.2;
-                    ctx.fillStyle = '#ff5722';
-                    ctx.beginPath();
-                    ctx.arc(x, y - 5, 10 * s, 0, Math.PI * 2);
-                    ctx.fill();
-                    ctx.fillStyle = '#ffeb3b';
-                    ctx.beginPath();
-                    ctx.arc(x, y - 2, 6 * s, 0, Math.PI * 2);
-                    ctx.fill();
-                }
-            }
-        };
-
-        // --- State ---
-        const state = {
-            running: false,
-            t: 0,
-            day: 1,
-            time: 8, // 24h cycle
-            cam: { x: 0, y: 0 },
-            keys: {},
-            mouse: { x: 0, y: 0 },
-            player: {
-                x: 0, y: 0,
-                vx: 0, vy: 0,
-                angle: 0,
-                hp: 100, warmth: 100, hunger: 100,
-                inv: { wood: 0, food: 0, mat: 0 }
-            },
-            ents: [], // Entities
-            parts: [] // Particles
-        };
-
-        // --- Core Systems ---
-
-        function startGame() {
-            document.getElementById('screenStart').classList.add('hidden');
-            
-            // Reset State
-            state.running = true;
-            state.day = 1;
-            state.time = 8;
-            state.player.x = 0;
-            state.player.y = 0;
-            state.player.hp = 100;
-            state.player.warmth = 100;
-            state.player.hunger = 100;
-            state.player.inv = { wood: 0, food: 0, mat: 0 };
-            state.ents = [];
-            state.parts = [];
-
-            // Spawn World
-            // 1. Igloo Base (Center)
-            state.ents.push({ type: 'igloo', x: 0, y: -80, progress: 0, built: false });
-            // 2. Fire Pit (Center)
-            state.ents.push({ type: 'fire', x: 0, y: 80, lit: false, fuel: 0 });
-
-            // 3. Trees & Nature
-            for(let i=0; i<60; i++) {
-                const angle = Math.random() * Math.PI * 2;
-                const dist = 300 + Math.random() * 1500;
-                state.ents.push({
-                    type: 'tree',
-                    x: Math.cos(angle) * dist,
-                    y: Math.sin(angle) * dist,
-                    hp: 3
-                });
-            }
-
-            // 4. Rabbits
-            for(let i=0; i<15; i++) spawnRabbit();
-
-            // 5. Bears
-            for(let i=0; i<4; i++) spawnBear();
-
-            loop();
+        if (dist < 30) {
+          p.hp -= dt * 50; // deadly!
+          p.x += Math.cos(angle) * 200 * dt; // knockback
+          p.y += Math.sin(angle) * 200 * dt;
+          if (state.hurtCooldown <= 0) {
+            state.hurtCooldown = 0.5;
+            game.shake(8, 0.3);
+            particles.burst(p.x, p.y, 12, { colors: ['#ff5252', '#ffffff'], gravity: 200 });
+          }
         }
+      } else {
+        e.mode = 'wander';
+        e.x += (Math.random() - 0.5) * 40 * dt;
+        e.y += (Math.random() - 0.5) * 40 * dt;
+      }
 
-        function spawnRabbit() {
-            const angle = Math.random() * Math.PI * 2;
-            const dist = 500 + Math.random() * 1200;
-            state.ents.push({
-                type: 'rabbit',
-                x: Math.cos(angle) * dist,
-                y: Math.sin(angle) * dist,
-                vx: 0, vy: 0,
-                timer: 0
-            });
+      const trap = state.ents.find(t =>
+        t.type === 'bear_trap' && !t.caught &&
+        GameUtils.distance(t.x, t.y, e.x, e.y) < 30);
+      if (trap) {
+        trap.caught = true;
+        e.hp -= 5;
+        if (e.hp <= 0) {
+          e.dead = true;
+          spawnDrop('food', e.x, e.y);
+          spawnDrop('food', e.x + 10, e.y);
+          game.addScore(10);
+          addEffect(e.x, e.y - 40, 'Bear trapped! +10', '#ffd54f');
+          particles.burst(e.x, e.y, 16, { colors: ['#795548', '#5d4037', '#ffffff'], gravity: 200 });
         }
+      }
+    }
 
-        function spawnBear() {
-            const angle = Math.random() * Math.PI * 2;
-            const dist = 1000 + Math.random() * 1500;
-            state.ents.push({
-                type: 'bear',
-                x: Math.cos(angle) * dist,
-                y: Math.sin(angle) * dist,
-                vx: 0, vy: 0,
-                state: 'wander',
-                hp: 5
-            });
-        }
+    if (e.type === 'fire' && e.lit) {
+      e.fuel -= dt * 2;
+      if (e.fuel <= 0) e.lit = false;
+    }
+  });
 
-        function update(dt) {
-            if (!state.running) return;
-            
-            const p = state.player;
+  state.ents = state.ents.filter(e => !e.dead);
 
-            // --- Time Cycle ---
-            state.time += dt * 0.5; // 2 sec = 1 game hour
-            if (state.time >= 24) {
-                state.time = 0;
-                state.day++;
-                // Daily Respawn
-                if (Math.random() > 0.3) spawnRabbit();
-                if (Math.random() > 0.8) spawnBear();
-            }
-            document.getElementById('txtDay').textContent = state.day;
-            document.getElementById('txtTime').textContent = `${Math.floor(state.time).toString().padStart(2,'0')}:00`;
+  // ── Floating text effects ──
+  for (let i = state.effects.length - 1; i >= 0; i--) {
+    const fx = state.effects[i];
+    fx.y -= 30 * dt;
+    fx.life -= dt;
+    if (fx.life <= 0) state.effects.splice(i, 1);
+  }
 
-            // --- Input / Movement ---
-            let dx = 0, dy = 0;
-            if (state.keys['w'] || state.keys['arrowup']) dy = -1;
-            if (state.keys['s'] || state.keys['arrowdown']) dy = 1;
-            if (state.keys['a'] || state.keys['arrowleft']) dx = -1;
-            if (state.keys['d'] || state.keys['arrowright']) dx = 1;
+  particles.update(dt);
 
-            const speed = 200;
-            if (dx || dy) {
-                const len = Math.hypot(dx, dy);
-                p.x += (dx/len) * speed * dt;
-                p.y += (dy/len) * speed * dt;
-                p.angle = Math.atan2(dy, dx);
-            }
+  // ── HUD ──
+  hudEls.hp.textContent     = Math.max(0, Math.ceil(p.hp));
+  hudEls.warmth.textContent = Math.max(0, Math.ceil(p.warmth));
+  hudEls.hunger.textContent = Math.max(0, Math.ceil(p.hunger));
+  hudEls.day.textContent    = 'Day ' + state.day + ' · ' +
+    String(Math.floor(state.time)).padStart(2, '0') + ':00';
+  hudEls.wood.textContent   = p.inv.wood;
+  hudEls.food.textContent   = p.inv.food;
+  hudEls.mat.textContent    = p.inv.mat;
 
-            // --- Camera ---
-            state.cam.x += (p.x - state.cam.x) * 0.1;
-            state.cam.y += (p.y - state.cam.y) * 0.1;
+  // ── Game over ──
+  if (p.hp <= 0) {
+    const daysEl = document.getElementById('survived-days');
+    if (daysEl) daysEl.textContent =
+      'You survived ' + state.day + (state.day === 1 ? ' day.' : ' days.');
+    game.shake(10, 0.5);
+    game.endGame();
+  }
+});
 
-            // --- Stats Drain ---
-            let isWarm = false;
-            
-            // Check Fire/Igloo Proximity
-            const fire = state.ents.find(e => e.type === 'fire' && e.lit);
-            const igloo = state.ents.find(e => e.type === 'igloo' && e.built);
-            
-            if (fire && Math.hypot(fire.x - p.x, fire.y - p.y) < 150) isWarm = true;
-            if (igloo && Math.hypot(igloo.x - p.x, igloo.y - p.y) < 120) isWarm = true;
+// ════════════════════════════════════════════════════════════
+//  STEP 5 — Render
+// ════════════════════════════════════════════════════════════
+game.onRender((ctx) => {
+  // Snowy sky base
+  ctx.fillStyle = '#e0f7fa';
+  ctx.fillRect(0, 0, W, H);
 
-            if (isWarm) {
-                p.warmth = Math.min(100, p.warmth + dt * 15);
-            } else {
-                p.warmth -= dt * 2.5; // Cold is harsh
-            }
-            
-            p.hunger -= dt * 1.5;
+  // ── Camera transform ──
+  ctx.save();
+  ctx.translate(W / 2 - state.cam.x, H / 2 - state.cam.y);
 
-            if (p.warmth <= 0) p.hp -= dt * 5;
-            if (p.hunger <= 0) p.hp -= dt * 2;
+  // Snow patches on the ground
+  ctx.fillStyle = '#b2ebf2';
+  for (let x = Math.floor((state.cam.x - W / 2) / 200) * 200; x < state.cam.x + W / 2; x += 200) {
+    for (let y = Math.floor((state.cam.y - H / 2) / 200) * 200; y < state.cam.y + H / 2; y += 200) {
+      if ((x + y) % 400 === 0) {
+        ctx.beginPath();
+        ctx.arc(x, y, 5, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+  }
 
-            if (p.hp <= 0) gameOver();
+  // Entities, y-sorted, with culling
+  const renderList = [...state.ents, { type: 'player', ...state.player }];
+  renderList.sort((a, b) => a.y - b.y);
 
-            // --- Update UI Bars ---
-            document.getElementById('barHp').style.transform = `scaleX(${Math.max(0, p.hp)/100})`;
-            document.getElementById('barWarmth').style.transform = `scaleX(${Math.max(0, p.warmth)/100})`;
-            document.getElementById('barHunger').style.transform = `scaleX(${Math.max(0, p.hunger)/100})`;
-            
-            document.getElementById('txtWood').textContent = p.inv.wood;
-            document.getElementById('txtFood').textContent = p.inv.food;
-            document.getElementById('txtMat').textContent = p.inv.mat;
+  renderList.forEach(e => {
+    if (Math.abs(e.x - state.cam.x) > W / 2 + 100 ||
+        Math.abs(e.y - state.cam.y) > H / 2 + 100) return;
 
-            // Update Craft Buttons
-            const btnTrap = document.getElementById('btnCraftTrap');
-            const btnBear = document.getElementById('btnCraftBearTrap');
-            const btnEat = document.getElementById('btnEat');
+    if (e.type === 'player') Draw.player(ctx, e.x, e.y, e.angle, state.walkTime);
+    else if (e.type === 'tree')   Draw.tree(ctx, e.x, e.y);
+    else if (e.type === 'bear')   Draw.bear(ctx, e.x, e.y, 0, state.anim);
+    else if (e.type === 'rabbit') Draw.rabbit(ctx, e.x, e.y, e.moving ? Math.abs(Math.sin(state.anim * 10)) * 5 : 0);
+    else if (e.type === 'igloo')  Draw.igloo(ctx, e.x, e.y, e.progress);
+    else if (e.type === 'fire')   Draw.fire(ctx, e.x, e.y, e.lit, state.anim);
+    else if (e.type === 'wood')   Draw.circle(ctx, e.x, e.y, 10, '#795548');
+    else if (e.type === 'food')   Draw.circle(ctx, e.x, e.y, 8, '#ef5350');
+    else if (e.type === 'trap') {
+      ctx.strokeStyle = '#333'; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(e.x, e.y, 10, 0, Math.PI * 2); ctx.stroke();
+      if (e.caught) {
+        ctx.fillStyle = 'red';
+        ctx.font = 'bold 14px system-ui, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.fillText('!', e.x, e.y);
+      }
+    }
+    else if (e.type === 'bear_trap') {
+      ctx.strokeStyle = '#333'; ctx.lineWidth = 3;
+      ctx.beginPath(); ctx.arc(e.x, e.y, 16, 0, Math.PI * 2); ctx.stroke();
+    }
+  });
 
-            if (p.inv.wood >= 3 && p.inv.mat >= 2) btnTrap.classList.add('possible'); else btnTrap.classList.remove('possible');
-            if (p.inv.wood >= 5 && p.inv.mat >= 5) btnBear.classList.add('possible'); else btnBear.classList.remove('possible');
-            if (p.inv.food > 0) btnEat.classList.add('possible'); else btnEat.classList.remove('possible');
+  particles.draw(ctx);
 
+  // Floating text feedback (world space)
+  state.effects.forEach(fx => {
+    ctx.save();
+    ctx.globalAlpha = Math.max(0, fx.life / fx.maxLife);
+    ctx.fillStyle = fx.color;
+    ctx.strokeStyle = 'rgba(0,0,0,0.6)';
+    ctx.lineWidth = 3;
+    ctx.font = 'bold 16px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    ctx.strokeText(fx.text, fx.x, fx.y);
+    ctx.fillText(fx.text, fx.x, fx.y);
+    ctx.restore();
+  });
 
-            // --- Entities Logic ---
-            let contextAction = null;
+  ctx.restore(); // end camera transform
 
-            state.ents.forEach(e => {
-                const dist = Math.hypot(e.x - p.x, e.y - p.y);
-                
-                // --- Context Actions ---
-                if (dist < 60) {
-                    if (e.type === 'tree') contextAction = "CHOP (Space)";
-                    if (e.type === 'wood') contextAction = "COLLECT";
-                    if (e.type === 'food') contextAction = "COLLECT";
-                    if (e.type === 'igloo' && !e.built) contextAction = "BUILD (Space)";
-                    if (e.type === 'fire') contextAction = "ADD FUEL (Space)";
-                }
+  // ── Night overlay ──
+  const hour = state.time;
+  let darkness = 0;
+  if (hour > 18 || hour < 6) {
+    darkness = 0.6;
+    if (hour > 18 && hour < 20) darkness = ((hour - 18) / 2) * 0.6; // sunset
+    if (hour > 4 && hour < 6)   darkness = ((6 - hour) / 2) * 0.6;  // sunrise
+  }
 
-                // --- AI ---
-                if (e.type === 'rabbit') {
-                    // Flee if player close
-                    if (dist < 150) {
-                        const angle = Math.atan2(e.y - p.y, e.x - p.x); // Run away
-                        e.x += Math.cos(angle) * 180 * dt;
-                        e.y += Math.sin(angle) * 180 * dt;
-                    } else {
-                        // Wander
-                        e.timer -= dt;
-                        if (e.timer <= 0) {
-                            e.timer = Math.random() * 2 + 1;
-                            e.vx = (Math.random() - 0.5) * 50;
-                            e.vy = (Math.random() - 0.5) * 50;
-                        }
-                        e.x += e.vx * dt;
-                        e.y += e.vy * dt;
-                    }
-                    
-                    // Trap Collision
-                    const trap = state.ents.find(t => t.type === 'trap' && !t.caught && Math.hypot(t.x - e.x, t.y - e.y) < 20);
-                    if (trap) {
-                        trap.caught = true;
-                        e.dead = true;
-                        spawnDrop('food', e.x, e.y);
-                    }
-                }
+  if (darkness > 0) {
+    ctx.fillStyle = 'rgba(10, 20, 40, ' + darkness + ')';
+    ctx.fillRect(0, 0, W, H);
 
-                if (e.type === 'bear') {
-                    // Aggro Logic
-                    if (dist < 350 && !isWarm) { // Safe near fire/igloo
-                        e.state = 'chase';
-                        const angle = Math.atan2(p.y - e.y, p.x - e.x);
-                        e.x += Math.cos(angle) * 130 * dt; // Faster than before
-                        e.y += Math.sin(angle) * 130 * dt;
-                        
-                        // Attack
-                        if (dist < 30) {
-                            p.hp -= dt * 50; // Deadly!
-                            // Knockback
-                            p.x += Math.cos(angle) * 200 * dt;
-                            p.y += Math.sin(angle) * 200 * dt;
-                        }
-                    } else {
-                        e.state = 'wander';
-                        e.x += (Math.random() - 0.5) * 40 * dt;
-                        e.y += (Math.random() - 0.5) * 40 * dt;
-                    }
+    // Warm light glows from fire / built igloo
+    ctx.save();
+    ctx.globalCompositeOperation = 'lighter';
+    state.ents.forEach(e => {
+      if ((e.type === 'fire' && e.lit) || (e.type === 'igloo' && e.built)) {
+        const sx = e.x - state.cam.x + W / 2;
+        const sy = e.y - state.cam.y + H / 2;
+        const grad = ctx.createRadialGradient(sx, sy, 20, sx, sy, 250);
+        grad.addColorStop(0, 'rgba(255, 200, 100, 0.3)');
+        grad.addColorStop(1, 'rgba(0,0,0,0)');
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(sx, sy, 250, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    });
+    ctx.restore();
+  }
 
-                    // Bear Trap
-                    const trap = state.ents.find(t => t.type === 'bear_trap' && !t.caught && Math.hypot(t.x - e.x, t.y - e.y) < 30);
-                    if (trap) {
-                        trap.caught = true;
-                        e.hp -= 5; // Instakill
-                        if (e.hp <= 0) {
-                            e.dead = true;
-                            spawnDrop('food', e.x, e.y);
-                            spawnDrop('food', e.x + 10, e.y);
-                        }
-                    }
-                }
-                
-                if (e.type === 'fire' && e.lit) {
-                    e.fuel -= dt * 2;
-                    if (e.fuel <= 0) e.lit = false;
-                }
-            });
+  // ── Action hint pill (screen space) ──
+  if (actionHint && game.state === 'playing') {
+    ctx.save();
+    ctx.font = 'bold 18px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    const tw = ctx.measureText(actionHint).width;
+    ctx.fillStyle = 'rgba(0,0,0,0.75)';
+    ctx.fillRect(W / 2 - tw / 2 - 16, H - 64, tw + 32, 36);
+    ctx.strokeStyle = '#ffffff';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(W / 2 - tw / 2 - 16, H - 64, tw + 32, 36);
+    ctx.fillStyle = '#ffffff';
+    ctx.fillText(actionHint, W / 2, H - 40);
+    ctx.restore();
+  }
+});
 
-            // Show/Hide Action Hint
-            const hintEl = document.getElementById('actionHint');
-            if (contextAction) {
-                hintEl.textContent = contextAction;
-                hintEl.classList.add('visible');
-            } else {
-                hintEl.classList.remove('visible');
-            }
-
-            // Filter dead
-            state.ents = state.ents.filter(e => !e.dead);
-        }
-
-        function render() {
-            // Clear (Day/Night Color)
-            const hour = state.time;
-            // Simple Day/Night lerp
-            // Day (8-18): #e0f7fa
-            // Night (20-6): #1a237e (dark blue)
-            
-            let skyColor = '#e0f7fa';
-            let darkness = 0;
-
-            if (hour > 18 || hour < 6) {
-                darkness = 0.6; // Night opacity
-                if (hour > 18 && hour < 20) darkness = ((hour - 18) / 2) * 0.6; // Sunset
-                if (hour > 4 && hour < 6) darkness = ((6 - hour) / 2) * 0.6; // Sunrise
-            }
-
-            ctx.fillStyle = '#e0f7fa';
-            ctx.fillRect(0, 0, width, height);
-
-            // --- Camera Transform ---
-            ctx.save();
-            ctx.translate(width/2 - state.cam.x, height/2 - state.cam.y);
-
-            // Draw Ground Detail (Snow)
-            ctx.fillStyle = '#b2ebf2';
-            // Draw some static patches based on coordinates
-            for(let x = Math.floor((state.cam.x - width/2)/200)*200; x < state.cam.x + width/2; x+=200) {
-                 for(let y = Math.floor((state.cam.y - height/2)/200)*200; y < state.cam.y + height/2; y+=200) {
-                      if ((x+y)%400 === 0) {
-                          ctx.beginPath();
-                          ctx.arc(x, y, 5, 0, Math.PI*2);
-                          ctx.fill();
-                      }
-                 }
-            }
-
-            // Draw Entities (Y-Sort)
-            const renderList = [...state.ents, { type: 'player', ...state.player }];
-            renderList.sort((a, b) => a.y - b.y);
-
-            renderList.forEach(e => {
-                // Culling
-                if (Math.abs(e.x - state.cam.x) > width/2 + 100 || Math.abs(e.y - state.cam.y) > height/2 + 100) return;
-
-                if (e.type === 'player') Draw.player(ctx, e.x, e.y, e.angle, Date.now());
-                else if (e.type === 'tree') Draw.tree(ctx, e.x, e.y);
-                else if (e.type === 'bear') Draw.bear(ctx, e.x, e.y, 0, Date.now());
-                else if (e.type === 'rabbit') Draw.rabbit(ctx, e.x, e.y, 0, (e.vx || e.vy) ? Math.sin(Date.now()/100)*5 : 0);
-                else if (e.type === 'igloo') Draw.igloo(ctx, e.x, e.y, e.progress);
-                else if (e.type === 'fire') Draw.fire(ctx, e.x, e.y, e.lit);
-                else if (e.type === 'wood') { Draw.circle(ctx, e.x, e.y, 10, '#795548'); } // Simple drop
-                else if (e.type === 'food') { Draw.circle(ctx, e.x, e.y, 8, '#ef5350'); }
-                else if (e.type === 'trap') { 
-                    ctx.strokeStyle = '#333'; ctx.lineWidth=2; 
-                    ctx.beginPath(); ctx.arc(e.x, e.y, 10, 0, Math.PI*2); ctx.stroke();
-                    if (e.caught) { ctx.fillStyle='red'; ctx.fillText('!', e.x, e.y); }
-                }
-                else if (e.type === 'bear_trap') { 
-                    ctx.strokeStyle = '#333'; ctx.lineWidth=3; 
-                    ctx.beginPath(); ctx.arc(e.x, e.y, 16, 0, Math.PI*2); ctx.stroke(); 
-                }
-            });
-
-            ctx.restore();
-
-            // --- Night Overlay ---
-            if (darkness > 0) {
-                ctx.fillStyle = `rgba(10, 20, 40, ${darkness})`;
-                ctx.fillRect(0, 0, width, height);
-                
-                // Light Punch-outs (Simple Glows)
-                ctx.save();
-                ctx.globalCompositeOperation = 'lighter';
-                
-                state.ents.forEach(e => {
-                    if ((e.type === 'fire' && e.lit) || (e.type === 'igloo' && e.built)) {
-                        // Project to screen space
-                        const sx = e.x - state.cam.x + width/2;
-                        const sy = e.y - state.cam.y + height/2;
-                        
-                        const grad = ctx.createRadialGradient(sx, sy, 20, sx, sy, 250);
-                        grad.addColorStop(0, 'rgba(255, 200, 100, 0.3)');
-                        grad.addColorStop(1, 'rgba(0,0,0,0)');
-                        ctx.fillStyle = grad;
-                        ctx.beginPath();
-                        ctx.arc(sx, sy, 250, 0, Math.PI*2);
-                        ctx.fill();
-                    }
-                });
-                ctx.restore();
-            }
-        }
-
-        let _lastLoopTime = 0;
-        function loop(timestamp = 0) {
-            const dt = _lastLoopTime ? Math.min((timestamp - _lastLoopTime) / 1000, 0.05) : 0.016;
-            _lastLoopTime = timestamp;
-            update(dt);
-            render();
-            requestAnimationFrame(loop);
-        }
-
-        // --- Interaction Handlers ---
-        function handleAction() {
-            const p = state.player;
-            // Find nearest interactable
-            const nearest = state.ents.find(e => Math.hypot(e.x - p.x, e.y - p.y) < 60);
-            if (!nearest) return;
-
-            if (nearest.type === 'tree') {
-                // Chop
-                nearest.hp--;
-                // Shake effect or particle?
-                if (nearest.hp <= 0) {
-                    nearest.dead = true;
-                    spawnDrop('wood', nearest.x, nearest.y);
-                    if (Math.random() > 0.5) state.player.inv.mat++; // Chance for materials
-                }
-            }
-            else if (nearest.type === 'wood') {
-                nearest.dead = true;
-                state.player.inv.wood++;
-            }
-            else if (nearest.type === 'food') {
-                nearest.dead = true;
-                state.player.inv.food++;
-            }
-            else if (nearest.type === 'igloo' && !nearest.built) {
-                if (state.player.inv.wood > 0) {
-                    state.player.inv.wood--;
-                    nearest.progress += 10;
-                    if (nearest.progress >= 100) nearest.built = true;
-                }
-            }
-            else if (nearest.type === 'fire') {
-                if (state.player.inv.wood > 0) {
-                    state.player.inv.wood--;
-                    nearest.lit = true;
-                    nearest.fuel = Math.min(100, nearest.fuel + 30);
-                }
-            }
-        }
-
-        function craft(type) {
-            const p = state.player;
-            if (type === 'trap') {
-                if (p.inv.wood >= 3 && p.inv.mat >= 2) {
-                    p.inv.wood -= 3; p.inv.mat -= 2;
-                    state.ents.push({ type: 'trap', x: p.x, y: p.y, caught: false });
-                }
-            }
-            if (type === 'bearTrap') {
-                if (p.inv.wood >= 5 && p.inv.mat >= 5) {
-                    p.inv.wood -= 5; p.inv.mat -= 5;
-                    state.ents.push({ type: 'bear_trap', x: p.x, y: p.y, caught: false });
-                }
-            }
-        }
-
-        function eatFood() {
-            if (state.player.inv.food > 0) {
-                state.player.inv.food--;
-                state.player.hp = Math.min(100, state.player.hp + 20);
-                state.player.hunger = Math.min(100, state.player.hunger + 40);
-            }
-        }
-
-        function spawnDrop(type, x, y) {
-            // Add small random offset so they don't stack perfectly
-            state.ents.push({ 
-                type, 
-                x: x + (Math.random()-0.5)*20, 
-                y: y + (Math.random()-0.5)*20 
-            });
-        }
-
-        function gameOver() {
-            state.running = false;
-            document.getElementById('scoreDay').textContent = state.day;
-            document.getElementById('screenOver').classList.remove('hidden');
-        }
-
-        // --- Input Listeners ---
-        window.addEventListener('keydown', e => {
-            state.keys[e.key.toLowerCase()] = true;
-            if (e.code === 'Space') handleAction();
-        });
-        window.addEventListener('keyup', e => state.keys[e.key.toLowerCase()] = false);
-
-        document.getElementById('btnCraftTrap').onclick = () => craft('trap');
-        document.getElementById('btnCraftBearTrap').onclick = () => craft('bearTrap');
-        document.getElementById('btnEat').onclick = eatFood;
-
-        // Touch
-        const stick = document.getElementById('stickL');
-        const btnAction = document.getElementById('btnAction');
-        
-        // Simple stick logic would go here, for now basic tapping works on UI buttons
-        btnAction.addEventListener('touchstart', (e) => { e.preventDefault(); handleAction(); });
-    </script>
+resetGame();
+</script>
 </body>
 </html>

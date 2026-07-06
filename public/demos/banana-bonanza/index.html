@@ -323,6 +323,15 @@ function reset() {
   syncBadges();
   easyBtn.classList.add('hidden');
   refreshStormBtn();
+
+  // Seed one banana already in flight so the screen isn't empty for the
+  // ~1.5s it'd otherwise take the timer-driven first spawn to become
+  // visible — a fresh player should see action within the first second.
+  // Centered and mid-height so it can never overlap the monkey-friend
+  // sprite (fixed near a top corner) and is unambiguously visible.
+  spawnBanana();
+  bananas[0].x = W / 2;
+  bananas[0].y = H * 0.4;
 }
 
 // totalRuns must only count actual play sessions, not page load/refresh —
@@ -374,7 +383,7 @@ function spawnBanana() {
   bananas.push(banana);
 
   let intervalFloor = Math.max(0.42, 1.05 - level * 0.06);
-  if (tutorial) intervalFloor *= 1.8;
+  if (tutorial) intervalFloor *= 1.3; // easy, but not empty-feeling (was 1.8)
   if (phase === 'golden') intervalFloor *= 0.6; // spawn faster during golden bonus
   if (phase === 'frenzy') intervalFloor *= 0.35;
   spawnInterval = intervalFloor + Math.random() * 0.3;
