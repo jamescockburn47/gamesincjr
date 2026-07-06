@@ -3,7 +3,19 @@
 **Date:** 2026-07-05
 **Status:** Approved by James 2026-07-05 ("do it"). Phases 1–2 implemented same day
 (Moorstead link, front-page/tutorials repositioning, `docs/game-design/` library,
-`game-audio.js`, CLAUDE.md + generator wiring). Phases 3–5 outstanding.
+`game-audio.js`, CLAUDE.md + generator wiring). Phase 3 (flagship-five depth pass)
+done 2026-07-06 — see commit 35478ea: Frog Cross Dash, Alien Unicorn Alliance, Turbo
+Outracer, Vector Asteroids, Neon Invaders all rebuilt to DEPTH-STANDARD, adversarially
+reviewed (depth 8–9/10) and runtime-verified; fixed a critical wave-5 boss softlock in
+Vector Asteroids and a frozen storm-fog bug in Alien Unicorn. Phases 4–5 outstanding
+(education product / schools pack), plus second remediation batch (Banana Bonanza,
+Tower Frenzy, Rogue Dungeon Mini, Pixel Pac Run, Space Runner) and an optional true
+second verb for Frog Cross Dash (currently 1-verb, shippable at 8/10).
+
+**DEPLOY BLOCKER (unchanged):** `next build` still fails on the Prisma "unpaidPlanInvoice"
+hold at the /tables/practice prerender, so NONE of this reaches production (Vercel) until
+the Prisma invoice is settled. The game improvements are static HTML but the whole site
+deploys as one Next build.
 
 **Pedagogical through-line (added on approval):** the product's core message is that
 coding games with AI is training in instructing LLMs *generally* — cover your ideas fully,
