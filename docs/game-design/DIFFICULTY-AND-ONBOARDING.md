@@ -169,6 +169,12 @@ Ages 8–12 have slower reaction and visual-scanning speed than adults. Minimums
 ## 7. Pre-Ship Self-Test — 10 points
 
 Run these before every ship. Play honestly; where stated, play badly on purpose.
+**"Play" means actually run the game and observe it — screenshots, pixel reads, or
+driving `game._onUpdate`/`_onRender` directly for precise timing — not reading the code
+and reasoning about what the numbers should produce.** A shipped game once passed every
+line of this list on paper (spawn interval was correctly under 5s) while still showing an
+empty screen for several seconds in practice, because the check was never actually run.
+See DEPTH-STANDARD.md's "Verification is empirical" section.
 
 1. [ ] **30s test:** play 5 fresh runs making only lazy inputs — survive 30s in
    at least 4 of 5?

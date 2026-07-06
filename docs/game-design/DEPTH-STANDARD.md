@@ -9,6 +9,32 @@ alongside JUICE-CHECKLIST.md and DIFFICULTY-AND-ONBOARDING.md.
 
 ---
 
+## Verification is empirical, not a code review — no exceptions
+
+A real incident: a game was remediated, self-scored 7/10, adversarially reviewed, and
+shipped — and still had an empty screen for the first 3-4 seconds of play, because every
+stage of that pipeline (builder, reviewer, final check) verified compliance by READING
+the code and reasoning "the spawn timer is under 5 seconds, so this passes" instead of
+actually pressing Start and watching what happens. The rule the game violated
+(DIFFICULTY-AND-ONBOARDING.md §7.2: "does something rewarding happen within 5 seconds?")
+was written correctly. It was rubber-stamped anyway, because nothing forced anyone to
+check it against reality.
+
+**Every item in the 10-point fun test below, and every checklist item in
+DIFFICULTY-AND-ONBOARDING.md and JUICE-CHECKLIST.md, must be verified by actually running
+the game** — take a screenshot at t=0 (immediately after Start, before any input), and
+at realistic time points afterward (t=5s, t=30s, t=60s+). Drive the loop with
+`game._onUpdate`/`game._onRender` calls directly if you need precise, reproducible timing
+(a real browser tab can throttle rAF when backgrounded — control for this by calling the
+engine's update/render hooks yourself rather than waiting on wall-clock time). For any
+attrition mechanic (health, warmth, hunger, timers that can end the run), simulate a
+FULLY PASSIVE playthrough — zero player input — for at least 60 game-seconds and confirm
+no failure state is reached before the stated grace period. "I read the code and the
+numbers look right" is not a passing score on any checklist item. If you have not looked
+at a screenshot or pixel data, you have not verified it.
+
+---
+
 ## The five requirements
 
 A game ships only if ALL five hold. "Mostly" is a fail.
@@ -40,8 +66,12 @@ Concrete devices that create decisions cheaply:
 - **Cooldown economy:** one strong ability, ~5s cooldown, several valid uses.
 - **Route choice:** two lanes/paths with visibly different risk profiles.
 
-Test: watch 30 seconds of imagined play. Count moments where two options are both
-sensible. Fewer than 3 → fail.
+Test: ACTUALLY RUN THE GAME and watch 30 seconds of real play — press Start, take
+screenshots, or drive the loop with `game._onUpdate`/`_onRender` and inspect the canvas.
+Reasoning about the code from reading it is not a substitute and has already produced a
+shipped game with an empty screen for the first several seconds because "the spawn timer
+looked fine on paper." Count moments where two options are both sensible. Fewer than 3 →
+fail.
 
 ### 3. Phase structure — something NEW at fixed milestones
 
