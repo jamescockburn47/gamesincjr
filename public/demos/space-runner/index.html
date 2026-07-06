@@ -8,6 +8,43 @@
   <style>
     #gij-stage { background: #000008; }
     canvas { background: #000008; }
+    #gij-hud { align-items: center; }
+    #meta-goal {
+      background: rgba(0,0,0,0.65);
+      border: 1px solid rgba(255,214,0,0.4);
+      border-radius: 8px;
+      padding: 4px 11px;
+      color: #ffe89a;
+      font-size: clamp(10px, 1.6vw, 14px);
+      letter-spacing: 0.02em;
+      backdrop-filter: blur(8px);
+    }
+    #gij-cooldown-wrap {
+      background: rgba(0,0,0,0.65);
+      border: 1px solid rgba(0,229,255,0.3);
+      border-radius: 8px;
+      padding: 4px 10px;
+      color: #dff4ff;
+      font-size: clamp(10px, 1.6vw, 14px);
+      display: flex; align-items: center; gap: 6px;
+      backdrop-filter: blur(8px);
+    }
+    #gij-cooldown-bar {
+      width: 46px; height: 8px; border-radius: 4px;
+      background: rgba(255,255,255,0.15);
+      overflow: hidden;
+      border: 1px solid rgba(255,255,255,0.2);
+    }
+    #gij-cooldown-fill {
+      height: 100%; width: 100%;
+      background: linear-gradient(90deg, #00e5ff, #7dffb0);
+      transition: none;
+    }
+    #gij-easy-btn {
+      margin-top: 10px;
+      background: linear-gradient(135deg, #7dffb0, #00b894);
+    }
+    .gij-badge-row { display: flex; gap: 8px; flex-wrap: wrap; }
   </style>
 </head>
 <body>
@@ -36,14 +73,22 @@
         <span id="gij-final-score">Score: 0</span>
         <span id="gij-final-hs">Best: 0</span>
       </div>
+      <p id="gij-meta-line" style="color:#ffe89a;font-size:0.95rem;margin-bottom:6px;"></p>
+      <p id="gij-goal-line" style="color:#95b8cc;font-size:0.85rem;"></p>
       <button id="gij-restart-btn" class="gij-btn gij-btn-primary">Try Again</button>
+      <br/>
+      <button id="gij-easy-btn" class="gij-btn hidden">Try Easy?</button>
     </div>
   </div>
 
   <div id="gij-stage" data-aspect="16:9">
     <div id="gij-hud" class="hidden">
-      <div class="gij-badge">⭐ <strong id="gij-score">0</strong></div>
-      <div class="gij-badge">🏆 <strong id="gij-highscore">0</strong></div>
+      <div class="gij-badge-row">
+        <div class="gij-badge">⭐ <strong id="gij-score">0</strong></div>
+        <div class="gij-badge">🏆 <strong id="gij-highscore">0</strong></div>
+        <div id="gij-cooldown-wrap">⚡<div id="gij-cooldown-bar"><div id="gij-cooldown-fill"></div></div></div>
+      </div>
+      <div id="meta-goal">★ Next: —</div>
     </div>
     <canvas id="gij-canvas"></canvas>
     <div id="gij-controls"></div>
@@ -53,21 +98,26 @@
 
 <script src="/game-framework/game-engine.js"></script>
 <script src="/game-framework/game-utils.js"></script>
+<script src="/game-framework/game-audio.js"></script>
 <script>
+function sfx(name) { if (typeof GameAudio !== 'undefined') GameAudio.play(name); }
+
 const GAME = {
   slug:  'space-runner',
   title: 'Space Runner',
-  description: 'Weave through waves of asteroids. How long can you survive?',
+  description: 'Weave through waves of asteroids. Pull power-ups in or blast rocks with your Tractor Pulse.',
   instructions: [
     '<strong>Arrow Keys / WASD:</strong> Move your ship in any direction',
+    '<strong>Space:</strong> Tractor Pulse — yank in a distant power-up, or blast a nearby rock (~5s cooldown)',
     '<strong>Goal:</strong> Dodge asteroids — score rises every second',
-    '<strong>Tip:</strong> Asteroids get faster and more frequent over time!',
+    '<strong>Tip:</strong> Watch for the boss cluster — hit its glowing core!',
   ],
   controls: [
     { label: '◀', action: 'left'  },
     { label: '▲', action: 'up'   },
     { label: '▼', action: 'down' },
     { label: '▶', action: 'right' },
+    { label: '⚡', action: 'space', cls: 'gij-ctrl-space' },
   ],
   width: 800, height: 450,
 };
@@ -77,7 +127,112 @@ const game   = new GameEngine(canvas).setup(GAME);
 const input  = new InputManager();
 const fx     = new ParticleSystem();
 
+// Wire GameAudio.init() to the start/restart gestures (once each)
+document.getElementById('gij-start-btn')?.addEventListener('click', () => GameAudio.init(), { once: true });
+document.getElementById('gij-restart-btn')?.addEventListener('click', () => GameAudio.init(), { once: true });
+document.getElementById('gij-try-btn')?.addEventListener('click', () => sfx('click'));
+
 const W = game.W, H = game.H;
+
+// ── Meta-progression (localStorage, gij-meta:space-runner) ─────
+const META_KEY = 'gij-meta:space-runner';
+function defaultMeta() {
+  return {
+    v: 1,
+    totalRuns: 0,
+    bestScore: 0,
+    bestTime: 0,
+    improveStreak: 0,
+    lastScore: 0,
+    voidUnlocked: false,
+    voidMode: false,
+    unlocks: {
+      'skin-sunset':  { earned: false, celebrated: false },
+      'skin-emerald': { earned: false, celebrated: false },
+      'mode-void':    { earned: false, celebrated: false },
+    },
+  };
+}
+function loadMeta() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(META_KEY));
+    if (!parsed || parsed.v !== 1) return defaultMeta();
+    // Fill in any missing keys (schema safety)
+    const d = defaultMeta();
+    return Object.assign(d, parsed, { unlocks: Object.assign(d.unlocks, parsed.unlocks || {}) });
+  } catch (e) { return defaultMeta(); }
+}
+function saveMeta() { try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {} }
+let meta = loadMeta();
+
+const UNLOCKS = [
+  { id: 'skin-sunset',  name: 'Sunset Ship',   type: 'score', need: 300  },
+  { id: 'skin-emerald', name: 'Emerald Ship',  type: 'score', need: 900  },
+  { id: 'mode-void',    name: 'Void Mode',     type: 'runs',  need: 5    },
+];
+function progressOf(u) {
+  if (u.type === 'score') return Math.max(game.getScore(), meta.bestScore);
+  if (u.type === 'runs')  return meta.totalRuns;
+  return 0;
+}
+let unlockBanner = null; // { text, timer }
+function showUnlockBanner(name) {
+  unlockBanner = { text: 'NEW: ' + name + '!', timer: 2.5 };
+  safeBurst(W / 2, 80, 30, { colors: ['#ffd700', '#ffffff'], minSpeed: 60, maxSpeed: 200, lifetime: 0.9 });
+  game.shake(3, 0.15);
+  sfx('powerup');
+}
+function checkUnlocks() {
+  for (const u of UNLOCKS) {
+    const slot = meta.unlocks[u.id] || (meta.unlocks[u.id] = { earned: false, celebrated: false });
+    if (!slot.earned && progressOf(u) >= u.need) {
+      slot.earned = true;
+      if (u.id === 'mode-void') meta.voidUnlocked = true;
+      saveMeta();
+      showUnlockBanner(u.name);
+    }
+  }
+}
+function nextGoal() {
+  const locked = UNLOCKS.filter(u => !meta.unlocks[u.id]?.earned)
+                        .sort((a, b) => (a.need - progressOf(a)) - (b.need - progressOf(b)));
+  if (!locked.length) return 'Beat your best: ' + meta.bestScore;
+  const u = locked[0];
+  return '★ Next: ' + u.name + ' — ' + Math.max(0, u.need - progressOf(u)) + ' to go';
+}
+
+const goalEl = document.getElementById('meta-goal');
+const cooldownFillEl = document.getElementById('gij-cooldown-fill');
+
+// Ship skin palettes — cosmetic only, chosen from meta.equippedSkin
+const SKINS = {
+  default: { glow: '#00e5ff', fill: '#00e5ff', trail: 'rgba(80,200,255,0.8)' },
+  // hueRotate shifts the base blue sprite toward these palettes for sprite mode
+  'skin-sunset':  { glow: '#ff8a3d', fill: '#ffb347', trail: 'rgba(255,140,60,0.8)',  hueRotate: -140 },
+  'skin-emerald': { glow: '#33ffb0', fill: '#33ffb0', trail: 'rgba(50,255,170,0.8)',  hueRotate: 80   },
+};
+function equippedSkin() {
+  if (meta.equippedSkin && meta.unlocks[meta.equippedSkin]?.earned) return SKINS[meta.equippedSkin];
+  // auto-pick best earned skin if none explicitly equipped
+  if (meta.unlocks['skin-emerald']?.earned) return SKINS['skin-emerald'];
+  if (meta.unlocks['skin-sunset']?.earned)  return SKINS['skin-sunset'];
+  return SKINS.default;
+}
+
+// ── Rubber-banding (per DIFFICULTY-AND-ONBOARDING.md) ───────────
+const RB_KEY = 'gij_deaths_space-runner';
+function recordDeath(elapsed) {
+  try {
+    const fast = elapsed < 60;
+    const n = fast ? (parseInt(localStorage.getItem(RB_KEY) || '0', 10) + 1) : 0;
+    localStorage.setItem(RB_KEY, String(n));
+  } catch (e) {}
+}
+function fastDeathCount() {
+  try { return parseInt(localStorage.getItem(RB_KEY) || '0', 10); } catch (e) { return 0; }
+}
+function assistFactor() { return fastDeathCount() >= 2 ? 0.85 : 1.0; }
+let easyMode = false;
 
 // ── Sprite loading (Kenney Space Shooter Redux, CC0) ──────────
 const assets = new AssetLoader();
@@ -101,8 +256,27 @@ assets.load({
 }).then(() => { spritesReady = true; });
 
 // ── Game state ─────────────────────────────────────────────────
-let asteroids, stars, spawnTimer, survivalTime, difficulty;
+let asteroids, stars, powerups, floaters, spawnTimer, survivalTime, difficulty;
+let voidActive = false; // Void Mode: unlocked+toggled hard variant, set fresh each reset()
+let powerupTimer = 0;
 let thrustFlicker = 0;
+let hitStop = 0;
+let dying = false, deathTimer = 0;
+let flashTimer = 0;      // damage flash / invulnerability
+let shieldActive = false;
+let slowMoTimer = 0;     // active slow-mo power-up effect (affects asteroids only)
+let multiplierTimer = 0; // active score multiplier effect
+let pulseCooldown = 0;   // Tractor Pulse cooldown remaining
+const PULSE_COOLDOWN_MAX = 5.0;
+let pulseVulnTimer = 0;  // brief slow + vulnerability window after using pulse
+let pulseFx = 0;         // visual ring timer
+
+// Phase / escalation state
+let phase = 0;
+let phaseTimer = 0;
+let phaseAnnounceTimer = 0; // grace period after a phase change (reduced spawn)
+let bossActive = false;
+let boss = null; // { x, y, w, h, vy, hp, maxHp, hitFlash }
 
 // Ship: hitbox based on GAMEPLAY_PRESETS.shmup — 30% of ~54px visual = ~16px radius
 const ship = { x: 0, y: 0, w: 54, h: 41, vx: 0, vy: 0 };
@@ -110,16 +284,48 @@ const ship = { x: 0, y: 0, w: 54, h: 41, vx: 0, vy: 0 };
 const SHIP_SPEED = GAMEPLAY_PRESETS.shmup.playerSpeed;  // 380 px/s
 
 const METEOR_TYPES = ['meteorBig1', 'meteorBig2', 'meteorMed', 'meteorSm', 'meteorGrey'];
+const SMALL_METEOR_TYPES = ['meteorMed', 'meteorSm']; // eligible for Tractor Pulse destruction
+
+function triggerHitStop(sec) { hitStop = Math.max(hitStop, sec); }
+
+// Particle restraint cap (JUICE-CHECKLIST §6): skip/halve new bursts past 200 live particles.
+function safeBurst(x, y, count, opts) {
+  if (fx.count >= 200) return;
+  if (fx.count + count > 200) count = Math.max(1, Math.floor(count / 2));
+  fx.burst(x, y, count, opts);
+}
+
+function floatText(x, y, text, color, size) {
+  floaters.push({ x, y, text, color: color || '#fff', size: size || 18, life: 0.7, maxLife: 0.7 });
+}
 
 function reset() {
   ship.x = W / 2 - ship.w / 2;
   ship.y = H - 100;
   ship.vx = ship.vy = 0;
-  asteroids    = [];
-  spawnTimer   = 0;
-  survivalTime = 0;
-  difficulty   = 1;
+  asteroids     = [];
+  powerups      = [];
+  floaters      = [];
+  spawnTimer    = 0;
+  powerupTimer  = -4; // first power-up arrives within ~5s (DIFFICULTY-AND-ONBOARDING contract)
+  survivalTime  = 0;
+  difficulty    = 1;
   thrustFlicker = 0;
+  hitStop       = 0;
+  dying         = false;
+  deathTimer    = 0;
+  flashTimer    = 0;
+  shieldActive  = false;
+  slowMoTimer   = 0;
+  multiplierTimer = 0;
+  pulseCooldown = 0;
+  pulseVulnTimer = 0;
+  pulseFx       = 0;
+  phase         = 0;
+  phaseTimer    = 0;
+  phaseAnnounceTimer = 0;
+  bossActive    = false;
+  boss          = null;
   fx.clear();
   stars = Array.from({ length: 160 }, () => ({
     x: Math.random() * W,
@@ -129,24 +335,211 @@ function reset() {
     hue: Math.random() * 60 + 180,
     phase: Math.random() * Math.PI * 2,
   }));
+
+  // Void Mode: only real if actually unlocked AND toggled on — a genuine hard
+  // variant (faster ramp, halved power-up uptime, double score), not a cosmetic flag.
+  voidActive = !!(meta.unlocks['mode-void']?.earned && meta.voidMode);
 }
 
+// totalRuns must count real play sessions, not page load/refresh — reset()
+// also runs at script-parse time (see bottom of file) purely to init state.
+function countRun() {
+  meta.totalRuns++;
+  saveMeta();
+}
+document.getElementById('gij-start-btn')?.addEventListener('click', countRun);
+document.getElementById('gij-restart-btn')?.addEventListener('click', countRun);
+
 game.onRestart(reset);
+
+document.getElementById('gij-easy-btn')?.addEventListener('click', () => {
+  easyMode = true;
+  document.getElementById('gij-easy-btn').classList.add('hidden');
+  sfx('click');
+});
+
+// ── Tractor Pulse (second verb) ──────────────────────────────────
+function firePulse() {
+  if (pulseCooldown > 0 || game.state !== 'playing' || dying) return;
+  pulseCooldown = PULSE_COOLDOWN_MAX;
+  pulseFx = 0.35;
+  const shipCx = ship.x + ship.w / 2, shipCy = ship.y + ship.h / 2;
+  const PULSE_RADIUS = 220;
+
+  // Priority 0: hit the boss weak point if in range (set-piece objective)
+  if (bossActive && boss) {
+    const bCx = boss.x + boss.w / 2, bCy = boss.y + boss.h / 2;
+    if (GameUtils.distance(shipCx, shipCy, bCx, bCy) < PULSE_RADIUS) {
+      boss.hp -= 1;
+      boss.hitFlash = 0.2;
+      pulseVulnTimer = 0.4;
+      safeBurst(bCx, bCy, 24, { colors: ['#ff6600', '#ffffff', '#ffd700'], minSpeed: 100, maxSpeed: 320, lifetime: 0.6 });
+      floatText(bCx, bCy - 30, 'HIT!', '#ff9933', 18);
+      game.shake(4, 0.15);
+      sfx('hit');
+      if (boss.hp <= 0) defeatBoss();
+      return;
+    }
+  }
+
+  // Priority 1: pull in the nearest power-up within radius
+  let target = null, bestD = Infinity;
+  for (const p of powerups) {
+    const d = GameUtils.distance(shipCx, shipCy, p.x, p.y);
+    if (d < PULSE_RADIUS && d < bestD) { bestD = d; target = p; }
+  }
+
+  if (target) {
+    target.pulled = true; // yanked toward the ship over the next few frames
+    // Cost: brief slow + vulnerability window (risk/reward)
+    pulseVulnTimer = 0.4;
+    safeBurst(shipCx, shipCy, 14, { colors: ['#88ccff', '#ffffff'], minSpeed: 100, maxSpeed: 240, lifetime: 0.5 });
+    sfx('collect');
+    return;
+  }
+
+  // Priority 2: destroy the nearest small/medium asteroid within radius
+  let rock = null; bestD = Infinity;
+  for (const a of asteroids) {
+    if (!SMALL_METEOR_TYPES.includes(a.type)) continue;
+    const d = GameUtils.distance(shipCx, shipCy, a.x + a.w / 2, a.y + a.h / 2);
+    if (d < PULSE_RADIUS && d < bestD) { bestD = d; rock = a; }
+  }
+
+  if (rock) {
+    const idx = asteroids.indexOf(rock);
+    if (idx >= 0) asteroids.splice(idx, 1);
+    safeBurst(rock.x + rock.w / 2, rock.y + rock.h / 2, 20, {
+      colors: ['#aaffaa', '#ffffff', '#88ccff'], minSpeed: 100, maxSpeed: 300, lifetime: 0.6,
+    });
+    floatText(rock.x + rock.w / 2, rock.y + rock.h / 2, '+15', '#7dffb0');
+    game.addScore(15);
+    game.shake(3, 0.12);
+    sfx('explosion');
+    pulseVulnTimer = 0.4; // still costs the vulnerability window even without a power-up
+    return;
+  }
+
+  // Nothing in range — pulse still fires (visual/audio feedback) but with reduced cost
+  sfx('click');
+  pulseVulnTimer = 0.15;
+}
+
+let pulsePrevPressed = false;
+
+// ── Power-ups ──────────────────────────────────────────────────
+const POWERUP_TYPES = ['shield', 'slowmo', 'multiplier'];
+function spawnPowerup() {
+  const type = GameUtils.choice(POWERUP_TYPES);
+  powerups.push({
+    x: Math.random() * (W - 60) + 30,
+    y: -30,
+    w: 26, h: 26,
+    vy: 70,
+    type,
+    pulled: false,
+    bob: Math.random() * Math.PI * 2,
+  });
+}
+function applyPowerup(p) {
+  safeBurst(p.x, p.y, 22, { colors: ['#ffd700', '#ffffff', '#88ccff'], minSpeed: 80, maxSpeed: 260, lifetime: 0.6 });
+  floatText(p.x, p.y, p.type === 'shield' ? 'SHIELD' : p.type === 'slowmo' ? 'SLOW-MO' : 'x2 SCORE', '#ffd700', 16);
+  sfx('powerup');
+  game.shake(3, 0.15);
+  if (p.type === 'shield')     shieldActive = true;
+  if (p.type === 'slowmo')     slowMoTimer = 4.0;
+  if (p.type === 'multiplier') multiplierTimer = 6.0;
+}
+
+// ── Phase / escalation system ─────────────────────────────────────
+const PHASE_NAMES = ['', 'Density Wave', 'Minefield', 'Boss Cluster', 'Density Wave II', 'Minefield II'];
+function announcePhase(name) {
+  floatText(W / 2, H / 2 - 40, name.toUpperCase(), '#ffe89a', 24);
+  safeBurst(W / 2, H / 2, 30, { colors: ['#00e5ff', '#ff2079', '#ffffff'], minSpeed: 100, maxSpeed: 400, lifetime: 0.8 });
+  game.shake(4, 0.2);
+  sfx('levelup');
+  phaseAnnounceTimer = 3.0; // grace period: reduced spawn immediately after
+}
+
+function spawnBoss() {
+  bossActive = true;
+  boss = {
+    x: W / 2 - 60, y: -140,
+    w: 120, h: 120,
+    vy: 40,
+    hp: 3, maxHp: 3,
+    hitFlash: 0,
+    weakPhase: 0, // pulses for the visible weak point
+  };
+}
+
+function defeatBoss() {
+  const bCx = boss.x + boss.w / 2, bCy = boss.y + boss.h / 2;
+  safeBurst(bCx, bCy, 45, {
+    colors: ['#ff6600', '#ffd700', '#ffffff', '#aaffaa'],
+    minSpeed: 120, maxSpeed: 420, lifetime: 1.0,
+  });
+  floatText(bCx, bCy, 'PERFECT!', '#ffd700', 22);
+  game.addScore(200);
+  game.shake(6, 0.25);
+  sfx('powerup');
+  bossActive = false;
+  boss = null;
+  // Guaranteed reward drop
+  powerups.push({
+    x: bCx, y: bCy, w: 26, h: 26, vy: 90,
+    type: GameUtils.choice(POWERUP_TYPES), pulled: false, bob: 0,
+  });
+}
 
 // ── Update ──────────────────────────────────────────────────────
 game.onUpdate((dt) => {
   if (game.state !== 'playing') return;
 
+  // Hit-stop freeze (top of update, per JUICE-CHECKLIST)
+  if (hitStop > 0) { hitStop -= dt; return; }
+
+  // Death sequence — let the spectacle play out before ending
+  if (dying) {
+    deathTimer -= dt;
+    fx.update(dt);
+    if (deathTimer <= 0) { sfx('gameover'); game.endGame(); }
+    return;
+  }
+
   survivalTime += dt;
-  difficulty    = 1 + survivalTime * 0.04;
   thrustFlicker += dt * 18;
 
-  // Ship movement (from GAMEPLAY_PRESETS.shmup)
+  // Tutorial contract: first 30s easier, blended out 30->40s (DIFFICULTY-AND-ONBOARDING.md)
+  const tutorialBlend = GameUtils.clamp((40 - survivalTime) / 10, 0, 1); // 1 at <=30s, 0 at >=40s
+  const spawnMult = 1 + tutorialBlend * 0.8;   // up to x1.8 slower spawns
+  const speedMult = 1 - tutorialBlend * 0.25;  // down to x0.75 speed
+
+  difficulty = Math.min(2.5, 1.0 + (survivalTime / 60) * 0.3);
+  if (voidActive) difficulty = Math.min(2.5, difficulty * 1.25); // Void Mode: real hard variant
+  const assist = easyMode ? 0.75 : assistFactor();
+
+  // Timed effects
+  if (flashTimer > 0)      flashTimer -= dt;
+  if (slowMoTimer > 0)     slowMoTimer -= dt;
+  if (multiplierTimer > 0) multiplierTimer -= dt;
+  if (pulseCooldown > 0)   pulseCooldown = Math.max(0, pulseCooldown - dt);
+  if (pulseVulnTimer > 0)  pulseVulnTimer -= dt;
+  if (pulseFx > 0)         pulseFx -= dt;
+  cooldownFillEl.style.width = (100 * (1 - pulseCooldown / PULSE_COOLDOWN_MAX)) + '%';
+
+  // Tractor Pulse input (edge-triggered on 'space'/'fire')
+  const pulsePressed = input.isPressed('space') || input.isPressed('fire');
+  if (pulsePressed && !pulsePrevPressed) firePulse();
+  pulsePrevPressed = pulsePressed;
+
+  // Ship movement (from GAMEPLAY_PRESETS.shmup) — pulse vulnerability briefly slows the ship
+  const vulnSlow = pulseVulnTimer > 0 ? 0.6 : 1.0;
   ship.vx = 0; ship.vy = 0;
-  if (input.isPressed('left'))  ship.vx = -SHIP_SPEED;
-  if (input.isPressed('right')) ship.vx =  SHIP_SPEED;
-  if (input.isPressed('up'))    ship.vy = -SHIP_SPEED;
-  if (input.isPressed('down'))  ship.vy =  SHIP_SPEED;
+  if (input.isPressed('left'))  ship.vx = -SHIP_SPEED * vulnSlow;
+  if (input.isPressed('right')) ship.vx =  SHIP_SPEED * vulnSlow;
+  if (input.isPressed('up'))    ship.vy = -SHIP_SPEED * vulnSlow;
+  if (input.isPressed('down'))  ship.vy =  SHIP_SPEED * vulnSlow;
 
   // Diagonal — normalise so diagonal isn't faster
   if (ship.vx !== 0 && ship.vy !== 0) {
@@ -162,19 +555,78 @@ game.onUpdate((dt) => {
     if (st.y > H) { st.y = -3; st.x = Math.random() * W; }
   });
 
-  // Spawn asteroids — interval from GAMEPLAY_PRESETS.shmup
+  // ── Phase escalation: qualitative change every ~50s from 1 min onward ──
+  // 0 = intro (no phase yet); becomes 1 only once survivalTime passes 60s.
+  const newPhaseIdx = survivalTime < 60 ? 0 : Math.floor((survivalTime - 60) / 50) + 1;
+  const targetPhase = Math.min(newPhaseIdx, PHASE_NAMES.length - 1);
+  if (targetPhase > phase && !bossActive) {
+    phase = targetPhase;
+    phaseTimer = 0;
+    const name = PHASE_NAMES[phase] || 'Escalation';
+    if (name === 'Boss Cluster' && !bossActive) {
+      spawnBoss();
+      announcePhase(name);
+    } else {
+      announcePhase(name || ('Phase ' + phase));
+    }
+  }
+  phaseTimer += dt;
+  if (phaseAnnounceTimer > 0) phaseAnnounceTimer -= dt;
+
+  const currentPhaseName = PHASE_NAMES[phase] || '';
+  const inMinefield = currentPhaseName.startsWith('Minefield');
+  const inDensityWave = currentPhaseName.startsWith('Density Wave');
+
+  // ── Boss cluster set-piece ──
+  if (bossActive && boss) {
+    boss.hitFlash = Math.max(0, boss.hitFlash - dt);
+    boss.weakPhase += dt * 3;
+    if (boss.y < 90) boss.y += boss.vy * dt;
+
+    // Boss weak point: pulse (fire) hits it when ship is close, OR ship collision damages boss + player
+    const bCx = boss.x + boss.w / 2, bCy = boss.y + boss.h / 2;
+    const shipCx = ship.x + ship.w / 2, shipCy = ship.y + ship.h / 2;
+    const dBoss = GameUtils.distance(shipCx, shipCy, bCx, bCy);
+
+    // Player colliding with boss body (not the weak point) takes damage like an asteroid
+    const shipR = ship.w * 0.30;
+    const bossR = boss.w * 0.42;
+    if (flashTimer <= 0 && dBoss < shipR + bossR) {
+      if (shieldActive) {
+        shieldActive = false;
+        flashTimer = 0.4;
+        safeBurst(shipCx, shipCy, 16, { colors: ['#88ccff', '#ffffff'], maxSpeed: 260, lifetime: 0.5 });
+        sfx('hit');
+        game.shake(4, 0.15);
+      } else {
+        killPlayer();
+        return;
+      }
+    }
+
+    if (boss.y > H + 200) { bossActive = false; boss = null; } // safety despawn
+  }
+
+  // ── Spawn asteroids — interval from GAMEPLAY_PRESETS.shmup ──
   spawnTimer += dt;
-  const interval = Math.max(
+  let interval = Math.max(
     GAMEPLAY_PRESETS.shmup.spawnIntervalFloor,
     1.4 - survivalTime * 0.02
-  );
+  ) * spawnMult;
+  if (phaseAnnounceTimer > 0) interval *= 1.5;    // grace period after a new phase
+  if (inMinefield) interval *= 0.55;              // denser
+  if (inDensityWave) interval *= 0.7;              // denser wave
+  if (bossActive) interval *= 1.6;                // ease off regular spawns during boss
+
   if (spawnTimer >= interval) {
     spawnTimer = 0;
     const typeKey = METEOR_TYPES[Math.floor(Math.random() * METEOR_TYPES.length)];
     const sizeRef = assets.size(typeKey);
     const mw = sizeRef ? sizeRef.w : 44;
     const mh = sizeRef ? sizeRef.h : 44;
-    const baseSpd = GAMEPLAY_PRESETS.shmup.enemySpeedMin + difficulty * 28;
+    let baseSpd = (GAMEPLAY_PRESETS.shmup.enemySpeedMin + difficulty * 28) * speedMult * assist;
+    if (inMinefield) baseSpd *= 0.65; // minefield: slower but denser — careful weaving
+    const behaviour = (!inMinefield && Math.random() < 0.3) ? 'swoop' : 'drift';
     asteroids.push({
       x: Math.random() * (W - mw),
       y: -(mh + 10),
@@ -183,13 +635,57 @@ game.onUpdate((dt) => {
       rot: Math.random() * Math.PI * 2,
       rotSpeed: (Math.random() - 0.5) * 3,
       type: typeKey,
+      behaviour,
+      swoopT: Math.random() * Math.PI * 2,
+      swoopAmp: 40 + Math.random() * 40,
+      baseX: 0, // set after x is known
     });
+    asteroids[asteroids.length - 1].baseX = asteroids[asteroids.length - 1].x;
+  }
+
+  // Power-up spawn — roughly every 9-14s, more often in tutorial for early taste
+  powerupTimer += dt;
+  const puInterval = survivalTime < 30 ? 9 : 14;
+  if (powerupTimer >= puInterval) {
+    powerupTimer = 0;
+    spawnPowerup();
+  }
+
+  // Move + update power-ups
+  for (let i = powerups.length - 1; i >= 0; i--) {
+    const p = powerups[i];
+    p.bob += dt * 4;
+    if (p.pulled) {
+      // Yank toward ship rapidly
+      const shipCx = ship.x + ship.w / 2, shipCy = ship.y + ship.h / 2;
+      p.x = GameUtils.lerp(p.x, shipCx, 0.35);
+      p.y = GameUtils.lerp(p.y, shipCy, 0.35);
+      if (GameUtils.distance(p.x, p.y, shipCx, shipCy) < 20) {
+        applyPowerup(p);
+        powerups.splice(i, 1);
+        continue;
+      }
+    } else {
+      p.y += p.vy * dt;
+    }
+    if (p.y > H + 40) { powerups.splice(i, 1); continue; }
+
+    // Also collectable by direct flight contact (no pulse needed, just costs nothing)
+    if (!p.pulled && GameUtils.hitTest({ x: ship.x, y: ship.y, w: ship.w, h: ship.h }, { x: p.x - p.w/2, y: p.y - p.h/2, w: p.w, h: p.h }, 0.8)) {
+      applyPowerup(p);
+      powerups.splice(i, 1);
+    }
   }
 
   // Move asteroids + collision
+  const asteroidSpeedScale = slowMoTimer > 0 ? 0.6 : 1.0;
   for (let i = asteroids.length - 1; i >= 0; i--) {
     const a = asteroids[i];
-    a.y   += a.vy  * dt;
+    if (a.behaviour === 'swoop') {
+      a.swoopT += dt * 1.6;
+      a.x = GameUtils.clamp(a.baseX + Math.sin(a.swoopT) * a.swoopAmp, 0, W - a.w);
+    }
+    a.y   += a.vy * asteroidSpeedScale * dt;
     a.rot += a.rotSpeed * dt;
     if (a.y > H + 80) { asteroids.splice(i, 1); continue; }
 
@@ -199,23 +695,103 @@ game.onUpdate((dt) => {
     const shipR  = ship.w * 0.30;       // ~16px
     const metR   = a.w   * 0.38;
     const dx = shipCx - mCx, dy = shipCy - mCy;
-    if (dx * dx + dy * dy < (shipR + metR) * (shipR + metR)) {
-      fx.burst(shipCx, shipCy, 36, {
-        colors: ['#ff8800','#ffff00','#ff3300','#ffffff'],
-        minSpeed: 80, maxSpeed: 320, gravity: 40,
-      });
-      game.shake(12, 0.45);
-      game.endGame();
+    if (flashTimer <= 0 && dx * dx + dy * dy < (shipR + metR) * (shipR + metR)) {
+      if (shieldActive) {
+        shieldActive = false;
+        flashTimer = 0.4;
+        asteroids.splice(i, 1);
+        safeBurst(shipCx, shipCy, 16, { colors: ['#88ccff', '#ffffff'], maxSpeed: 260, lifetime: 0.5 });
+        floatText(shipCx, shipCy - 20, 'SHIELD BROKEN', '#88ccff', 14);
+        sfx('hit');
+        game.shake(4, 0.15);
+        continue;
+      }
+      killPlayer();
       return;
     }
   }
 
-  // Score: 1 per 0.5s, scales with difficulty
-  if (Math.floor(survivalTime * 2) > Math.floor((survivalTime - dt) * 2))
-    game.addScore(Math.ceil(difficulty));
+  // Score: 1 per 0.5s, scales with difficulty and active multiplier
+  if (Math.floor(survivalTime * 2) > Math.floor((survivalTime - dt) * 2)) {
+    const pts = Math.ceil(difficulty) * (multiplierTimer > 0 ? 2 : 1) * (voidActive ? 2 : 1);
+    game.addScore(pts);
+  }
+
+  checkUnlocks();
+  goalEl.textContent = nextGoal();
+
+  // Floating text update
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 60 * dt;
+    f.life -= dt;
+    if (f.life <= 0) floaters.splice(i, 1);
+  }
 
   fx.update(dt);
 });
+
+function killPlayer() {
+  if (dying) return;
+  dying = true;
+  const shipCx = ship.x + ship.w / 2, shipCy = ship.y + ship.h / 2;
+  triggerHitStop(0.08);
+  sfx('explosion');
+  safeBurst(shipCx, shipCy, 55, {
+    colors: ['#fff', '#ff4444', '#ffaa00'],
+    minSpeed: 120, maxSpeed: 450, lifetime: 1.2,
+  });
+  game.shake(8, 0.3);
+  deathTimer = 0.8;
+  recordDeath(survivalTime);
+
+  // Meta bookkeeping — persisted immediately, read again at gameover overlay time
+  const finalScore = game.getScore();
+  meta.improveStreak = finalScore > meta.lastScore ? meta.improveStreak + 1 : 0;
+  meta.lastScore = finalScore;
+  if (finalScore > meta.bestScore) meta.bestScore = finalScore;
+  if (survivalTime > meta.bestTime) meta.bestTime = survivalTime;
+  saveMeta();
+}
+
+// Populate game-over meta line once endGame() actually fires (state flips to gameover)
+const _origEndGame = game.endGame.bind(game);
+game.endGame = function () {
+  _origEndGame();
+  const metaEl = document.getElementById('gij-meta-line');
+  const goalEl2 = document.getElementById('gij-goal-line');
+  if (metaEl) {
+    metaEl.textContent = 'Run #' + meta.totalRuns + '  •  Best time: ' + meta.bestTime.toFixed(1) + 's'
+      + (meta.improveStreak > 1 ? '  •  ' + meta.improveStreak + ' runs improving!' : '');
+  }
+  if (goalEl2) goalEl2.textContent = nextGoal();
+  const easyBtn = document.getElementById('gij-easy-btn');
+  if (easyBtn) {
+    if (!easyMode && fastDeathCount() >= 2) easyBtn.classList.remove('hidden');
+    else easyBtn.classList.add('hidden');
+  }
+
+  // Void Mode toggle — only appears once actually unlocked; flips the real
+  // difficulty/score effect applied in onUpdate via voidActive.
+  if (meta.unlocks['mode-void']?.earned) {
+    let voidBtn = document.getElementById('sr-void-btn');
+    if (!voidBtn) {
+      voidBtn = document.createElement('button');
+      voidBtn.id = 'sr-void-btn';
+      voidBtn.className = 'gij-btn';
+      voidBtn.style.cssText = 'margin-top:8px;margin-left:6px;font-size:13px;';
+      voidBtn.addEventListener('click', () => {
+        meta.voidMode = !meta.voidMode;
+        saveMeta();
+        sfx('click');
+        voidBtn.textContent = 'Void Mode: ' + (meta.voidMode ? 'ON 🌌' : 'OFF');
+      });
+      const modal = document.querySelector('#gij-gameover-overlay .gij-modal');
+      if (modal) modal.appendChild(voidBtn);
+    }
+    voidBtn.textContent = 'Void Mode: ' + (meta.voidMode ? 'ON 🌌' : 'OFF');
+  }
+};
 
 // ── Render ───────────────────────────────────────────────────────
 game.onRender((ctx) => {
@@ -236,6 +812,31 @@ game.onRender((ctx) => {
   neb.addColorStop(0, 'rgba(80,30,140,0.12)');
   neb.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = neb; ctx.fillRect(0, 0, W, H);
+
+  // Minefield tint
+  if ((PHASE_NAMES[phase] || '').startsWith('Minefield')) {
+    ctx.fillStyle = 'rgba(255,100,0,0.05)';
+    ctx.fillRect(0, 0, W, H);
+  }
+
+  // Power-ups
+  for (const p of powerups) {
+    const bobY = p.y + Math.sin(p.bob) * 3;
+    ctx.save();
+    ctx.translate(p.x, bobY);
+    let col = '#88ccff', label = 'S';
+    if (p.type === 'slowmo')     { col = '#b388ff'; label = '⏱'; }
+    if (p.type === 'multiplier') { col = '#ffd700'; label = 'x2'; }
+    ctx.shadowColor = col; ctx.shadowBlur = 14;
+    ctx.fillStyle = col;
+    ctx.beginPath(); ctx.arc(0, 0, p.w / 2, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#001018';
+    ctx.font = 'bold 12px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(label, 0, 1);
+    ctx.restore();
+  }
 
   // Asteroids — Kenney sprites or procedural fallback
   for (const a of asteroids) {
@@ -262,26 +863,72 @@ game.onRender((ctx) => {
     ctx.restore();
   }
 
+  // Boss cluster
+  if (bossActive && boss) {
+    ctx.save();
+    ctx.translate(boss.x + boss.w / 2, boss.y + boss.h / 2);
+    // Body
+    ctx.fillStyle = boss.hitFlash > 0 ? '#ffffff' : '#5a4a3a';
+    ctx.shadowColor = '#000'; ctx.shadowBlur = 10;
+    ctx.beginPath();
+    for (let s = 0; s < 9; s++) {
+      const ang = (s / 9) * Math.PI * 2;
+      const dist = (boss.w / 2) * (0.85 + Math.sin(s * 1.7) * 0.15);
+      s === 0 ? ctx.moveTo(Math.cos(ang) * dist, Math.sin(ang) * dist)
+              : ctx.lineTo(Math.cos(ang) * dist, Math.sin(ang) * dist);
+    }
+    ctx.closePath(); ctx.fill();
+    ctx.shadowBlur = 0;
+    // Visible weak point — pulses warm colour, telegraphed
+    const pulseGlow = 0.5 + 0.5 * Math.sin(boss.weakPhase);
+    ctx.fillStyle = `rgba(255,${Math.floor(80 + pulseGlow * 100)},0,${0.7 + pulseGlow * 0.3})`;
+    ctx.shadowColor = '#ff6600'; ctx.shadowBlur = 16;
+    ctx.beginPath(); ctx.arc(0, 0, 16 + pulseGlow * 4, 0, Math.PI * 2); ctx.fill();
+    ctx.shadowBlur = 0;
+    // HP pips
+    for (let h = 0; h < boss.maxHp; h++) {
+      ctx.fillStyle = h < boss.hp ? '#ff3333' : 'rgba(255,255,255,0.2)';
+      ctx.fillRect(-24 + h * 16, -boss.h / 2 - 14, 10, 6);
+    }
+    ctx.restore();
+  }
+
   // Ship — Kenney sprite or procedural fallback
   const cx = ship.x + ship.w / 2, cy = ship.y + ship.h / 2;
+  const skin = equippedSkin();
+
+  // Damage flash / invulnerability blink
+  const blinking = flashTimer > 0 && Math.floor(flashTimer * 15) % 2 === 0;
+  ctx.globalAlpha = blinking ? 0.4 : 1;
+
   if (spritesReady && assets.has('ship')) {
     // Engine exhaust glow (behind ship)
     const thrustSize = 12 + 5 * Math.sin(thrustFlicker);
     ctx.globalCompositeOperation = 'screen';
     const eg = ctx.createRadialGradient(cx, cy + ship.h * 0.6, 0, cx, cy + ship.h * 0.6, thrustSize * 2);
-    eg.addColorStop(0, 'rgba(80,200,255,0.8)');
+    eg.addColorStop(0, skin.trail);
     eg.addColorStop(0.5, 'rgba(40,100,255,0.4)');
     eg.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(cx, cy + ship.h * 0.6, thrustSize * 2, 0, Math.PI * 2); ctx.fill();
     ctx.globalCompositeOperation = 'source-over';
 
-    // Draw sprite (already pre-scaled to 54×41 via AssetLoader)
-    assets.draw(ctx, 'ship', cx, cy);
+    // Skin tint (cosmetic recolour for non-default skins) — CSS filter applies
+    // only to the sprite draw call itself, so it can't bleed onto the
+    // background already painted behind it.
+    if (skin !== SKINS.default && ctx.filter !== undefined) {
+      ctx.save();
+      ctx.filter = skin.hueRotate ? `hue-rotate(${skin.hueRotate}deg) saturate(1.4)` : 'none';
+      assets.draw(ctx, 'ship', cx, cy);
+      ctx.restore();
+    } else {
+      // Draw sprite (already pre-scaled to 54×41 via AssetLoader)
+      assets.draw(ctx, 'ship', cx, cy);
+    }
   } else {
     // Procedural triangle fallback
     ctx.save(); ctx.translate(cx, cy);
-    ctx.shadowColor = '#00e5ff'; ctx.shadowBlur = 16;
-    ctx.fillStyle   = '#00e5ff';
+    ctx.shadowColor = skin.glow; ctx.shadowBlur = 16;
+    ctx.fillStyle   = skin.fill;
     ctx.beginPath();
     ctx.moveTo(0, -ship.h / 2);
     ctx.lineTo(ship.w / 2, ship.h / 2);
@@ -290,11 +937,72 @@ game.onRender((ctx) => {
     ctx.closePath(); ctx.fill();
     ctx.shadowBlur = 0; ctx.restore();
   }
+  ctx.globalAlpha = 1;
+
+  // Shield visual ring
+  if (shieldActive) {
+    ctx.save();
+    ctx.strokeStyle = 'rgba(120,200,255,0.85)';
+    ctx.lineWidth = 3;
+    ctx.shadowColor = '#88ccff'; ctx.shadowBlur = 10;
+    ctx.beginPath(); ctx.arc(cx, cy, ship.w * 0.55, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+
+  // Tractor Pulse ring effect
+  if (pulseFx > 0) {
+    const t = 1 - pulseFx / 0.35;
+    ctx.save();
+    ctx.strokeStyle = `rgba(136,204,255,${1 - t})`;
+    ctx.lineWidth = 3;
+    ctx.beginPath(); ctx.arc(cx, cy, 220 * t, 0, Math.PI * 2); ctx.stroke();
+    ctx.restore();
+  }
+
+  // Multiplier / slow-mo ambient tint
+  if (multiplierTimer > 0) {
+    ctx.fillStyle = 'rgba(255,215,0,0.04)';
+    ctx.fillRect(0, 0, W, H);
+  }
+  if (slowMoTimer > 0) {
+    ctx.fillStyle = 'rgba(150,100,255,0.05)';
+    ctx.fillRect(0, 0, W, H);
+  }
 
   fx.draw(ctx);
+
+  // Floating score/event text (drawn above everything)
+  floaters.forEach(f => {
+    ctx.globalAlpha = f.life / f.maxLife;
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold ' + f.size + 'px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y);
+  });
+  ctx.globalAlpha = 1;
+
+  // Unlock banner (in-run, non-blocking)
+  if (unlockBanner) {
+    unlockBanner.timer -= 1 / 60; // render is called once per frame; approximate
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, unlockBanner.timer);
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    const tw = ctx.measureText(unlockBanner.text).width;
+    ctx.font = 'bold 18px monospace';
+    const bw = Math.max(200, tw + 40);
+    ctx.fillRect(W / 2 - bw / 2, 20, bw, 34);
+    ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 2;
+    ctx.strokeRect(W / 2 - bw / 2, 20, bw, 34);
+    ctx.fillStyle = '#ffd700';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(unlockBanner.text, W / 2, 20 + 17);
+    ctx.restore();
+    if (unlockBanner.timer <= 0) unlockBanner = null;
+  }
 });
 
 reset();
+goalEl.textContent = nextGoal();
 </script>
 </body>
 </html>

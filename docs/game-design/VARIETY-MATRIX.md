@@ -105,15 +105,20 @@ JUICE-CHECKLIST.md. Never default to space twice in a row.
 | Neon Invaders | Shmup | Shield-as-2nd-verb | Space/neon | ✅ Jul-26 (energy shield + overdrive beam, divers, mothership) |
 | Vector Asteroids | Shmup (inertia) | Momentum only | Space | ✅ Jul-26 (UFO turret, power-ups, boss rock, comet risk/reward) |
 | Turbo Outracer | Racing | Boost-meter timing | Circuit/rain | ✅ Jul-26 (spend-boost, rival racecraft, 3 tracks) |
-| Banana Bonanza | Catcher | none | Jungle | — |
-| Tower Frenzy '90 | Puzzle-grid (stack) | none | Retro | — |
-| Rogue Dungeon Mini | Arena-survivor | none | Dungeon | — |
+| Banana Bonanza | Catcher | Toss-to-monkey combo | Jungle | ✅ Jul-26 (toss verb, wind/golden/frenzy phases, wasp hazard, unlocks) |
+| Tower Frenzy '90 | Puzzle-grid (stack) | Wobble/stability meter | Retro | ✅ Jul-26 (block-type choice, wind/golden phases, unlocks) |
+| Rogue Dungeon Mini | Arena-survivor | Altar shop economy | Dungeon | ✅ Jul-26 (real attack verb, 4-phase enemy escalation, unlocks) |
+| Pixel Pac Run | Runner | Dash (smash/i-frames) | Maze | ✅ Jul-26 (dash verb, ghost chaser + gap-jump phases, unlocks) |
+| Space Runner | Runner (free 8-way) | Tractor Pulse | Space | ✅ Jul-26 (pull/destroy verb, wave/minefield/boss phases, Void Mode) |
 | Gravity/Cargo Lander | Lander | none | Space | — |
-| Pixel Pac Run / Space Runner | Runner | none | Maze/space | — |
 | Robots vs Unicorns | Platformer | none | Fantasy | — |
 | Brick Blitz '84 | Breakout | none | Retro | — |
 
-The 5 flagship games got the July 2026 depth pass (DEPTH-STANDARD + JUICE + audio +
-meta-progression). The remaining games are the next remediation batch. Note the pattern:
-space still over-represented — new games must diversify theme, and every new game must fill
-all three axis columns before coding starts.
+10 of 18 catalogued games have had the July 2026 depth pass (DEPTH-STANDARD + JUICE +
+audio + meta-progression), each adversarially reviewed and runtime-verified. Remaining:
+Gravity/Cargo Lander, Robots vs Unicorns, Brick Blitz '84. Also outstanding: Crystal
+Caverns TD (1,529-line tower-defence game sitting in public/demos with no framework
+wiring and no games.json entry — needs a framework port before it can get a depth pass;
+tracked separately, not yet started). Note the pattern: space still over-represented —
+new games must diversify theme, and every new game must fill all three axis columns
+before coding starts.

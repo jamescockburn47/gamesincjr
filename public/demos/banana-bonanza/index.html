@@ -2,818 +2,927 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Banana Bonanza - Demo</title>`n  <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Banana Bonanza · Games Inc Jr</title>
+  <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
   <style>
-    :root {
-      color-scheme: dark;
-      font-family: 'Nunito', 'Segoe UI', Tahoma, sans-serif;
+    #gij-stage { background: #0b2a3c; }
+    canvas { background: #0b2a3c; }
+    #bb-goal {
+      position: absolute; left: 50%; top: 8px; transform: translateX(-50%);
+      color: #ffe082; font: bold 13px system-ui, sans-serif; text-shadow: 0 2px 4px rgba(0,0,0,.6);
+      pointer-events: none; white-space: nowrap; z-index: 5;
     }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      background: radial-gradient(circle at top, #16324f 0%, #0d1723 55%, #05080e 100%);
-      color: #fdf6b2;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 24px 16px 64px;
-      gap: 16px;
+    #bb-unlock-banner {
+      position: absolute; left: 50%; top: 34px; transform: translateX(-50%) translateY(-20px);
+      color: #fff; background: rgba(20,40,30,0.85); border: 1px solid #ffd95a;
+      padding: 6px 14px; border-radius: 10px; font: bold 13px system-ui, sans-serif;
+      opacity: 0; transition: opacity .3s, transform .3s; pointer-events: none; z-index: 6;
     }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(2.5rem, 4vw, 3.5rem);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      text-shadow: 0 4px 18px rgba(255, 241, 150, 0.4);
-    }
-
-    .hud {
-      display: flex;
-      gap: clamp(16px, 4vw, 32px);
-      font-size: clamp(1.1rem, 2vw, 1.6rem);
-      font-weight: 700;
-    }
-
-    .hud span {
-      color: #ffe082;
-    }
-
-    .status {
-      font-size: 1rem;
-      padding: 10px 18px;
-      border-radius: 999px;
-      background: rgba(9, 132, 227, 0.2);
-      border: 1px solid rgba(9, 132, 227, 0.4);
-      box-shadow: 0 0 12px rgba(9, 132, 227, 0.3);
-      transition: all 0.3s ease;
-      text-align: center;
-    }
-
-    .status.focused {
-      background: rgba(46, 204, 113, 0.25);
-      border-color: rgba(46, 204, 113, 0.5);
-      box-shadow: 0 0 18px rgba(39, 174, 96, 0.55);
-      color: #e8ffdc;
-    }
-
-    .status.paused {
-      background: rgba(255, 152, 0, 0.25);
-      border-color: rgba(255, 152, 0, 0.55);
-      color: #fff1d0;
-    }
-
-    .stage {
-      position: relative;
-      width: min(92vw, 900px);
-      aspect-ratio: 4 / 3;
-      border-radius: 24px;
-      overflow: hidden;
-      border: 3px solid rgba(255, 241, 150, 0.35);
-      box-shadow: 0 32px 80px rgba(5, 12, 24, 0.65);
-      background: rgba(0, 0, 0, 0.3);
-    }
-
-    canvas {
-      width: 100%;
-      height: 100%;
-      display: block;
-      cursor: crosshair;
-      touch-action: none;
-    }
-
-    .overlay {
-      position: fixed;
-      inset: 0;
-      background: rgba(3, 10, 18, 0.84);
-      display: none;
-      align-items: center;
-      justify-content: center;
-      padding: 24px;
-      z-index: 50;
-    }
-
-    .overlay.show {
-      display: flex;
-    }
-
-    .dialog {
-      width: min(92vw, 520px);
-      background: linear-gradient(180deg, rgba(15, 32, 53, 0.95), rgba(8, 18, 31, 0.95));
-      border: 1px solid rgba(255, 241, 150, 0.35);
-      border-radius: 24px;
-      box-shadow: 0 28px 80px rgba(3, 8, 14, 0.85);
-      padding: clamp(20px, 4vw, 36px);
-      color: #fdf6b2;
-      text-align: center;
-      backdrop-filter: blur(10px);
-    }
-
-    .dialog h2 {
-      margin: 0 0 12px;
-      font-size: clamp(2rem, 4vw, 2.6rem);
-      letter-spacing: 0.08em;
-    }
-
-    .dialog p {
-      margin: 8px 0;
-      line-height: 1.6;
-    }
-
-    .dialog ul {
-      text-align: left;
-      margin: 16px 0 20px;
-      padding-left: 20px;
-      line-height: 1.6;
-    }
-
-    .dialog button {
-      margin-top: 12px;
-      padding: 12px 24px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      background: linear-gradient(135deg, #fddb92 0%, #d1b34f 100%);
-      color: #1a1300;
-      border: none;
-      border-radius: 999px;
-      cursor: pointer;
-      box-shadow: 0 8px 24px rgba(253, 219, 146, 0.35);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    .dialog button:focus-visible {
-      outline: 3px solid rgba(255, 235, 59, 0.75);
-      outline-offset: 2px;
-    }
-
-    .dialog button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 12px 36px rgba(253, 219, 146, 0.45);
-    }
-
-    .dialog .stats {
-      margin: 16px 0 12px;
-      display: grid;
-      gap: 8px;
-    }
-
-    .dialog .stats span {
-      color: #ffe082;
-      font-weight: 700;
-    }
-
-    #countdown {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      font-size: clamp(4rem, 10vw, 8rem);
-      font-weight: 800;
-      color: #fcd34d;
-      text-shadow: 0 0 30px rgba(252, 211, 77, 0.55);
-      background: rgba(8, 16, 24, 0.65);
-      z-index: 40;
-    }
-
-    #countdown.show {
-      display: flex;
-    }
-
-    .mobile-controls {
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: none;
-      gap: 16px;
-      padding: 12px 18px;
-      background: rgba(6, 13, 20, 0.7);
-      border: 1px solid rgba(255, 241, 150, 0.25);
-      border-radius: 999px;
-      box-shadow: 0 18px 42px rgba(2, 6, 10, 0.65);
-      backdrop-filter: blur(12px);
-      z-index: 30;
-    }
-
-    .mobile-controls button {
-      width: 64px;
-      height: 64px;
-      border-radius: 50%;
-      border: 1px solid rgba(255, 241, 150, 0.45);
-      background: rgba(255, 244, 128, 0.12);
-      color: #ffe082;
-      font-size: 1.4rem;
-      font-weight: 700;
-      cursor: pointer;
-      touch-action: manipulation;
-    }
-
-    .mobile-controls button:active {
-      background: rgba(255, 244, 128, 0.32);
-    }
-
-    @media (pointer: coarse) {
-      .mobile-controls { display: flex; }
-    }
-
-    .instructions {
-      max-width: min(92vw, 900px);
-      background: rgba(4, 11, 18, 0.65);
-      border: 1px solid rgba(255, 241, 150, 0.25);
-      border-radius: 24px;
-      padding: clamp(16px, 3vw, 28px);
-      line-height: 1.7;
-      box-shadow: 0 18px 48px rgba(3, 8, 12, 0.6);
-    }
-
-    .instructions h2 {
-      margin-top: 0;
-      font-size: clamp(1.6rem, 3vw, 2rem);
-      color: #ffe082;
-    }
-
-    .instructions ul {
-      margin: 12px 0 0;
-      padding-left: 22px;
-    }
-
-    .instructions strong {
-      color: #fff59d;
+    #bb-unlock-banner.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    #bb-easy-btn {
+      margin-top: 8px;
     }
   </style>
 </head>
 <body>
-  <h1>Banana Bonanza</h1>
-  <div class="hud" role="status" aria-live="polite">
-    <div>Score: <span id="score">0</span></div>
-    <div>Lives: <span id="lives">3</span></div>
-    <div>Level: <span id="level">1</span></div>
-  </div>
-  <div id="status" class="status" aria-live="polite">Press Start to begin the banana rush!</div>
+<div id="gij-wrap">
 
-  <div id="tryOverlay" class="overlay show" role="dialog" aria-modal="true" aria-labelledby="tryTitle">
-    <div class="dialog">
-      <h2 id="tryTitle">Banana Bonanza</h2>
-      <p>Catch the ripe bananas, dodge the rotten ones, and keep the crate moving!</p>
-      <button id="tryBtn">Try Now</button>
+  <!-- ── Try-Now Overlay ── -->
+  <div id="gij-try-overlay" class="gij-overlay">
+    <div class="gij-modal">
+      <h1 data-game-title>Banana Bonanza</h1>
+      <p id="gij-description">Slide the crate, catch ripe bananas, toss combos to your monkey friend, and dodge the rotten ones (and the wasp!).</p>
+      <button id="gij-try-btn" class="gij-btn gij-btn-primary">▶ Play Now</button>
     </div>
   </div>
 
-  <div id="startOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="startTitle">
-    <div class="dialog">
-      <h2 id="startTitle">How to Play</h2>
-      <ul id="introInstructions">
-        <li><strong>Desktop:</strong> Use <kbd>←</kbd> <kbd>→</kbd> or <kbd>A</kbd>/<kbd>D</kbd> to move.</li>
-        <li><strong>Touch:</strong> Tap the glowing buttons to slide the crate.</li>
-        <li>Catch ripe bananas for points. Rotten bananas steal a life.</li>
-        <li>Missed ripe fruit also costs a life. Keep the combo alive!</li>
-      </ul>
-      <p>Tip: Click or tap the game area after starting to lock the controls.</p>
-      <button id="startBtn">Start</button>
+  <!-- ── Instructions Overlay ── -->
+  <div id="gij-instructions-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>How to Play</h2>
+      <ul id="gij-instructions" class="gij-list"></ul>
+      <button id="gij-start-btn" class="gij-btn gij-btn-primary">Start the Rush!</button>
     </div>
   </div>
 
-  <div id="gameOverOverlay" class="overlay" role="dialog" aria-modal="true" aria-labelledby="overlayTitle">
-    <div class="dialog">
-      <h2 id="overlayTitle">Game Over</h2>
-      <p id="overlaySubtitle">Nice try! Ready for another bunch?</p>
-      <div id="gameOverStats" class="stats">
-        <div>Final Score: <span id="finalScore">0</span></div>
-        <div>Level Reached: <span id="finalLevel">1</span></div>
-        <div>Bananas Caught: <span id="finalCaught">0</span></div>
+  <!-- ── Game-Over Overlay ── -->
+  <div id="gij-gameover-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>Game Over</h2>
+      <div class="gij-score-row">
+        <span id="gij-final-score">Score: 0</span>
+        <span id="gij-final-hs">Best: 0</span>
       </div>
-      <button id="primaryAction" data-action="restart">Play Again</button>
+      <div id="bb-stat-line" style="color:#ffe082; font-size:13px; margin-bottom:8px;"></div>
+      <div id="bb-goal-line" style="color:#9be89b; font-size:13px; margin-bottom:8px;"></div>
+      <div id="bb-badge-row" style="margin-bottom:10px; font-size:22px;"></div>
+      <button id="gij-restart-btn" class="gij-btn gij-btn-primary">Play Again</button>
+      <button id="bb-easy-btn" class="gij-btn hidden">Try Easy?</button>
+      <button id="bb-storm-btn" class="gij-btn hidden">🌩 Storm Mode: Off</button>
     </div>
   </div>
 
-  <div id="countdown">3</div>
+  <!-- ── Stage ── -->
+  <div id="gij-stage">
+    <div id="gij-hud" class="hidden">
+      <div class="gij-badge">⭐ <strong id="gij-score">0</strong></div>
+      <div class="gij-badge">🏆 <strong id="gij-highscore">0</strong></div>
+      <div class="gij-badge">❤️ <strong id="bb-lives">3</strong></div>
+      <div class="gij-badge">📈 <strong id="bb-level">1</strong></div>
+      <div class="gij-badge">🔥 <strong id="bb-combo">x0</strong></div>
+      <div id="bb-goal">★ Next: —</div>
+    </div>
+    <canvas id="gij-canvas"></canvas>
+    <div id="bb-unlock-banner"></div>
+    <div id="gij-controls"></div>
+  </div><!-- /gij-stage -->
+</div><!-- /gij-wrap -->
 
-  <div class="stage">
-    <canvas id="gameCanvas" width="800" height="600" role="img" aria-label="Bananas falling toward a wooden crate"></canvas>
-  </div>
+<script src="/game-framework/game-engine.js"></script>
+<script src="/game-framework/game-utils.js"></script>
+<script src="/game-framework/game-audio.js"></script>
+<script>
+// ── Audio wrapper ───────────────────────────────────────────────
+function sfx(name) { if (typeof GameAudio !== 'undefined') GameAudio.play(name); }
+document.getElementById('gij-start-btn')?.addEventListener('click', () => GameAudio.init(), { once: true });
+document.getElementById('gij-restart-btn')?.addEventListener('click', () => GameAudio.init(), { once: true });
 
-  <div class="mobile-controls" aria-label="Touch controls">
-    <button type="button" data-dir="left" aria-label="Move left">⬅️</button>
-    <button type="button" data-dir="right" aria-label="Move right">➡️</button>
-  </div>
+// ── GAME config ─────────────────────────────────────────────────
+const GAME = {
+  slug:  'banana-bonanza',
+  title: 'Banana Bonanza',
+  description: 'Slide the crate, catch ripe bananas, toss combos to your monkey friend, and dodge the rotten ones (and the wasp!).',
+  instructions: [
+    '<strong>← → / A D:</strong> Slide the crate left and right',
+    '<strong>Catch:</strong> Ripe yellow bananas are worth points — chains build combo bonuses',
+    '<strong>Z / 🐒 Toss:</strong> Within a short window after catching, toss the banana to your monkey friend for a big combo bonus',
+    '<strong>Risk:</strong> Holding a catch too long — or letting a wasp buzz in — makes you drop it and lose the combo',
+    '<strong>Dodge:</strong> Rotten brown bananas steal a life. A wasp will steal an un-tossed banana if you\'re too slow!',
+    '<strong>Careful:</strong> Letting a ripe banana hit the ground also costs a life!',
+    '<strong>Phases:</strong> Watch for wind gusts, golden bonus rounds, and monkey frenzy waves every ~45s',
+  ],
+  controls: [
+    { label: '◀', action: 'left'  },
+    { label: '▶', action: 'right' },
+    { label: '🐒', action: 'action1', cls: 'gij-ctrl-space' },
+  ],
+  width: 800, height: 600,
+};
 
-  <section class="instructions" aria-labelledby="howToPlay">
-    <h2 id="howToPlay">How to Play</h2>
-    <ul>
-      <li>Bananas worth <strong>10 points</strong> drop faster as you level up.</li>
-      <li>Snagging several bananas in a row adds <strong>combo bonuses</strong>.</li>
-      <li>Rotten bananas are trouble — catch one and you lose a life.</li>
-      <li>Missing ripe bananas also costs a life, so stay nimble!</li>
-      <li>The game ends when you run out of lives, but you can always try again.</li>
-    </ul>
-  </section>
+const canvas    = document.getElementById('gij-canvas');
+const game      = new GameEngine(canvas).setup(GAME);
+const input     = new InputManager();
+const particles = new ParticleSystem();
 
-  <script>
-    (function () {
-      'use strict';
+const W = game.W, H = game.H;
 
-      const canvas = document.getElementById('gameCanvas');
-      const ctx = canvas.getContext('2d');
-      const scoreEl = document.getElementById('score');
-      const livesEl = document.getElementById('lives');
-      const levelEl = document.getElementById('level');
-      const statusEl = document.getElementById('status');
-      const tryOverlay = document.getElementById('tryOverlay');
-      const startOverlay = document.getElementById('startOverlay');
-      const gameOverOverlay = document.getElementById('gameOverOverlay');
-      const tryBtn = document.getElementById('tryBtn');
-      const startBtn = document.getElementById('startBtn');
-      const primaryAction = document.getElementById('primaryAction');
-      const overlaySubtitle = document.getElementById('overlaySubtitle');
-      const statsPanel = document.getElementById('gameOverStats');
-      const finalScoreEl = document.getElementById('finalScore');
-      const finalLevelEl = document.getElementById('finalLevel');
-      const finalCaughtEl = document.getElementById('finalCaught');
-      const countdownEl = document.getElementById('countdown');
-      const mobileControls = document.querySelector('.mobile-controls');
+// ── Meta-progression storage ─────────────────────────────────────
+const META_KEY = 'gij-meta:banana-bonanza';
+function defaultMeta() {
+  return {
+    v: 1,
+    totalRuns: 0,
+    totalScore: 0,
+    bestScore: 0,
+    bestStreak: 0,
+    improveStreak: 0,
+    lastScore: 0,
+    tosses: 0,
+    unlocks: {
+      'basket-jungle':  { earned: false, celebrated: false },
+      'basket-golden':  { earned: false, celebrated: false },
+      'monkey-friend':  { earned: false, celebrated: false },
+      'mode-storm':     { earned: false, celebrated: false },
+    },
+    equipped: { basket: 'default' },
+    badges: { bronze: false, silver: false, gold: false },
+  };
+}
+function loadMeta() {
+  try {
+    const parsed = JSON.parse(localStorage.getItem(META_KEY));
+    if (!parsed || parsed.v !== 1) return defaultMeta();
+    // fill any missing keys from schema upgrades
+    const d = defaultMeta();
+    return Object.assign(d, parsed, {
+      unlocks: Object.assign(d.unlocks, parsed.unlocks || {}),
+      badges: Object.assign(d.badges, parsed.badges || {}),
+      equipped: Object.assign(d.equipped, parsed.equipped || {}),
+    });
+  } catch (e) { return defaultMeta(); }
+}
+function saveMeta() {
+  try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {}
+}
+let meta = loadMeta();
 
-      /** @type {{left: boolean, right: boolean}} */
-      const inputState = { left: false, right: false };
-      let isFocused = false;
-      let gameState = 'intro'; // intro | countdown | playing | gameover
-      let countdownTimer = null;
-      let lastTimestamp = performance.now();
-      let spawnTimer = 0;
-      let spawnInterval = 1.05;
-      const bananas = [];
-      const particles = [];
-      const state = {
-        score: 0,
-        lives: 3,
-        level: 1,
-        caught: 0,
-        combo: 0,
-      };
+const UNLOCKS = [
+  { id: 'basket-jungle', name: 'Jungle Crate Skin', type: 'score', need: 300  },
+  { id: 'monkey-friend', name: 'Monkey Friend Character', type: 'runs',  need: 3    },
+  { id: 'basket-golden', name: 'Golden Crate Skin', type: 'score', need: 900  },
+  { id: 'mode-storm',    name: 'Storm Mode (hard)', type: 'score', need: 2000 },
+];
 
-      const player = {
-        x: canvas.width / 2 - 55,
-        y: canvas.height - 90,
-        width: 110,
-        height: 46,
-        speed: 320,
-        wobble: 0,
-      };
-
-      /**
-       * Clamp a numeric value so it never exceeds the given range.
-       * @param {number} value - The candidate value.
-       * @param {number} min - Lower bound.
-       * @param {number} max - Upper bound.
-       * @returns {number} Constrained value.
-       */
-      function clamp(value, min, max) {
-        return Math.min(Math.max(value, min), max);
+function progressOf(u) {
+  if (u.type === 'score') return Math.max(game.getScore(), meta.bestScore);
+  if (u.type === 'runs')  return meta.totalRuns;
+  return 0;
+}
+const unlockBannerEl = document.getElementById('bb-unlock-banner');
+let bannerTimer = 0;
+function showUnlockBanner(text) {
+  unlockBannerEl.textContent = '★ NEW: ' + text + '!';
+  unlockBannerEl.classList.add('show');
+  bannerTimer = 2.5;
+}
+function checkUnlocks() {
+  for (const u of UNLOCKS) {
+    const slot = meta.unlocks[u.id] || (meta.unlocks[u.id] = { earned: false, celebrated: false });
+    if (!slot.earned && progressOf(u) >= u.need) {
+      slot.earned = true;
+      saveMeta();
+      showUnlockBanner(u.name);
+      if (particles.count < 200) {
+        particles.burst(W / 2, 80, 30, { colors: ['#ffd700', '#ffffff'], minSpeed: 60, maxSpeed: 220, gravity: -40 });
       }
+      game.shake(3, 0.15);
+      sfx('powerup');
+    }
+  }
+}
+function nextGoalText() {
+  const locked = UNLOCKS.filter(u => !meta.unlocks[u.id]?.earned)
+                        .sort((a, b) => (a.need - progressOf(a)) - (b.need - progressOf(b)));
+  if (!locked.length) return 'Beat your best: ' + meta.bestScore;
+  const u = locked[0];
+  const remain = Math.max(0, u.need - progressOf(u));
+  return '★ Next: ' + u.name + ' — ' + remain + (u.type === 'runs' ? ' runs to go' : ' pts to go');
+}
 
-      /**
-       * Update the HUD text nodes to match the latest score, lives, and level.
-       */
-      function syncHud() {
-        scoreEl.textContent = state.score.toString();
-        livesEl.textContent = state.lives.toString();
-        levelEl.textContent = state.level.toString();
-      }
+// ── Death-streak assist (rubber-banding) ─────────────────────────
+const DEATH_KEY = 'gij_deaths_banana-bonanza';
+function recordDeath(elapsedAtDeath) {
+  try {
+    const fast = elapsedAtDeath < 60;
+    const n = fast ? (parseInt(localStorage.getItem(DEATH_KEY) || '0', 10) + 1) : 0;
+    localStorage.setItem(DEATH_KEY, String(n));
+  } catch (e) {}
+}
+function fastDeathCount() {
+  try { return parseInt(localStorage.getItem(DEATH_KEY) || '0', 10); } catch (e) { return 0; }
+}
+function assistFactor() {
+  return fastDeathCount() >= 2 ? 0.85 : 1.0;
+}
 
-      /**
-       * Apply a friendly status message and optional visual mode.
-       * @param {string} message - Status string for players.
-       * @param {'focused' | 'paused' | 'default'} [mode='default']
-       */
-      function setStatus(message, mode = 'default') {
-        statusEl.textContent = message;
-        statusEl.classList.remove('focused', 'paused');
-        if (mode === 'focused') statusEl.classList.add('focused');
-        if (mode === 'paused') statusEl.classList.add('paused');
-      }
+let easyMode = false;
+const easyBtn = document.getElementById('bb-easy-btn');
+easyBtn.addEventListener('click', () => {
+  easyMode = true;
+  easyBtn.classList.add('hidden');
+  document.getElementById('gij-restart-btn').click();
+});
 
-      /**
-       * Reset all gameplay counters, arrays, and timers.
-       */
-      function resetGameState() {
-        state.score = 0;
-        state.lives = 3;
-        state.level = 1;
-        state.caught = 0;
-        state.combo = 0;
-        spawnTimer = 0;
-        spawnInterval = 1.05;
-        bananas.length = 0;
-        particles.length = 0;
-        player.x = canvas.width / 2 - player.width / 2;
-        player.wobble = 0;
-        syncHud();
-      }
+// Storm Mode — the "harder variant" unlockable. Toggle persists across runs.
+let stormMode = false;
+const stormBtn = document.getElementById('bb-storm-btn');
+function refreshStormBtn() {
+  if (!meta.unlocks['mode-storm']?.earned) { stormBtn.classList.add('hidden'); return; }
+  stormBtn.classList.remove('hidden');
+  stormBtn.textContent = '🌩 Storm Mode: ' + (stormMode ? 'On' : 'Off');
+}
+stormBtn.addEventListener('click', () => {
+  stormMode = !stormMode;
+  refreshStormBtn();
+});
 
-      /**
-       * Start a three-second countdown before the action begins.
-       */
-      function beginCountdown() {
-        if (gameState === 'countdown') return;
-        clearCountdown();
-        resetGameState();
-        startOverlay.classList.remove('show');
-        gameState = 'countdown';
-        setStatus('Get ready…', 'paused');
-        let remaining = 3;
-        countdownEl.textContent = remaining.toString();
-        countdownEl.classList.add('show');
-        countdownTimer = setInterval(() => {
-          remaining -= 1;
-          if (remaining <= 0) {
-            clearCountdown();
-            countdownEl.classList.remove('show');
-            gameState = 'playing';
-            isFocused = true;
-            setStatus('Catch the bananas! Combos boost your score.', 'focused');
-          } else {
-            countdownEl.textContent = remaining.toString();
-          }
-        }, 1000);
-      }
+// ── Game state ──────────────────────────────────────────────────
+// Calibrated from GAMEPLAY_PRESETS.catcher
+const PLAYER_SPEED = GAMEPLAY_PRESETS.catcher.playerSpeed;   // 380 px/s
+const FALL_MIN     = GAMEPLAY_PRESETS.catcher.objectFallMin; // 160 px/s
+const FALL_MAX     = GAMEPLAY_PRESETS.catcher.objectFallMax; // 340 px/s
 
-      /**
-       * Clear any active countdown interval.
-       */
-      function clearCountdown() {
-        if (countdownTimer) {
-          clearInterval(countdownTimer);
-          countdownTimer = null;
-        }
-      }
+const player = {
+  x: W / 2 - 55, y: H - 90,
+  w: 110, h: 46,
+  wobble: 0,
+};
 
-      /**
-       * Spawn a new banana (ripe or rotten) with randomized speed and rotation.
-       */
-      function spawnBanana() {
-        const isRotten = Math.random() < Math.min(0.28, 0.12 + state.level * 0.02);
-        const size = isRotten ? 44 : 52;
-        const speed = 140 + Math.random() * 80 + state.level * 18;
-        const rotationSpeed = (Math.random() * 1.2 + 0.4) * (Math.random() < 0.5 ? -1 : 1);
-        bananas.push({
-          x: Math.random() * (canvas.width - size) + size / 2,
-          y: -size,
-          size,
-          speed,
-          rotation: Math.random() * Math.PI,
-          rotationSpeed,
-          type: isRotten ? 'rotten' : 'ripe',
-          wobbleOffset: Math.random() * Math.PI * 2,
-        });
-        const intervalFloor = Math.max(0.42, 1.05 - state.level * 0.06);
-        spawnInterval = intervalFloor + Math.random() * 0.3;
-      }
+// Monkey friend — sits at one side, receives tosses
+const monkey = { side: 'right', x: 0, y: 90, bob: 0, flashTimer: 0 };
 
-      /**
-       * Create celebratory confetti when a banana is caught.
-       * @param {number} x - Horizontal position.
-       * @param {number} y - Vertical position.
-       * @param {string} color - Particle color.
-       */
-      function burstParticles(x, y, color) {
-        for (let i = 0; i < 12; i += 1) {
-          particles.push({
-            x,
-            y,
-            vx: (Math.random() - 0.5) * 180,
-            vy: Math.random() * -160 - 60,
-            life: 0.75,
-            color,
+let bananas, lives, level, caught, combo, maxCombo;
+let spawnTimer, spawnInterval, elapsed;
+let floaters;
+
+// Toss / hold state — the second verb
+// held = { type:'ripe', x, y, timer } while a caught banana can still be tossed
+let held = null;
+const TOSS_WINDOW = 1.2; // s to decide: toss now, or it auto-settles (kept, no bonus)
+
+// Hazard: wasp steals a HELD banana if its buzz timer expires before toss
+let wasp = null; // { state:'buzz'|'gone', timer, x, y }
+
+// Phase system
+let phase = 'normal'; // normal | wind | golden | frenzy
+let phaseTimer = 0;
+let phaseIndex = 0;
+const PHASE_SEQUENCE = ['wind', 'golden', 'frenzy'];
+let windDir = 1;
+
+// Juice state
+let hitStop = 0;
+let flashTimer = 0; // player damage flash
+let dying = false;
+let deathTimer = 0;
+
+const livesEl = document.getElementById('bb-lives');
+const levelEl = document.getElementById('bb-level');
+const comboEl = document.getElementById('bb-combo');
+const goalEl  = document.getElementById('bb-goal');
+
+function syncBadges() {
+  livesEl.textContent = lives;
+  levelEl.textContent = level;
+  comboEl.textContent = 'x' + combo;
+}
+
+function floatText(x, y, text, color, size) {
+  floaters.push({ x, y: y + (Math.random() * 10 - 5), text, color: color || '#fff', size: size || 18, life: 0.7, maxLife: 0.7 });
+}
+
+function triggerHitStop(sec) { hitStop = Math.max(hitStop, sec); }
+
+function reset() {
+  bananas       = [];
+  lives         = 3;
+  level         = 1;
+  caught        = 0;
+  combo         = 0;
+  maxCombo      = 0;
+  spawnTimer    = 0;
+  spawnInterval = 1.05;
+  elapsed       = 0;
+  player.x      = W / 2 - player.w / 2;
+  player.wobble = 0;
+  held          = null;
+  wasp          = null;
+  phase         = 'normal';
+  phaseTimer    = 0;
+  phaseIndex    = 0;
+  windDir       = Math.random() < 0.5 ? -1 : 1;
+  hitStop       = 0;
+  flashTimer    = 0;
+  dying         = false;
+  deathTimer    = 0;
+  floaters      = [];
+  monkey.side   = Math.random() < 0.5 ? 'left' : 'right';
+  monkey.flashTimer = 0;
+  particles.clear();
+  syncBadges();
+  easyBtn.classList.add('hidden');
+  refreshStormBtn();
+}
+
+// totalRuns must only count actual play sessions, not page load/refresh —
+// reset() also runs at script-parse time (see bottom of file) purely to
+// initialize state, so the run-count increment lives here instead, tied to
+// the two real entry points into play.
+function countRun() {
+  meta.totalRuns += 1;
+  saveMeta();
+}
+document.getElementById('gij-start-btn')?.addEventListener('click', countRun);
+document.getElementById('gij-restart-btn')?.addEventListener('click', countRun);
+
+game.onRestart(reset);
+
+// ── Helpers ─────────────────────────────────────────────────────
+function currentAssist() {
+  return easyMode ? 0.75 : assistFactor();
+}
+
+function tutorialActive() { return elapsed < 30; }
+
+function spawnBanana() {
+  const tutorial = tutorialActive();
+  const isGoldenPhase = phase === 'golden';
+  const rottenChance = Math.min(0.28, 0.12 + level * 0.02) * (stormMode ? 1.4 : 1);
+  const isRotten = !isGoldenPhase && Math.random() < (tutorial ? 0.06 : rottenChance);
+  const size = isRotten ? 44 : 52;
+  const assist = currentAssist();
+  let speed = GameUtils.clamp(
+    FALL_MIN + Math.random() * 80 + (level - 1) * 18,
+    FALL_MIN, FALL_MAX
+  ) * assist;
+  if (tutorial) speed *= 0.75;
+  if (stormMode) speed *= 1.15;
+
+  const banana = {
+    x: Math.random() * (W - size) + size / 2,
+    y: -size,
+    size,
+    speed,
+    rotation: Math.random() * Math.PI,
+    rotationSpeed: (Math.random() * 1.2 + 0.4) * (Math.random() < 0.5 ? -1 : 1),
+    type: isRotten ? 'rotten' : (isGoldenPhase ? 'golden' : 'ripe'),
+    wobbleOffset: Math.random() * Math.PI * 2,
+    windPhase: phase === 'wind',
+    driftAmp: phase === 'wind' ? (60 + Math.random() * 40) : 12,
+  };
+  bananas.push(banana);
+
+  let intervalFloor = Math.max(0.42, 1.05 - level * 0.06);
+  if (tutorial) intervalFloor *= 1.8;
+  if (phase === 'golden') intervalFloor *= 0.6; // spawn faster during golden bonus
+  if (phase === 'frenzy') intervalFloor *= 0.35;
+  spawnInterval = intervalFloor + Math.random() * 0.3;
+}
+
+function loseLife() {
+  lives -= 1;
+  combo = 0;
+  held = null;
+  triggerHitStop(0.04);
+  game.shake(5, 0.2);
+  sfx('hit');
+  syncBadges();
+  if (lives <= 0) killPlayer();
+}
+
+function killPlayer() {
+  if (dying) return;
+  dying = true;
+  triggerHitStop(0.08);
+  sfx('explosion');
+  particles.burst(player.x + player.w / 2, player.y + player.h / 2, 50, {
+    colors: ['#fff', '#ff4444', '#ffaa00'],
+    minSpeed: 120, maxSpeed: 450, lifetime: 1.2,
+  });
+  game.shake(8, 0.3);
+  deathTimer = 0.8;
+}
+
+// Toss the currently-held banana to the monkey friend
+function tryToss() {
+  if (!held) return;
+  const bonus = Math.round((10 + level * 2) * (1 + Math.min(combo, 9) * 0.4));
+  game.addScore(bonus);
+  meta.tosses += 1;
+  combo = Math.min(combo + 1, 9);
+  maxCombo = Math.max(maxCombo, combo);
+  syncBadges();
+  floatText(monkey.x, monkey.y, 'TOSS +' + bonus, '#ffd700', 20);
+  if (combo >= 5 && combo % 5 === 0) {
+    floatText(W / 2, 120, 'COMBO x' + combo + '!', '#ffd700', 26);
+    sfx('combo');
+  } else {
+    sfx('combo');
+  }
+  monkey.flashTimer = 0.3;
+  if (particles.count < 200) {
+    particles.burst(monkey.x, monkey.y, 12, { colors: ['#ffd700', '#ffee88', '#fff'], gravity: -50, maxSpeed: 200 });
+  }
+  held = null;
+  checkUnlocks();
+}
+
+// Force-drop the held banana (timeout, wasp steal, or interrupted by rotten hit)
+function dropHeld(reason) {
+  if (!held) return;
+  combo = 0;
+  syncBadges();
+  if (reason === 'wasp') {
+    floatText(held.x, held.y, 'STOLEN!', '#ff8844', 16);
+    sfx('hit');
+  } else {
+    floatText(held.x, held.y, 'dropped', '#cccccc', 14);
+  }
+  held = null;
+}
+
+// ── Update ──────────────────────────────────────────────────────
+game.onUpdate((dt) => {
+  if (game.state !== 'playing') return;
+
+  if (bannerTimer > 0) {
+    bannerTimer -= dt;
+    if (bannerTimer <= 0) unlockBannerEl.classList.remove('show');
+  }
+
+  if (hitStop > 0) { hitStop -= dt; return; }
+
+  if (dying) {
+    deathTimer -= dt;
+    particles.update(dt);
+    if (deathTimer <= 0) {
+      sfx('gameover');
+      recordDeath(elapsed);
+      finalizeMeta();
+      game.endGame();
+    }
+    return;
+  }
+
+  elapsed += dt;
+  flashTimer = Math.max(0, flashTimer - dt);
+  monkey.flashTimer = Math.max(0, monkey.flashTimer - dt);
+  monkey.bob = Math.sin(elapsed * 3) * 4;
+
+  // Monkey position (side is randomized once per run in reset(), fixed for the run)
+  monkey.x = monkey.side === 'left' ? 70 : W - 70;
+  monkey.y = 90;
+
+  // Crate movement
+  let dir = 0;
+  if (input.isPressed('left'))  dir -= 1;
+  if (input.isPressed('right')) dir += 1;
+  player.x += PLAYER_SPEED * dir * dt;
+  player.x = GameUtils.clamp(player.x, 12, W - player.w - 12);
+  player.wobble = Math.sin(elapsed * 6.25) * 4;
+
+  // Toss input (second verb) — Z key or touch action1
+  if (input.isPressed('action1') && held && !held.tossedThisPress) {
+    held.tossedThisPress = true;
+    tryToss();
+  }
+  if (!input.isPressed('action1') && held) held.tossedThisPress = false;
+
+  // Held banana countdown — decide: toss now, or it settles (kept, no bonus, no combo growth)
+  if (held) {
+    held.timer -= dt;
+    if (held.timer <= 0) {
+      // settle quietly — player kept it but missed the toss bonus window
+      held = null;
+    }
+  }
+
+  // ── Phase system: qualitative change every ~48s after the first minute ──
+  if (elapsed > 60) {
+    const idx = Math.floor((elapsed - 60) / 48);
+    if (idx > phaseIndex - 1 && phase === 'normal') {
+      phaseIndex = idx + 1;
+      const next = PHASE_SEQUENCE[idx % PHASE_SEQUENCE.length];
+      phase = next;
+      phaseTimer = next === 'golden' ? 8 : (next === 'frenzy' ? 6 : 10);
+      if (next === 'wind') windDir = Math.random() < 0.5 ? -1 : 1;
+      floatText(W / 2, 150, next === 'wind' ? 'WIND GUST!' : next === 'golden' ? 'GOLDEN RUSH!' : 'MONKEY FRENZY!', '#ffd700', 24);
+      sfx('levelup');
+      if (particles.count < 200) particles.burst(W / 2, H / 2, 30, { colors: ['#ffd700', '#88ccff', '#fff'], maxSpeed: 400, spread: Math.PI * 2 });
+      game.shake(4, 0.2);
+      // Frenzy set-piece: immediately drop a wave of simultaneous multi-lane bananas
+      if (next === 'frenzy') {
+        const lanes = 4;
+        for (let i = 0; i < lanes; i++) {
+          bananas.push({
+            x: (W / (lanes + 1)) * (i + 1),
+            y: -60 - i * 40,
+            size: 52,
+            speed: FALL_MIN * currentAssist(),
+            rotation: 0, rotationSpeed: 0.6,
+            type: 'ripe', wobbleOffset: i, windPhase: false, driftAmp: 12,
           });
         }
       }
+    }
+  }
 
-      /**
-       * Handle horizontal crate movement based on the current input state.
-       * @param {number} dt - Frame delta time in seconds.
-       */
-      function updatePlayer(dt) {
-        const direction = (inputState.left ? -1 : 0) + (inputState.right ? 1 : 0);
-        if (direction !== 0) {
-          player.x += player.speed * direction * dt;
-          isFocused = true;
-        }
-        player.x = clamp(player.x, 12, canvas.width - player.width - 12);
-        player.wobble = Math.sin(performance.now() / 160) * 4;
-      }
+  if (phase !== 'normal') {
+    phaseTimer -= dt;
+    if (phaseTimer <= 0) {
+      phase = 'normal';
+    }
+  }
 
-      /**
-       * Update particle lifetimes and positions for subtle visual flair.
-       * @param {number} dt - Frame delta time in seconds.
-       */
-      function updateParticles(dt) {
-        for (let i = particles.length - 1; i >= 0; i -= 1) {
-          const p = particles[i];
-          p.x += p.vx * dt;
-          p.y += p.vy * dt;
-          p.vy += 320 * dt;
-          p.life -= dt;
-          if (p.life <= 0) {
-            particles.splice(i, 1);
-          }
+  // Wasp hazard — telegraphed 0.5s buzz before it steals a held banana
+  if (!wasp && held && held.timer < TOSS_WINDOW - 0.15 && Math.random() < 0.006) {
+    wasp = { state: 'buzz', timer: 0.5, x: held.x + (Math.random() < 0.5 ? -60 : 60), y: held.y - 30 };
+  }
+  if (wasp) {
+    if (wasp.state === 'buzz') {
+      wasp.timer -= dt;
+      wasp.x += Math.sin(elapsed * 20) * 60 * dt;
+      if (wasp.timer <= 0) {
+        if (held) {
+          dropHeld('wasp');
+          wasp.state = 'fly-off';
+          wasp.timer = 0.6;
+        } else {
+          wasp = null;
         }
       }
+    } else if (wasp.state === 'fly-off') {
+      wasp.timer -= dt;
+      wasp.y -= 140 * dt;
+      wasp.x += 100 * dt;
+      if (wasp.timer <= 0) wasp = null;
+    }
+  }
 
-      /**
-       * Detect crate collisions with bananas and apply scoring or penalties.
-       * @param {number} dt - Frame delta time in seconds.
-       */
-      function updateBananas(dt) {
-        for (let i = bananas.length - 1; i >= 0; i -= 1) {
-          const banana = bananas[i];
-          banana.y += banana.speed * dt;
-          banana.rotation += banana.rotationSpeed * dt;
-          banana.x += Math.sin(performance.now() / 260 + banana.wobbleOffset) * 12 * dt;
+  // Spawning
+  spawnTimer += dt;
+  if (spawnTimer >= spawnInterval) {
+    spawnTimer = 0;
+    spawnBanana();
+  }
 
-          const intersects =
-            banana.x + banana.size / 2 > player.x &&
-            banana.x - banana.size / 2 < player.x + player.width &&
-            banana.y + banana.size / 2 > player.y &&
-            banana.y - banana.size / 2 < player.y + player.height;
+  // Bananas
+  for (let i = bananas.length - 1; i >= 0; i--) {
+    const b = bananas[i];
+    b.y += b.speed * dt;
+    b.rotation += b.rotationSpeed * dt;
+    if (b.windPhase) {
+      b.x += windDir * b.driftAmp * dt;
+    } else {
+      b.x += Math.sin(elapsed * 3.85 + b.wobbleOffset) * 12 * dt;
+    }
+    b.x = GameUtils.clamp(b.x, b.size / 2, W - b.size / 2);
 
-          if (intersects) {
-            if (banana.type === 'ripe') {
-              const baseScore = 10 + state.level * 2;
-              state.combo = Math.min(state.combo + 1, 9);
-              const comboBonus = state.combo >= 3 ? state.combo * 2 : 0;
-              state.score += baseScore + comboBonus;
-              state.caught += 1;
-              burstParticles(banana.x, banana.y, '#ffe082');
-              setStatus(`Great catch! Combo x${state.combo || 1}.`, 'focused');
-            } else {
-              state.lives -= 1;
-              state.combo = 0;
-              burstParticles(banana.x, banana.y, '#ff7043');
-              setStatus('Yikes! Rotten banana — you lost a life.', 'paused');
-            }
-            bananas.splice(i, 1);
-            syncHud();
-            continue;
-          }
-
-          if (banana.y > canvas.height + banana.size) {
-            if (banana.type === 'ripe') {
-              state.lives -= 1;
-              state.combo = 0;
-              setStatus('A ripe banana hit the ground. Stay alert!', 'paused');
-              syncHud();
-            }
-            bananas.splice(i, 1);
-          }
+    // AABB vs crate — catcher hitbox ratio 0.8 (slightly forgiving)
+    const rect = { x: b.x - b.size / 2, y: b.y - b.size / 2, w: b.size, h: b.size };
+    if (GameUtils.hitTest(rect, player, 0.8)) {
+      if (b.type === 'ripe' || b.type === 'golden') {
+        const mult = b.type === 'golden' ? 3 : 1;
+        const baseScore = (10 + level * 2) * mult;
+        const comboBonus = combo >= 3 ? combo * 2 * mult : 0;
+        game.addScore(baseScore + comboBonus);
+        caught += 1;
+        floatText(b.x, b.y, '+' + (baseScore + comboBonus), b.type === 'golden' ? '#ffd700' : '#fff59d');
+        sfx('collect');
+        if (particles.count < 200) {
+          particles.burst(b.x, b.y, 12, {
+            colors: b.type === 'golden' ? ['#ffd700', '#fff59d', '#fff'] : ['#ffe082', '#fff59d', '#ffd95a'],
+            minSpeed: 80, maxSpeed: 240, gravity: 320,
+          });
         }
-      }
-
-      /**
-       * Promote the player to higher levels as their score climbs.
-       */
-      function updateLevel() {
-        const newLevel = Math.min(12, 1 + Math.floor(state.score / 160));
-        if (newLevel !== state.level) {
-          state.level = newLevel;
-          syncHud();
-          setStatus(`Level ${state.level}! Bananas are dropping quicker.`, 'focused');
+        // Catch starts (or refreshes) the toss window — the core decision point
+        held = { type: b.type, x: b.x, y: b.y, timer: TOSS_WINDOW, tossedThisPress: true };
+        syncBadges();
+      } else {
+        if (particles.count < 200) {
+          particles.burst(b.x, b.y, 14, {
+            colors: ['#ff7043', '#8d6e63', '#5d4037'],
+            minSpeed: 80, maxSpeed: 240, gravity: 320,
+          });
         }
+        loseLife();
       }
+      bananas.splice(i, 1);
+      continue;
+    }
 
-      /**
-       * End the run and surface the overlay with summary stats.
-       */
-      function finishGame() {
-        gameState = 'gameover';
-        isFocused = false;
-        setStatus('Game over! Tap Play Again to retry.', 'paused');
-        finalScoreEl.textContent = state.score.toString();
-        finalLevelEl.textContent = state.level.toString();
-        finalCaughtEl.textContent = state.caught.toString();
-        gameOverOverlay.classList.add('show');
-      }
-
-      /**
-       * Render the jungle backdrop, crate, bananas, and particle effects.
-       */
-      function render() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-
-        // Background gradient sky
-        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient.addColorStop(0, '#0b2a3c');
-        gradient.addColorStop(0.4, '#10424d');
-        gradient.addColorStop(1, '#132a24');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-        // Moon glow
-        ctx.save();
-        ctx.globalCompositeOperation = 'lighter';
-        ctx.fillStyle = 'rgba(255, 244, 128, 0.15)';
-        ctx.beginPath();
-        ctx.arc(canvas.width - 120, 90, 160, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-
-        // Ground layers
-        ctx.fillStyle = '#174033';
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height - 120);
-        ctx.bezierCurveTo(160, canvas.height - 180, 280, canvas.height - 80, 420, canvas.height - 110);
-        ctx.bezierCurveTo(560, canvas.height - 140, 680, canvas.height - 60, canvas.width, canvas.height - 100);
-        ctx.lineTo(canvas.width, canvas.height);
-        ctx.lineTo(0, canvas.height);
-        ctx.closePath();
-        ctx.fill();
-
-        ctx.fillStyle = '#1d4d3b';
-        ctx.beginPath();
-        ctx.moveTo(0, canvas.height - 80);
-        ctx.bezierCurveTo(200, canvas.height - 140, 320, canvas.height - 40, 520, canvas.height - 70);
-        ctx.bezierCurveTo(640, canvas.height - 90, 720, canvas.height - 30, canvas.width, canvas.height - 60);
-        ctx.lineTo(canvas.width, canvas.height);
-        ctx.lineTo(0, canvas.height);
-        ctx.closePath();
-        ctx.fill();
-
-        // Player crate
-        ctx.save();
-        ctx.translate(player.x + player.width / 2, player.y + player.height / 2 + player.wobble);
-        ctx.fillStyle = '#8d6e63';
-        ctx.strokeStyle = '#5d4037';
-        ctx.lineWidth = 6;
-        ctx.beginPath();
-        ctx.roundRect(-player.width / 2, -player.height / 2, player.width, player.height, 14);
-        ctx.fill();
-        ctx.stroke();
-        ctx.fillStyle = 'rgba(255, 224, 178, 0.2)';
-        ctx.beginPath();
-        ctx.roundRect(-player.width / 2 + 12, -player.height / 2 + 8, player.width - 24, player.height - 16, 12);
-        ctx.fill();
-        ctx.restore();
-
-        // Bananas
-        bananas.forEach((banana) => {
-          ctx.save();
-          ctx.translate(banana.x, banana.y);
-          ctx.rotate(banana.rotation);
-          if (banana.type === 'ripe') {
-            ctx.fillStyle = '#ffd95a';
-            ctx.strokeStyle = '#b68620';
-          } else {
-            ctx.fillStyle = '#8d6e63';
-            ctx.strokeStyle = '#3e2723';
-          }
-          ctx.lineWidth = 5;
-          ctx.beginPath();
-          ctx.moveTo(-banana.size / 2, -banana.size / 3);
-          ctx.quadraticCurveTo(-banana.size, banana.size / 2, banana.size / 2, banana.size / 2.5);
-          ctx.quadraticCurveTo(banana.size * 0.3, -banana.size / 3, banana.size / 2, -banana.size / 2);
-          ctx.quadraticCurveTo(0, -banana.size * 0.15, -banana.size / 2, -banana.size / 3);
-          ctx.fill();
-          ctx.stroke();
-          ctx.restore();
-        });
-
-        // Particles
-        particles.forEach((p) => {
-          ctx.save();
-          ctx.globalAlpha = Math.max(0, p.life / 0.75);
-          ctx.fillStyle = p.color;
-          ctx.beginPath();
-          ctx.arc(p.x, p.y, 4, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        });
-      }
-
-      /**
-       * Main animation loop - coordinates updates and rendering.
-       * @param {number} timestamp - Current frame timestamp.
-       */
-      function loop(timestamp) {
-        const delta = Math.min((timestamp - lastTimestamp) / 1000, 0.1);
-        lastTimestamp = timestamp;
-
-        if (gameState === 'playing') {
-          spawnTimer += delta;
-          if (spawnTimer >= spawnInterval) {
-            spawnTimer = 0;
-            spawnBanana();
-          }
-          updatePlayer(delta);
-          updateBananas(delta);
-          updateParticles(delta);
-          updateLevel();
-
-          if (state.lives <= 0) {
-            finishGame();
-          }
+    // Hit the ground
+    if (b.y > H + b.size) {
+      if (b.type === 'ripe' || b.type === 'golden') {
+        if (particles.count < 200) {
+          particles.burst(b.x, H - 20, 8, {
+            colors: ['#ffd95a', '#b68620'],
+            minSpeed: 40, maxSpeed: 140, gravity: 200,
+          });
         }
-
-        render();
-        requestAnimationFrame(loop);
+        loseLife();
       }
+      bananas.splice(i, 1);
+    }
+  }
 
-      /**
-       * Translate keyboard events into movement flags.
-       * @param {KeyboardEvent} event - The keyboard event.
-       * @param {boolean} isPressed - Whether the key is pressed or released.
-       */
-      function handleKey(event, isPressed) {
-        const key = event.key.toLowerCase();
-        if (['arrowleft', 'arrowright', 'a', 'd'].includes(key)) {
-          event.preventDefault();
-        }
-        if (key === 'arrowleft' || key === 'a') inputState.left = isPressed;
-        if (key === 'arrowright' || key === 'd') inputState.right = isPressed;
-      }
+  // Level up as score climbs
+  const newLevel = Math.min(12, 1 + Math.floor(game.getScore() / 160));
+  if (newLevel !== level) {
+    level = newLevel;
+    syncBadges();
+    sfx('levelup');
+  }
 
-      /**
-       * Reset input when pointer buttons are released.
-       */
-      function resetTouchInput() {
-        inputState.left = false;
-        inputState.right = false;
-      }
+  // Floating text update
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 60 * dt;
+    f.life -= dt;
+    if (f.life <= 0) floaters.splice(i, 1);
+  }
 
-      document.addEventListener('keydown', (event) => handleKey(event, true));
-      document.addEventListener('keyup', (event) => handleKey(event, false));
+  particles.update(dt);
 
-      canvas.addEventListener('pointerdown', () => {
-        if (gameState === 'playing') {
-          isFocused = true;
-          setStatus('Controls locked on the crate — keep catching!', 'focused');
-        }
-      });
+  // Next-goal HUD (live update)
+  goalEl.textContent = nextGoalText();
+  checkUnlocks();
+});
 
-      document.addEventListener('pointerdown', (event) => {
-        if (!canvas.contains(event.target)) {
-          if (gameState === 'playing') {
-            isFocused = false;
-            setStatus('Controls paused — click the game area to resume.', 'paused');
-            resetTouchInput();
-          }
-        }
-      });
+function finalizeMeta() {
+  const score = game.getScore();
+  meta.totalScore += score;
+  meta.improveStreak = score > meta.lastScore ? meta.improveStreak + 1 : 0;
+  meta.lastScore = score;
+  if (score > meta.bestScore) meta.bestScore = score;
+  if (maxCombo > meta.bestStreak) meta.bestStreak = maxCombo;
+  // Badges: bronze = catch 25 in one run, silver = 10-combo streak no misses, gold = bank x8 combo
+  if (caught >= 25) meta.badges.bronze = true;
+  if (maxCombo >= 8) meta.badges.silver = true;
+  if (maxCombo >= 8 && lives === 3) meta.badges.gold = true;
+  saveMeta();
 
-      window.addEventListener('blur', () => {
-        if (gameState === 'playing') {
-          isFocused = false;
-          setStatus('Window unfocused — click the game to continue.', 'paused');
-          resetTouchInput();
-        }
-      });
+  // Populate game-over overlay extras
+  const statLine = document.getElementById('bb-stat-line');
+  const rotations = [
+    'Run #' + meta.totalRuns,
+    meta.improveStreak >= 2 ? meta.improveStreak + ' runs in a row improving!' : 'Best streak: x' + meta.bestStreak,
+    'Total tosses: ' + meta.tosses,
+  ];
+  statLine.textContent = rotations[meta.totalRuns % rotations.length];
 
-      function requestFs(){
-        const el=document.documentElement;
-        if(el.requestFullscreen) el.requestFullscreen().catch(()=>{});
-        else if(el.webkitRequestFullscreen) el.webkitRequestFullscreen().catch(()=>{});
-        else if(el.msRequestFullscreen) el.msRequestFullscreen().catch(()=>{});
-      }
+  const goalLine = document.getElementById('bb-goal-line');
+  const locked = UNLOCKS.filter(u => !meta.unlocks[u.id]?.earned)
+                        .sort((a, b) => (a.need - progressOf(a)) - (b.need - progressOf(b)));
+  if (locked.length) {
+    const u = locked[0];
+    goalLine.textContent = 'So close! ' + u.name + ' needs ' + Math.max(0, u.need - progressOf(u)) + ' more.';
+  } else {
+    goalLine.textContent = 'All unlocks earned — beat your best: ' + meta.bestScore;
+  }
 
-      tryBtn.addEventListener('click', () => {
-        requestFs();
-        tryOverlay.classList.remove('show');
-        startOverlay.classList.add('show');
-      });
+  const badgeRow = document.getElementById('bb-badge-row');
+  badgeRow.innerHTML =
+    '<span title="Catch 25 in one run" style="opacity:' + (meta.badges.bronze ? '1' : '0.25') + '">🥉</span> ' +
+    '<span title="10-combo streak" style="opacity:' + (meta.badges.silver ? '1' : '0.25') + '">🥈</span> ' +
+    '<span title="Bank a x8 combo, no life lost" style="opacity:' + (meta.badges.gold ? '1' : '0.25') + '">🥇</span>';
 
-      startBtn.addEventListener('click', () => {
-        beginCountdown();
-      });
+  // Rubber-band easy-mode offer
+  if (fastDeathCount() >= 2 && !easyMode) {
+    easyBtn.classList.remove('hidden');
+  } else {
+    easyBtn.classList.add('hidden');
+  }
+}
 
-      primaryAction.addEventListener('click', () => {
-        if (primaryAction.dataset.action === 'restart') {
-          gameOverOverlay.classList.remove('show');
-          startOverlay.classList.add('show');
-        }
-      });
+// ── Render ──────────────────────────────────────────────────────
+function drawBasket(ctx) {
+  const skin = stormMode ? 'storm'
+             : meta.unlocks['basket-golden']?.earned && meta.bestScore >= 900 ? 'golden'
+             : meta.unlocks['basket-jungle']?.earned ? 'jungle' : 'default';
+  let fill = '#8d6e63', stroke = '#5d4037', inner = 'rgba(255, 224, 178, 0.2)';
+  if (skin === 'jungle') { fill = '#4e7a3d'; stroke = '#2e4a22'; inner = 'rgba(200,255,180,0.2)'; }
+  if (skin === 'golden') { fill = '#d4a017'; stroke = '#8a6a0a'; inner = 'rgba(255,240,180,0.35)'; }
+  if (skin === 'storm')  { fill = '#37474f'; stroke = '#78909c'; inner = 'rgba(180,220,255,0.25)'; }
 
-      if (mobileControls) {
-        mobileControls.addEventListener('pointerdown', (event) => {
-          const button = event.target.closest('button[data-dir]');
-          if (!button) return;
-          event.preventDefault();
-          if (button.dataset.dir === 'left') inputState.left = true;
-          if (button.dataset.dir === 'right') inputState.right = true;
-        });
+  ctx.save();
+  ctx.translate(player.x + player.w / 2, player.y + player.h / 2 + player.wobble);
+  ctx.fillStyle = fill;
+  ctx.strokeStyle = stroke;
+  ctx.lineWidth = 6;
+  ctx.beginPath();
+  ctx.roundRect(-player.w / 2, -player.h / 2, player.w, player.h, 14);
+  ctx.fill();
+  ctx.stroke();
+  ctx.fillStyle = inner;
+  ctx.beginPath();
+  ctx.roundRect(-player.w / 2 + 12, -player.h / 2 + 8, player.w - 24, player.h - 16, 12);
+  ctx.fill();
 
-        ['pointerup', 'pointercancel', 'pointerleave'].forEach((type) => {
-          mobileControls.addEventListener(type, resetTouchInput);
-        });
-      }
+  // Damage flash overlay
+  if (flashTimer > 0 && Math.floor(flashTimer * 15) % 2 === 0) {
+    ctx.globalAlpha = 0.4;
+    ctx.fillStyle = '#ff4444';
+    ctx.beginPath();
+    ctx.roundRect(-player.w / 2, -player.h / 2, player.w, player.h, 14);
+    ctx.fill();
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+}
 
-      syncHud();
-      requestAnimationFrame((ts) => {
-        lastTimestamp = ts;
-        loop(ts);
-      });
-    })();
-  </script>
+function drawMonkey(ctx) {
+  const hasFriend = meta.unlocks['monkey-friend']?.earned;
+  ctx.save();
+  ctx.translate(monkey.x, monkey.y + monkey.bob);
+  const glow = monkey.flashTimer > 0;
+  if (glow) { ctx.shadowBlur = 20; ctx.shadowColor = '#ffd700'; }
+  ctx.fillStyle = hasFriend ? '#a0522d' : '#8b5a2b';
+  ctx.beginPath();
+  ctx.arc(0, 0, 26, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#d2a679';
+  ctx.beginPath();
+  ctx.arc(0, 4, 16, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#2b1b0e';
+  ctx.beginPath();
+  ctx.arc(-7, -2, 3, 0, Math.PI * 2);
+  ctx.arc(7, -2, 3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+  ctx.fillStyle = '#ffe082';
+  ctx.font = 'bold 11px system-ui, sans-serif';
+  ctx.textAlign = 'center';
+  ctx.fillText('TOSS HERE', monkey.x, monkey.y + monkey.bob + 46);
+}
+
+function drawWasp(ctx) {
+  if (!wasp) return;
+  ctx.save();
+  ctx.translate(wasp.x, wasp.y);
+  if (wasp.state === 'buzz') {
+    const flash = Math.sin(elapsed * 30) > 0;
+    ctx.globalAlpha = flash ? 1 : 0.5;
+  }
+  ctx.fillStyle = '#2b2b2b';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 12, 8, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.fillStyle = '#ffd54f';
+  ctx.fillRect(-8, -4, 4, 8);
+  ctx.fillRect(0, -4, 4, 8);
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = 'rgba(255,255,255,0.5)';
+  ctx.beginPath();
+  ctx.ellipse(-4, -10, 8, 4, 0.3, 0, Math.PI * 2);
+  ctx.ellipse(4, -10, 8, 4, -0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawHeldIndicator(ctx) {
+  if (!held) return;
+  const pct = held.timer / TOSS_WINDOW;
+  const barW = 60;
+  const x = player.x + player.w / 2 - barW / 2;
+  const y = player.y - 18;
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(x, y, barW, 6);
+  ctx.fillStyle = pct > 0.3 ? '#ffd95a' : '#ff7043';
+  ctx.fillRect(x, y, barW * pct, 6);
+}
+
+game.onRender((ctx) => {
+  if (dying) {
+    ctx.fillStyle = '#0b2a3c';
+    ctx.fillRect(0, 0, W, H);
+    particles.draw(ctx);
+    return;
+  }
+
+  // Jungle night sky (background depth: gradient + moon glow + ambient particles handled by phase tint)
+  const gradient = ctx.createLinearGradient(0, 0, 0, H);
+  if (phase === 'wind') {
+    gradient.addColorStop(0, '#1a3a4c');
+    gradient.addColorStop(0.4, '#1a5a5d');
+    gradient.addColorStop(1, '#1a3a2e');
+  } else if (phase === 'golden') {
+    gradient.addColorStop(0, '#3a2a0c');
+    gradient.addColorStop(0.4, '#5a4212');
+    gradient.addColorStop(1, '#2a2414');
+  } else if (phase === 'frenzy') {
+    gradient.addColorStop(0, '#3a0c2a');
+    gradient.addColorStop(0.4, '#4d1042');
+    gradient.addColorStop(1, '#2a1424');
+  } else {
+    gradient.addColorStop(0, '#0b2a3c');
+    gradient.addColorStop(0.4, '#10424d');
+    gradient.addColorStop(1, '#132a24');
+  }
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H);
+
+  // Moon glow
+  ctx.save();
+  ctx.globalCompositeOperation = 'lighter';
+  ctx.fillStyle = phase === 'golden' ? 'rgba(255, 215, 0, 0.22)' : 'rgba(255, 244, 128, 0.15)';
+  ctx.beginPath();
+  ctx.arc(W - 120, 90, 160, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+
+  // Ground layers
+  ctx.fillStyle = '#174033';
+  ctx.beginPath();
+  ctx.moveTo(0, H - 120);
+  ctx.bezierCurveTo(160, H - 180, 280, H - 80, 420, H - 110);
+  ctx.bezierCurveTo(560, H - 140, 680, H - 60, W, H - 100);
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fill();
+
+  ctx.fillStyle = '#1d4d3b';
+  ctx.beginPath();
+  ctx.moveTo(0, H - 80);
+  ctx.bezierCurveTo(200, H - 140, 320, H - 40, 520, H - 70);
+  ctx.bezierCurveTo(640, H - 90, 720, H - 30, W, H - 60);
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // Wind streak ambient particles (visual telegraph for wind phase)
+  if (phase === 'wind') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.25)';
+    ctx.lineWidth = 2;
+    for (let i = 0; i < 6; i++) {
+      const y = (i * 97 + (elapsed * 80 * windDir)) % H;
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(30 * windDir + 30, y);
+      ctx.stroke();
+    }
+  }
+
+  drawMonkey(ctx);
+  drawBasket(ctx);
+  drawHeldIndicator(ctx);
+  drawWasp(ctx);
+
+  // Bananas
+  bananas.forEach((b) => {
+    ctx.save();
+    ctx.translate(b.x, b.y);
+    ctx.rotate(b.rotation);
+    if (b.type === 'ripe') {
+      ctx.fillStyle = '#ffd95a';
+      ctx.strokeStyle = '#b68620';
+    } else if (b.type === 'golden') {
+      ctx.fillStyle = '#ffe94d';
+      ctx.strokeStyle = '#ffd700';
+      ctx.shadowBlur = 12;
+      ctx.shadowColor = '#ffd700';
+    } else {
+      ctx.fillStyle = '#8d6e63';
+      ctx.strokeStyle = '#3e2723';
+    }
+    ctx.lineWidth = 5;
+    ctx.beginPath();
+    ctx.moveTo(-b.size / 2, -b.size / 3);
+    ctx.quadraticCurveTo(-b.size, b.size / 2, b.size / 2, b.size / 2.5);
+    ctx.quadraticCurveTo(b.size * 0.3, -b.size / 3, b.size / 2, -b.size / 2);
+    ctx.quadraticCurveTo(0, -b.size * 0.15, -b.size / 2, -b.size / 3);
+    ctx.fill();
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  particles.draw(ctx);
+
+  // Floating text (drawn last, above everything)
+  floaters.forEach(f => {
+    ctx.globalAlpha = f.life / f.maxLife;
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold ' + f.size + 'px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y);
+  });
+  ctx.globalAlpha = 1;
+
+  // Phase banner text
+  if (phase !== 'normal') {
+    ctx.fillStyle = phase === 'golden' ? '#ffd700' : phase === 'frenzy' ? '#ff77cc' : '#88ccff';
+    ctx.font = 'bold 14px system-ui, sans-serif';
+    ctx.textAlign = 'center';
+    const label = phase === 'wind' ? 'WIND GUST' : phase === 'golden' ? 'GOLDEN RUSH x3' : 'MONKEY FRENZY';
+    ctx.fillText(label, W / 2, 30);
+  }
+});
+
+reset();
+</script>
 </body>
 </html>

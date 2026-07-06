@@ -2,403 +2,933 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Tower Frenzy '90 - Demo</title>`n  <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Tower Frenzy '90 · Games Inc Jr</title>
+  <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
   <style>
-    :root {
-      color-scheme: dark;
-      font-family: 'Courier New', monospace;
-    }
+    #gij-stage { background: #1e1b4b; }
+    canvas { background: #1e1b4b; }
 
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      padding: 32px 16px 64px;
-      background: linear-gradient(180deg, #312e81 0%, #1e1b4b 100%);
-      color: #e0f2fe;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(2.4rem, 5vw, 3.6rem);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #fbbf24;
-      text-shadow: 0 0 20px rgba(251, 191, 36, 0.8);
-    }
-
-    .tagline {
-      margin: 0;
-      font-size: clamp(1rem, 2.5vw, 1.4rem);
-      color: #bae6fd;
-      text-align: center;
-      max-width: 760px;
-    }
-
-    .hud {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: clamp(16px, 4vw, 32px);
-      font-size: clamp(1.1rem, 2.4vw, 1.5rem);
-      font-weight: 700;
-    }
-
-    .hud span {
-      color: #fbbf24;
-      margin-left: 6px;
-    }
-
-    .stage {
-      position: relative;
-      width: min(92vw, 880px);
-      aspect-ratio: 4 / 3;
-      border-radius: 28px;
-      overflow: hidden;
-      border: 2px solid rgba(251, 191, 36, 0.45);
-      box-shadow: 0 28px 68px rgba(5, 12, 24, 0.7);
-      background: linear-gradient(180deg, rgba(49, 46, 129, 0.85), rgba(30, 27, 75, 0.95));
-    }
-
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-    }
-
-    .overlay {
+    #tf-goal {
       position: absolute;
-      inset: 0;
-      background: rgba(4, 7, 19, 0.88);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      padding: 24px;
-      text-align: center;
-    }
-
-    .overlay.hidden {
-      pointer-events: none;
-      opacity: 0;
-    }
-
-    .overlay h2 {
-      margin: 0;
-      font-size: clamp(2rem, 4vw, 2.6rem);
-      color: #fbbf24;
-    }
-
-    .overlay p {
-      margin: 0;
-      color: #e0f2fe;
-      line-height: 1.6;
-    }
-
-    .overlay button {
-      padding: 14px 28px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #1e1b4b;
-      background: linear-gradient(135deg, #fbbf24 0%, #f59e0b 100%);
-      border: none;
+      top: 10px; left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      background: rgba(0,0,0,0.55);
+      border: 1px solid rgba(251, 191, 36, 0.5);
       border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 16px 40px rgba(251, 191, 36, 0.4);
+      padding: 4px 14px;
+      color: #fde68a;
+      font-size: clamp(11px, 1.8vw, 15px);
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    #tf-goal.hidden { display: none; }
+
+    #tf-easy-btn {
+      margin-top: 10px;
+    }
+    #tf-easy-btn.hidden { display: none; }
+
+    #tf-unlock-banner {
+      position: absolute;
+      top: 46px; left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      z-index: 20;
+      background: linear-gradient(135deg, #fbbf24, #f59e0b);
+      color: #1e1b4b;
+      font-weight: 900;
+      font-size: clamp(12px, 2vw, 16px);
+      padding: 8px 20px;
+      border-radius: 10px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.25s, transform 0.25s;
+      white-space: nowrap;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.4);
+    }
+    #tf-unlock-banner.show {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
     }
 
-    .overlay button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 20px 52px rgba(251, 191, 36, 0.6);
+    .tf-badges-row {
+      display: flex; gap: 10px; justify-content: center; margin: 14px 0 6px;
+      flex-wrap: wrap;
+    }
+    .tf-badge-chip {
+      display: flex; flex-direction: column; align-items: center;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.15);
+      border-radius: 10px;
+      padding: 8px 10px;
+      min-width: 78px;
+      font-size: 11px;
+      color: #7d8fae;
+    }
+    .tf-badge-chip.earned {
+      color: #fde68a;
+      border-color: rgba(251,191,36,0.6);
+      background: rgba(251,191,36,0.08);
+    }
+    .tf-badge-chip .tf-badge-icon { font-size: 20px; margin-bottom: 2px; }
+
+    #tf-next-hint {
+      color: #8bd4ec;
+      font-size: clamp(0.75rem, 1.6vw, 0.9rem);
+      margin-bottom: 10px;
     }
   </style>
 </head>
 <body>
-  <h1>Tower Frenzy '90</h1>
-  <p class="tagline">Stack blocks with perfect timing. Build high, don't topple, and chase the high score!</p>
+<div id="gij-wrap">
 
-  <div class="hud" role="status" aria-live="polite">
-    <div>Score:<span id="score">0</span></div>
-    <div>Height:<span id="height">0</span></div>
-    <div>Combo:<span id="combo">0</span></div>
-  </div>
-
-  <div class="stage">
-    <canvas id="game" width="800" height="600" aria-label="Tower stacking game"></canvas>
-    <div id="tryOverlay" class="overlay">
-      <h2>Tower Frenzy '90</h2>
-      <p>Stack blocks with perfect timing!</p>
-      <button id="tryBtn">Try Now</button>
-    </div>
-    <div id="startOverlay" class="overlay hidden">
-      <h2>Ready to Stack?</h2>
-      <p>Press SPACE (or tap) to drop blocks. Stack them perfectly for combo bonuses!</p>
-      <button id="startBtn">Start</button>
+  <!-- ── Try-Now Overlay ── -->
+  <div id="gij-try-overlay" class="gij-overlay">
+    <div class="gij-modal">
+      <h1 data-game-title>Tower Frenzy '90</h1>
+      <p id="gij-description">Stack blocks with perfect timing. Build high, don't topple!</p>
+      <button id="gij-try-btn" class="gij-btn gij-btn-primary">▶ Play Now</button>
+      <div id="tf-storm-row" class="hidden" style="margin-top:14px;">
+        <button id="tf-storm-toggle" class="gij-btn gij-btn-danger" style="padding:8px 22px; font-size:0.8rem;">Storm Mode: OFF</button>
+      </div>
     </div>
   </div>
 
-  <script type="module">
-    (() => {
-      const canvas = document.getElementById('game');
-      const ctx = canvas.getContext('2d');
-      const tryOverlay = document.getElementById('tryOverlay');
-      const startOverlay = document.getElementById('startOverlay');
-      const tryBtn = document.getElementById('tryBtn');
-      const startBtn = document.getElementById('startBtn');
-      const scoreEl = document.getElementById('score');
-      const heightEl = document.getElementById('height');
-      const comboEl = document.getElementById('combo');
+  <!-- ── Instructions Overlay ── -->
+  <div id="gij-instructions-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>How to Play</h2>
+      <ul id="gij-instructions" class="gij-list"></ul>
+      <button id="gij-start-btn" class="gij-btn gij-btn-primary">Start Stacking!</button>
+    </div>
+  </div>
 
-      const state = {
-        running: false,
-        score: 0,
-        height: 0,
-        combo: 0,
-        lastTime: 0,
-        blocks: [],
-        currentBlock: null,
-        baseWidth: 200,
-      };
+  <!-- ── Game-Over Overlay ── -->
+  <div id="gij-gameover-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>Tower Fell!</h2>
+      <div class="gij-score-row">
+        <span id="gij-final-score">Score: 0</span>
+        <span id="gij-final-hs">Best: 0</span>
+      </div>
+      <div id="tf-next-hint">★ Next: —</div>
+      <div class="tf-badges-row" id="tf-badges-row"></div>
+      <button id="gij-restart-btn" class="gij-btn gij-btn-primary">Rebuild</button>
+      <button id="tf-easy-btn" class="gij-btn gij-btn-danger hidden">Try Easy?</button>
+    </div>
+  </div>
 
-      window.addEventListener('keydown', e => {
-        if (e.key === ' ' && state.running) {
-          e.preventDefault();
-          dropBlock();
-        }
+  <!-- ── Stage ── -->
+  <div id="gij-stage">
+
+    <div id="gij-hud" class="hidden">
+      <div class="gij-badge">⭐ <strong id="gij-score">0</strong></div>
+      <div class="gij-badge">🏆 <strong id="gij-highscore">0</strong></div>
+      <div class="gij-badge">🧱 <strong id="tf-height">0</strong></div>
+      <div class="gij-badge">🔥 <strong id="tf-combo">0</strong></div>
+      <div class="gij-badge">⚖️ <strong id="tf-wobble">0%</strong></div>
+    </div>
+
+    <div id="tf-goal" class="hidden">★ Next: —</div>
+    <div id="tf-unlock-banner"></div>
+
+    <canvas id="gij-canvas"></canvas>
+
+    <div id="gij-controls"></div>
+
+  </div><!-- /gij-stage -->
+</div><!-- /gij-wrap -->
+
+<script src="/game-framework/game-engine.js"></script>
+<script src="/game-framework/game-utils.js"></script>
+<script src="/game-framework/game-audio.js"></script>
+<script>
+function sfx(name) { if (typeof GameAudio !== 'undefined') GameAudio.play(name); }
+
+const GAME = {
+  slug:  'tower-frenzy-90',
+  title: "Tower Frenzy '90",
+  description: 'Stack blocks with perfect timing. Build high, don\'t topple!',
+  instructions: [
+    '<strong>Space / Tap:</strong> Drop the moving block',
+    '<strong>Block types:</strong> Wide = stabilizes the tower. Narrow = huge combo, risky. Bomb = clears wobble on landing.',
+    '<strong>Wobble:</strong> Sloppy drops destabilize the tower — watch the ⚖️ meter, it can topple you even on a decent drop!',
+    '<strong>Every 10 floors:</strong> something changes — wind, a golden bonus floor, new block types.',
+    '<strong>Goal:</strong> Build as high as you can!',
+  ],
+  controls: [
+    { label: '⬇ DROP', action: 'space', cls: 'gij-ctrl-space' },
+  ],
+  width:  800,
+  height: 600,
+};
+
+const canvas    = document.getElementById('gij-canvas');
+const game      = new GameEngine(canvas).setup(GAME);
+const input     = new InputManager();
+const particles = new ParticleSystem();
+
+const W = game.W, H = game.H;
+
+// ── Constants (retro '90 stacking feel) ─────────────────────────
+const BASE_WIDTH        = 200;
+const BLOCK_H           = 30;
+const MIN_WIDTH         = 30;    // tower fails below this sliver
+const PERFECT_THRESHOLD = 10;    // px tolerance for a "PERFECT"
+const SPAWN_DELAY       = 0.2;   // seconds between drop and next block
+const WOBBLE_MAX        = 100;
+const WOBBLE_COLLAPSE   = 100;   // wobble >= this => tower falls even on an OK drop
+const PHASE_EVERY       = 10;    // new phase every N floors
+
+const PALETTES = {
+  classic:  { name: 'Classic',  colors: ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'], bg: ['#312e81', '#1e1b4b'] },
+  sunset:   { name: 'Sunset',   colors: ['#f97316', '#f59e0b', '#ef4444', '#ec4899', '#fb923c', '#facc15'], bg: ['#7c2d12', '#1e1b4b'] },
+  neon:     { name: 'Neon',     colors: ['#39ff14', '#00e5ff', '#ff2079', '#fbbf24', '#a3ff12', '#00ffd0'], bg: ['#0f172a', '#020617'] },
+};
+
+const BLOCK_TYPES = {
+  normal:     { key: 'normal',     label: '',        weight: 1.0 },
+  stabilizer: { key: 'stabilizer', label: 'WIDE',    weight: 0,   widthMult: 1.5, wobbleRelief: 35, comboMult: 0.4 },
+  precision:  { key: 'precision',  label: 'NARROW',  weight: 0,   widthMult: 0.55, wobblePenaltyMult: 1.8, comboMult: 2.5 },
+  bomb:       { key: 'bomb',       label: 'BOMB',    weight: 0,   clearsWobble: true, forgiveness: 22 },
+  golden:     { key: 'golden',     label: 'GOLDEN',  weight: 0,   scoreMult: 2 },
+};
+
+// ── Meta-progression (localStorage) ─────────────────────────────
+const META_KEY = 'gij-meta:tower-frenzy-90';
+function defaultMeta() {
+  return {
+    v: 1,
+    totalRuns: 0,
+    bestScore: 0,
+    bestHeight: 0,
+    improveStreak: 0,
+    lastRunHeight: 0,
+    unlocks: {
+      'palette-sunset': { earned: false, celebrated: false },
+      'palette-neon':   { earned: false, celebrated: false },
+      'mode-storm':     { earned: false, celebrated: false },
+    },
+    equipped: { palette: 'classic' },
+    badges: { bronze: false, silver: false, gold: false },
+    stormMode: false,
+  };
+}
+function loadMeta() {
+  try {
+    const raw = JSON.parse(localStorage.getItem(META_KEY));
+    if (!raw) return defaultMeta();
+    const d = defaultMeta();
+    return Object.assign(d, raw, {
+      unlocks: Object.assign(d.unlocks, raw.unlocks || {}),
+      equipped: Object.assign(d.equipped, raw.equipped || {}),
+      badges: Object.assign(d.badges, raw.badges || {}),
+    });
+  } catch (e) { return defaultMeta(); }
+}
+function saveMeta() {
+  try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {}
+}
+let meta = loadMeta();
+
+const UNLOCKS = [
+  { id: 'palette-sunset', name: 'Sunset Palette',  type: 'height', need: 12 },
+  { id: 'mode-storm',     name: 'Storm Mode',       type: 'runs',   need: 3  },
+  { id: 'palette-neon',   name: 'Neon Palette',     type: 'height', need: 30 },
+];
+
+function progressOf(u) {
+  if (u.type === 'height') return Math.max(meta.bestHeight, towerHeight || 0);
+  if (u.type === 'runs')   return meta.totalRuns;
+  return 0;
+}
+let bannerTimer = 0;
+const bannerEl = document.getElementById('tf-unlock-banner');
+function showUnlockBanner(text) {
+  bannerEl.textContent = '★ Unlocked: ' + text;
+  bannerEl.classList.add('show');
+  bannerTimer = 2.5;
+}
+function checkUnlocks() {
+  for (const u of UNLOCKS) {
+    const slot = meta.unlocks[u.id] || (meta.unlocks[u.id] = { earned: false, celebrated: false });
+    if (!slot.earned && progressOf(u) >= u.need) {
+      slot.earned = true;
+      saveMeta();
+      showUnlockBanner(u.name);
+      if (particles.count < 200) {
+        particles.burst(W / 2, 80, 30, { colors: ['#ffd700', '#ffffff'], gravity: -40, lifetime: 1.0 });
+      }
+      game.shake(3, 0.15);
+      sfx('powerup');
+
+      // Auto-equip newly unlocked palettes so the reward is immediately visible.
+      // Storm Mode stays OFF by default even once unlocked — it's an optional
+      // hard-mode variant the player opts into via the Storm toggle (see below).
+      if (u.id === 'palette-sunset') { meta.equipped.palette = 'sunset'; palette = currentPalette(); saveMeta(); }
+      if (u.id === 'palette-neon')   { meta.equipped.palette = 'neon';   palette = currentPalette(); saveMeta(); }
+      if (u.id === 'mode-storm')     { refreshStormUI(); }
+    }
+  }
+}
+function nextGoal() {
+  const locked = UNLOCKS.filter(u => !meta.unlocks[u.id]?.earned)
+                        .sort((a, b) => (a.need - progressOf(a)) - (b.need - progressOf(b)));
+  if (!locked.length) return 'Beat your best: ' + meta.bestHeight + ' floors';
+  const u = locked[0];
+  const remain = Math.max(0, u.need - progressOf(u));
+  const unit = u.type === 'runs' ? 'runs' : 'floors';
+  return '★ Next: ' + u.name + ' — ' + remain + ' ' + unit + ' to go';
+}
+
+const goalEl = document.getElementById('tf-goal');
+
+// ── Game state ──────────────────────────────────────────────────
+let blocks, currentBlock, fallingPieces, floaters;
+let towerHeight, combo, spawnTimer, wobble;
+let dropHeld, tapQueued;
+let elapsed, difficulty, easyMode;
+let lastPhaseAnnounced, phaseGraceTimer;
+let windActive, windStrength, goldenActive, goldenTimer;
+let dying, deathTimer, hitStop;
+let palette;
+
+const heightEl = document.getElementById('tf-height');
+const comboEl  = document.getElementById('tf-combo');
+const wobbleEl = document.getElementById('tf-wobble');
+
+function updateBadges() {
+  heightEl.textContent = towerHeight;
+  comboEl.textContent  = combo;
+  wobbleEl.textContent = Math.round(wobble) + '%';
+}
+
+function currentPalette() {
+  return PALETTES[meta.equipped.palette] || PALETTES.classic;
+}
+
+// ── Rubber-banding (per DIFFICULTY-AND-ONBOARDING §5) ───────────
+const DEATH_KEY = 'gij_deaths_tower-frenzy-90';
+const EASY_KEY  = 'gij_easy_tower-frenzy-90';
+function recordDeath(elapsedSec) {
+  try {
+    const fast = elapsedSec < 60;
+    const n = fast ? (parseInt(localStorage.getItem(DEATH_KEY) || '0', 10) + 1) : 0;
+    localStorage.setItem(DEATH_KEY, String(n));
+    return n;
+  } catch (e) { return 0; }
+}
+function loadEasyMode() {
+  try { return localStorage.getItem(EASY_KEY) === '1'; } catch (e) { return false; }
+}
+function saveEasyMode(v) {
+  try { localStorage.setItem(EASY_KEY, v ? '1' : '0'); } catch (e) {}
+}
+function assistFactor() {
+  if (easyMode) return 0.75;
+  try {
+    return parseInt(localStorage.getItem(DEATH_KEY) || '0', 10) >= 2 ? 0.85 : 1.0;
+  } catch (e) { return 1.0; }
+}
+function tutorialWindow() { return easyMode ? 60 : 30; }
+
+function triggerHitStop(sec) { hitStop = Math.max(hitStop, sec); }
+
+function floatText(x, y, text, color, size) {
+  floaters.push({ x, y, text, color: color || '#fff', size: size || 18, life: 0.7, maxLife: 0.7 });
+}
+
+function reset() {
+  if (easyMode === undefined) easyMode = loadEasyMode();
+  palette = currentPalette();
+  blocks = [{
+    x: W / 2 - BASE_WIDTH / 2,
+    y: H - 40,
+    width: BASE_WIDTH,
+    height: BLOCK_H,
+    color: '#6366f1',
+  }];
+  currentBlock   = null;
+  fallingPieces  = [];
+  floaters       = [];
+  towerHeight    = 0;
+  combo          = 0;
+  spawnTimer     = 0;
+  wobble         = 0;
+  dropHeld       = false;
+  tapQueued      = false;
+  elapsed        = 0;
+  difficulty     = 1.0;
+  lastPhaseAnnounced = 0;
+  phaseGraceTimer = 0;
+  windActive     = false;
+  windStrength   = 0;
+  goldenActive   = false;
+  goldenTimer    = 0;
+  dying          = false;
+  deathTimer     = 0;
+  hitStop        = 0;
+  bannerTimer    = 0;
+  bannerEl.classList.remove('show');
+  particles.clear();
+
+  meta.totalRuns++;
+  saveMeta();
+
+  goalEl.classList.remove('hidden');
+  goalEl.textContent = nextGoal();
+
+  spawnBlock();
+  updateBadges();
+}
+
+game.onRestart(reset);
+
+// GameAudio must init on a user gesture — wire it once to both buttons.
+document.getElementById('gij-start-btn')?.addEventListener('click', () => { GameAudio.init(); sfx('click'); }, { once: true });
+document.getElementById('gij-restart-btn')?.addEventListener('click', () => { GameAudio.init(); sfx('click'); });
+document.getElementById('gij-try-btn')?.addEventListener('click', () => sfx('click'));
+
+// ── Storm Mode toggle (unlockable hard mode — opt-in, never forced) ─────
+const stormRow    = document.getElementById('tf-storm-row');
+const stormToggle = document.getElementById('tf-storm-toggle');
+function refreshStormUI() {
+  if (meta.unlocks['mode-storm']?.earned) stormRow.classList.remove('hidden');
+  stormToggle.textContent = 'Storm Mode: ' + (meta.stormMode ? 'ON' : 'OFF');
+}
+stormToggle.addEventListener('click', () => {
+  meta.stormMode = !meta.stormMode;
+  saveMeta();
+  refreshStormUI();
+  sfx('click');
+});
+refreshStormUI();
+
+// ── Try Easy? button (DIFFICULTY-AND-ONBOARDING §5) ─────────────
+const easyBtn = document.getElementById('tf-easy-btn');
+function refreshEasyBtnLabel() {
+  easyBtn.textContent = easyMode ? 'Back to Normal' : 'Try Easy?';
+}
+easyBtn.addEventListener('click', () => {
+  easyMode = !easyMode;
+  saveEasyMode(easyMode);
+  refreshEasyBtnLabel();
+  sfx('click');
+  document.getElementById('gij-restart-btn').click();
+});
+
+function pickBlockType() {
+  // Which types are unlocked at this height?
+  const options = [BLOCK_TYPES.normal];
+  if (towerHeight >= 3)  options.push(BLOCK_TYPES.stabilizer);
+  if (towerHeight >= 6)  options.push(BLOCK_TYPES.precision);
+  if (towerHeight >= 10) options.push(BLOCK_TYPES.bomb);
+
+  // Golden bonus round: force golden blocks for a short window
+  if (goldenActive) return BLOCK_TYPES.golden;
+
+  // Weighted-ish pick: normal is common, specials rarer
+  const roll = Math.random();
+  if (options.length === 1) return BLOCK_TYPES.normal;
+  if (roll < 0.55) return BLOCK_TYPES.normal;
+  const specials = options.slice(1);
+  return specials[Math.floor(Math.random() * specials.length)];
+}
+
+function spawnBlock() {
+  const prev = blocks[blocks.length - 1];
+  const direction = Math.random() > 0.5 ? 1 : -1;
+  const type = pickBlockType();
+
+  let width = prev.width;
+  if (type.widthMult) width = GameUtils.clamp(prev.width * type.widthMult, MIN_WIDTH + 4, W * 0.7);
+
+  const tutorial = elapsed < tutorialWindow();
+  const stormBoost = meta.stormMode ? 1.15 : 1.0;
+  const baseSpeed = (150 + towerHeight * 5) * difficulty * assistFactor() * stormBoost;
+  const speed = baseSpeed * (tutorial ? 0.75 : 1);
+
+  currentBlock = {
+    x: direction > 0 ? -width : W,
+    y: prev.y - 50,
+    width,
+    height: BLOCK_H,
+    direction,
+    speed,
+    color: type.key === 'golden' ? '#fde047' : GameUtils.choice(palette.colors),
+    type: type.key,
+    typeDef: type,
+  };
+}
+
+function killTower(reason) {
+  if (dying) return;
+  dying = true;
+  triggerHitStop(0.08);
+  sfx('explosion');
+  const cx = currentBlock ? currentBlock.x + currentBlock.width / 2 : W / 2;
+  const cy = currentBlock ? currentBlock.y + currentBlock.height / 2 : blocks[blocks.length - 1].y;
+  if (particles.count < 200) {
+    particles.burst(cx, cy, 50, {
+      colors: ['#fff', '#ef4444', '#ffaa00'],
+      minSpeed: 120, maxSpeed: 450, lifetime: 1.2,
+    });
+  }
+  game.shake(8, 0.3);
+
+  // Send the whole tower tumbling for spectacle
+  for (const b of blocks) {
+    fallingPieces.push({
+      x: b.x, y: b.y, width: b.width, height: b.height, color: b.color,
+      vx: (Math.random() - 0.5) * 200,
+      vy: -Math.random() * 80,
+      rot: 0, rotSpeed: (Math.random() - 0.5) * 6,
+    });
+  }
+  blocks = [];
+  currentBlock = null;
+  deathTimer = 0.8;
+
+  const deaths = recordDeath(elapsed);
+  const finished = towerHeight;
+  if (finished > meta.bestHeight) meta.bestHeight = finished;
+  if (game.getScore() > meta.bestScore) meta.bestScore = game.getScore();
+  meta.improveStreak = finished > meta.lastRunHeight ? meta.improveStreak + 1 : 0;
+  meta.lastRunHeight = finished;
+
+  // Badges
+  if (finished >= 8)  meta.badges.bronze = true;
+  if (finished >= 20) meta.badges.silver = true;
+  if (finished >= 40) meta.badges.gold   = true;
+
+  saveMeta();
+
+  document.getElementById('tf-next-hint').textContent = nextGoal();
+  renderBadgeRow();
+
+  refreshEasyBtnLabel();
+  if (easyMode || (deaths >= 2 && elapsed < 60)) {
+    easyBtn.classList.remove('hidden');
+  } else {
+    easyBtn.classList.add('hidden');
+  }
+}
+
+function renderBadgeRow() {
+  const row = document.getElementById('tf-badges-row');
+  const defs = [
+    { id: 'bronze', icon: '🥉', label: 'Reach 8' },
+    { id: 'silver', icon: '🥈', label: 'Reach 20' },
+    { id: 'gold',   icon: '🥇', label: 'Reach 40' },
+  ];
+  row.innerHTML = defs.map(d => {
+    const earned = !!meta.badges[d.id];
+    return '<div class="tf-badge-chip' + (earned ? ' earned' : '') + '">' +
+           '<span class="tf-badge-icon">' + d.icon + '</span>' +
+           '<span>' + d.label + '</span></div>';
+  }).join('');
+}
+
+function dropBlock() {
+  if (!currentBlock || dying) return;
+
+  const block = currentBlock;
+  const prev  = blocks[blocks.length - 1];
+  const type  = block.typeDef;
+
+  const leftEdge  = Math.max(block.x, prev.x);
+  const rightEdge = Math.min(block.x + block.width, prev.x + prev.width);
+  let overlap   = rightEdge - leftEdge;
+
+  // Bomb blocks get generous forgiveness — nudge overlap if it's a near miss
+  if (type.forgiveness && overlap <= 0) {
+    const gap = block.x > prev.x + prev.width ? block.x - (prev.x + prev.width) : prev.x - (block.x + block.width);
+    if (gap <= type.forgiveness) {
+      // Snap the block onto the tower edge it's nearest to
+      const snapLeft = block.x < prev.x;
+      block.x = snapLeft ? prev.x : prev.x + prev.width - block.width;
+      overlap = Math.min(block.x + block.width, prev.x + prev.width) - Math.max(block.x, prev.x);
+    }
+  }
+
+  if (overlap <= 0) {
+    // Complete miss — whole block tumbles, tower falls
+    fallingPieces.push({ ...block, vx: block.direction * 80, vy: 0, rot: 0, rotSpeed: block.direction * 2 });
+    currentBlock = null;
+    killTower('miss');
+    return;
+  }
+
+  const misalign = Math.abs(block.x - prev.x);
+  const isPerfect = misalign < PERFECT_THRESHOLD && Math.abs(overlap - prev.width) < PERFECT_THRESHOLD;
+
+  const newBlock = {
+    x: leftEdge,
+    y: block.y,
+    width: overlap,
+    height: block.height,
+    color: block.color,
+  };
+  blocks.push(newBlock);
+  towerHeight++;
+
+  // Off-cut slice falls away
+  if (overlap < block.width - 0.5) {
+    const cutLeft = block.x < leftEdge;
+    fallingPieces.push({
+      x: cutLeft ? block.x : rightEdge,
+      y: block.y,
+      width: cutLeft ? leftEdge - block.x : (block.x + block.width) - rightEdge,
+      height: block.height,
+      color: block.color,
+      vx: cutLeft ? -90 : 90,
+      vy: 0,
+      rot: 0,
+      rotSpeed: cutLeft ? -2.5 : 2.5,
+    });
+  }
+
+  // ── Wobble: misaligned drops destabilize the tower ──────────────
+  const wobblePenaltyMult = type.wobblePenaltyMult || 1;
+  if (isPerfect) {
+    wobble = Math.max(0, wobble - 8); // clean stacking settles the tower slightly
+  } else {
+    const missRatio = 1 - GameUtils.clamp(overlap / prev.width, 0, 1);
+    wobble += missRatio * 40 * wobblePenaltyMult;
+  }
+  if (type.clearsWobble) wobble = 0;
+  if (type.wobbleRelief) wobble = Math.max(0, wobble - type.wobbleRelief);
+  wobble = GameUtils.clamp(wobble, 0, WOBBLE_MAX);
+
+  // ── Scoring ──────────────────────────────────────────────────────
+  const scoreMult = type.scoreMult || 1;
+  if (isPerfect) {
+    combo++;
+    const comboScale = type.comboMult || 1;
+    const pts = Math.round((100 + combo * 50) * comboScale * scoreMult);
+    game.addScore(pts);
+    floatText(newBlock.x + newBlock.width / 2, newBlock.y - 6, '+' + pts, '#fde68a', 16);
+    if (particles.count < 200) {
+      particles.burst(newBlock.x + newBlock.width / 2, newBlock.y, 15, {
+        colors: ['#ffffff', '#fde68a', '#fbbf24'],
+        minSpeed: 180, maxSpeed: 220, gravity: 0, lifetime: 0.5,
       });
-
-      canvas.addEventListener('click', () => {
-        if (state.running) dropBlock();
+    }
+    sfx('powerup');
+    floatText(newBlock.x + newBlock.width / 2, newBlock.y - 26, 'PERFECT!', '#fbbf24', 20);
+    if (combo > 0 && combo % 5 === 0) {
+      floatText(newBlock.x + newBlock.width / 2, newBlock.y - 46, 'COMBO x' + combo + '!', '#fde047', 22);
+      sfx('combo');
+      game.shake(4, 0.15);
+    }
+  } else {
+    combo = 0;
+    const pts = Math.round(10 * scoreMult);
+    game.addScore(pts);
+    floatText(newBlock.x + newBlock.width / 2, newBlock.y - 6, '+' + pts, '#ffffff', 14);
+    if (particles.count < 200) {
+      particles.burst(newBlock.x + newBlock.width / 2, newBlock.y + newBlock.height, 8, {
+        colors: [block.color, '#ffffff'],
+        minSpeed: 40, maxSpeed: 140, gravity: 240,
       });
+    }
+    sfx('click');
+    game.shake(3, 0.12);
+  }
+  updateBadges();
+  checkUnlocks();
 
-      tryBtn.addEventListener('click', () => {
-        requestFullscreen();
-        tryOverlay.classList.add('hidden');
-        startOverlay.classList.remove('hidden');
-      });
+  // Sliced too thin — tower collapses
+  if (newBlock.width < MIN_WIDTH) {
+    killTower('too-thin');
+    return;
+  }
 
-      startBtn.addEventListener('click', () => {
-        if (!state.running) startGame();
-      });
+  // Wobble overload — tower topples even without a bad drop
+  if (wobble >= WOBBLE_COLLAPSE) {
+    killTower('wobble');
+    return;
+  }
 
-      function requestFullscreen() {
-        const elem = document.documentElement;
-        if (elem.requestFullscreen) {
-          elem.requestFullscreen().catch(() => {});
-        } else if (elem.webkitRequestFullscreen) {
-          elem.webkitRequestFullscreen();
-        } else if (elem.msRequestFullscreen) {
-          elem.msRequestFullscreen();
-        }
-      }
+  // Scroll the camera up as the tower grows
+  if (newBlock.y < H / 3) {
+    const scrollAmount = H / 3 - newBlock.y;
+    for (const b of blocks)        b.y += scrollAmount;
+    for (const p of fallingPieces) p.y += scrollAmount;
+  }
 
-      function startGame() {
-        startOverlay.classList.add('hidden');
-        state.running = true;
-        state.score = 0;
-        state.height = 0;
-        state.combo = 0;
-        state.blocks = [];
+  currentBlock = null;
+  spawnTimer   = SPAWN_DELAY;
 
-        // Base block
-        state.blocks.push({
-          x: canvas.width / 2 - state.baseWidth / 2,
-          y: canvas.height - 40,
-          width: state.baseWidth,
-          height: 30,
-          color: '#6366f1',
-        });
+  // Golden round expiry
+  if (goldenActive) {
+    goldenActive = false;
+  }
 
-        spawnBlock();
-        updateHud();
-        state.lastTime = performance.now();
-        requestAnimationFrame(loop);
-      }
+  // ── Phase check: every PHASE_EVERY floors, something NEW ────────
+  const newPhase = Math.floor(towerHeight / PHASE_EVERY);
+  if (newPhase > lastPhaseAnnounced) {
+    lastPhaseAnnounced = newPhase;
+    announcePhase(newPhase);
+  }
+}
 
-      function spawnBlock() {
-        const prevBlock = state.blocks[state.blocks.length - 1];
-        const direction = Math.random() > 0.5 ? 1 : -1;
-        state.currentBlock = {
-          x: direction > 0 ? 0 : canvas.width,
-          y: prevBlock.y - 50,
-          width: prevBlock.width,
-          height: 30,
-          direction,
-          speed: 150 + state.height * 5,
-          color: getRandomColor(),
-        };
-      }
+function announcePhase(n) {
+  phaseGraceTimer = 3.0; // grace period: reduced hazard right after a phase lands
+  sfx('levelup');
+  game.shake(4, 0.2);
+  if (particles.count < 200) {
+    particles.burst(W / 2, H / 2, 30, {
+      colors: palette.colors.concat(['#ffffff']),
+      spread: Math.PI * 2, maxSpeed: 400, lifetime: 0.9,
+    });
+  }
+  floatText(W / 2, H / 2 - 40, 'FLOOR ' + (n * PHASE_EVERY) + '!', '#00e5ff', 26);
 
-      function getRandomColor() {
-        const colors = ['#8b5cf6', '#06b6d4', '#10b981', '#f59e0b', '#ef4444', '#ec4899'];
-        return colors[Math.floor(Math.random() * colors.length)];
-      }
+  // Alternate special-round type by phase number so it's not always the same twist
+  const kind = n % 3;
+  if (kind === 1) {
+    windActive = true;
+    windStrength = GameUtils.randomRange(40, 70) * (n % 6 === 1 ? 1 : -1);
+    floatText(W / 2, H / 2 - 10, 'WIND GUST!', '#93c5fd', 20);
+  } else if (kind === 2) {
+    goldenActive = true;
+    goldenTimer = 6.0;
+    floatText(W / 2, H / 2 - 10, 'GOLDEN FLOOR — 2x SCORE!', '#fde047', 20);
+  } else {
+    windActive = false;
+  }
+}
 
-      function dropBlock() {
-        if (!state.currentBlock) return;
+// Tap/click anywhere on the canvas also drops (classic arcade feel)
+canvas.addEventListener('pointerdown', (e) => {
+  if (game.state === 'playing') {
+    e.preventDefault();
+    tapQueued = true;
+  }
+});
 
-        const block = state.currentBlock;
-        const prevBlock = state.blocks[state.blocks.length - 1];
+// ── Update ──────────────────────────────────────────────────────
+game.onUpdate((dt) => {
+  if (game.state !== 'playing') return;
 
-        // Calculate overlap
-        const leftEdge = Math.max(block.x, prevBlock.x);
-        const rightEdge = Math.min(block.x + block.width, prevBlock.x + prevBlock.width);
-        const overlap = rightEdge - leftEdge;
+  if (hitStop > 0) {
+    hitStop -= dt;
+    particles.update(dt);
+    return;
+  }
 
-        if (overlap <= 0) {
-          // Complete miss - game over
-          endGame();
-          return;
-        }
+  if (dying) {
+    deathTimer -= dt;
+    for (let i = fallingPieces.length - 1; i >= 0; i--) {
+      const p = fallingPieces[i];
+      p.vy  += 900 * dt;
+      p.x   += p.vx * dt;
+      p.y   += p.vy * dt;
+      p.rot += p.rotSpeed * dt;
+      if (p.y > H + 200) fallingPieces.splice(i, 1);
+    }
+    particles.update(dt);
+    if (deathTimer <= 0) {
+      sfx('gameover');
+      game.endGame();
+    }
+    return;
+  }
 
-        // Create new block with overlap area
-        const newBlock = {
-          x: leftEdge,
-          y: block.y,
-          width: overlap,
-          height: block.height,
-          color: block.color,
-        };
+  elapsed += dt;
+  difficulty = Math.min(2.5, 1.0 + (elapsed / 60) * 0.3);
 
-        state.blocks.push(newBlock);
-        state.height++;
+  if (goldenActive) {
+    goldenTimer -= dt;
+    if (goldenTimer <= 0) goldenActive = false;
+  }
 
-        // Calculate score
-        const perfectThreshold = 10;
-        if (Math.abs(block.x - prevBlock.x) < perfectThreshold && Math.abs(overlap - prevBlock.width) < perfectThreshold) {
-          state.combo++;
-          state.score += 100 + state.combo * 50;
-        } else {
-          state.combo = 0;
-          state.score += 10;
-        }
+  if (bannerTimer > 0) {
+    bannerTimer -= dt;
+    if (bannerTimer <= 0) bannerEl.classList.remove('show');
+  }
 
-        updateHud();
+  if (phaseGraceTimer > 0) phaseGraceTimer -= dt;
 
-        // Check if tower is too narrow
-        if (newBlock.width < 30) {
-          endGame();
-          return;
-        }
+  // Drop on key/button press edge or queued canvas tap
+  const pressed = input.isPressed('space');
+  if ((pressed && !dropHeld) || tapQueued) dropBlock();
+  dropHeld  = pressed;
+  tapQueued = false;
 
-        // Scroll camera up if needed
-        if (newBlock.y < canvas.height / 3) {
-          const scrollAmount = canvas.height / 3 - newBlock.y;
-          for (const b of state.blocks) {
-            b.y += scrollAmount;
-          }
-        }
+  if (dying || game.state !== 'playing') return; // dropBlock may have collapsed the tower this frame
 
-        state.currentBlock = null;
-        setTimeout(() => {
-          if (state.running) spawnBlock();
-        }, 200);
-      }
+  if (currentBlock) {
+    const block = currentBlock;
+    block.x += block.direction * block.speed * dt;
 
-      function loop(timestamp) {
-        if (!state.running) return;
-        const delta = Math.min((timestamp - state.lastTime) / 1000, 0.05);
-        state.lastTime = timestamp;
-        update(delta);
-        render();
-        requestAnimationFrame(loop);
-      }
+    // Wind gust phase pushes the falling block sideways (grace period softens it)
+    if (windActive) {
+      const strength = phaseGraceTimer > 0 ? windStrength * 0.4 : windStrength;
+      block.x += strength * dt;
+    }
 
-      function update(delta) {
-        if (state.currentBlock) {
-          const block = state.currentBlock;
-          block.x += block.direction * block.speed * delta;
+    // Bounce off edges
+    if (block.direction > 0 && block.x + block.width >= W) {
+      block.direction = -1;
+      block.x = W - block.width;
+    } else if (block.direction < 0 && block.x <= 0) {
+      block.direction = 1;
+      block.x = 0;
+    }
+    block.x = GameUtils.clamp(block.x, -block.width, W);
+  } else {
+    spawnTimer -= dt;
+    if (spawnTimer <= 0) spawnBlock();
+  }
 
-          // Bounce off edges
-          if (block.direction > 0 && block.x + block.width >= canvas.width) {
-            block.direction = -1;
-            block.x = canvas.width - block.width;
-          } else if (block.direction < 0 && block.x <= 0) {
-            block.direction = 1;
-            block.x = 0;
-          }
-        }
-      }
+  // Off-cut pieces tumble away
+  for (let i = fallingPieces.length - 1; i >= 0; i--) {
+    const p = fallingPieces[i];
+    p.vy  += 900 * dt;
+    p.x   += p.vx * dt;
+    p.y   += p.vy * dt;
+    p.rot += p.rotSpeed * dt;
+    if (p.y > H + 120) fallingPieces.splice(i, 1);
+  }
 
-      function updateHud() {
-        scoreEl.textContent = state.score.toString().padStart(4, '0');
-        heightEl.textContent = state.height;
-        comboEl.textContent = state.combo;
-      }
+  // Floating text
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 60 * dt;
+    f.life -= dt;
+    if (f.life <= 0) floaters.splice(i, 1);
+  }
 
-      function endGame() {
-        state.running = false;
-        startOverlay.classList.remove('hidden');
-        startOverlay.querySelector('h2').textContent = 'Tower Fell!';
-        startOverlay.querySelector('p').textContent = `Height: ${state.height} blocks. Score: ${state.score}. Try again?`;
-        startBtn.textContent = 'Rebuild';
-      }
+  particles.update(dt);
 
-      function render() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Live-update the goal line & badge meter
+  goalEl.textContent = nextGoal();
+});
 
-        // Background
-        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient.addColorStop(0, '#312e81');
-        gradient.addColorStop(1, '#1e1b4b');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+// ── Render ──────────────────────────────────────────────────────
+game.onRender((ctx) => {
+  const pal = palette;
+  // Retro gradient background (shifts subtly with elapsed time — ambient depth)
+  const gradient = ctx.createLinearGradient(0, 0, 0, H);
+  gradient.addColorStop(0, pal.bg[0]);
+  gradient.addColorStop(1, pal.bg[1]);
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H);
 
-        // Grid lines
-        ctx.strokeStyle = 'rgba(139, 92, 246, 0.1)';
-        ctx.lineWidth = 1;
-        for (let i = 0; i < canvas.width; i += 40) {
-          ctx.beginPath();
-          ctx.moveTo(i, 0);
-          ctx.lineTo(i, canvas.height);
-          ctx.stroke();
-        }
+  // Retro grid lines
+  ctx.strokeStyle = 'rgba(139, 92, 246, 0.1)';
+  ctx.lineWidth = 1;
+  for (let i = 0; i < W; i += 40) {
+    ctx.beginPath();
+    ctx.moveTo(i, 0);
+    ctx.lineTo(i, H);
+    ctx.stroke();
+  }
 
-        // Blocks
-        for (const block of state.blocks) {
-          if (block.y > canvas.height || block.y + block.height < 0) continue;
+  // Wind streak ambience
+  if (windActive) {
+    ctx.strokeStyle = 'rgba(147, 197, 253, 0.25)';
+    ctx.lineWidth = 2;
+    const dir = windStrength > 0 ? 1 : -1;
+    for (let i = 0; i < 6; i++) {
+      const y = (i * 97 + (elapsed * 260 * dir)) % (H + 40);
+      ctx.beginPath();
+      ctx.moveTo(0, y);
+      ctx.lineTo(60, y);
+      ctx.stroke();
+    }
+  }
 
-          ctx.fillStyle = block.color;
-          ctx.fillRect(block.x, block.y, block.width, block.height);
+  // Golden floor ambience
+  if (goldenActive) {
+    ctx.fillStyle = 'rgba(253, 224, 71, 0.06)';
+    ctx.fillRect(0, 0, W, H);
+  }
 
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
-          ctx.lineWidth = 2;
-          ctx.strokeRect(block.x, block.y, block.width, block.height);
-        }
+  // Tower lean visualizes wobble — whole stack shears based on instability
+  const leanPx = (wobble / WOBBLE_MAX) * 22 * Math.sin(elapsed * 6);
 
-        // Current moving block
-        if (state.currentBlock) {
-          const block = state.currentBlock;
-          ctx.fillStyle = block.color;
-          ctx.globalAlpha = 0.9;
-          ctx.fillRect(block.x, block.y, block.width, block.height);
-          ctx.globalAlpha = 1;
+  // Stacked blocks
+  for (let i = 0; i < blocks.length; i++) {
+    const block = blocks[i];
+    if (block.y > H || block.y + block.height < 0) continue;
+    const heightFactor = (blocks.length - i) / Math.max(1, blocks.length);
+    const shear = leanPx * heightFactor;
+    ctx.fillStyle = block.color;
+    ctx.fillRect(block.x + shear, block.y, block.width, block.height);
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.lineWidth = 2;
+    ctx.strokeRect(block.x + shear, block.y, block.width, block.height);
+  }
 
-          ctx.strokeStyle = '#fbbf24';
-          ctx.lineWidth = 3;
-          ctx.strokeRect(block.x, block.y, block.width, block.height);
-        }
+  // Tumbling off-cuts / collapsed pieces
+  for (const p of fallingPieces) {
+    ctx.save();
+    ctx.translate(p.x + p.width / 2, p.y + p.height / 2);
+    ctx.rotate(p.rot);
+    ctx.globalAlpha = 0.85;
+    ctx.fillStyle = p.color;
+    ctx.fillRect(-p.width / 2, -p.height / 2, p.width, p.height);
+    ctx.restore();
+  }
 
-        // Perfect indicator
-        if (state.combo > 0) {
-          ctx.fillStyle = '#fbbf24';
-          ctx.font = 'bold 24px monospace';
-          ctx.textAlign = 'center';
-          ctx.fillText(`PERFECT x${state.combo}`, canvas.width / 2, 40);
-        }
-      }
+  // Current moving block
+  if (currentBlock) {
+    const block = currentBlock;
+    ctx.fillStyle = block.color;
+    ctx.globalAlpha = 0.9;
+    ctx.fillRect(block.x, block.y, block.width, block.height);
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = block.type === 'golden' ? '#fff' : '#fbbf24';
+    ctx.lineWidth = 3;
+    ctx.strokeRect(block.x, block.y, block.width, block.height);
 
-      render();
-      updateHud();
-    })();
-  </script>
+    // Block-type label — telegraphs the decision to the player
+    if (block.typeDef.label) {
+      ctx.fillStyle = '#0b0f1f';
+      ctx.font = 'bold 13px "Courier New", monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(block.typeDef.label, block.x + block.width / 2, block.y + block.height / 2 + 4);
+    }
+  }
+
+  // Perfect-combo banner
+  if (combo > 0) {
+    ctx.fillStyle = '#fbbf24';
+    ctx.font = 'bold 24px "Courier New", monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('PERFECT x' + combo, W / 2, 40);
+  }
+
+  // Wobble warning flash near collapse threshold
+  if (wobble >= WOBBLE_COLLAPSE * 0.75) {
+    const flash = Math.sin(elapsed * 12) > 0;
+    if (flash) {
+      ctx.fillStyle = 'rgba(239, 68, 68, 0.18)';
+      ctx.fillRect(0, 0, W, H);
+    }
+  }
+
+  particles.draw(ctx);
+
+  // Floating text (drawn last, above everything)
+  floaters.forEach(f => {
+    ctx.globalAlpha = Math.max(0, f.life / f.maxLife);
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold ' + f.size + 'px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y);
+  });
+  ctx.globalAlpha = 1;
+});
+
+renderBadgeRow();
+reset();
+</script>
 </body>
 </html>

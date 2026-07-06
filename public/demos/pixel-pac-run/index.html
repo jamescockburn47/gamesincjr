@@ -8,6 +8,31 @@
   <style>
     #gij-stage { background: #0f1630; }
     canvas { background: #0f1630; }
+    #meta-goal {
+      position: absolute; top: 6px; left: 50%; transform: translateX(-50%);
+      font: bold 13px monospace; color: #ffe066; text-shadow: 0 1px 3px rgba(0,0,0,0.8);
+      pointer-events: none; white-space: nowrap; z-index: 5;
+    }
+    #gij-try-overlay .gij-badge-row, #gij-gameover-overlay .gij-badge-row {
+      display: flex; gap: 10px; justify-content: center; margin: 10px 0; flex-wrap: wrap;
+    }
+    .ppr-badge {
+      font: 11px monospace; padding: 4px 8px; border-radius: 6px;
+      background: rgba(255,255,255,0.08); color: #9fb3ff; border: 1px solid rgba(255,255,255,0.15);
+    }
+    .ppr-badge.earned { background: rgba(255,214,102,0.18); color: #ffe066; border-color: #ffe066; }
+    #ppr-unlock-banner {
+      position: absolute; top: 40px; left: 50%; transform: translateX(-50%);
+      font: bold 14px monospace; color: #fff; background: rgba(20,10,40,0.85);
+      border: 1px solid #ffd700; padding: 6px 14px; border-radius: 8px;
+      opacity: 0; pointer-events: none; z-index: 6; transition: opacity 0.3s, top 0.3s;
+      text-shadow: 0 0 6px #ffd700;
+    }
+    #ppr-unlock-banner.show { opacity: 1; top: 50px; }
+    #ppr-easy-btn, #ppr-normal-btn { margin-top: 8px; }
+    /* The framework's .hidden class only targets #gij-hud / .gij-overlay —
+       these buttons need their own rule for the same class to take effect. */
+    #ppr-easy-btn.hidden, #ppr-normal-btn.hidden { display: none; }
   </style>
 </head>
 <body>
@@ -16,7 +41,8 @@
   <div id="gij-try-overlay" class="gij-overlay">
     <div class="gij-modal">
       <h1 data-game-title>Pixel Pac Run</h1>
-      <p id="gij-description">Jump over obstacles — survive as long as you can!</p>
+      <p id="gij-description">Jump, dash, and outrun the ghost — how far can you get?</p>
+      <div class="gij-badge-row" id="ppr-try-badges"></div>
       <button id="gij-try-btn" class="gij-btn gij-btn-primary">▶ Play Now</button>
     </div>
   </div>
@@ -31,12 +57,17 @@
 
   <div id="gij-gameover-overlay" class="gij-overlay hidden">
     <div class="gij-modal">
-      <h2>Wipeout!</h2>
+      <h2 id="ppr-gameover-title">Wipeout!</h2>
       <div class="gij-score-row">
         <span id="gij-final-score">Score: 0</span>
         <span id="gij-final-hs">Best: 0</span>
       </div>
+      <div id="ppr-stat-line" style="font:12px monospace;color:#9fb3ff;margin:4px 0;"></div>
+      <div id="ppr-goal-line" style="font:12px monospace;color:#ffe066;margin:4px 0 10px;"></div>
+      <div class="gij-badge-row" id="ppr-over-badges"></div>
       <button id="gij-restart-btn" class="gij-btn gij-btn-primary">Try Again</button>
+      <button id="ppr-easy-btn" class="gij-btn hidden">Try Easy?</button>
+      <button id="ppr-normal-btn" class="gij-btn hidden">Back to Normal</button>
     </div>
   </div>
 
@@ -44,6 +75,8 @@
     <div id="gij-hud" class="hidden">
       <div class="gij-badge">⭐ <strong id="gij-score">0</strong></div>
       <div class="gij-badge">🏆 <strong id="gij-highscore">0</strong></div>
+      <div class="gij-badge" id="ppr-dash-badge">⚡ <strong id="ppr-dash-status">Ready</strong></div>
+      <div id="meta-goal">★ Next: —</div>
     </div>
     <canvas id="gij-canvas"></canvas>
     <div id="gij-controls"></div>
@@ -53,18 +86,23 @@
 
 <script src="/game-framework/game-engine.js"></script>
 <script src="/game-framework/game-utils.js"></script>
+<script src="/game-framework/game-audio.js"></script>
 <script>
+function sfx(name) { if (typeof GameAudio !== 'undefined') GameAudio.play(name); }
+
 const GAME = {
   slug:  'pixel-pac-run',
   title: 'Pixel Pac Run',
-  description: 'Jump over obstacles — survive as long as possible!',
+  description: 'Jump, dash, and outrun the ghost — how far can you get?',
   instructions: [
-    '<strong>Space / Up Arrow:</strong> Jump',
-    '<strong>Goal:</strong> Dodge obstacles and run as far as you can',
-    '<strong>Tip:</strong> Speed increases the longer you survive!',
+    '<strong>Space / Up:</strong> Jump',
+    '<strong>Shift / Down:</strong> Dash — smash crumble blocks & grab risky orbs',
+    '<strong>Goal:</strong> Survive as long as you can and beat your best distance',
+    '<strong>Tip:</strong> Dash has a cooldown and a landing window where you can\'t jump — time it well!',
   ],
   controls: [
     { label: '⬆ Jump', action: 'space', cls: 'gij-ctrl-space' },
+    { label: '⚡ Dash', action: 'dash',  cls: 'gij-ctrl-space' },
   ],
   width: 800, height: 450,
 };
@@ -74,41 +112,257 @@ const game   = new GameEngine(canvas).setup(GAME);
 const input  = new InputManager();
 const fx     = new ParticleSystem();
 
+// InputManager has no built-in 'shift' action (Shift's e.code is ShiftLeft/
+// ShiftRight, not the literal string 'shift'), so wire it manually onto the
+// same 'dash' action used by the touch button and ArrowDown/KeyS.
+window.addEventListener('keydown', e => {
+  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') input.addTouch('dash');
+});
+window.addEventListener('keyup', e => {
+  if (e.code === 'ShiftLeft' || e.code === 'ShiftRight') input.removeTouch('dash');
+});
+
 const W = game.W, H = game.H;
 const GROUND = H - 90;
 
-// ── Game state ─────────────────────────────────────────────
-let obstacles, spawnTimer, distance, speed, grounded, spaceHeld;
-let bgLayers; // parallax
+// ═══════════════════════════════════════════════════════════════════════
+// META-PROGRESSION  (gij-meta:pixel-pac-run)
+// ═══════════════════════════════════════════════════════════════════════
+const META_KEY = 'gij-meta:' + GAME.slug;
+function defaultMeta() {
+  return {
+    v: 1,
+    totalRuns: 0,
+    bestScore: 0,
+    bestDistance: 0,
+    improveStreak: 0,
+    lastScore: 0,
+    unlocks: {
+      'skin-ninja':  { earned: false, celebrated: false },
+      'mode-turbo':  { earned: false, celebrated: false },
+      'char-gold':   { earned: false, celebrated: false },
+    },
+    equipped: { skin: 'default' },
+    badges: { bronze: false, silver: false, gold: false },
+    turboMode: false,
+  };
+}
+function loadMeta() {
+  try {
+    const m = JSON.parse(localStorage.getItem(META_KEY));
+    if (!m || m.v !== 1) return defaultMeta();
+    return Object.assign(defaultMeta(), m, {
+      unlocks: Object.assign(defaultMeta().unlocks, m.unlocks || {}),
+      badges: Object.assign(defaultMeta().badges, m.badges || {}),
+    });
+  } catch (e) { return defaultMeta(); }
+}
+function saveMeta() { try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {} }
 
-const player = { x: 110, y: GROUND - 34, w: 32, h: 32, vy: 0 };
+let meta = loadMeta();
+
+const UNLOCKS = [
+  { id: 'skin-ninja', name: 'Ninja Skin',    type: 'distance', need: 400  },
+  { id: 'mode-turbo', name: 'Turbo Mode',    type: 'runs',     need: 5    },
+  { id: 'char-gold',  name: 'Gold Pac',      type: 'score',    need: 2000 },
+];
+
+function progressOf(u) {
+  if (u.type === 'score')    return Math.max(game.getScore(), meta.bestScore);
+  if (u.type === 'distance') return Math.max(Math.floor(distance || 0), meta.bestDistance);
+  if (u.type === 'runs')     return meta.totalRuns;
+  return 0;
+}
+
+let unlockBannerTimer = 0;
+let unlockBannerText = '';
+function showUnlockBanner(name) {
+  unlockBannerText = 'NEW: ' + name + '!';
+  unlockBannerTimer = 2.5;
+  const el = document.getElementById('ppr-unlock-banner');
+  if (el) { el.textContent = unlockBannerText; el.classList.add('show'); }
+}
+
+function checkUnlocks() {
+  for (const u of UNLOCKS) {
+    const slot = meta.unlocks[u.id] || (meta.unlocks[u.id] = { earned: false, celebrated: false });
+    if (!slot.earned && progressOf(u) >= u.need) {
+      slot.earned = true;
+      saveMeta();
+      showUnlockBanner(u.name);
+      if (fx.count < 200) fx.burst(W / 2, 80, 30, { colors: ['#ffd700', '#ffffff'], gravity: -80, maxSpeed: 300 });
+      game.shake(3, 0.15);
+      sfx('powerup');
+    }
+  }
+}
+
+function nextGoalText() {
+  const locked = UNLOCKS.filter(u => !meta.unlocks[u.id] || !meta.unlocks[u.id].earned)
+    .sort((a, b) => (a.need - progressOf(a)) - (b.need - progressOf(b)));
+  if (!locked.length) return '★ Best: ' + meta.bestScore;
+  const u = locked[0];
+  const remain = Math.max(0, u.need - progressOf(u));
+  const unit = u.type === 'distance' ? 'm' : u.type === 'runs' ? ' runs' : ' pts';
+  return '★ Next: ' + u.name + ' — ' + remain + unit + ' to go';
+}
+
+function renderBadgeRow(containerId) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  el.innerHTML = '';
+  UNLOCKS.forEach(u => {
+    const earned = meta.unlocks[u.id] && meta.unlocks[u.id].earned;
+    const span = document.createElement('span');
+    span.className = 'ppr-badge' + (earned ? ' earned' : '');
+    span.textContent = (earned ? '✓ ' : '🔒 ') + u.name;
+    el.appendChild(span);
+  });
+}
+
+// ── Rubber-banding (per DIFFICULTY-AND-ONBOARDING §5) ──────────────────
+const DEATH_KEY = 'gij_deaths_' + GAME.slug;
+function recordDeath(elapsed) {
+  try {
+    const fast = elapsed < 60;
+    const n = fast ? (parseInt(localStorage.getItem(DEATH_KEY) || '0', 10) + 1) : 0;
+    localStorage.setItem(DEATH_KEY, String(n));
+  } catch (e) {}
+}
+function fastDeathCount() {
+  try { return parseInt(localStorage.getItem(DEATH_KEY) || '0', 10); } catch (e) { return 0; }
+}
+function assistFactor() {
+  return (easyMode || fastDeathCount() >= 2) ? 0.85 : 1.0;
+}
+let easyMode = false;
+try { easyMode = localStorage.getItem('gij_easy_' + GAME.slug) === '1'; } catch (e) {}
+
+// ═══════════════════════════════════════════════════════════════════════
+// GAME STATE
+// ═══════════════════════════════════════════════════════════════════════
+let obstacles, ghosts, orbs, spawnTimer, distance, speed, grounded, spaceHeld;
+let bgLayers;
+let dashHeld = false, dashCooldown = 0, dashActive = 0, dashRecover = 0;
+let hitStop = 0;
+let dying = false, deathTimer = 0;
+let bonusScore = 0; // score earned from crumble-smashes + orbs, on top of distance
+let phase = -1, phaseGraceTimer = 0;
+let riskZoneTimer = 0;
+let flashTimer = 0;
+let elapsed = 0;
+let wasDashing = false;
+
+const floaters = [];
+function floatText(x, y, text, color, size) {
+  floaters.push({ x: x + GameUtils.randomRange(-15, 15), y, text, color: color || '#fff', size: size || 18, life: 0.7, maxLife: 0.7 });
+}
+
+const DASH_COOLDOWN = 3.0;
+const DASH_DURATION  = 0.22;
+const DASH_RECOVER   = 0.35; // vulnerable landing window
+
 const GRAVITY  = 900;  // px/s²
 const JUMP_VEL = -520; // px/s
 
+const player = { x: 110, y: GROUND - 34, w: 32, h: 32, vy: 0, invuln: 0 };
+
+function triggerHitStop(sec) { hitStop = Math.max(hitStop, sec); }
+
 function reset() {
   obstacles    = [];
+  ghosts       = [];
+  orbs         = [];
   spawnTimer   = 0;
   distance     = 0;
-  speed        = 240;  // px/s, increases over time
+  elapsed      = 0;
+  speed        = 240;
   grounded     = true;
   spaceHeld    = false;
+  dashHeld     = false;
+  dashCooldown = 0;
+  dashActive   = 0;
+  dashRecover  = 0;
+  hitStop      = 0;
+  dying        = false;
+  deathTimer   = 0;
+  phase        = -1;
+  phaseGraceTimer = 0;
+  bonusScore   = 0;
+  riskZoneTimer = GameUtils.randomRange(18, 24);
+  flashTimer   = 0;
   player.y     = GROUND - player.h;
   player.vy    = 0;
+  player.invuln = 0;
+  floaters.length = 0;
   fx.clear();
   bgLayers = [
     { x: 0, speed: 30,  stars: Array.from({length:80}, () => ({ x: Math.random()*W, y: Math.random()*GROUND*0.8, s: Math.random()*2+0.5 })) },
     { x: 0, speed: 60,  stars: Array.from({length:20}, () => ({ x: Math.random()*W, y: GROUND - Math.random()*120, s: 3+Math.random()*4 })) },
   ];
+  meta.totalRuns++;
+  saveMeta();
+  updateHudExtras();
 }
 
 game.onRestart(reset);
 
-// ── Update ─────────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════
+// PHASE SYSTEM (per DIFFICULTY-AND-ONBOARDING + DEPTH-STANDARD)
+// ═══════════════════════════════════════════════════════════════════════
+// Phase 0 (~45s):  crumble blocks (dash-smash reward) + risk zones enabled
+// Phase 1 (~95s):  chaser ghost introduced, telegraphed pursuit
+// Phase 2 (~145s): gap-jump pit sections (full jump arc required) + eerie tint
+function announcePhase(n) {
+  sfx('levelup');
+  floatText(W / 2, 140, 'PHASE ' + (n + 1) + '!', '#ffe066', 26);
+  if (fx.count < 200) fx.burst(W / 2, GROUND - 60, 30, { colors: ['#33aaff', '#ffe066', '#ffffff'], spread: Math.PI * 2, maxSpeed: 400 });
+  game.shake(4, 0.2);
+  phaseGraceTimer = 3.0; // grace period: reduced spawn right after new element
+}
+
+function updatePhase() {
+  const p = Math.floor(Math.max(0, elapsed - 45) / 50);
+  if (p > phase) { phase = p; announcePhase(phase); }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// UPDATE
+// ═══════════════════════════════════════════════════════════════════════
 game.onUpdate((dt) => {
   if (game.state !== 'playing') return;
 
-  distance += dt;
-  speed     = 240 + distance * 18; // accelerates over time
+  if (hitStop > 0) { hitStop -= dt; fx.update(dt); return; }
+
+  if (dying) {
+    deathTimer -= dt;
+    fx.update(dt);
+    updateFloaters(dt);
+    if (deathTimer <= 0) {
+      sfx('gameover');
+      recordDeath(elapsed);
+      const finalScore = game.getScore();
+      const previousScore = meta.lastScore;
+      meta.improveStreak = (finalScore >= previousScore) ? meta.improveStreak + 1 : 0;
+      meta.lastScore = finalScore;
+      if (finalScore > meta.bestScore) meta.bestScore = finalScore;
+      if (Math.floor(distance) > meta.bestDistance) meta.bestDistance = Math.floor(distance);
+      saveMeta();
+      game.endGame();
+    }
+    return;
+  }
+
+  const tutorial = elapsed < 30;
+  const difficulty = Math.min(2.5, 1.0 + (elapsed / 60) * 0.3);
+  const assist = assistFactor();
+
+  elapsed   += dt;
+  distance  += dt * (tutorial ? 0.75 : 1);
+  speed     = 240 * (tutorial ? 0.75 : 1) * difficulty * assist;
+  if (meta.turboMode) speed *= 1.25;
+
+  updatePhase();
 
   // Parallax backgrounds
   bgLayers.forEach(l => {
@@ -116,17 +370,46 @@ game.onUpdate((dt) => {
     if (l.x < -W) l.x += W;
   });
 
-  // Jump
+  // ── Timers ──
+  if (dashCooldown > 0) dashCooldown -= dt;
+  if (dashActive > 0)   dashActive   -= dt;
+  if (dashRecover > 0)  dashRecover  -= dt;
+  if (player.invuln > 0) player.invuln -= dt;
+  if (flashTimer > 0)   flashTimer   -= dt;
+  if (phaseGraceTimer > 0) phaseGraceTimer -= dt;
+
+  // ── Jump ──
   const jumpNow = input.isPressed('space') || input.isPressed('up');
-  if (jumpNow && !spaceHeld && grounded) {
+  if (jumpNow && !spaceHeld && grounded && dashRecover <= 0) {
     player.vy = JUMP_VEL;
     grounded  = false;
-    fx.burst(player.x + player.w/2, player.y + player.h, 8, {
+    sfx('jump');
+    if (fx.count < 200) fx.burst(player.x + player.w/2, player.y + player.h, 5, {
       colors: ['#33aaff','#ffffff'], gravity: 80, minSpeed: 40, maxSpeed: 120,
-      spread: Math.PI * 0.5, angle: Math.PI * 0.5,
+      spread: Math.PI * 0.5, angle: Math.PI * 0.5, lifetime: 0.3,
     });
   }
   spaceHeld = jumpNow;
+
+  // ── Dash (second verb) ──
+  const dashNow = input.isPressed('dash') || input.isPressed('down');
+  if (dashNow && !dashHeld && dashCooldown <= 0 && dashActive <= 0) {
+    dashActive   = DASH_DURATION;
+    dashCooldown = DASH_COOLDOWN;
+    player.invuln = DASH_DURATION; // brief i-frames DURING the dash itself
+    sfx('collect');
+    if (fx.count < 200) fx.burst(player.x + player.w/2, player.y + player.h/2, 10, {
+      colors: ['#ffe066', '#ffffff'], maxSpeed: 200, lifetime: 0.4,
+    });
+  }
+  dashHeld = dashNow;
+
+  // Dash-end edge detection: the instant dash finishes, start the vulnerable
+  // landing-recovery window (jump is blocked while dashRecover > 0, see above).
+  if (wasDashing && dashActive <= 0) {
+    dashRecover = DASH_RECOVER;
+  }
+  wasDashing = dashActive > 0;
 
   // Gravity
   player.vy += GRAVITY * dt;
@@ -137,41 +420,189 @@ game.onUpdate((dt) => {
     grounded  = true;
   }
 
-  // Spawn obstacles
+  // ── Spawn obstacles (spikes) ──
   spawnTimer += dt;
-  const interval = Math.max(0.7, 2.2 - distance * 0.015);
+  const graceMul = phaseGraceTimer > 0 ? 1.5 : 1;
+  const tutorialMul = tutorial ? 1.8 : 1;
+  const baseInterval = Math.max(0.55, 2.0 - distance * 0.012) / difficulty;
+  const interval = baseInterval * tutorialMul * graceMul;
   if (spawnTimer >= interval) {
     spawnTimer = 0;
-    const h = 30 + Math.random() * 50;
-    obstacles.push({ x: W + 20, y: GROUND - h, w: 22 + Math.random() * 20, h, vy: 0 });
-  }
-
-  // Move + collide
-  for (let i = obstacles.length - 1; i >= 0; i--) {
-    const o = obstacles[i];
-    o.x -= speed * dt;
-    if (o.x + o.w < 0) { obstacles.splice(i, 1); continue; }
-    if (GameUtils.hitTest(player, o, 0.75)) {
-      game.shake(8, 0.3);
-      fx.burst(player.x + player.w/2, player.y + player.h/2, 20, {
-        colors: ['#ff2d95','#ff8800'], gravity: 200,
+    const gapJump = phase >= 2 && Math.random() < 0.35;
+    if (gapJump) {
+      // Gap-jump section: a wide pit — telegraphed by a dashed edge marker
+      const pitW = 90 + Math.random() * 40;
+      obstacles.push({ type: 'pit', x: W + 20, y: GROUND, w: pitW, h: 20, telegraph: 0.6 });
+    } else {
+      const crumble = phase >= 0 && Math.random() < 0.3;
+      const h = 30 + Math.random() * 50;
+      obstacles.push({
+        type: crumble ? 'crumble' : 'spike',
+        x: W + 20, y: GROUND - h, w: 22 + Math.random() * 20, h,
+        telegraph: 0.4,
       });
-      game.endGame();
-      return;
     }
   }
 
-  // Score
-  game.setScore(Math.floor(distance * 10));
+  // ── Ghost chaser (phase 2+) — telegraphed pursuit ──
+  if (phase >= 1 && ghosts.length === 0 && Math.random() < dt * 0.15 && phaseGraceTimer <= 0) {
+    ghosts.push({
+      x: -40, y: GROUND - 30, w: 30, h: 30,
+      state: 'telegraph', timer: 0.7, speed: 0,
+    });
+  }
+  for (let i = ghosts.length - 1; i >= 0; i--) {
+    const g = ghosts[i];
+    if (g.state === 'telegraph') {
+      g.timer -= dt;
+      if (g.timer <= 0) { g.state = 'windup'; g.timer = 0.6; g.windupDur = 0.6; g.speed = 0; sfx('hit'); }
+    } else if (g.state === 'windup') {
+      // Ghost eases onto screen from off-canvas instead of snapping to full
+      // chase speed — gives a real, visible, positional cue (not just text)
+      // before it can possibly catch the player. See DIFFICULTY-AND-ONBOARDING:
+      // every threat telegraphed with real position, min 0.5s to danger.
+      g.timer -= dt;
+      const t = GameUtils.clamp(1 - (g.timer / g.windupDur), 0, 1);
+      const eased = t * t * (3 - 2 * t); // smoothstep
+      g.speed = speed * 1.15 * eased;
+      g.x += g.speed * dt;
+      if (g.timer <= 0) { g.state = 'chase'; g.speed = speed * 1.15; }
+    } else if (g.state === 'chase') {
+      g.x += g.speed * dt;
+      // catches up if player is slow/still; player can out-jump/out-dash it
+      if (g.x > W + 60) { ghosts.splice(i, 1); continue; }
+    }
+    if (g.state === 'chase' && player.invuln <= 0 && GameUtils.hitTest(player, g, 0.7)) {
+      killPlayer('ghost');
+    }
+  }
+
+  // ── Risk zone (power-pellet-style bonus lane) ──
+  // One-shot spawn burst gated purely by the recurring timer (25-35s between
+  // zones) — riskZoneActive is not a lingering state, just re-armed each time.
+  riskZoneTimer -= dt;
+  if (riskZoneTimer <= 0 && phase >= 0) {
+    riskZoneTimer = GameUtils.randomRange(25, 35);
+    // spawn a line of bonus orbs low near the ground, flanked by hazards
+    const baseX = W + 40;
+    for (let k = 0; k < 4; k++) {
+      orbs.push({ x: baseX + k * 46, y: GROUND - 130, w: 16, h: 16, taken: false });
+    }
+    obstacles.push({ type: 'spike', x: baseX - 30, y: GROUND - 40, w: 26, h: 40, telegraph: 0.5 });
+    obstacles.push({ type: 'spike', x: baseX + 4*46 + 10, y: GROUND - 40, w: 26, h: 40, telegraph: 0.5 });
+  }
+
+  // ── Move + collide: obstacles ──
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    const o = obstacles[i];
+    o.x -= speed * dt;
+    if (o.telegraph > 0) o.telegraph -= dt;
+    if (o.x + o.w < -20) { obstacles.splice(i, 1); continue; }
+
+    if (o.type === 'pit') {
+      // fall in if grounded and over the pit and not airborne
+      const overPit = player.x + player.w > o.x && player.x < o.x + o.w;
+      if (overPit && grounded && player.y >= GROUND - player.h - 2) {
+        killPlayer('pit');
+      }
+      continue;
+    }
+
+    if (o.type === 'crumble') {
+      if (dashActive > 0 && GameUtils.hitTest(player, o, 0.8)) {
+        // dash SMASHES through crumble obstacles
+        sfx('explosion');
+        if (fx.count < 200) fx.burst(o.x + o.w/2, o.y + o.h/2, 16, { colors: ['#ffaa00', '#ffe066', '#fff'], maxSpeed: 300, lifetime: 0.5 });
+        game.shake(3, 0.15);
+        bonusScore += 15;
+        floatText(o.x + o.w/2, o.y, '+15', '#ffaa00');
+        obstacles.splice(i, 1);
+        continue;
+      }
+    }
+
+    if (player.invuln <= 0 && GameUtils.hitTest(player, o, 0.75)) {
+      killPlayer(o.type);
+    }
+  }
+
+  // ── Orbs (risk-zone pickups) ──
+  for (let i = orbs.length - 1; i >= 0; i--) {
+    const orb = orbs[i];
+    orb.x -= speed * dt;
+    if (orb.x + orb.w < -20) { orbs.splice(i, 1); continue; }
+    if (!orb.taken && GameUtils.hitTest(player, orb, 0.8)) {
+      orb.taken = true;
+      bonusScore += 40;
+      floatText(orb.x, orb.y, '+40', '#ffe066');
+      sfx('collect');
+      if (fx.count < 200) fx.burst(orb.x + orb.w/2, orb.y + orb.h/2, 10, { colors: ['#ffe066', '#fff'], maxSpeed: 180, lifetime: 0.4 });
+      orbs.splice(i, 1);
+    }
+  }
+
+  // Score (distance-based, plus accumulated crumble/orb bonuses)
+  game.setScore(Math.floor(distance * 10) + bonusScore);
+  checkUnlocks();
+  updateFloaters(dt);
   fx.update(dt);
+  updateHudExtras();
+
+  if (unlockBannerTimer > 0) {
+    unlockBannerTimer -= dt;
+    if (unlockBannerTimer <= 0) {
+      const el = document.getElementById('ppr-unlock-banner');
+      if (el) el.classList.remove('show');
+    }
+  }
 });
 
-// ── Render ──────────────────────────────────────────────────
+function updateFloaters(dt) {
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 60 * dt;
+    f.life -= dt;
+    if (f.life <= 0) floaters.splice(i, 1);
+  }
+}
+
+function killPlayer(cause) {
+  if (dying) return;
+  dying = true;
+  triggerHitStop(0.08);
+  sfx('explosion');
+  if (fx.count < 200) fx.burst(player.x + player.w/2, player.y + player.h/2, 50, {
+    colors: ['#fff', '#ff4444', '#ffaa00'],
+    minSpeed: 120, maxSpeed: 450, lifetime: 1.2,
+  });
+  game.shake(8, 0.3);
+  deathTimer = 0.8;
+  flashTimer = 0;
+}
+
+function updateHudExtras() {
+  const goalEl = document.getElementById('meta-goal');
+  if (goalEl) goalEl.textContent = nextGoalText();
+  const dashEl = document.getElementById('ppr-dash-status');
+  if (dashEl) {
+    if (dashActive > 0) dashEl.textContent = 'DASH!';
+    else if (dashRecover > 0) dashEl.textContent = 'Vulnerable';
+    else if (dashCooldown > 0) dashEl.textContent = Math.ceil(dashCooldown) + 's';
+    else dashEl.textContent = 'Ready';
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// RENDER
+// ═══════════════════════════════════════════════════════════════════════
 game.onRender((ctx) => {
-  // Sky gradient
+  // Sky gradient — subtle phase tint
   const sky = ctx.createLinearGradient(0, 0, 0, GROUND);
-  sky.addColorStop(0, '#0a0e1f');
-  sky.addColorStop(1, '#1a2a4a');
+  if (phase >= 2) {
+    sky.addColorStop(0, '#1a0a1f'); sky.addColorStop(1, '#3a1a4a'); // eerie purple once ghost is loose
+  } else {
+    sky.addColorStop(0, '#0a0e1f'); sky.addColorStop(1, '#1a2a4a');
+  }
   ctx.fillStyle = sky;
   ctx.fillRect(0, 0, W, H);
 
@@ -190,39 +621,197 @@ game.onRender((ctx) => {
   ctx.fillStyle = '#2a3f7a';
   ctx.fillRect(0, GROUND, W, 4);
 
-  // Player (pac-man style)
-  ctx.shadowColor = '#33aaff';
-  ctx.shadowBlur  = 10;
-  ctx.fillStyle   = '#33aaff';
-  ctx.beginPath();
-  const mouth = grounded ? 0.3 : 0.1;
-  ctx.arc(player.x + player.w/2, player.y + player.h/2, player.w/2,
-    mouth * Math.PI, (2 - mouth) * Math.PI);
-  ctx.lineTo(player.x + player.w/2, player.y + player.h/2);
-  ctx.closePath();
-  ctx.fill();
-  ctx.shadowBlur = 0;
-
-  // Obstacles (spikes/pillars)
+  // Pits (draw as gap in ground + telegraph)
   for (const o of obstacles) {
+    if (o.type !== 'pit') continue;
+    ctx.clearRect(o.x, GROUND, o.w, H - GROUND);
+    ctx.fillStyle = '#05070f';
+    ctx.fillRect(o.x, GROUND, o.w, H - GROUND);
+    if (o.telegraph > 0) {
+      ctx.strokeStyle = 'rgba(255,224,102,' + (0.5 + 0.5*Math.sin(o.telegraph*20)) + ')';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6,4]);
+      ctx.strokeRect(o.x, GROUND, o.w, 6);
+      ctx.setLineDash([]);
+    }
+  }
+
+  // Player (pac-man style) — flash if invuln/dash, tint gold if unlocked skin equipped
+  const dashing = dashActive > 0;
+  const vulnerable = dashRecover > 0;
+  let drawPlayer = true;
+  if (flashTimer > 0 && Math.floor(flashTimer * 15) % 2 === 0) drawPlayer = false;
+
+  if (drawPlayer) {
+    ctx.save();
+    const cx = player.x + player.w/2, cy = player.y + player.h/2;
+    // squash/stretch on jump/land
+    let sx = 1, sy = 1;
+    if (!grounded) { sx = 0.85; sy = 1.15; }
+    if (dashing) { sx = 1.3; sy = 0.75; }
+    ctx.translate(cx, cy);
+    ctx.scale(sx, sy);
+    ctx.translate(-cx, -cy);
+
+    const skinGold = meta.unlocks['char-gold'] && meta.unlocks['char-gold'].earned && meta.equipped.skin === 'gold';
+    const color = dashing ? '#ffe066' : (skinGold ? '#ffd700' : (vulnerable ? '#ff8844' : '#33aaff'));
+    ctx.shadowColor = color;
+    ctx.shadowBlur  = dashing ? 18 : 10;
+    ctx.fillStyle   = color;
+    ctx.beginPath();
+    const mouth = grounded ? 0.3 : 0.1;
+    ctx.arc(cx, cy, player.w/2, mouth * Math.PI, (2 - mouth) * Math.PI);
+    ctx.lineTo(cx, cy);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  // Obstacles (spikes/crumble)
+  for (const o of obstacles) {
+    if (o.type === 'pit') continue;
+    const warm = o.telegraph > 0;
+    const baseColor = o.type === 'crumble' ? '#ffaa00' : '#ff2d95';
     const g2 = ctx.createLinearGradient(o.x, o.y, o.x, o.y + o.h);
-    g2.addColorStop(0, '#ff2d95');
-    g2.addColorStop(1, '#880044');
+    if (warm) {
+      g2.addColorStop(0, '#fff4cc'); g2.addColorStop(1, baseColor);
+    } else {
+      g2.addColorStop(0, baseColor); g2.addColorStop(1, o.type === 'crumble' ? '#884400' : '#880044');
+    }
     ctx.fillStyle   = g2;
-    ctx.shadowColor = '#ff2d95';
+    ctx.shadowColor = baseColor;
     ctx.shadowBlur  = 8;
     ctx.fillRect(o.x, o.y, o.w, o.h);
-    // Spike top
-    ctx.fillStyle = '#ff2d95';
-    ctx.beginPath();
-    ctx.moveTo(o.x, o.y);
-    ctx.lineTo(o.x + o.w/2, o.y - 12);
-    ctx.lineTo(o.x + o.w, o.y);
-    ctx.fill();
+    if (o.type === 'crumble') {
+      // crack pattern to signal "dash through me"
+      ctx.strokeStyle = 'rgba(0,0,0,0.4)';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(o.x + o.w*0.3, o.y); ctx.lineTo(o.x + o.w*0.5, o.y + o.h*0.5);
+      ctx.lineTo(o.x + o.w*0.2, o.y + o.h);
+      ctx.stroke();
+    } else {
+      ctx.fillStyle = '#ff2d95';
+      ctx.beginPath();
+      ctx.moveTo(o.x, o.y);
+      ctx.lineTo(o.x + o.w/2, o.y - 12);
+      ctx.lineTo(o.x + o.w, o.y);
+      ctx.fill();
+    }
     ctx.shadowBlur = 0;
   }
 
+  // Ghost chaser
+  for (const g of ghosts) {
+    ctx.save();
+    if (g.state === 'telegraph') {
+      // growl telegraph: pulsing shadow silhouette off-screen edge
+      const pulse = 0.4 + 0.3 * Math.sin(g.timer * 25);
+      ctx.globalAlpha = pulse;
+      ctx.fillStyle = '#aa44ff';
+      ctx.font = 'bold 20px monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('👻...', 10, GROUND - 40);
+      ctx.globalAlpha = 1;
+    } else {
+      ctx.shadowColor = '#aa44ff';
+      ctx.shadowBlur = 12;
+      ctx.fillStyle = '#c266ff';
+      ctx.beginPath();
+      ctx.arc(g.x + g.w/2, g.y + g.h/2, g.w/2, Math.PI, 0);
+      ctx.lineTo(g.x + g.w, g.y + g.h);
+      for (let w = 0; w < 4; w++) {
+        ctx.lineTo(g.x + g.w - (w+0.5)*(g.w/4), g.y + g.h - (w%2===0?6:0));
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+  }
+
+  // Risk-zone orbs
+  for (const orb of orbs) {
+    ctx.save();
+    ctx.shadowColor = '#ffe066';
+    ctx.shadowBlur = 12;
+    ctx.fillStyle = '#ffe066';
+    ctx.beginPath();
+    ctx.arc(orb.x + orb.w/2, orb.y + orb.h/2, orb.w/2, 0, Math.PI*2);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+
+  // Floating score text
+  floaters.forEach(f => {
+    ctx.globalAlpha = f.life / f.maxLife;
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold ' + f.size + 'px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x, f.y);
+  });
+  ctx.globalAlpha = 1;
+  ctx.textAlign = 'left';
+
   fx.draw(ctx);
+});
+
+// ═══════════════════════════════════════════════════════════════════════
+// UI WIRING (audio init, badges, easy-mode)
+// ═══════════════════════════════════════════════════════════════════════
+function initAudioOnce() { if (typeof GameAudio !== 'undefined') GameAudio.init(); }
+document.getElementById('gij-start-btn')?.addEventListener('click', initAudioOnce, { once: true });
+document.getElementById('gij-restart-btn')?.addEventListener('click', initAudioOnce, { once: true });
+document.getElementById('gij-try-btn')?.addEventListener('click', () => sfx('click'));
+document.getElementById('gij-restart-btn')?.addEventListener('click', () => sfx('click'));
+
+renderBadgeRow('ppr-try-badges');
+
+// Populate game-over extras every time the overlay is about to show
+const _origEndGame = game.endGame.bind(game);
+game.endGame = function () {
+  _origEndGame();
+  renderBadgeRow('ppr-over-badges');
+  const statEl = document.getElementById('ppr-stat-line');
+  if (statEl) {
+    const lines = [
+      'Run #' + meta.totalRuns,
+      'Distance: ' + Math.floor(distance) + 'm (best ' + meta.bestDistance + 'm)',
+      meta.improveStreak > 1 ? meta.improveStreak + ' runs improving in a row!' : null,
+    ].filter(Boolean);
+    statEl.textContent = lines[Math.floor(Math.random() * lines.length)];
+  }
+  const goalEl2 = document.getElementById('ppr-goal-line');
+  if (goalEl2) goalEl2.textContent = nextGoalText();
+
+  // Rubber-band "Try Easy?" offer
+  const easyBtn = document.getElementById('ppr-easy-btn');
+  const normalBtn = document.getElementById('ppr-normal-btn');
+  if (easyBtn && normalBtn) {
+    if (!easyMode && fastDeathCount() >= 2) {
+      easyBtn.classList.remove('hidden');
+      normalBtn.classList.add('hidden');
+    } else if (easyMode) {
+      easyBtn.classList.add('hidden');
+      normalBtn.classList.remove('hidden');
+    } else {
+      easyBtn.classList.add('hidden');
+      normalBtn.classList.add('hidden');
+    }
+  }
+};
+
+document.getElementById('ppr-easy-btn')?.addEventListener('click', () => {
+  easyMode = true;
+  try { localStorage.setItem('gij_easy_' + GAME.slug, '1'); } catch (e) {}
+  sfx('click');
+});
+document.getElementById('ppr-normal-btn')?.addEventListener('click', () => {
+  easyMode = false;
+  try { localStorage.setItem('gij_easy_' + GAME.slug, '0'); } catch (e) {}
+  sfx('click');
 });
 
 reset();

@@ -14,8 +14,8 @@ export default function MakeYourGamePage() {
         <PageHeader
           align="center"
           eyebrow="Game Creator Studio"
-          title="Make Your Own Game!"
-          description="Tell us what kind of game you want to create, and our AI will build it for you. Choose everything from the art style to the difficulty. Your game will be ready to play in just a few minutes!"
+          title="Make Your Own Game — With AI"
+          description="This is where you actually practise AI-coding: describe your idea, build a draft, play it, and tell the AI what to change. Real games take a few tries — that's the whole point."
         />
 
         <section className="mx-auto w-full max-w-3xl rounded-3xl bg-white/80 p-8 shadow-xl ring-1 ring-slate-100">
@@ -24,19 +24,19 @@ export default function MakeYourGamePage() {
             <ol className="space-y-3 text-base leading-7 text-slate-600">
               <li className="flex gap-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-700">1</span>
-                <span><strong>Tell us about yourself</strong> - Your name and email so we can send you the game</span>
+                <span><strong>Describe your idea</strong> - Your title, what happens, and the one extra thing you can do</span>
               </li>
               <li className="flex gap-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-700">2</span>
-                <span><strong>Design your game</strong> - Choose the type, style, colors, and difficulty</span>
+                <span><strong>Build your first draft</strong> - The AI builds exactly what you described in under a minute</span>
               </li>
               <li className="flex gap-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-700">3</span>
-                <span><strong>Pick what to collect and avoid</strong> - Select collectibles, hazards, and features</span>
+                <span><strong>Play it, then change it</strong> - Say what&apos;s wrong or what you&apos;d like different, and get an updated draft</span>
               </li>
               <li className="flex gap-3">
                 <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-sky-100 text-sm font-semibold text-sky-700">4</span>
-                <span><strong>We build it for you</strong> - Our AI creates a custom game in 3-5 minutes</span>
+                <span><strong>Submit when you&apos;re happy</strong> - Our team reviews it, then it goes live with your name on it</span>
               </li>
             </ol>
           </div>
@@ -44,10 +44,10 @@ export default function MakeYourGamePage() {
           <div className="mb-6 rounded-2xl bg-sky-50/70 p-6 ring-1 ring-sky-100">
             <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-sky-700">Kid-Friendly & Safe</h3>
             <ul className="space-y-2 text-sm leading-6 text-slate-600">
-              <li>✓ All games are reviewed before going live</li>
-              <li>✓ Content moderation ensures age-appropriate gameplay</li>
-              <li>✓ Limited to 3 games per day to keep quality high</li>
+              <li>✓ Every draft and every change is checked before it&apos;s built</li>
+              <li>✓ Games are reviewed by a real person before going live</li>
               <li>✓ Games are built using our tested template for safety</li>
+              <li>✓ A daily limit keeps things fair and fast for everyone</li>
             </ul>
           </div>
 
@@ -59,8 +59,8 @@ export default function MakeYourGamePage() {
           <div className="mt-6 grid gap-6 text-left sm:grid-cols-3">
             <div className="rounded-2xl bg-slate-50/60 p-5 ring-1 ring-slate-100">
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-yellow-100 text-2xl">🔨</div>
-              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-700">Building (3-5 min)</h3>
-              <p className="text-sm text-slate-600">Our AI generates your custom game code with all your chosen features</p>
+              <h3 className="mb-2 text-sm font-semibold uppercase tracking-wide text-slate-700">Build & Iterate (minutes)</h3>
+              <p className="text-sm text-slate-600">You play every draft yourself before deciding it&apos;s ready</p>
             </div>
             <div className="rounded-2xl bg-slate-50/60 p-5 ring-1 ring-slate-100">
               <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-2xl">👀</div>
@@ -74,7 +74,7 @@ export default function MakeYourGamePage() {
             </div>
           </div>
           <p className="mt-6 text-sm text-slate-500">
-            Games typically go live within 2-3 days. We&apos;ll email you at every step of the process.
+            We&apos;ll email you at every step of the process.
           </p>
         </section>
 
@@ -82,16 +82,16 @@ export default function MakeYourGamePage() {
           <h2 className="text-2xl font-semibold text-slate-900">Tips for Great Games</h2>
           <div className="mt-6 grid gap-4 sm:grid-cols-2">
             <div className="rounded-2xl bg-white/80 p-4 text-sm text-slate-700">
-              <strong className="text-sky-700">✨ Be creative with your title!</strong>
-              <p className="mt-1 text-slate-600">&quot;Space Pizza Rescue&quot; is more fun than &quot;Space Game&quot;</p>
+              <strong className="text-sky-700">🎯 Be specific about your second verb</strong>
+              <p className="mt-1 text-slate-600">&quot;Dash through walls for 1 second&quot; beats &quot;do something cool&quot;</p>
             </div>
             <div className="rounded-2xl bg-white/80 p-4 text-sm text-slate-700">
-              <strong className="text-sky-700">📝 Write a clear description</strong>
-              <p className="mt-1 text-slate-600">Tell us what makes your game special and exciting</p>
+              <strong className="text-sky-700">📝 Describe changes precisely</strong>
+              <p className="mt-1 text-slate-600">&quot;The boss dies too fast&quot; is more useful than &quot;make it better&quot;</p>
             </div>
             <div className="rounded-2xl bg-white/80 p-4 text-sm text-slate-700">
-              <strong className="text-sky-700">⚖️ Balance difficulty</strong>
-              <p className="mt-1 text-slate-600">Start with medium difficulty - you can always request changes</p>
+              <strong className="text-sky-700">🔁 Don&apos;t stop at draft one</strong>
+              <p className="mt-1 text-slate-600">Every real game gets played and changed a few times before it&apos;s good</p>
             </div>
             <div className="rounded-2xl bg-white/80 p-4 text-sm text-slate-700">
               <strong className="text-sky-700">🎨 Mix and match!</strong>

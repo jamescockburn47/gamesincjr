@@ -2,501 +2,1141 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Rogue Dungeon Mini - Demo</title>`n  <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Rogue Dungeon Mini · Games Inc Jr</title>
+  <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
   <style>
-    :root {
-      color-scheme: dark;
-      font-family: 'Courier New', monospace;
-    }
-
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 16px;
-      padding: 32px 16px 64px;
-      background: linear-gradient(180deg, #1c0f13 0%, #0a0406 100%);
-      color: #e0f2fe;
-    }
-
-    h1 {
-      margin: 0;
-      font-size: clamp(2.4rem, 5vw, 3.6rem);
-      letter-spacing: 0.08em;
-      text-transform: uppercase;
-      color: #dc2626;
-      text-shadow: 0 0 20px rgba(220, 38, 38, 0.8);
-    }
-
-    .tagline {
-      margin: 0;
-      font-size: clamp(1rem, 2.5vw, 1.4rem);
-      color: #bae6fd;
-      text-align: center;
-      max-width: 760px;
-    }
-
-    .hud {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: clamp(16px, 4vw, 32px);
-      font-size: clamp(1.1rem, 2.4vw, 1.5rem);
-      font-weight: 700;
-    }
-
-    .hud span {
-      color: #fbbf24;
-      margin-left: 6px;
-    }
-
-    .stage {
-      position: relative;
-      width: min(92vw, 880px);
-      aspect-ratio: 4 / 3;
-      border-radius: 28px;
-      overflow: hidden;
-      border: 2px solid rgba(220, 38, 38, 0.45);
-      box-shadow: 0 28px 68px rgba(5, 12, 24, 0.7);
-      background: linear-gradient(180deg, rgba(28, 15, 19, 0.85), rgba(10, 4, 6, 0.95));
-    }
-
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      touch-action: none;
-    }
-
-    .overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(4, 7, 19, 0.88);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 20px;
-      padding: 24px;
-      text-align: center;
-    }
-
-    .overlay.hidden {
-      pointer-events: none;
-      opacity: 0;
-    }
-
-    .overlay h2 {
-      margin: 0;
-      font-size: clamp(2rem, 4vw, 2.6rem);
-      color: #dc2626;
-    }
-
-    .overlay p {
-      margin: 0;
-      color: #e0f2fe;
-      line-height: 1.6;
-    }
-
-    .overlay button {
-      padding: 14px 28px;
-      font-size: 1.1rem;
-      font-weight: 700;
-      color: #fefce8;
-      background: linear-gradient(135deg, #dc2626 0%, #991b1b 100%);
-      border: none;
-      border-radius: 8px;
-      cursor: pointer;
-      box-shadow: 0 16px 40px rgba(220, 38, 38, 0.4);
-    }
-
-    .overlay button:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 20px 52px rgba(220, 38, 38, 0.6);
-    }
-
-    .controls {
-      display: none;
-      gap: 12px;
-      position: fixed;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 14px 18px;
-      border-radius: 18px;
-      background: rgba(2, 6, 23, 0.75);
-      border: 1px solid rgba(220, 38, 38, 0.35);
-      backdrop-filter: blur(12px);
-    }
-
-    .controls button {
-      width: 56px;
-      height: 56px;
-      border-radius: 16px;
-      border: 1px solid rgba(220, 38, 38, 0.4);
-      background: rgba(5, 12, 24, 0.8);
-      color: #dc2626;
-      font-size: 1.3rem;
-      font-weight: 700;
-      cursor: pointer;
-    }
-
-    .controls button:active {
-      transform: scale(0.96);
-      background: rgba(220, 38, 38, 0.8);
-    }
-
-    @media (max-width: 900px) {
-      .controls { display: grid; grid-template-columns: repeat(3, 1fr); }
-    }
+    #gij-stage { background: #0a0406; }
+    canvas { background: #0a0406; }
   </style>
 </head>
 <body>
-  <h1>Rogue Dungeon Mini</h1>
-  <p class="tagline">Navigate procedural rooms, defeat enemies, collect gold. One life. One chance.</p>
+<div id="gij-wrap">
 
-  <div class="hud" role="status" aria-live="polite">
-    <div>HP:<span id="hp">10</span></div>
-    <div>Gold:<span id="gold">0</span></div>
-    <div>Room:<span id="room">1</span></div>
-  </div>
-
-  <div class="stage">
-    <canvas id="game" width="800" height="600" aria-label="Roguelite dungeon game"></canvas>
-    <div id="tryOverlay" class="overlay">
-      <h2>Rogue Dungeon Mini</h2>
-      <p>Navigate procedural rooms, defeat enemies, collect gold!</p>
-      <button id="tryBtn">Try Now</button>
-    </div>
-    <div id="startOverlay" class="overlay hidden">
-      <h2>Enter the Dungeon?</h2>
-      <p>Use WASD or arrow keys to move. Collide with enemies to attack. Find the exit portal to advance!</p>
-      <button id="startBtn">Start</button>
+  <!-- ── Try-Now Overlay ── -->
+  <div id="gij-try-overlay" class="gij-overlay">
+    <div class="gij-modal">
+      <h1 data-game-title>Rogue Dungeon Mini</h1>
+      <p id="gij-description">Fight through procedural rooms, spend your gold wisely, and survive the boss rooms.</p>
+      <button id="gij-try-btn" class="gij-btn gij-btn-primary">▶ Play Now</button>
     </div>
   </div>
 
-  <div class="controls" aria-hidden="true">
-    <div></div>
-    <button data-move="up">▲</button>
-    <div></div>
-    <button data-move="left">◄</button>
-    <button data-move="down">▼</button>
-    <button data-move="right">►</button>
+  <!-- ── Instructions Overlay ── -->
+  <div id="gij-instructions-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>How to Play</h2>
+      <ul id="gij-instructions" class="gij-list"></ul>
+      <button id="gij-start-btn" class="gij-btn gij-btn-primary">Enter the Dungeon!</button>
+    </div>
   </div>
 
-  <script type="module">
-    (() => {
-      const canvas = document.getElementById('game');
-      const ctx = canvas.getContext('2d');
-      const tryOverlay = document.getElementById('tryOverlay');
-      const startOverlay = document.getElementById('startOverlay');
-      const tryBtn = document.getElementById('tryBtn');
-      const startBtn = document.getElementById('startBtn');
-      const hpEl = document.getElementById('hp');
-      const goldEl = document.getElementById('gold');
-      const roomEl = document.getElementById('room');
+  <!-- ── Game-Over Overlay ── -->
+  <div id="gij-gameover-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2 id="rd-gameover-title">You Died</h2>
+      <div class="gij-score-row">
+        <span id="gij-final-score">Score: 0</span>
+        <span id="gij-final-hs">Best: 0</span>
+      </div>
+      <p id="rd-gameover-goal" style="color:#facc15; font-size:14px; margin:4px 0 10px;"></p>
+      <button id="gij-restart-btn" class="gij-btn gij-btn-primary">Retry</button>
+      <button id="rd-nightmare-btn" class="gij-btn hidden" style="margin-top:8px;">Nightmare Mode: OFF</button>
+    </div>
+  </div>
 
-      const state = {
-        running: false,
-        hp: 10,
-        maxHp: 10,
-        gold: 0,
-        room: 1,
-        lastTime: 0,
-        player: null,
-        enemies: [],
-        walls: [],
-        coins: [],
-        portal: null,
+  <!-- ── Stage ── -->
+  <div id="gij-stage">
+
+    <div id="gij-hud" class="hidden">
+      <div class="gij-badge">⭐ <strong id="gij-score">0</strong></div>
+      <div class="gij-badge">🏆 <strong id="gij-highscore">0</strong></div>
+      <div class="gij-badge">❤️ <strong id="rd-hp">10</strong></div>
+      <div class="gij-badge">🚪 <strong id="rd-room">1</strong></div>
+      <div class="gij-badge">🪙 <strong id="rd-gold">0</strong></div>
+    </div>
+
+    <canvas id="gij-canvas"></canvas>
+
+    <div id="gij-controls"></div>
+
+  </div><!-- /gij-stage -->
+</div><!-- /gij-wrap -->
+
+<script src="/game-framework/game-engine.js"></script>
+<script src="/game-framework/game-utils.js"></script>
+<script src="/game-framework/game-audio.js"></script>
+<script>
+function sfx(name) { if (typeof GameAudio !== 'undefined') GameAudio.play(name); }
+
+const GAME = {
+  slug:  'rogue-dungeon-mini',
+  title: 'Rogue Dungeon Mini',
+  description: 'Fight through procedural rooms, spend your gold wisely, and survive the boss rooms.',
+  instructions: [
+    '<strong>Arrow Keys / WASD:</strong> Move through the dungeon',
+    '<strong>Space:</strong> Swing your blade — a real attack, separate from moving!',
+    '<strong>Collect gold</strong> and spend it at the altar between rooms — heal, power up, or reroll',
+    '<strong>Watch for wind-ups</strong> — every enemy attack flashes before it hits',
+    '<strong>One life:</strong> when your HP runs out, the run is over',
+  ],
+  controls: [
+    { label: '◀', action: 'left'  },
+    { label: '▲', action: 'up'    },
+    { label: '▼', action: 'down'  },
+    { label: '▶', action: 'right' },
+    { label: '⚔', action: 'space', cls: 'gij-ctrl-space' },
+  ],
+  width:  800,
+  height: 600,
+};
+
+const canvas    = document.getElementById('gij-canvas');
+const game      = new GameEngine(canvas).setup(GAME);
+const input     = new InputManager();
+const particles = new ParticleSystem();
+
+document.getElementById('gij-start-btn')?.addEventListener('click', () => GameAudio.init(), { once: true });
+document.getElementById('gij-restart-btn')?.addEventListener('click', () => { GameAudio.init(); sfx('click'); });
+document.getElementById('gij-try-btn')?.addEventListener('click', () => sfx('click'));
+
+const W = game.W, H = game.H;
+const WALL = 30;   // room boundary thickness
+
+// ── Meta-progression ────────────────────────────────────────────
+const META_KEY = 'gij-meta:rogue-dungeon-mini';
+function defaultMeta() {
+  return {
+    v: 1,
+    totalRuns: 0,
+    totalRoomsCleared: 0,
+    bestRoom: 0,
+    bestScore: 0,
+    nightmareUnlocked: false,
+    nightmareMode: false,
+    unlocks: {
+      'skin-crimson':   { earned: false, celebrated: false },
+      'skin-gold':      { earned: false, celebrated: false },
+      'mode-nightmare': { earned: false, celebrated: false },
+    },
+    equippedSkin: 'default',
+  };
+}
+function loadMeta() {
+  try { return Object.assign(defaultMeta(), JSON.parse(localStorage.getItem(META_KEY)) || {}); }
+  catch (e) { return defaultMeta(); }
+}
+function saveMeta() {
+  try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {}
+}
+let meta = loadMeta();
+
+const UNLOCKS = [
+  { id: 'skin-crimson',   name: 'Crimson Blade Skin', type: 'bestRoom', need: 4 },
+  { id: 'skin-gold',      name: 'Gilded Hero Skin',   type: 'bestRoom', need: 7 },
+  { id: 'mode-nightmare', name: 'Nightmare Mode',     type: 'roomsCleared', need: 20 },
+];
+let unlockBanner = null; // { text, timer }
+
+function progressOf(u) {
+  if (u.type === 'bestRoom')     return Math.max(meta.bestRoom, room - 1);
+  if (u.type === 'roomsCleared') return meta.totalRoomsCleared;
+  return 0;
+}
+function checkUnlocks() {
+  for (const u of UNLOCKS) {
+    const slot = meta.unlocks[u.id] || (meta.unlocks[u.id] = { earned: false, celebrated: false });
+    if (!slot.earned && progressOf(u) >= u.need) {
+      slot.earned = true;
+      if (u.id === 'mode-nightmare') meta.nightmareUnlocked = true;
+      saveMeta();
+      unlockBanner = { text: '★ NEW: ' + u.name + '!', timer: 2.5 };
+      sfx('powerup');
+      if (particles.count < 200) {
+        particles.burst(W / 2, 80, 30, { colors: ['#ffd700', '#ffffff'], gravity: -40, lifetime: 1.0 });
+      }
+      game.shake(3, 0.15);
+    }
+  }
+}
+function nextGoalText() {
+  const locked = UNLOCKS.filter(u => !meta.unlocks[u.id]?.earned)
+                        .sort((a, b) => (a.need - progressOf(a)) - (b.need - progressOf(b)));
+  if (!locked.length) return 'Beat your best: room ' + meta.bestRoom;
+  const u = locked[0];
+  const remain = Math.max(0, u.need - progressOf(u));
+  return '★ Next: ' + u.name + ' — ' + remain + ' to go';
+}
+
+// ── Nightmare Mode toggle (unlocked via meta.unlocks['mode-nightmare']) ──
+const nightmareBtn = document.getElementById('rd-nightmare-btn');
+function refreshNightmareBtn() {
+  if (!nightmareBtn) return;
+  if (meta.nightmareUnlocked) {
+    nightmareBtn.classList.remove('hidden');
+    nightmareBtn.textContent = 'Nightmare Mode: ' + (meta.nightmareMode ? 'ON' : 'OFF');
+  } else {
+    nightmareBtn.classList.add('hidden');
+  }
+}
+nightmareBtn?.addEventListener('click', () => {
+  meta.nightmareMode = !meta.nightmareMode;
+  saveMeta();
+  refreshNightmareBtn();
+  sfx('click');
+});
+
+// ── Game state ──────────────────────────────────────────────────
+let hp, maxHp, room, elapsed, gold;
+let player, enemies, walls, coins, portal, hazards, bullets, floaters;
+let attackBoostTimer = 0;   // seconds remaining of altar attack buff
+let rerollBonus = false;    // one-shot: next generateRoom() gets fewer obstacles + bonus coin
+let phaseName = '';
+let dying = false, deathTimer = 0;
+let hitStop = 0;
+let flashTimer = 0;          // player damage flash / invuln window
+let screenMode = 'play';     // 'play' | 'shop'
+let shopChoice = 0;
+let shopOptions = [];
+let sessionStartTime = 0;
+
+const DEATH_KEY = 'gij_deaths_rogue-dungeon-mini';
+function recordDeath(atElapsed) {
+  try {
+    const fast = atElapsed < 60;
+    const n = fast ? (parseInt(localStorage.getItem(DEATH_KEY) || '0', 10) + 1) : 0;
+    localStorage.setItem(DEATH_KEY, String(n));
+  } catch (e) {}
+}
+function assistFactor() {
+  try { return parseInt(localStorage.getItem(DEATH_KEY) || '0', 10) >= 2 ? 0.85 : 1.0; }
+  catch (e) { return 1.0; }
+}
+
+const hpEl   = document.getElementById('rd-hp');
+const roomEl = document.getElementById('rd-room');
+const goldEl = document.getElementById('rd-gold');
+
+function updateBadges() {
+  hpEl.textContent   = hp;
+  roomEl.textContent = room;
+  goldEl.textContent = gold;
+}
+
+function floatText(x, y, text, color, size) {
+  floaters.push({ x, y: y, text, color: color || '#fff', size: size || 16, life: 0.7, maxLife: 0.7, dx: (Math.random() - 0.5) * 20 });
+}
+
+function triggerHitStop(sec) { hitStop = Math.max(hitStop, sec); }
+
+// ── Skins (cosmetic only) ──────────────────────────────────────
+function playerColor() {
+  if (meta.equippedSkin === 'skin-gold' && meta.unlocks['skin-gold']?.earned) return '#facc15';
+  if (meta.equippedSkin === 'skin-crimson' && meta.unlocks['skin-crimson']?.earned) return '#f43f5e';
+  return '#06b6d4';
+}
+
+function reset() {
+  hp      = 10;
+  maxHp   = 10;
+  room    = 1;
+  gold    = 0;
+  elapsed = 0;
+  sessionStartTime = 0;
+  attackBoostTimer = 0;
+  dying = false; deathTimer = 0; hitStop = 0; flashTimer = 0;
+  screenMode = 'play';
+  floaters = [];
+  bullets = [];
+  hazards = [];
+  particles.clear();
+  meta.totalRuns++;
+  saveMeta();
+  generateRoom();
+  updateBadges();
+}
+
+game.onRestart(reset);
+
+// Auto-equip newest earned skin by default if none chosen and default still set
+function maybeAutoEquip() {
+  if (meta.equippedSkin === 'default') {
+    if (meta.unlocks['skin-gold']?.earned) meta.equippedSkin = 'skin-gold';
+    else if (meta.unlocks['skin-crimson']?.earned) meta.equippedSkin = 'skin-crimson';
+  }
+}
+
+function phaseForRoom(r) {
+  if (r >= 7) return { name: 'The Depths', enemyTypes: ['patrol', 'chase', 'ambush', 'turret'], hazard: 'spikes', boss: true };
+  if (r >= 5) return { name: 'Turret Hall', enemyTypes: ['patrol', 'chase', 'turret'], hazard: 'spikes', boss: false };
+  if (r >= 4) return { name: 'Ambush Den', enemyTypes: ['patrol', 'chase', 'ambush'], hazard: null, boss: true };
+  if (r >= 3) return { name: 'Ambush Den', enemyTypes: ['patrol', 'chase', 'ambush'], hazard: null, boss: false };
+  return { name: 'Entry Halls', enemyTypes: ['patrol', 'chase'], hazard: null, boss: false };
+}
+
+function generateRoom() {
+  player = player || {};
+  player.x = 100; player.y = 300; player.size = 20; player.speed = 200; // px/s
+  player.attackState = 'idle'; player.attackTimer = 0; player.facing = 1; // facing angle
+  enemies = [];
+  walls   = [];
+  coins   = [];
+  hazards = [];
+  bullets = [];
+
+  const phase = phaseForRoom(room);
+  phaseName = phase.name;
+  const nightmare = meta.nightmareMode;
+
+  // Room boundary walls
+  walls.push(
+    { x: 0, y: 0, w: W, h: WALL },
+    { x: 0, y: H - WALL, w: W, h: WALL },
+    { x: 0, y: 0, w: WALL, h: H },
+    { x: W - WALL, y: 0, w: WALL, h: H }
+  );
+
+  // Random obstacles — kept clear of the player spawn point
+  const obstacleCount = Math.max(0, (2 + Math.floor(room / 3)) - (rerollBonus ? 2 : 0));
+  for (let i = 0; i < obstacleCount; i++) {
+    let ob, tries = 0;
+    do {
+      ob = {
+        x: 150 + Math.random() * 550,
+        y: 100 + Math.random() * 400,
+        w: 40 + Math.random() * 60,
+        h: 40 + Math.random() * 60,
       };
+      tries++;
+    } while (tries < 12 &&
+             ob.x < player.x + 80 && ob.x + ob.w > player.x - 80 &&
+             ob.y < player.y + 80 && ob.y + ob.h > player.y - 80);
+    walls.push(ob);
+  }
 
-      const keys = {};
-
-      window.addEventListener('keydown', e => {
-        keys[e.key.toLowerCase()] = true;
+  // Hazard: spike floor patches (cycle on/off, telegraphed)
+  if (phase.hazard === 'spikes') {
+    const spikeCount = 2;
+    for (let i = 0; i < spikeCount; i++) {
+      hazards.push({
+        type: 'spike',
+        x: 250 + Math.random() * 350,
+        y: 150 + Math.random() * 300,
+        r: 45,
+        cycle: 2.6,
+        t: Math.random() * 2.6,
+        warmDur: 0.8,   // telegraph
+        activeDur: 0.8,
       });
-      window.addEventListener('keyup', e => {
-        keys[e.key.toLowerCase()] = false;
-      });
+    }
+  }
 
-      document.querySelectorAll('[data-move]').forEach(btn => {
-        btn.addEventListener('pointerdown', e => {
-          e.preventDefault();
-          keys[btn.dataset.move] = true;
+  const isBoss = phase.boss;
+  const difficultyMul = (nightmare ? 1.3 : 1.0) * assistFactor();
+
+  if (isBoss) {
+    // Mini-boss room: single tough enemy, telegraphed heavy attacks, real reward
+    enemies.push(makeBoss(room, difficultyMul));
+    // A few familiar chasers to fill space (per MIXING RULE, but kept light for boss rooms)
+    enemies.push(makeEnemy('chase', room, difficultyMul));
+  } else {
+    const enemyCount = 2 + room;
+    // Compose enemy list per MIXING RULE: mostly familiar, 1-2 new
+    const types = phase.enemyTypes;
+    for (let i = 0; i < enemyCount; i++) {
+      // Bias toward earlier (familiar) types ~3:1 vs the newest type
+      let type;
+      if (types.length === 1 || Math.random() < 0.7) {
+        type = types[Math.floor(Math.random() * Math.max(1, types.length - 1)) % types.length];
+      } else {
+        type = types[types.length - 1];
+      }
+      enemies.push(makeEnemy(type, room, difficultyMul));
+    }
+  }
+
+  // Gold coins
+  const coinCount = 3 + Math.floor(room / 2) + (rerollBonus ? 2 : 0);
+  rerollBonus = false; // one-shot, consumed on this generation
+  for (let i = 0; i < coinCount; i++) {
+    coins.push({
+      x: 150 + Math.random() * 500,
+      y: 100 + Math.random() * 400,
+      size: 12,
+      bob: Math.random() * Math.PI * 2,
+    });
+  }
+
+  // Exit portal
+  portal = {
+    x: 650 + Math.random() * 100,
+    y: 200 + Math.random() * 200,
+    size: 40,
+  };
+}
+
+function randomSpawnFarFromPlayer(minDist) {
+  let x, y, tries = 0;
+  do {
+    x = 300 + Math.random() * 400;
+    y = 100 + Math.random() * 400;
+    tries++;
+  } while (tries < 12 && GameUtils.distance(x, y, player.x, player.y) < minDist);
+  return { x, y };
+}
+
+function makeEnemy(type, r, difficultyMul) {
+  const pos = randomSpawnFarFromPlayer(180);
+  const baseHp = 2 + Math.floor(r / 3);
+  if (type === 'patrol') {
+    return {
+      behaviour: 'patrol', x: pos.x, y: pos.y, size: 16,
+      hp: baseHp, maxHp: baseHp,
+      speed: 90 * difficultyMul, vx: 90 * difficultyMul,
+      minX: Math.max(WALL + 40, pos.x - 120), maxX: Math.min(W - WALL - 40, pos.x + 120),
+      points: 15, color: '#22c55e',
+    };
+  }
+  if (type === 'ambush') {
+    return {
+      behaviour: 'ambush', x: pos.x, y: pos.y, size: 17,
+      hp: baseHp, maxHp: baseHp,
+      state: 'lurk', timer: 0, lungeVx: 0, lungeVy: 0,
+      points: 25, color: '#a855f7',
+    };
+  }
+  if (type === 'turret') {
+    return {
+      behaviour: 'turret', x: pos.x, y: pos.y, size: 18,
+      hp: baseHp + 1, maxHp: baseHp + 1,
+      state: 'aim', timer: 1.2, aimAngle: 0,
+      points: 20, color: '#f97316',
+    };
+  }
+  // default: chase (capped turn rate)
+  return {
+    behaviour: 'chase', x: pos.x, y: pos.y, size: 16,
+    hp: baseHp, maxHp: baseHp,
+    heading: Math.random() * Math.PI * 2,
+    speed: (60 + r * 5) * difficultyMul, turnRate: 2.2,
+    points: 15, color: '#dc2626',
+  };
+}
+
+function makeBoss(r, difficultyMul) {
+  const pos = { x: 550, y: 300 };
+  const hp = 3;
+  return {
+    behaviour: 'boss', x: pos.x, y: pos.y, size: 30,
+    hp, maxHp: hp,
+    phase: 'idle', timer: GameUtils.randomRange(1.2, 1.8),
+    lungeVx: 0, lungeVy: 0,
+    speed: 70 * difficultyMul,
+    points: 150, color: '#facc15', elite: true,
+    name: room >= 7 ? 'The Depths Warden' : 'Den Guardian',
+  };
+}
+
+function collidesWalls(x, y, size) {
+  for (const wall of walls) {
+    if (x + size / 2 > wall.x && x - size / 2 < wall.x + wall.w &&
+        y + size / 2 > wall.y && y - size / 2 < wall.y + wall.h) {
+      return true;
+    }
+  }
+  return false;
+}
+
+function killPlayer() {
+  if (dying) return;
+  dying = true;
+  triggerHitStop(0.08);
+  sfx('explosion');
+  particles.burst(player.x, player.y, 50, {
+    colors: ['#fff', '#ff4444', '#ffaa00'],
+    minSpeed: 120, maxSpeed: 450, lifetime: 1.2,
+  });
+  game.shake(8, 0.3);
+  deathTimer = 0.8;
+  recordDeath(elapsed);
+}
+
+// ── Attack ───────────────────────────────────────────────────────
+const ATTACK_WINDUP  = 0.15;
+const ATTACK_ACTIVE  = 0.12;
+const ATTACK_RECOVER = 0.22;
+const ATTACK_RANGE   = 46;
+
+function tryStartAttack() {
+  if (player.attackState !== 'idle') return;
+  player.attackState = 'windup';
+  player.attackTimer = ATTACK_WINDUP;
+  sfx('click');
+}
+
+function doAttackHit() {
+  const boosted = attackBoostTimer > 0;
+  const dmg = boosted ? 2 : 1;
+  const range = ATTACK_RANGE;
+  let hitAny = false;
+  for (const enemy of enemies) {
+    const d = GameUtils.distance(player.x, player.y, enemy.x, enemy.y);
+    if (d < range + enemy.size / 2) {
+      hitAny = true;
+      enemy.hp -= dmg;
+      floatText(enemy.x, enemy.y - 20, '-' + dmg, '#fff', 16);
+      if (particles.count < 200) {
+        particles.burst(enemy.x, enemy.y, 10, {
+          colors: ['#fff', '#e5e7eb'], minSpeed: 80, maxSpeed: 220, lifetime: 0.4,
         });
-        btn.addEventListener('pointerup', () => {
-          keys[btn.dataset.move] = false;
+      }
+      if (enemy.hp <= 0) {
+        killEnemy(enemy);
+      } else {
+        // knockback
+        const a = GameUtils.angle(player.x, player.y, enemy.x, enemy.y);
+        enemy.x += Math.cos(a) * 18;
+        enemy.y += Math.sin(a) * 18;
+      }
+    }
+  }
+  if (hitAny) { sfx('hit'); triggerHitStop(0.03); }
+}
+
+function killEnemy(enemy) {
+  game.addScore(enemy.points);
+  floatText(enemy.x, enemy.y - 10, '+' + enemy.points, '#fbbf24', 18);
+  sfx('explosion');
+  triggerHitStop(0.03);
+  if (particles.count < 200) {
+    particles.burst(enemy.x, enemy.y, 20, {
+      colors: enemy.elite ? ['#facc15', '#fff', '#f97316'] : ['#dc2626', '#7f1d1d', '#fbbf24'],
+      minSpeed: 80, maxSpeed: 260, gravity: 120, lifetime: 0.7,
+    });
+  }
+  game.shake(enemy.elite ? 6 : 3, enemy.elite ? 0.25 : 0.15);
+  if (enemy.elite) {
+    // Guaranteed reward: extra gold drop
+    for (let i = 0; i < 4; i++) {
+      coins.push({
+        x: enemy.x + GameUtils.randomRange(-30, 30),
+        y: enemy.y + GameUtils.randomRange(-30, 30),
+        size: 12, bob: Math.random() * Math.PI * 2,
+      });
+    }
+  }
+  enemy._dead = true;
+}
+
+// ── Update ──────────────────────────────────────────────────────
+game.onUpdate((dt) => {
+  if (game.state !== 'playing') return;
+
+  if (hitStop > 0) { hitStop -= dt; return; }
+
+  if (dying) {
+    deathTimer -= dt;
+    particles.update(dt);
+    if (deathTimer <= 0) {
+      sfx('gameover');
+      // Save meta on death
+      meta.bestScore = Math.max(meta.bestScore, game.getScore());
+      meta.bestRoom  = Math.max(meta.bestRoom, room - 1);
+      saveMeta();
+      const goalEl = document.getElementById('rd-gameover-goal');
+      if (goalEl) goalEl.textContent = nextGoalText();
+      refreshNightmareBtn();
+      game.endGame();
+    }
+    return;
+  }
+
+  elapsed += dt;
+  if (sessionStartTime === 0) sessionStartTime = elapsed;
+
+  if (flashTimer > 0) flashTimer = Math.max(0, flashTimer - dt);
+  if (attackBoostTimer > 0) attackBoostTimer = Math.max(0, attackBoostTimer - dt);
+
+  // Floating text
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 60 * dt;
+    f.life -= dt;
+    if (f.life <= 0) floaters.splice(i, 1);
+  }
+
+  if (screenMode === 'shop') {
+    handleShopInput();
+    particles.update(dt);
+    return;
+  }
+
+  const p = player;
+  let invulnerable = flashTimer > 0;
+
+  // ── First-30s onboarding contract ──
+  const tutorial = elapsed < 30;
+
+  // Player movement (normalised diagonals) — attacking slows movement to 30%
+  let dx = 0, dy = 0;
+  if (input.isPressed('up'))    dy -= 1;
+  if (input.isPressed('down'))  dy += 1;
+  if (input.isPressed('left'))  dx -= 1;
+  if (input.isPressed('right')) dx += 1;
+
+  const committed = player.attackState === 'windup' || player.attackState === 'active';
+  const moveMul = committed ? 0.25 : 1.0;
+
+  if (dx !== 0 || dy !== 0) {
+    const len = Math.sqrt(dx * dx + dy * dy);
+    dx /= len; dy /= len;
+    player.facing = Math.atan2(dy, dx);
+
+    const newX = p.x + dx * p.speed * moveMul * dt;
+    const newY = p.y + dy * p.speed * moveMul * dt;
+
+    if (!collidesWalls(newX, newY, p.size) || collidesWalls(p.x, p.y, p.size)) {
+      p.x = newX;
+      p.y = newY;
+    }
+  }
+
+  // Attack input — second verb, distinct from movement (a commitment, not a bump)
+  if (input.isPressed('space') && player.attackState === 'idle') {
+    tryStartAttack();
+  }
+
+  // Attack state machine: windup (telegraph) -> active (hits) -> recover
+  if (player.attackState === 'windup') {
+    player.attackTimer -= dt;
+    if (player.attackTimer <= 0) {
+      player.attackState = 'active';
+      player.attackTimer = ATTACK_ACTIVE;
+      doAttackHit();
+    }
+  } else if (player.attackState === 'active') {
+    player.attackTimer -= dt;
+    if (player.attackTimer <= 0) {
+      player.attackState = 'recover';
+      player.attackTimer = ATTACK_RECOVER;
+    }
+  } else if (player.attackState === 'recover') {
+    player.attackTimer -= dt;
+    if (player.attackTimer <= 0) player.attackState = 'idle';
+  }
+
+  // ── Enemy AI — behaviour switch ──
+  for (const enemy of enemies) {
+    if (enemy._dead) continue;
+    const tutorialSpeedMul = tutorial ? 0.75 : 1.0;
+
+    if (enemy.behaviour === 'patrol') {
+      enemy.x += enemy.vx * tutorialSpeedMul * dt;
+      if (enemy.x <= enemy.minX || enemy.x >= enemy.maxX) enemy.vx = -enemy.vx;
+    }
+    else if (enemy.behaviour === 'chase') {
+      const want = GameUtils.angle(enemy.x, enemy.y, p.x, p.y);
+      let diff = want - enemy.heading;
+      while (diff >  Math.PI) diff -= Math.PI * 2;
+      while (diff < -Math.PI) diff += Math.PI * 2;
+      enemy.heading += GameUtils.clamp(diff, -enemy.turnRate * dt, enemy.turnRate * dt);
+      enemy.x += Math.cos(enemy.heading) * enemy.speed * tutorialSpeedMul * dt;
+      enemy.y += Math.sin(enemy.heading) * enemy.speed * tutorialSpeedMul * dt;
+    }
+    else if (enemy.behaviour === 'ambush') {
+      const d = GameUtils.distance(enemy.x, enemy.y, p.x, p.y);
+      if (enemy.state === 'lurk') {
+        if (d < 200 && !tutorial) { enemy.state = 'windup'; enemy.timer = 0.6; }
+      } else if (enemy.state === 'windup') {
+        enemy.timer -= dt;
+        enemy.flash = Math.sin(enemy.timer * 30) > 0;
+        if (enemy.timer <= 0) {
+          const a = GameUtils.angle(enemy.x, enemy.y, p.x, p.y);
+          enemy.lungeVx = Math.cos(a) * 380;
+          enemy.lungeVy = Math.sin(a) * 380;
+          enemy.state = 'lunge'; enemy.timer = 0.4;
+        }
+      } else if (enemy.state === 'lunge') {
+        enemy.x += enemy.lungeVx * dt; enemy.y += enemy.lungeVy * dt;
+        enemy.timer -= dt;
+        if (enemy.timer <= 0) { enemy.state = 'recover'; enemy.timer = 0.5; }
+      } else if (enemy.state === 'recover') {
+        enemy.timer -= dt;
+        if (enemy.timer <= 0) enemy.state = 'lurk';
+      }
+    }
+    else if (enemy.behaviour === 'turret') {
+      if (enemy.state === 'aim') {
+        enemy.aimAngle = GameUtils.angle(enemy.x, enemy.y, p.x, p.y);
+        enemy.timer -= dt;
+        if (enemy.timer <= 0) { enemy.state = 'lock'; enemy.timer = 0.6; }
+      } else if (enemy.state === 'lock') {
+        enemy.timer -= dt;
+        if (enemy.timer <= 0 && !tutorial) {
+          bullets.push({
+            x: enemy.x, y: enemy.y,
+            vx: Math.cos(enemy.aimAngle) * 260, vy: Math.sin(enemy.aimAngle) * 260,
+            r: 6,
+          });
+          sfx('click');
+          enemy.state = 'aim'; enemy.timer = 1.8;
+        } else if (enemy.timer <= 0) {
+          enemy.state = 'aim'; enemy.timer = 1.8; // tutorial: telegraph but no shot
+        }
+      }
+    }
+    else if (enemy.behaviour === 'boss') {
+      const d = GameUtils.distance(enemy.x, enemy.y, p.x, p.y);
+      if (enemy.phase === 'idle') {
+        // Slow drift toward player between attacks
+        if (d > 120) {
+          const a = GameUtils.angle(enemy.x, enemy.y, p.x, p.y);
+          enemy.x += Math.cos(a) * enemy.speed * dt;
+          enemy.y += Math.sin(a) * enemy.speed * dt;
+        }
+        enemy.timer -= dt;
+        if (enemy.timer <= 0) { enemy.phase = 'windup'; enemy.timer = 0.7; enemy.telegraphAngle = GameUtils.angle(enemy.x, enemy.y, p.x, p.y); }
+      } else if (enemy.phase === 'windup') {
+        enemy.timer -= dt;
+        enemy.flash = Math.sin(enemy.timer * 24) > 0;
+        if (enemy.timer <= 0) {
+          const a = enemy.telegraphAngle;
+          enemy.lungeVx = Math.cos(a) * 460;
+          enemy.lungeVy = Math.sin(a) * 460;
+          enemy.phase = 'attack'; enemy.timer = 0.35;
+          sfx('hit');
+        }
+      } else if (enemy.phase === 'attack') {
+        enemy.x += enemy.lungeVx * dt; enemy.y += enemy.lungeVy * dt;
+        GameUtils.clampToCanvas(enemy, W, H);
+        enemy.timer -= dt;
+        if (enemy.timer <= 0) { enemy.phase = 'recover'; enemy.timer = 0.6; }
+      } else if (enemy.phase === 'recover') {
+        enemy.timer -= dt;
+        if (enemy.timer <= 0) { enemy.phase = 'idle'; enemy.timer = GameUtils.randomRange(1.2, 1.8); }
+      }
+    }
+
+    // Contact damage to player (not from a bump-kill — enemy contact just hurts, killing requires the attack verb)
+    const contactDist = (p.size + enemy.size) / 2;
+    if (!invulnerable && GameUtils.distance(p.x, p.y, enemy.x, enemy.y) < contactDist) {
+      const isTelegraphedHit = (enemy.behaviour === 'ambush' && enemy.state === 'lunge') ||
+                                (enemy.behaviour === 'boss' && enemy.phase === 'attack');
+      const dmg = enemy.behaviour === 'boss' ? 2 : 1;
+      applyDamageToPlayer(dmg, enemy.x, enemy.y);
+      invulnerable = true; // re-sync — applyDamageToPlayer just started a flash window
+    }
+  }
+  enemies = enemies.filter(e => !e._dead && e.hp > 0);
+
+  // Bullets (turret fire)
+  for (let i = bullets.length - 1; i >= 0; i--) {
+    const b = bullets[i];
+    b.x += b.vx * dt; b.y += b.vy * dt;
+    if (b.x < 0 || b.x > W || b.y < 0 || b.y > H) { bullets.splice(i, 1); continue; }
+    if (!invulnerable && GameUtils.distance(b.x, b.y, p.x, p.y) < b.r + p.size / 2) {
+      applyDamageToPlayer(1, b.x, b.y);
+      invulnerable = true; // re-sync
+      bullets.splice(i, 1);
+    }
+  }
+
+  // Hazards: spike floor — telegraphed pulse
+  for (const hz of hazards) {
+    hz.t += dt;
+    const cyclePos = hz.t % hz.cycle;
+    hz.warm   = cyclePos < hz.warmDur;
+    hz.active = cyclePos >= hz.warmDur && cyclePos < hz.warmDur + hz.activeDur;
+    if (hz.active && !invulnerable && GameUtils.distance(p.x, p.y, hz.x, hz.y) < hz.r) {
+      applyDamageToPlayer(1, p.x, p.y);
+      invulnerable = true; // re-sync
+    }
+  }
+
+  // Coin collection → gold + score
+  for (let i = coins.length - 1; i >= 0; i--) {
+    const coin = coins[i];
+    coin.bob += dt * 4;
+    if (Math.abs(p.x - coin.x) < 20 && Math.abs(p.y - coin.y) < 20) {
+      gold += 5;
+      game.addScore(10);
+      floatText(coin.x, coin.y - 10, '+10', '#fbbf24', 15);
+      sfx('collect');
+      if (particles.count < 200) {
+        particles.burst(coin.x, coin.y, 12, {
+          colors: ['#fbbf24', '#fde68a', '#ffffff'],
+          minSpeed: 50, maxSpeed: 180, gravity: 100, lifetime: 0.5,
         });
+      }
+      coins.splice(i, 1);
+      updateBadges();
+    }
+  }
+
+  // Portal → altar shop, then next room
+  if (portal &&
+      Math.abs(p.x - portal.x) < 30 &&
+      Math.abs(p.y - portal.y) < 30) {
+    if (particles.count < 200) {
+      particles.burst(portal.x, portal.y, 24, {
+        colors: ['#8b5cf6', '#c4b5fd', '#ffffff'],
+        minSpeed: 80, maxSpeed: 260, gravity: 0, lifetime: 0.6,
       });
+    }
+    sfx('levelup');
+    meta.totalRoomsCleared++;
+    saveMeta();
+    game.addScore(25);
+    openShop();
+  }
 
-      tryBtn.addEventListener('click', () => {
-        requestFullscreen();
-        tryOverlay.classList.add('hidden');
-        startOverlay.classList.remove('hidden');
-      });
+  particles.update(dt);
+  checkUnlocks();
+  if (unlockBanner) {
+    unlockBanner.timer -= dt;
+    if (unlockBanner.timer <= 0) unlockBanner = null;
+  }
+});
 
-      startBtn.addEventListener('click', () => {
-        if (!state.running) startGame();
-      });
+function applyDamageToPlayer(dmg, fromX, fromY) {
+  hp -= dmg;
+  flashTimer = 0.4;
+  updateBadges();
+  sfx('hit');
+  triggerHitStop(0.04);
+  game.shake(5, 0.2);
+  floatText(player.x, player.y - 20, '-' + dmg, '#ef4444', 16);
+  if (particles.count < 200) {
+    particles.burst(player.x, player.y, 16, {
+      colors: ['#ef4444', '#fca5a5', '#ffffff'],
+      minSpeed: 60, maxSpeed: 300, gravity: 80, lifetime: 0.6,
+    });
+  }
+  const angle = GameUtils.angle(fromX, fromY, player.x, player.y);
+  player.x = GameUtils.clamp(player.x + Math.cos(angle) * 40, WALL + player.size / 2, W - WALL - player.size / 2);
+  player.y = GameUtils.clamp(player.y + Math.sin(angle) * 40, WALL + player.size / 2, H - WALL - player.size / 2);
 
-      function requestFullscreen() {
-        const elem = document.documentElement;
-        if (elem.requestFullscreen) {
-          elem.requestFullscreen().catch(() => {});
-        } else if (elem.webkitRequestFullscreen) {
-          elem.webkitRequestFullscreen();
-        } else if (elem.msRequestFullscreen) {
-          elem.msRequestFullscreen();
-        }
-      }
+  if (hp <= 0) killPlayer();
+}
 
-      function startGame() {
-        startOverlay.classList.add('hidden');
-        state.running = true;
-        state.hp = 10;
-        state.maxHp = 10;
-        state.gold = 0;
-        state.room = 1;
-        generateRoom();
-        state.lastTime = performance.now();
-        requestAnimationFrame(loop);
-      }
+// ── Altar Shop (risk/reward economy) ─────────────────────────────
+function openShop() {
+  screenMode = 'shop';
+  shopChoice = 0;
+  shopOptions = [
+    { id: 'heal', label: 'Heal +3 HP', cost: 15, disabled: () => hp >= maxHp },
+    { id: 'boost', label: 'Attack Boost (2x dmg, 20s)', cost: 20, disabled: () => false },
+    { id: 'reroll', label: 'Safer Layout (fewer walls, +2 gold)', cost: 10, disabled: () => false },
+    { id: 'skip', label: 'Skip — Keep Your Gold', cost: 0, disabled: () => false },
+  ];
+}
 
-      function generateRoom() {
-        state.player = { x: 100, y: 300, size: 20, speed: 200 };
-        state.enemies = [];
-        state.walls = [];
-        state.coins = [];
+let shopInputCooldown = 0;
+function handleShopInput() {
+  if (shopInputCooldown > 0) { shopInputCooldown -= 1 / 60; }
+  const up = input.isPressed('up'), down = input.isPressed('down');
+  if (shopInputCooldown <= 0 && (up || down)) {
+    shopChoice = (shopChoice + (down ? 1 : -1) + shopOptions.length) % shopOptions.length;
+    sfx('click');
+    shopInputCooldown = 0.18;
+  }
+  if (shopInputCooldown <= 0 && input.isPressed('space')) {
+    confirmShopChoice();
+    shopInputCooldown = 0.25;
+  }
+}
 
-        // Create walls (room bounds)
-        const wallThickness = 30;
-        state.walls.push(
-          { x: 0, y: 0, w: canvas.width, h: wallThickness },
-          { x: 0, y: canvas.height - wallThickness, w: canvas.width, h: wallThickness },
-          { x: 0, y: 0, w: wallThickness, h: canvas.height },
-          { x: canvas.width - wallThickness, y: 0, w: wallThickness, h: canvas.height }
-        );
+function confirmShopChoice() {
+  const opt = shopOptions[shopChoice];
+  if (!opt) return;
+  if (opt.id !== 'skip') {
+    if (opt.disabled()) { sfx('click'); return; }
+    if (gold < opt.cost) { sfx('click'); return; }
+    gold -= opt.cost;
+  }
+  if (opt.id === 'heal') {
+    hp = Math.min(maxHp, hp + 3);
+    floatText(player.x, player.y - 20, '+3 HP', '#22c55e', 18);
+    sfx('powerup');
+  } else if (opt.id === 'boost') {
+    attackBoostTimer = 20;
+    floatText(player.x, player.y - 20, 'POWERED UP!', '#f97316', 16);
+    sfx('powerup');
+  } else if (opt.id === 'reroll') {
+    // Every room layout is freshly randomised on generation already; spending gold here
+    // buys a SAFER reroll — one extra obstacle-free guarantee and a bonus coin, so the
+    // spend still buys something concrete rather than being a reskinned "skip".
+    rerollBonus = true;
+    floatText(player.x, player.y - 20, 'FRESH LAYOUT!', '#c4b5fd', 16);
+    sfx('combo');
+  } else if (opt.id === 'skip') {
+    sfx('click');
+  }
+  updateBadges();
+  screenMode = 'play';
+  room++;
+  generateRoom();
+  updateBadges();
+}
 
-        // Add random obstacles
-        const obstacleCount = 3 + Math.floor(state.room / 2);
-        for (let i = 0; i < obstacleCount; i++) {
-          state.walls.push({
-            x: 100 + Math.random() * 600,
-            y: 100 + Math.random() * 400,
-            w: 40 + Math.random() * 60,
-            h: 40 + Math.random() * 60,
-          });
-        }
+// ── Render ──────────────────────────────────────────────────────
+game.onRender((ctx) => {
+  // Dungeon darkness — subtle animated gradient for depth
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  const pulse = 0.5 + Math.sin(elapsed * 0.3) * 0.02;
+  grad.addColorStop(0, '#120a0d');
+  grad.addColorStop(pulse, '#0a0406');
+  grad.addColorStop(1, '#050203');
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
 
-        // Spawn enemies
-        const enemyCount = 2 + state.room;
-        for (let i = 0; i < enemyCount; i++) {
-          state.enemies.push({
-            x: 300 + Math.random() * 400,
-            y: 100 + Math.random() * 400,
-            size: 16,
-            hp: 2 + Math.floor(state.room / 3),
-            speed: 50 + state.room * 5,
-          });
-        }
+  if (screenMode === 'shop') {
+    renderShop(ctx);
+    particles.draw(ctx);
+    return;
+  }
 
-        // Spawn coins
-        const coinCount = 3 + Math.floor(state.room / 2);
-        for (let i = 0; i < coinCount; i++) {
-          state.coins.push({
-            x: 150 + Math.random() * 500,
-            y: 100 + Math.random() * 400,
-            size: 12,
-          });
-        }
+  // Walls + obstacles
+  ctx.fillStyle = '#334155';
+  for (const wall of walls) {
+    ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
+  }
 
-        // Spawn portal
-        state.portal = {
-          x: 650 + Math.random() * 100,
-          y: 200 + Math.random() * 200,
-          size: 40,
-        };
+  // Hazards: spike floor
+  for (const hz of hazards) {
+    ctx.save();
+    ctx.globalAlpha = hz.warm ? 0.35 + Math.sin(elapsed * 20) * 0.15 : (hz.active ? 0.8 : 0.15);
+    ctx.fillStyle = hz.active ? '#ef4444' : '#7f1d1d';
+    ctx.beginPath();
+    ctx.arc(hz.x, hz.y, hz.r, 0, Math.PI * 2);
+    ctx.fill();
+    if (hz.warm) {
+      ctx.strokeStyle = '#fca5a5';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 6]);
+      ctx.stroke();
+      ctx.setLineDash([]);
+    }
+    ctx.restore();
+  }
 
-        updateHud();
-      }
+  // Coins
+  for (const coin of coins) {
+    const bobY = coin.y + Math.sin(coin.bob) * 3;
+    ctx.fillStyle = '#fbbf24';
+    ctx.beginPath();
+    ctx.arc(coin.x, bobY, coin.size, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = '#fde68a';
+    ctx.beginPath();
+    ctx.arc(coin.x - 3, bobY - 3, coin.size * 0.35, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-      function loop(timestamp) {
-        if (!state.running) return;
-        const delta = Math.min((timestamp - state.lastTime) / 1000, 0.05);
-        state.lastTime = timestamp;
-        update(delta);
-        render();
-        requestAnimationFrame(loop);
-      }
+  // Turret aim / lock lines (telegraph)
+  for (const enemy of enemies) {
+    if (enemy.behaviour === 'turret' && enemy.state === 'lock') {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(249,115,22,0.7)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([8, 6]);
+      ctx.beginPath();
+      ctx.moveTo(enemy.x, enemy.y);
+      ctx.lineTo(enemy.x + Math.cos(enemy.aimAngle) * 400, enemy.y + Math.sin(enemy.aimAngle) * 400);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+  }
 
-      function update(delta) {
-        const p = state.player;
+  // Bullets
+  ctx.fillStyle = '#f97316';
+  for (const b of bullets) {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
 
-        // Player movement
-        let dx = 0, dy = 0;
-        if (keys['arrowup'] || keys['w']) dy -= 1;
-        if (keys['arrowdown'] || keys['s']) dy += 1;
-        if (keys['arrowleft'] || keys['a']) dx -= 1;
-        if (keys['arrowright'] || keys['d']) dx += 1;
+  // Spinning exit portal
+  if (portal) {
+    ctx.save();
+    ctx.translate(portal.x, portal.y);
+    ctx.rotate(elapsed);
+    ctx.fillStyle = '#8b5cf6';
+    ctx.globalAlpha = 0.6 + Math.sin(elapsed * 3) * 0.2;
+    ctx.fillRect(-portal.size / 2, -portal.size / 2, portal.size, portal.size);
+    ctx.globalAlpha = 1;
+    ctx.restore();
+  }
 
-        if (dx !== 0 || dy !== 0) {
-          const len = Math.sqrt(dx * dx + dy * dy);
-          dx /= len;
-          dy /= len;
+  // Enemies with HP bars + behaviour tells
+  for (const enemy of enemies) {
+    ctx.save();
+    if ((enemy.behaviour === 'ambush' && enemy.state === 'windup' && enemy.flash) ||
+        (enemy.behaviour === 'boss' && enemy.phase === 'windup' && enemy.flash)) {
+      ctx.fillStyle = '#fff';
+    } else {
+      ctx.fillStyle = enemy.color || '#dc2626';
+    }
+    const drawSize = enemy.elite ? enemy.size * 1.3 : enemy.size;
+    if (enemy.elite) {
+      ctx.shadowBlur = 16;
+      ctx.shadowColor = '#facc15';
+    }
+    ctx.beginPath();
+    ctx.arc(enemy.x, enemy.y, drawSize, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 
-          const newX = p.x + dx * p.speed * delta;
-          const newY = p.y + dy * p.speed * delta;
+    // Windup swell ring
+    if ((enemy.behaviour === 'ambush' && enemy.state === 'windup') ||
+        (enemy.behaviour === 'boss' && enemy.phase === 'windup')) {
+      ctx.strokeStyle = 'rgba(255,255,255,0.6)';
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.arc(enemy.x, enemy.y, drawSize + 6, 0, Math.PI * 2);
+      ctx.stroke();
+    }
 
-          // Check wall collisions
-          let canMove = true;
-          for (const wall of state.walls) {
-            if (newX + p.size / 2 > wall.x && newX - p.size / 2 < wall.x + wall.w &&
-                newY + p.size / 2 > wall.y && newY - p.size / 2 < wall.y + wall.h) {
-              canMove = false;
-              break;
-            }
-          }
+    ctx.fillStyle = '#7f1d1d';
+    ctx.fillRect(enemy.x - 12, enemy.y - drawSize - 12, 24, 4);
+    ctx.fillStyle = enemy.elite ? '#facc15' : '#ef4444';
+    ctx.fillRect(enemy.x - 12, enemy.y - drawSize - 12, 24 * (enemy.hp / enemy.maxHp), 4);
 
-          if (canMove) {
-            p.x = newX;
-            p.y = newY;
-          }
-        }
+    if (enemy.elite && enemy.name) {
+      ctx.fillStyle = '#facc15';
+      ctx.font = 'bold 12px monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText(enemy.name, enemy.x, enemy.y - drawSize - 18);
+    }
+  }
 
-        // Enemy AI
-        for (const enemy of state.enemies) {
-          const dx = p.x - enemy.x;
-          const dy = p.y - enemy.y;
-          const dist = Math.sqrt(dx * dx + dy * dy);
+  // Player with idle bob, movement lean, damage flash, attack swing
+  const p = player;
+  const bobY = p.y + (Math.abs(Math.sin(elapsed * 4)) * 0 + Math.sin(elapsed * 4) * 2);
+  const skinColor = playerColor();
 
-          if (dist > 30) {
-            enemy.x += (dx / dist) * enemy.speed * delta;
-            enemy.y += (dy / dist) * enemy.speed * delta;
-          }
+  ctx.save();
+  if (flashTimer > 0 && Math.floor(flashTimer * 15) % 2 === 0) {
+    ctx.globalAlpha = 0.4;
+  }
+  ctx.translate(p.x, bobY);
+  const lean = GameUtils.clamp((input.isPressed('left') ? -1 : input.isPressed('right') ? 1 : 0), -1, 1) * 0.15;
+  ctx.rotate(lean);
 
-          // Enemy collision with player
-          if (Math.abs(p.x - enemy.x) < (p.size + enemy.size) / 2 &&
-              Math.abs(p.y - enemy.y) < (p.size + enemy.size) / 2) {
-            enemy.hp--;
-            state.hp--;
-            updateHud();
+  ctx.fillStyle = skinColor;
+  ctx.beginPath();
+  ctx.arc(0, 0, p.size / 2, 0, Math.PI * 2);
+  ctx.fill();
 
-            if (state.hp <= 0) {
-              endGame();
-              return;
-            }
+  // Attack swing telegraph + swing arc
+  if (p.attackState === 'windup') {
+    ctx.strokeStyle = 'rgba(255,255,255,0.7)';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.arc(0, 0, ATTACK_RANGE * (1 - p.attackTimer / ATTACK_WINDUP), p.facing - 0.7, p.facing + 0.7);
+    ctx.stroke();
+  } else if (p.attackState === 'active') {
+    ctx.fillStyle = attackBoostTimer > 0 ? 'rgba(249,115,22,0.5)' : 'rgba(255,255,255,0.5)';
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, ATTACK_RANGE, p.facing - 0.9, p.facing + 0.9);
+    ctx.closePath();
+    ctx.fill();
+  }
+  ctx.restore();
 
-            // Knockback
-            const angle = Math.atan2(p.y - enemy.y, p.x - enemy.x);
-            p.x += Math.cos(angle) * 50;
-            p.y += Math.sin(angle) * 50;
-          }
-        }
+  ctx.fillStyle = '#1e293b';
+  ctx.fillRect(p.x - 15, p.y - 30, 30, 5);
+  ctx.fillStyle = '#22c55e';
+  ctx.fillRect(p.x - 15, p.y - 30, 30 * (hp / maxHp), 5);
 
-        // Remove dead enemies
-        state.enemies = state.enemies.filter(e => e.hp > 0);
+  if (attackBoostTimer > 0) {
+    ctx.fillStyle = '#f97316';
+    ctx.font = 'bold 11px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚔ ' + attackBoostTimer.toFixed(0) + 's', p.x, p.y + 34);
+  }
 
-        // Coin collection
-        for (let i = state.coins.length - 1; i >= 0; i--) {
-          const coin = state.coins[i];
-          if (Math.abs(p.x - coin.x) < 20 && Math.abs(p.y - coin.y) < 20) {
-            state.gold += 10;
-            state.coins.splice(i, 1);
-            updateHud();
-          }
-        }
+  particles.draw(ctx);
 
-        // Portal interaction
-        if (state.portal && Math.abs(p.x - state.portal.x) < 30 && Math.abs(p.y - state.portal.y) < 30) {
-          state.room++;
-          generateRoom();
-        }
-      }
+  // Floating text
+  floaters.forEach(f => {
+    ctx.globalAlpha = f.life / f.maxLife;
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold ' + f.size + 'px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(f.text, f.x + f.dx, f.y);
+  });
+  ctx.globalAlpha = 1;
 
-      function updateHud() {
-        hpEl.textContent = state.hp;
-        goldEl.textContent = state.gold;
-        roomEl.textContent = state.room;
-      }
+  // Phase / room banner (top) — drawn below the DOM HUD strip so it's never obscured
+  ctx.fillStyle = 'rgba(255,255,255,0.65)';
+  ctx.font = 'bold 13px monospace';
+  ctx.textAlign = 'left';
+  ctx.fillText(phaseName, 16, 56);
 
-      function endGame() {
-        state.running = false;
-        startOverlay.classList.remove('hidden');
-        startOverlay.querySelector('h2').textContent = 'You Died';
-        startOverlay.querySelector('p').textContent = `Room ${state.room}. Gold collected: ${state.gold}. Try again?`;
-        startBtn.textContent = 'Retry';
-      }
+  // Next-goal HUD line
+  ctx.fillStyle = '#facc15';
+  ctx.font = 'bold 12px monospace';
+  ctx.textAlign = 'right';
+  ctx.fillText(nextGoalText(), W - 16, 56);
 
-      function render() {
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
+  // Unlock banner — below the DOM HUD strip
+  if (unlockBanner) {
+    ctx.save();
+    ctx.globalAlpha = Math.min(1, unlockBanner.timer);
+    ctx.fillStyle = 'rgba(0,0,0,0.6)';
+    ctx.fillRect(W / 2 - 160, 68, 320, 34);
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 16px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(unlockBanner.text, W / 2, 91);
+    ctx.restore();
+  }
+});
 
-        // Background
-        ctx.fillStyle = '#0a0406';
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
+function renderShop(ctx) {
+  ctx.fillStyle = 'rgba(0,0,0,0.4)';
+  ctx.fillRect(0, 0, W, H);
 
-        // Walls
-        ctx.fillStyle = '#334155';
-        for (const wall of state.walls) {
-          ctx.fillRect(wall.x, wall.y, wall.w, wall.h);
-        }
+  ctx.fillStyle = '#c4b5fd';
+  ctx.font = 'bold 28px monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText('⛩ THE ALTAR ⛩', W / 2, 130);
 
-        // Coins
-        ctx.fillStyle = '#fbbf24';
-        for (const coin of state.coins) {
-          ctx.beginPath();
-          ctx.arc(coin.x, coin.y, coin.size, 0, Math.PI * 2);
-          ctx.fill();
-        }
+  ctx.fillStyle = '#fbbf24';
+  ctx.font = 'bold 18px monospace';
+  ctx.fillText('Gold: ' + gold, W / 2, 168);
 
-        // Portal
-        if (state.portal) {
-          const time = performance.now() / 1000;
-          ctx.save();
-          ctx.translate(state.portal.x, state.portal.y);
-          ctx.rotate(time);
-          ctx.fillStyle = '#8b5cf6';
-          ctx.globalAlpha = 0.6 + Math.sin(time * 3) * 0.2;
-          ctx.fillRect(-state.portal.size / 2, -state.portal.size / 2, state.portal.size, state.portal.size);
-          ctx.globalAlpha = 1;
-          ctx.restore();
-        }
+  const startY = 230, gap = 52;
+  shopOptions.forEach((opt, i) => {
+    const y = startY + i * gap;
+    const selected = i === shopChoice;
+    const affordable = opt.id === 'skip' || (gold >= opt.cost && !opt.disabled());
 
-        // Enemies
-        ctx.fillStyle = '#dc2626';
-        for (const enemy of state.enemies) {
-          ctx.beginPath();
-          ctx.arc(enemy.x, enemy.y, enemy.size, 0, Math.PI * 2);
-          ctx.fill();
+    ctx.fillStyle = selected ? 'rgba(139,92,246,0.35)' : 'rgba(255,255,255,0.06)';
+    ctx.fillRect(W / 2 - 220, y - 30, 440, 42);
 
-          // HP bar
-          ctx.fillStyle = '#7f1d1d';
-          ctx.fillRect(enemy.x - 12, enemy.y - 24, 24, 4);
-          ctx.fillStyle = '#ef4444';
-          ctx.fillRect(enemy.x - 12, enemy.y - 24, 24 * (enemy.hp / (2 + Math.floor(state.room / 3))), 4);
-        }
+    if (selected) {
+      ctx.strokeStyle = '#c4b5fd';
+      ctx.lineWidth = 2;
+      ctx.strokeRect(W / 2 - 220, y - 30, 440, 42);
+    }
 
-        // Player
-        const p = state.player;
-        ctx.fillStyle = '#06b6d4';
-        ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size / 2, 0, Math.PI * 2);
-        ctx.fill();
+    ctx.fillStyle = affordable ? '#ffffff' : '#6b7280';
+    ctx.font = (selected ? 'bold ' : '') + '16px monospace';
+    const costText = opt.cost > 0 ? ' (' + opt.cost + 'g)' : '';
+    ctx.fillText(opt.label + costText, W / 2, y);
+  });
 
-        // Player HP bar
-        ctx.fillStyle = '#1e293b';
-        ctx.fillRect(p.x - 15, p.y - 30, 30, 5);
-        ctx.fillStyle = '#22c55e';
-        ctx.fillRect(p.x - 15, p.y - 30, 30 * (state.hp / state.maxHp), 5);
-      }
+  ctx.fillStyle = 'rgba(255,255,255,0.6)';
+  ctx.font = '13px monospace';
+  ctx.fillText('↑↓ to choose · Space to confirm', W / 2, startY + shopOptions.length * gap + 30);
+}
 
-      render();
-      updateHud();
-    })();
-  </script>
+maybeAutoEquip();
+reset();
+</script>
 </body>
 </html>
