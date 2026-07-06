@@ -1,1447 +1,1899 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
-  <title>Alien Unicorn Alliance - Demo</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Alien Unicorn Alliance · Games Inc Jr</title>
   <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
   <style>
-    :root {
-      color-scheme: dark;
-      --bg-start: #090b1c;
-      --bg-end: #1a0f3a;
-      --accent: #ffc8ff;
-      --accent-strong: #ff8cf9;
-      --badge: rgba(32, 43, 87, 0.85);
-      --badge-border: rgba(120, 154, 255, 0.35);
-      --panel: rgba(16, 21, 46, 0.92);
-      --panel-border: rgba(112, 146, 255, 0.5);
-      --text-soft: #d8e4ff;
-    }
-    * {
-      box-sizing: border-box;
-    }
-    html, body {
-      height: 100%;
-    }
-    body {
-      margin: 0;
-      font-family: 'Trebuchet MS', 'Segoe UI', sans-serif;
-      color: var(--text-soft);
-      background: radial-gradient(circle at top, #1f2a65 0%, #0a0f24 45%, #050615 100%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
-      gap: 10px;
-      min-height: 100vh;
-    }
-    h1 {
-      margin: 12px 0 4px;
-      text-transform: uppercase;
-      letter-spacing: 4px;
-      font-size: clamp(1.8rem, 2vw + 1rem, 2.6rem);
-      color: #ffe6ff;
-      text-shadow: 0 2px 12px rgba(150, 117, 255, 0.7);
-    }
-    .tagline {
-      margin: 0 0 16px;
-      font-size: 0.95rem;
-      opacity: 0.75;
-      letter-spacing: 1.5px;
-    }
-    .hud {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 12px;
-    }
-    .badge {
-      display: inline-flex;
-      align-items: baseline;
-      gap: 6px;
-      padding: 8px 14px;
-      border-radius: 14px;
-      background: var(--badge);
-      border: 1px solid var(--badge-border);
-      box-shadow: 0 6px 14px rgba(12, 19, 46, 0.45);
-      font-size: 0.95rem;
-      backdrop-filter: blur(6px);
-    }
-    .badge span {
-      font-weight: 700;
-      font-size: 1.1rem;
-      color: #fff8ff;
-    }
-    .stage {
-      position: relative;
-      width: 100%;
-      max-width: 960px;
-      aspect-ratio: 16 / 9;
-      border-radius: 24px;
-      overflow: hidden;
-      box-shadow:
-        0 20px 50px rgba(4, 7, 22, 0.85),
-        inset 0 0 0 1px rgba(123, 155, 255, 0.12);
-    }
-    canvas {
-      position: absolute;
-      inset: 0;
-      width: 100%;
-      height: 100%;
-      display: block;
-      cursor: pointer;
-      background: linear-gradient(180deg, rgba(12, 18, 45, 1) 0%, rgba(5, 7, 20, 1) 100%);
-      touch-action: none;
-    }
-    .status {
-      font-size: 0.9rem;
-      padding: 10px 18px;
-      border-radius: 999px;
-      background: rgba(24, 30, 64, 0.7);
-      border: 1px solid rgba(105, 135, 255, 0.3);
-      backdrop-filter: blur(8px);
-      text-align: center;
-      transition: transform 0.3s ease;
-    }
-    .status.alert {
-      transform: scale(1.03);
-      background: rgba(128, 0, 70, 0.7);
-    }
-    .mobile-controls {
-      position: fixed;
-      bottom: 18px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: none;
-      grid-template-columns: repeat(3, 64px);
-      grid-template-rows: repeat(2, 64px);
-      gap: 12px;
-      padding: 14px;
-      border-radius: 18px;
-      background: rgba(15, 18, 37, 0.75);
-      border: 1px solid rgba(112, 146, 255, 0.35);
-      box-shadow: 0 14px 28px rgba(4, 7, 22, 0.65);
-      backdrop-filter: blur(8px);
-      z-index: 40;
-    }
-    .mobile-controls button {
-      border: 1px solid rgba(140, 170, 255, 0.5);
-      background: radial-gradient(circle at top, rgba(87, 112, 255, 0.9), rgba(35, 52, 146, 0.9));
-      color: #f4f7ff;
-      border-radius: 16px;
-      font-size: 1.2rem;
-      font-weight: 600;
-      box-shadow: inset 0 2px 6px rgba(255, 255, 255, 0.25);
-    }
-    .mobile-controls button:active {
-      transform: translateY(1px);
-    }
-    .btn-up { grid-column: 2; grid-row: 1; }
-    .btn-left { grid-column: 1; grid-row: 2; }
-    .btn-down { grid-column: 2; grid-row: 2; }
-    .btn-right { grid-column: 3; grid-row: 2; }
-    .btn-pulse {
-      grid-column: 1 / -1;
-      grid-row: 3;
-      width: 100%;
-      border-radius: 999px;
-      padding: 0 18px;
-      font-size: 1rem;
-      letter-spacing: 1px;
-      background: linear-gradient(135deg, #ff70ff, #61f5ff);
-      color: #1b0b2e;
-      font-weight: 700;
-    }
-    @media (pointer: coarse) {
-      .mobile-controls {
-        display: grid;
-      }
-      body {
-        padding-bottom: 150px;
-      }
-    }
-    .overlay {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: radial-gradient(circle at top, rgba(17, 27, 62, 0.94) 0%, rgba(5, 9, 24, 0.92) 100%);
-      z-index: 100;
-      padding: 24px;
-    }
-    .overlay.visible {
-      display: flex;
-    }
-    .panel {
-      width: min(680px, 100%);
-      background: var(--panel);
-      border: 1px solid var(--panel-border);
-      border-radius: 24px;
-      padding: 32px;
-      box-shadow: 0 20px 50px rgba(3, 8, 24, 0.8);
-      text-align: left;
-    }
-    .panel h2 {
-      margin: 0 0 12px;
-      font-size: 1.9rem;
-      color: #ffe9ff;
-      letter-spacing: 2px;
-    }
-    .panel p, .panel li {
-      font-size: 0.95rem;
-      line-height: 1.6;
-      color: rgba(225, 233, 255, 0.85);
-    }
-    .panel ul {
-      padding-left: 20px;
-      margin: 12px 0 20px;
-    }
-    .panel button {
-      border: none;
-      border-radius: 999px;
-      padding: 12px 28px;
-      font-size: 1rem;
-      font-weight: 700;
-      cursor: pointer;
-      color: #12051f;
-      background: linear-gradient(135deg, #ff8cf9, #6ff6ff);
-      box-shadow: 0 12px 24px rgba(129, 74, 255, 0.45);
-    }
-    .panel button:disabled {
-      opacity: 0.6;
-      cursor: wait;
-    }
-    .countdown {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(8, 8, 20, 0.75);
-      z-index: 95;
-      font-size: clamp(4rem, 10vw, 8rem);
-      font-weight: 800;
-      color: #ffe9ff;
-      text-shadow: 0 12px 32px rgba(255, 108, 255, 0.6);
-      letter-spacing: 6px;
-    }
-    .panel .summary {
-      display: grid;
-      gap: 12px;
-      margin: 18px 0 22px;
-    }
-    .summary div {
-      display: flex;
-      justify-content: space-between;
-      padding: 10px 16px;
-      border-radius: 14px;
-      background: rgba(42, 54, 112, 0.35);
-      border: 1px solid rgba(120, 154, 255, 0.3);
-      font-weight: 600;
-    }
-    .summary span {
-      color: #fff6ff;
-    }
-    label {
-      display: block;
-      font-size: 0.85rem;
-      text-transform: uppercase;
-      letter-spacing: 1.6px;
-      margin-bottom: 8px;
-      color: rgba(211, 225, 255, 0.9);
-    }
-    input[type="text"] {
-      width: 100%;
-      padding: 12px 14px;
-      border-radius: 14px;
-      border: 1px solid rgba(120, 154, 255, 0.4);
-      background: rgba(12, 18, 45, 0.6);
-      color: #f6f7ff;
-      font-size: 1rem;
-      letter-spacing: 1px;
-      margin-bottom: 16px;
-    }
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 12px;
-    }
-    .actions button.secondary {
-      background: linear-gradient(135deg, rgba(111, 246, 255, 0.3), rgba(255, 120, 246, 0.3));
-      color: #f3e6ff;
-      border: 1px solid rgba(123, 155, 255, 0.4);
-    }
-    .submit-status {
-      min-height: 20px;
-      font-size: 0.85rem;
-      margin-top: 10px;
-    }
+    #gij-stage { background: #07091e; }
+    canvas { background: linear-gradient(180deg, #0c122d 0%, #050714 100%); }
   </style>
 </head>
 <body>
-  <h1>Alien Unicorn Alliance</h1>
-  <p class="tagline">Rescue the star-herd from cosmic raiders and keep your streak glowing!</p>
-  <div class="hud" role="status" aria-live="polite">
-    <div class="badge">Score <span id="score">0</span></div>
-    <div class="badge">Streak <span id="streak">0</span></div>
-    <div class="badge">Shields <span id="shields">3</span></div>
-    <div class="badge">Pulse <span id="pulse">Ready</span></div>
-    <div class="badge">Distance <span id="distance">0.0</span><small style="font-size:0.75rem;opacity:0.7;"> km</small></div>
-  </div>
-  <div id="status" class="status">Select "Start mission" to enter the Rift.</div>
-  <div class="stage">
-    <canvas id="gameCanvas" width="960" height="540" aria-label="Alien Unicorn Alliance gameplay area"></canvas>
-  </div>
-  <div class="mobile-controls" id="mobileControls" aria-label="Mobile controls">
-    <button class="btn-up" aria-label="Fly up">⬆️</button>
-    <button class="btn-left" aria-label="Drift left">⬅️</button>
-    <button class="btn-down" aria-label="Dive down">⬇️</button>
-    <button class="btn-right" aria-label="Glide right">➡️</button>
-    <button class="btn-pulse" aria-label="Trigger starlight pulse">✨ Pulse</button>
-  </div>
-  <div id="tryOverlay" class="overlay visible" role="dialog" aria-modal="true">
-    <div class="panel">
-      <h2>Alien Unicorn Alliance</h2>
-      <p>Pilot an aurora unicorn through alien raids, collecting harmony crystals!</p>
-      <button id="tryBtn">Try Now</button>
+<div id="gij-wrap">
+
+  <!-- ── Try-Now Overlay ── -->
+  <div id="gij-try-overlay" class="gij-overlay">
+    <div class="gij-modal">
+      <h1 data-game-title>Alien Unicorn Alliance</h1>
+      <p id="gij-description">Pilot the aurora unicorn Astra through alien raids, collecting harmony crystals!</p>
+      <button id="gij-try-btn" class="gij-btn gij-btn-primary">▶ Play Now</button>
     </div>
   </div>
-  <div id="startOverlay" class="overlay" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="panel">
-      <h2>Ready to Fly?</h2>
-      <p>The Nebula Grove is under siege! Pilot the aurora unicorn Astra and gather harmony crystals while evading raider drones.</p>
-      <ul>
-        <li><strong>Move</strong>: Arrow keys or WASD. Tap the canvas on touch devices, then use the floating controls.</li>
-        <li><strong>Collect</strong>: Glide through luminous crystals to boost score and streak. Higher streak = bigger bonus.</li>
-        <li><strong>Pulse</strong>: Press <kbd>Space</kbd> (or ✨ Pulse) to emit a starlight wave that converts nearby drones into bonus crystals. Wait for the pulse to recharge.</li>
-        <li><strong>Avoid</strong>: Drones drain your shields. Lose all three and the mission ends.</li>
-      </ul>
-      <button id="startBtn">Start</button>
+
+  <!-- ── Instructions Overlay ── -->
+  <div id="gij-instructions-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>How to Play</h2>
+      <ul id="gij-instructions" class="gij-list"></ul>
+      <button id="gij-start-btn" class="gij-btn gij-btn-primary">Start Mission!</button>
     </div>
   </div>
-  <div id="gameOverOverlay" class="overlay" role="dialog" aria-modal="true" aria-hidden="true">
-    <div class="panel">
-      <h2>Mission summary</h2>
-      <div class="summary">
-        <div><span>Final score</span><span id="finalScore">0</span></div>
-        <div><span>Best streak</span><span id="finalStreak">0</span></div>
-        <div><span>Distance flown</span><span id="finalDistance">0.0 km</span></div>
+
+  <!-- ── Game-Over Overlay ── -->
+  <div id="gij-gameover-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>Mission Over</h2>
+      <div class="gij-score-row">
+        <span id="gij-final-score">Score: 0</span>
+        <span id="gij-final-hs">Best: 0</span>
       </div>
-      <label for="playerName">Commander name (optional)</label>
-      <input type="text" id="playerName" maxlength="18" placeholder="Nebula Rider" autocomplete="nickname" />
-      <div class="actions">
-        <button id="submitScore">Submit score</button>
-        <button id="playAgain" class="secondary">Play again</button>
-      </div>
-      <p id="submitStatus" class="submit-status"></p>
+      <button id="gij-restart-btn" class="gij-btn gij-btn-primary">Fly Again</button>
     </div>
   </div>
-  <div id="countdown" class="countdown">5</div>
 
-  <script>
-    (() => {
-      const canvas = document.getElementById('gameCanvas');
-      const ctx = canvas.getContext('2d');
-      const scoreEl = document.getElementById('score');
-      const streakEl = document.getElementById('streak');
-      const shieldsEl = document.getElementById('shields');
-      const pulseEl = document.getElementById('pulse');
-      const distanceEl = document.getElementById('distance');
-      const statusEl = document.getElementById('status');
-      const tryOverlay = document.getElementById('tryOverlay');
-      const startOverlay = document.getElementById('startOverlay');
-      const gameOverOverlay = document.getElementById('gameOverOverlay');
-      const tryBtn = document.getElementById('tryBtn');
-      const startBtn = document.getElementById('startBtn');
-      const countdownEl = document.getElementById('countdown');
-      const playAgainBtn = document.getElementById('playAgain');
-      const submitBtn = document.getElementById('submitScore');
-      const nameInput = document.getElementById('playerName');
-      const submitStatus = document.getElementById('submitStatus');
-      const finalScoreEl = document.getElementById('finalScore');
-      const finalStreakEl = document.getElementById('finalStreak');
-      const finalDistanceEl = document.getElementById('finalDistance');
-      const mobileControls = document.getElementById('mobileControls');
+  <!-- ── Stage ── -->
+  <div id="gij-stage" data-aspect="16:9">
+    <div id="gij-hud" class="hidden">
+      <div class="gij-badge">⭐ <strong id="gij-score">0</strong></div>
+      <div class="gij-badge">🏆 <strong id="gij-highscore">0</strong></div>
+      <div class="gij-badge">🔥 <strong id="hud-streak">0</strong></div>
+      <div class="gij-badge">🛡️ <strong id="hud-shields">3</strong></div>
+      <div class="gij-badge">✨ <strong id="hud-pulse">Ready</strong></div>
+      <div class="gij-badge">🚀 <strong id="hud-distance">0.0</strong>&nbsp;km</div>
+      <div class="gij-badge">🎯 <strong id="hud-goal">—</strong></div>
+    </div>
+    <canvas id="gij-canvas"></canvas>
+    <div id="gij-controls"></div>
+  </div>
 
-      const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
-      const rand = (min, max) => min + Math.random() * (max - min);
-      const hexToRgba = (hex, alpha) => {
-        const clean = hex.replace('#', '');
-        const bigint = parseInt(clean, 16);
-        const r = (bigint >> 16) & 255;
-        const g = (bigint >> 8) & 255;
-        const b = bigint & 255;
-        return `rgba(${r}, ${g}, ${b}, ${alpha})`;
-      };
+</div><!-- /gij-wrap -->
 
-      // ─── Sprite loader ───────────────────────────────────────────
-      const spriteCache = {};
-      let spritesReady = false;
+<script src="/game-framework/game-engine.js"></script>
+<script src="/game-framework/game-utils.js"></script>
+<script src="/game-framework/game-audio.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════
+//  Config
+// ════════════════════════════════════════════════════════════
+const GAME = {
+  slug:        'alien-unicorn-alliance',
+  title:       'Alien Unicorn Alliance',
+  description: 'Pilot the aurora unicorn Astra through alien raids, collecting harmony crystals!',
+  instructions: [
+    '<strong>Arrow Keys / WASD:</strong> Fly Astra in any direction',
+    '<strong>Space / ✨:</strong> Starlight pulse — converts nearby drones into bonus crystals',
+    '<strong>Recharge:</strong> Every crystal you grab shaves 0.3s off the pulse cooldown!',
+    '<strong>Watch for:</strong> Swoopers, Ambushers, asteroid belts and the Drone Carrier — beat it for full shields!',
+    '<strong>Unlock:</strong> New mane colours, a comet trail and Storm Mode as you improve',
+  ],
+  controls: [
+    { label: '◀', action: 'left'  },
+    { label: '▲', action: 'up'    },
+    { label: '▼', action: 'down'  },
+    { label: '▶', action: 'right' },
+    { label: '✨', action: 'space', cls: 'gij-ctrl-space' },
+  ],
+  width:  960,   // original logical canvas dimensions — preserved
+  height: 540,
+};
 
-      function loadSprite(key, src, scale) {
-        return new Promise((resolve) => {
-          const img = new Image();
-          img.onload = () => {
-            const w = Math.round(img.naturalWidth * scale);
-            const h = Math.round(img.naturalHeight * scale);
-            const oc = document.createElement('canvas');
-            oc.width = w;
-            oc.height = h;
-            oc.getContext('2d').drawImage(img, 0, 0, w, h);
-            spriteCache[key] = { canvas: oc, w, h };
-            resolve();
-          };
-          img.onerror = () => { spriteCache[key] = null; resolve(); };
-          img.src = src;
+const canvas    = document.getElementById('gij-canvas');
+const game      = new GameEngine(canvas).setup(GAME);
+const input     = new InputManager();
+const particles = new ParticleSystem();
+
+const W = game.W, H = game.H;
+
+// Helpers
+const rand  = (min, max) => GameUtils.randomRange(min, max);
+const clamp = (v, min, max) => GameUtils.clamp(v, min, max);
+const hexToRgba = (hex, alpha) => {
+  const clean  = hex.replace('#', '');
+  const bigint = parseInt(clean, 16);
+  const r = (bigint >> 16) & 255;
+  const g = (bigint >> 8) & 255;
+  const b = bigint & 255;
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+};
+
+// Audio — autoplay-safe: init on first gesture, no-op before init
+function sfx(name) { if (typeof GameAudio !== 'undefined') GameAudio.play(name); }
+document.getElementById('gij-start-btn')?.addEventListener('click', () => { if (typeof GameAudio !== 'undefined') GameAudio.init(); }, { once: true });
+document.getElementById('gij-restart-btn')?.addEventListener('click', () => { if (typeof GameAudio !== 'undefined') GameAudio.init(); }, { once: true });
+
+// Extra HUD badges
+const streakEl   = document.getElementById('hud-streak');
+const shieldsEl  = document.getElementById('hud-shields');
+const pulseEl    = document.getElementById('hud-pulse');
+const distanceEl = document.getElementById('hud-distance');
+const goalEl     = document.getElementById('hud-goal');
+
+// ── Sprites (Kenney Space Shooter Redux, CC0) ────────────────
+const assets = new AssetLoader();
+let spritesReady = false;
+assets.load({
+  ufoBlue:   '/assets/kenney/space/ufoBlue.png',
+  ufoRed:    '/assets/kenney/space/ufoRed.png',
+  meteorBig: '/assets/kenney/space/meteorBrown_big1.png',
+  meteorMed: '/assets/kenney/space/meteorBrown_med1.png',
+}, {
+  ufoBlue:   0.6,
+  ufoRed:    0.6,
+  meteorBig: 0.95,
+  meteorMed: 1.25,
+}).then(() => { spritesReady = true; });
+
+// ════════════════════════════════════════════════════════════
+//  Meta-progression  (localStorage 'gij-meta:alien-unicorn-alliance')
+// ════════════════════════════════════════════════════════════
+const META_KEY = 'gij-meta:' + GAME.slug;
+function defaultMeta() {
+  return {
+    v: 1,
+    totalRuns: 0, totalScore: 0, totalCrystals: 0,
+    bestScore: 0, bestStreak: 0, bestDistance: 0, lastScore: 0, improveStreak: 0,
+    carrierKills: 0,
+    easyMode: false, stormOn: false,
+    unlocks: {},
+    equipped: { palette: 'default' },
+  };
+}
+function loadMeta() {
+  try {
+    const m = JSON.parse(localStorage.getItem(META_KEY));
+    return (m && m.v === 1) ? Object.assign(defaultMeta(), m) : defaultMeta();
+  } catch (e) { return defaultMeta(); }
+}
+function saveMeta() { try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {} }
+let meta = loadMeta();
+
+const UNLOCKS = [
+  { id: 'palette-sunset', name: 'Sunset Mane',  type: 'score', need: 600,  desc: 'Score 600 in one run'  },
+  { id: 'trail-comet',    name: 'Comet Trail',  type: 'runs',  need: 5,    desc: 'Finish 5 missions'     },
+  { id: 'palette-galaxy', name: 'Galaxy Mane',  type: 'score', need: 1600, desc: 'Score 1,600 in one run'},
+  { id: 'mode-storm',     name: 'Storm Mode',   type: 'score', need: 3500, desc: 'Score 3,500 in one run'},
+];
+function hasUnlock(id) { return !!(meta.unlocks[id] && meta.unlocks[id].earned); }
+function progressOf(u) {
+  if (u.type === 'score') return Math.max(game.getScore ? game.getScore() : 0, meta.bestScore);
+  if (u.type === 'runs')  return meta.totalRuns;
+  return 0;
+}
+function checkUnlocks() {
+  for (const u of UNLOCKS) {
+    const slot = meta.unlocks[u.id] || (meta.unlocks[u.id] = { earned: false, celebrated: false });
+    if (!slot.earned && progressOf(u) >= u.need) {
+      slot.earned = true;
+      if (u.id === 'palette-sunset' || u.id === 'palette-galaxy') meta.equipped.palette = u.id;
+      saveMeta();                                   // persist immediately
+      showBanner('UNLOCKED: ' + u.name + '!', '#ffd700');
+      sfx('powerup');
+      if (particles.count < 200) {
+        particles.burst(W / 2, 80, 25, { colors: ['#ffd700', '#ffffff'], gravity: -80, lifetime: 1.0 });
+      }
+      game.shake(3, 0.15);
+    }
+  }
+}
+function nextGoalText(short) {
+  const locked = UNLOCKS.filter(u => !hasUnlock(u.id))
+    .sort((a, b) => (a.need - progressOf(a)) - (b.need - progressOf(b)));
+  if (!locked.length) return short ? 'Beat ' + meta.bestScore : 'All unlocked! Beat your best: ' + meta.bestScore;
+  const u = locked[0];
+  const togo = Math.max(0, u.need - progressOf(u));
+  if (short) return u.name + ': ' + togo + ' to go';
+  return '★ Next: ' + u.name + ' — ' + (u.type === 'runs' ? togo + ' more mission' + (togo === 1 ? '' : 's') : togo + ' pts to go');
+}
+
+// ── Mane palettes (unlockable — canvas-drawn unicorn preserved) ──
+const PALETTES = {
+  'default':        { name: 'Aurora', mane: ['#ff8cf9', '#ff44cc', '#6ef7ff'], tail: ['#4de2ff', '#ff8cf9'], horn: ['#ffe4ff', '#fdb7ff'] },
+  'palette-sunset': { name: 'Sunset', mane: ['#ffd36e', '#ff7847', '#ff2e63'], tail: ['#ffd36e', '#ff7847'], horn: ['#fff3c4', '#ffb45e'] },
+  'palette-galaxy': { name: 'Galaxy', mane: ['#8cb4ff', '#7a5cff', '#ff6ef7'], tail: ['#8cb4ff', '#c86eff'], horn: ['#e0e6ff', '#b49aff'] },
+};
+function currentPalette() {
+  const id = meta.equipped.palette;
+  if (id !== 'default' && !hasUnlock(id)) return PALETTES['default'];
+  return PALETTES[id] || PALETTES['default'];
+}
+function unlockedPalettes() {
+  return ['default'].concat(['palette-sunset', 'palette-galaxy'].filter(hasUnlock));
+}
+function cyclePalette() {
+  const list = unlockedPalettes();
+  if (list.length < 2) return;
+  const idx = list.indexOf(meta.equipped.palette);
+  meta.equipped.palette = list[(idx + 1) % list.length];
+  saveMeta();
+  sfx('click');
+  showBanner('Mane: ' + currentPalette().name, '#ff8cf9');
+  updateGameOverExtras();
+}
+window.addEventListener('keydown', (e) => {
+  if (e.key === 'p' || e.key === 'P') cyclePalette();
+});
+
+// ── Rubber-banding (silent assist + explicit easy mode) ──────
+const DEATHS_KEY = 'gij_deaths_' + GAME.slug;
+function recordDeath(t) {
+  try {
+    const n = t < 60 ? (parseInt(localStorage.getItem(DEATHS_KEY) || '0', 10) + 1) : 0;
+    localStorage.setItem(DEATHS_KEY, String(n));
+  } catch (e) {}
+}
+function fastDeathCount() {
+  try { return parseInt(localStorage.getItem(DEATHS_KEY) || '0', 10); } catch (e) { return 0; }
+}
+function assistFactor() {
+  if (meta.easyMode) return 0.75;
+  return fastDeathCount() >= 2 ? 0.85 : 1.0;
+}
+
+// ════════════════════════════════════════════════════════════
+//  Game state
+// ════════════════════════════════════════════════════════════
+const PULSE_COOLDOWN   = 4.0;    // s  (was 5.5 — crystals shave 0.3s each)
+const CRYSTAL_RECHARGE = 0.3;    // s shaved per crystal
+const PULSE_RADIUS     = 160;    // px
+
+let elapsed    = 0;
+let distance   = 0;
+let streak     = 0;
+let bestStreak = 0;
+let shields    = 3;
+let pulseHeld  = false;
+let hitStop    = 0;
+let dying      = false;
+let deathTimer = 0;
+let level      = 1;
+let phaseIdx   = 0;
+let cycleT     = 0;
+let cycleIdx   = 0;
+let swooperOn  = false;
+let ambusherOn = false;
+let beltTimer  = 0;      // asteroid belt active while > 0
+let stormTimer = 0;      // nebula storm active while > 0
+let stormMode  = false;  // permanent storm (unlockable mode)
+let asteroidT  = 0;
+let carrier    = null;
+
+const crystals    = [];
+const drones      = [];
+const asteroids   = [];
+const floaters    = [];
+const warnings    = [];   // telegraphed edge spawns {y, timer, kind}
+const stormFog    = [];
+const spawnTimers = { crystal: 0, drone: 2.5, shard: 6 };
+
+let bannerText = '', bannerColor = '#fff', bannerLife = 0;
+function showBanner(text, color) { bannerText = text; bannerColor = color || '#fff'; bannerLife = 2.5; }
+
+function floatText(x, y, text, color, size) {
+  floaters.push({ x: x + rand(-15, 15), y, text, color: color || '#fff', size: size || 18, life: 0.7, maxLife: 0.7 });
+}
+function triggerHitStop(sec) { hitStop = Math.max(hitStop, sec); }
+
+function stormActive() { return stormTimer > 0 || stormMode; }
+
+// ── Parallax star layers ─────────────────────────────────────
+const starLayers = [[], []];
+for (let i = 0; i < 60; i++) {
+  starLayers[0].push({
+    x: Math.random() * W, y: Math.random() * H,
+    radius: rand(0.4, 0.9), twinkle: rand(0.3, 1.0),
+    phase: rand(0, Math.PI * 2), hue: rand(180, 320), speed: rand(2, 6),
+  });
+}
+for (let i = 0; i < 140; i++) {
+  starLayers[1].push({
+    x: Math.random() * W, y: Math.random() * H,
+    radius: rand(0.6, 1.8), twinkle: rand(0.5, 2.2),
+    phase: rand(0, Math.PI * 2), hue: rand(180, 320), speed: rand(6, 24),
+  });
+}
+
+// ── Unicorn ──────────────────────────────────────────────────
+class Unicorn {
+  constructor() {
+    this.x = W * 0.18;
+    this.y = H * 0.55;
+    this.vx = 0;
+    this.vy = 0;
+    // Shmup-standard forgiving hitbox: circle ≈30% of ~92px visual width
+    this.radius = 28;
+    this.collectRadius = 36;
+    this.speed = GAMEPLAY_PRESETS.shmup.playerSpeed; // 380 px/s
+    this.accel = 900;          // px/s²
+    this.damping = 0.94;       // per-60Hz-frame exponential damping
+    this.invincible = 0;
+    this.flashTimer = 0;
+    this.pulseCooldown = 0;
+    this.pulseActive = 0;
+    this.pulseId = 0;
+    this.pulseReadyFlash = 0;
+    this.pulseRings = []; // {age, maxAge}
+    this.tailTime = 0;
+    this.trailTimer = 0;
+    this.deathSpin = 0;
+  }
+  resetPosition() {
+    this.x = W * 0.18;
+    this.y = H * 0.55;
+    this.vx = 0;
+    this.vy = 0;
+    this.invincible = 0;
+    this.flashTimer = 0;
+    this.pulseCooldown = 0;
+    this.pulseActive = 0;
+    this.pulseReadyFlash = 0;
+    this.pulseRings = [];
+    this.deathSpin = 0;
+  }
+  rechargePulse(amount) {
+    if (this.pulseCooldown <= 0) return;
+    this.pulseCooldown = Math.max(0, this.pulseCooldown - amount);
+    if (this.pulseCooldown === 0) {
+      this.pulseReadyFlash = 0.5;
+      floatText(this.x, this.y - 50, 'PULSE READY!', '#66ffff', 16);
+      sfx('click');
+    }
+  }
+  triggerPulse() {
+    if (this.pulseCooldown > 0 || game.state !== 'playing') return false;
+    this.pulseActive = 0.55;
+    this.pulseCooldown = PULSE_COOLDOWN;
+    this.pulseId += 1;
+    // Three staggered expanding rings
+    this.pulseRings.push({ age: 0,     maxAge: 0.55, hue: 180 });
+    this.pulseRings.push({ age: -0.09, maxAge: 0.55, hue: 280 });
+    this.pulseRings.push({ age: -0.18, maxAge: 0.55, hue: 0   });
+    game.shake(5, 0.15);
+    sfx('powerup');
+    if (particles.count < 200) {
+      particles.burst(this.x, this.y, 22, {
+        colors: ['#ffffff', '#ccf0ff', '#ff88ff'],
+        minSpeed: 60, maxSpeed: 160,
+        minSize: 2, maxSize: 5,
+        lifetime: 0.9, gravity: -20,
+      });
+    }
+    return true;
+  }
+  update(dt) {
+    const moveX = (input.isPressed('right') ? 1 : 0) - (input.isPressed('left') ? 1 : 0);
+    const moveY = (input.isPressed('down')  ? 1 : 0) - (input.isPressed('up')   ? 1 : 0);
+    if (moveX !== 0) this.vx += moveX * this.accel * dt;
+    if (moveY !== 0) this.vy += moveY * this.accel * dt;
+    this.vx *= this.damping;
+    this.vy *= this.damping;
+    const maxSpeed = this.speed * (this.pulseActive > 0 ? 1.1 : 1);
+    this.vx = clamp(this.vx, -maxSpeed, maxSpeed);
+    this.vy = clamp(this.vy, -maxSpeed, maxSpeed);
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    const margin = 26;
+    this.x = clamp(this.x, margin, W * 0.88);
+    this.y = clamp(this.y, margin, H - margin * 1.4);
+    if (this.invincible > 0)      this.invincible      = Math.max(0, this.invincible - dt);
+    if (this.flashTimer > 0)      this.flashTimer      = Math.max(0, this.flashTimer - dt);
+    if (this.pulseCooldown > 0)   this.pulseCooldown   = Math.max(0, this.pulseCooldown - dt);
+    if (this.pulseActive > 0)     this.pulseActive     = Math.max(0, this.pulseActive - dt);
+    if (this.pulseReadyFlash > 0) this.pulseReadyFlash = Math.max(0, this.pulseReadyFlash - dt);
+    this.tailTime += dt;
+    // Comet trail cosmetic (unlockable)
+    if (hasUnlock('trail-comet') && (Math.abs(this.vx) > 90 || Math.abs(this.vy) > 90)) {
+      this.trailTimer -= dt;
+      if (this.trailTimer <= 0 && particles.count < 200) {
+        this.trailTimer = 0.05;
+        particles.burst(this.x - 40, this.y + rand(-8, 8), 2, {
+          colors: ['#ffd700', '#ffee88', '#ffffff'],
+          minSpeed: 10, maxSpeed: 50, minSize: 1.5, maxSize: 3.5,
+          lifetime: 0.5, gravity: -10,
         });
       }
-
-      function drawSprite(key, cx, cy) {
-        const s = spriteCache[key];
-        if (!s) return false;
-        ctx.drawImage(s.canvas, cx - s.w / 2, cy - s.h / 2);
-        return true;
+    }
+    // Advance pulse rings
+    for (let i = this.pulseRings.length - 1; i >= 0; i--) {
+      this.pulseRings[i].age += dt;
+      if (this.pulseRings[i].age > this.pulseRings[i].maxAge) {
+        this.pulseRings.splice(i, 1);
       }
-
-      Promise.all([
-        loadSprite('ufoBlue', '/assets/kenney/space/ufoBlue.png', 0.6),
-        loadSprite('ufoRed',  '/assets/kenney/space/ufoRed.png',  0.6),
-      ]).then(() => { spritesReady = true; });
-
-      // ─── Shake system ─────────────────────────────────────────────
-      let shakeIntensity = 0;
-      let shakeDuration  = 0;
-
-      function shake(intensity, duration) {
-        shakeIntensity = Math.max(shakeIntensity, intensity);
-        shakeDuration  = Math.max(shakeDuration,  duration);
+    }
+  }
+  draw(ctx, time) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    if (dying) {
+      ctx.globalAlpha = clamp(deathTimer / 0.9, 0, 1);
+      ctx.rotate(this.deathSpin);
+    } else {
+      // Movement lean (max ~7°)
+      ctx.rotate(clamp(this.vy / this.speed, -1, 1) * 0.12);
+      // Damage flash — blink at ~7.5Hz while flashTimer runs
+      if (this.flashTimer > 0 && Math.floor(this.flashTimer * 15) % 2 === 0) {
+        ctx.globalAlpha = 0.4;
       }
+    }
+    const bob = Math.sin(time * 2.6) * 4;
+    const pal = currentPalette();
 
-      // ─── World state ─────────────────────────────────────────────
-      let worldWidth  = canvas.width;
-      let worldHeight = canvas.height;
-      let lastTime    = 0;
-      let elapsed     = 0;
-      let distance    = 0;
-      let score       = 0;
-      let streak      = 0;
-      let bestStreak  = 0;
-      let shields     = 3;
-      let state       = 'menu';
-      let focused     = false;
-      let submitted   = false;
+    // Aura — richer three-band radial glow
+    const glow = ctx.createRadialGradient(0, bob, 8, 0, bob, 96);
+    glow.addColorStop(0,   'rgba(255, 255, 255, 0.30)');
+    glow.addColorStop(0.3, 'rgba(180, 120, 255, 0.18)');
+    glow.addColorStop(0.65,'rgba(255, 100, 255, 0.10)');
+    glow.addColorStop(1,   'rgba(30,  10,  55,  0)');
+    ctx.fillStyle = glow;
+    ctx.fillRect(-100, -100, 200, 200);
 
-      const keys      = Object.create(null);
-      const crystals  = [];
-      const drones    = [];
-      const particles = [];
+    // Pulse expanding rings (3 colours)
+    const ringAlpha = ['rgba(0,220,255,', 'rgba(200,80,255,', 'rgba(255,255,255,'];
+    for (let ri = 0; ri < this.pulseRings.length; ri++) {
+      const pr = this.pulseRings[ri];
+      const t = Math.max(0, pr.age / pr.maxAge);
+      if (t <= 0) continue;
+      const radius = 30 + (PULSE_RADIUS - 30) * t;
+      const alpha  = (1 - t) * 0.55;
+      ctx.strokeStyle = ringAlpha[ri % 3] + alpha + ')';
+      ctx.lineWidth = 3 - t * 2;
+      ctx.shadowColor = ringAlpha[ri % 3] + '0.8)';
+      ctx.shadowBlur  = 14;
+      ctx.beginPath();
+      ctx.arc(0, bob, radius, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
 
-      // ─── Star layers ──────────────────────────────────────────────
-      // Layer 0: ultra-far (slow, small)
-      // Layer 1: mid (original speed)
-      const starLayers = [[], []];
-      for (let i = 0; i < 60; i++) {
-        starLayers[0].push({
-          x: Math.random() * 960,
-          y: Math.random() * 540,
-          radius: rand(0.4, 0.9),
-          twinkle: rand(0.3, 1.0),
-          phase: rand(0, Math.PI * 2),
-          hue: rand(180, 320),
-          speed: rand(2, 6),
-        });
-      }
-      for (let i = 0; i < 140; i++) {
-        starLayers[1].push({
-          x: Math.random() * 960,
-          y: Math.random() * 540,
-          radius: rand(0.6, 1.8),
-          twinkle: rand(0.5, 2.2),
-          phase: rand(0, Math.PI * 2),
-          hue: rand(180, 320),
-          speed: rand(6, 24),
-        });
-      }
+    // Pulse recharge arc — visible cooldown around Astra
+    if (this.pulseCooldown > 0) {
+      const frac = 1 - this.pulseCooldown / PULSE_COOLDOWN;
+      ctx.strokeStyle = 'rgba(102,255,255,0.55)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.arc(8, bob, this.radius + 22, -Math.PI / 2, -Math.PI / 2 + frac * Math.PI * 2);
+      ctx.stroke();
+      ctx.strokeStyle = 'rgba(102,255,255,0.15)';
+      ctx.beginPath();
+      ctx.arc(8, bob, this.radius + 22, 0, Math.PI * 2);
+      ctx.stroke();
+    } else if (this.pulseReadyFlash > 0) {
+      const a = this.pulseReadyFlash / 0.5;
+      ctx.strokeStyle = 'rgba(102,255,255,' + (0.8 * a) + ')';
+      ctx.lineWidth = 3.5;
+      ctx.shadowColor = '#66ffff';
+      ctx.shadowBlur = 16;
+      ctx.beginPath();
+      ctx.arc(8, bob, this.radius + 22 + (1 - a) * 14, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
 
-      const spawnTimers = { crystal: 0, drone: 0, shard: 0 };
+    // Tail stream — 3 wave components, palette-tinted
+    const t1 = Math.sin(this.tailTime * 4)    * 14;
+    const t2 = Math.sin(this.tailTime * 7.2)  *  6;
+    const t3 = Math.sin(this.tailTime * 11.5) *  3;
+    const tailWave = t1 + t2 + t3;
+    const tailGrad = ctx.createLinearGradient(-90, 0, -10, 0);
+    tailGrad.addColorStop(0,   hexToRgba(pal.tail[0], 0));
+    tailGrad.addColorStop(0.4, hexToRgba(pal.tail[0], 0.45));
+    tailGrad.addColorStop(1,   hexToRgba(pal.tail[1], 0.9));
+    ctx.fillStyle = tailGrad;
+    ctx.beginPath();
+    ctx.moveTo(-70, bob - 6);
+    ctx.quadraticCurveTo(-110, bob + tailWave - 24, -20, bob - 8);
+    ctx.quadraticCurveTo(-100, bob + tailWave + 20, -18, bob + 12);
+    ctx.closePath();
+    ctx.fill();
 
-      // ─── Unicorn ─────────────────────────────────────────────────
-      class Unicorn {
-        constructor() {
-          this.x = worldWidth * 0.18;
-          this.y = worldHeight * 0.55;
-          this.vx = 0;
-          this.vy = 0;
-          this.radius = 36;
-          this.speed = 300;
-          this.accel = 900;
-          this.damping = 0.94;
-          this.invincible = 0;
-          this.pulseCooldown = 0;
-          this.pulseActive = 0;
-          this.pulseRings = []; // {age, maxAge}
-          this.tailTime = 0;
+    // Wings
+    ctx.fillStyle = 'rgba(255,255,255,0.92)';
+    ctx.shadowColor = '#ccddff';
+    ctx.shadowBlur = 6;
+    ctx.beginPath();
+    ctx.moveTo(-12, bob - 10);
+    ctx.quadraticCurveTo(-30, bob - 54, 26, bob - 42);
+    ctx.quadraticCurveTo(-12, bob - 32, -12, bob - 10);
+    ctx.fill();
+    ctx.beginPath();
+    ctx.moveTo(-6, bob + 4);
+    ctx.quadraticCurveTo(-22, bob - 22, 30, bob - 8);
+    ctx.quadraticCurveTo(-8, bob + 12, -6, bob + 4);
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Body
+    const bodyGradient = ctx.createLinearGradient(-24, bob - 12, 40, bob + 24);
+    bodyGradient.addColorStop(0, '#fff6ff');
+    bodyGradient.addColorStop(1, '#c8b7ff');
+    ctx.fillStyle = bodyGradient;
+    ctx.beginPath();
+    ctx.ellipse(8, bob, 46, 28, 0.1 * Math.sin(time * 3), 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mane — richer gradient, animated wave, palette-driven
+    const maneWave = Math.sin(time * 3.8) * 5;
+    const maneGradient = ctx.createLinearGradient(20, bob - 40, 48, bob + 12);
+    maneGradient.addColorStop(0,    pal.mane[0]);
+    maneGradient.addColorStop(0.45, pal.mane[1]);
+    maneGradient.addColorStop(1,    pal.mane[2]);
+    ctx.fillStyle = maneGradient;
+    ctx.beginPath();
+    ctx.moveTo(22, bob - 18);
+    ctx.quadraticCurveTo(40 + maneWave * 0.4, bob - 42, 50, bob - 6 + maneWave * 0.3);
+    ctx.quadraticCurveTo(28, bob + 16, 12, bob + 12);
+    ctx.fill();
+
+    // Head
+    ctx.fillStyle = '#fff9ff';
+    ctx.beginPath();
+    ctx.arc(34, bob - 10, 14, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Horn — enhanced glow, palette-tinted
+    ctx.shadowColor = pal.mane[0];
+    ctx.shadowBlur  = 18;
+    const hornGradient = ctx.createLinearGradient(38, bob - 32, 46, bob - 64);
+    hornGradient.addColorStop(0, pal.horn[0]);
+    hornGradient.addColorStop(1, pal.horn[1]);
+    ctx.fillStyle = hornGradient;
+    ctx.beginPath();
+    ctx.moveTo(38, bob - 14);
+    ctx.lineTo(46, bob - 64);
+    ctx.lineTo(32, bob - 18);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Eye
+    ctx.fillStyle = '#1d0b3c';
+    ctx.beginPath();
+    ctx.arc(38, bob - 8, 3.4, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(39.2, bob - 9.2, 1.4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Invincibility ring — strobe between white and magenta
+    if (this.invincible > 0 && !dying) {
+      const phase = Math.sin(time * 14);
+      const r = phase > 0 ? 255 : 200;
+      const g = phase > 0 ? 255 :  50;
+      const b = 255;
+      ctx.strokeStyle = `rgba(${r},${g},${b},${0.7 + 0.3 * Math.abs(phase)})`;
+      ctx.lineWidth = 2.5;
+      ctx.shadowColor = `rgba(${r},${g},${b},0.9)`;
+      ctx.shadowBlur  = 12;
+      ctx.beginPath();
+      ctx.arc(8, bob, this.radius + 16, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+    }
+
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ── Crystal ──────────────────────────────────────────────────
+class Crystal {
+  constructor(x, y, speed) {
+    this.x = x;
+    this.y = y;
+    this.baseY = y;
+    this.speed = speed;
+    this.radius = 18;
+    this.spin = rand(0, Math.PI * 2);
+    this.spinSpeed = rand(1.4, 2.8) * (Math.random() < 0.5 ? -1 : 1);
+    this.twinkle = rand(0.8, 1.6);
+    this.phase = rand(0, Math.PI * 2);
+  }
+  update(dt) {
+    this.x -= this.speed * dt;
+    this.spin += this.spinSpeed * dt;
+    this.y = this.baseY + Math.sin(elapsed * this.twinkle + this.spin) * 18;
+  }
+  draw(ctx) {
+    const breathe = 1 + 0.12 * Math.sin(elapsed * 4 + this.phase);
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.spin * 0.6);
+    ctx.scale(breathe, breathe);
+
+    // Outer starburst halo (8 small points)
+    ctx.globalAlpha = 0.35;
+    ctx.fillStyle = '#fffbbf';
+    for (let i = 0; i < 8; i++) {
+      const angle = (i / 8) * Math.PI * 2;
+      const px = Math.cos(angle) * 26;
+      const py = Math.sin(angle) * 26;
+      ctx.beginPath();
+      ctx.arc(px, py, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.globalAlpha = 1;
+
+    // Main diamond — gold-tinted during storms (double value!)
+    const grad = ctx.createLinearGradient(0, -22, 0, 24);
+    if (stormActive()) {
+      grad.addColorStop(0,   '#fff6c4');
+      grad.addColorStop(0.3, '#ffe066');
+      grad.addColorStop(0.7, '#ffc14d');
+      grad.addColorStop(1,   '#ff9a3d');
+      ctx.shadowColor = '#ffdd66';
+    } else {
+      grad.addColorStop(0,   '#fffbbf');
+      grad.addColorStop(0.3, '#ffe0ff');
+      grad.addColorStop(0.7, '#7effff');
+      grad.addColorStop(1,   '#53bfff');
+      ctx.shadowColor = '#aaffff';
+    }
+    ctx.fillStyle = grad;
+    ctx.shadowBlur  = 12;
+    ctx.beginPath();
+    ctx.moveTo(0, -22);
+    ctx.lineTo(16, -2);
+    ctx.lineTo(0, 24);
+    ctx.lineTo(-16, -2);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+
+    // Edge highlight
+    ctx.strokeStyle = 'rgba(255,255,255,0.75)';
+    ctx.lineWidth = 1.5;
+    ctx.stroke();
+
+    // Inner sparkle core
+    ctx.fillStyle = 'rgba(255,255,255,0.9)';
+    ctx.beginPath();
+    ctx.arc(0, -5, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.restore();
+  }
+}
+
+// ── Drone — three behaviours: drift, swoop, ambush ───────────
+class Drone {
+  constructor(x, y, speed, opts) {
+    opts = opts || {};
+    this.x = x;
+    this.y = y;
+    this.baseY = y;
+    this.speed = speed;
+    this.radius = 34;
+    this.phase = rand(0, Math.PI * 2);
+    this.amplitude = rand(20, 46);
+    this.behaviour = opts.behaviour || 'drift';
+    this.elite = this.behaviour === 'ambush' || !!opts.elite;
+    this.materialize = opts.materialize || 0;  // carrier-spawned: harmless while ghosted
+    this.minDistSq = Infinity;
+    this.passed = false;
+    this.t = 0;
+    // swoop
+    this.freq = rand(0.5, 0.75);
+    this.amp  = opts.amp || rand(90, 140);
+    // ambush state machine
+    this.state = 'enter';         // enter → lurk → windup → lunge → recover → leave
+    this.timer = 0;
+    this.lurkTimer = rand(0.8, 1.4);
+    this.stopX = rand(W * 0.55, W * 0.78);
+    this.lungeVx = 0;
+    this.lungeVy = 0;
+    this.flash = false;
+    this.swell = 1;
+  }
+  update(dt) {
+    this.t += dt;
+    if (this.materialize > 0) this.materialize = Math.max(0, this.materialize - dt);
+
+    if (this.behaviour === 'drift') {
+      this.x -= this.speed * dt;
+      this.y = this.baseY + Math.sin(elapsed * 2.2 + this.phase) * this.amplitude;
+
+    } else if (this.behaviour === 'swoop') {
+      this.x -= this.speed * dt;
+      this.y = this.baseY + Math.sin(this.t * this.freq * Math.PI * 2 + this.phase) * this.amp;
+
+    } else if (this.behaviour === 'ambush') {
+      this.flash = false;
+      this.swell = Math.max(1, this.swell - dt * 0.8);
+      if (this.state === 'enter') {
+        this.x -= 220 * dt;
+        this.y = this.baseY + Math.sin(this.t * 2) * 14;
+        if (this.x <= this.stopX) this.state = 'lurk';
+      } else if (this.state === 'lurk') {
+        this.y = this.baseY + Math.sin(this.t * 2) * 14;
+        this.lurkTimer -= dt;
+        const near = GameUtils.distance(this.x, this.y, unicorn.x, unicorn.y) < 300;
+        if (near || this.lurkTimer <= 0) {
+          this.state = 'windup';
+          this.timer = 0.7;                       // 0.7s telegraph — flash + swell
         }
-        resetPosition() {
-          this.x = worldWidth * 0.18;
-          this.y = worldHeight * 0.55;
-          this.vx = 0;
-          this.vy = 0;
-          this.invincible = 0;
-          this.pulseCooldown = 0;
-          this.pulseActive = 0;
-          this.pulseRings = [];
+      } else if (this.state === 'windup') {
+        this.timer -= dt;
+        this.flash = Math.sin(this.timer * 30) > 0;
+        this.swell = 1.15;
+        if (this.timer <= 0) {                    // aim ONCE, at wind-up end — dodgeable
+          const a = GameUtils.angle(this.x, this.y, unicorn.x, unicorn.y);
+          this.lungeVx = Math.cos(a) * 500;
+          this.lungeVy = Math.sin(a) * 500;
+          this.state = 'lunge';
+          this.timer = 0.45;
         }
-        triggerPulse() {
-          if (this.pulseCooldown > 0 || state !== 'playing') return false;
-          this.pulseActive = 0.55;
-          this.pulseCooldown = 5.5;
-          // Three staggered expanding rings
-          this.pulseRings.push({ age: 0, maxAge: 0.55, hue: 180 });
-          this.pulseRings.push({ age: -0.09, maxAge: 0.55, hue: 280 });
-          this.pulseRings.push({ age: -0.18, maxAge: 0.55, hue: 0 });
-          shake(5, 0.15);
-          statusEl.textContent = 'Starlight pulse engaged! Convert drones into crystals.';
-          statusEl.classList.add('alert');
-          setTimeout(() => statusEl.classList.remove('alert'), 1200);
-          spawnParticleBurst(this.x, this.y, 22, {
-            colors: ['#ffffff', '#ccf0ff', '#ff88ff'],
-            minSpeed: 60, maxSpeed: 160,
-            minSize: 2, maxSize: 5,
-            lifetime: 0.9, gravity: -20,
+      } else if (this.state === 'lunge') {
+        this.x += this.lungeVx * dt;
+        this.y += this.lungeVy * dt;
+        this.timer -= dt;
+        if (this.timer <= 0) { this.state = 'recover'; this.timer = 0.5; }
+      } else if (this.state === 'recover') {
+        this.timer -= dt;                         // committed pause — punish window
+        if (this.timer <= 0) { this.state = 'leave'; this.baseY = this.y; }
+      } else { // leave
+        this.x -= 260 * dt;
+        this.y = this.baseY + Math.sin(this.t * 2) * 10;
+      }
+      this.y = clamp(this.y, 30, H - 40);
+    }
+  }
+  draw(ctx, time) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    if (this.materialize > 0) ctx.globalAlpha = 0.45;
+    if (this.swell > 1) ctx.scale(this.swell, this.swell);
+
+    // Additive glow behind sprite — warning red flash during ambush wind-up
+    ctx.globalCompositeOperation = 'screen';
+    let glowColor = this.elite ? 'rgba(255,80,80,' : 'rgba(0,200,255,';
+    let glowA = 0.5;
+    if (this.flash) { glowColor = 'rgba(255,220,120,'; glowA = 0.85; }
+    const glowR = ctx.createRadialGradient(0, 0, 0, 0, 0, 48);
+    glowR.addColorStop(0, glowColor + glowA + ')');
+    glowR.addColorStop(1, glowColor + '0)');
+    ctx.fillStyle = glowR;
+    ctx.beginPath();
+    ctx.arc(0, 0, 48, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+
+    // Sprite or procedural fallback
+    const sprKey = this.elite ? 'ufoRed' : 'ufoBlue';
+    if (spritesReady && assets.has(sprKey)) {
+      assets.draw(ctx, sprKey, 0, 0);
+    } else {
+      // Procedural fallback — keeps the UFO look if sprites fail
+      const hull = ctx.createLinearGradient(-34, -18, 36, 24);
+      hull.addColorStop(0, this.elite ? '#ff6060' : '#41d3ff');
+      hull.addColorStop(0.4, '#6f68ff');
+      hull.addColorStop(1, this.elite ? '#ff44aa' : '#ff86ff');
+      ctx.fillStyle = hull;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 40, 18, 0, 0, Math.PI * 2);
+      ctx.fill();
+      const dome = ctx.createLinearGradient(0, -28, 0, 12);
+      dome.addColorStop(0, 'rgba(170,220,255,0.9)');
+      dome.addColorStop(1, 'rgba(120,150,255,0.3)');
+      ctx.fillStyle = dome;
+      ctx.beginPath();
+      ctx.ellipse(0, -10, 22, 16, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = hexToRgba(this.elite ? '#ff7777' : '#29f4ff', 0.65 + 0.25 * Math.sin(time * 6 + this.phase));
+      ctx.beginPath();
+      ctx.ellipse(0, 14, 28, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    // Wind-up strobe overlay — the ambusher's tell
+    if (this.flash) {
+      ctx.globalCompositeOperation = 'screen';
+      ctx.fillStyle = 'rgba(255,255,255,0.5)';
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 42, 22, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+
+    // Swooper streak — motion tell so its wave reads clearly
+    if (this.behaviour === 'swoop') {
+      ctx.strokeStyle = 'rgba(120,240,255,0.35)';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      ctx.moveTo(20, 0);
+      ctx.quadraticCurveTo(52, Math.sin(this.t * this.freq * Math.PI * 2 + this.phase - 0.8) * 14, 78, Math.sin(this.t * this.freq * Math.PI * 2 + this.phase - 1.6) * 20);
+      ctx.stroke();
+    }
+
+    // Thruster pulse below sprite (always visible)
+    const thrusterAlpha = 0.4 + 0.3 * Math.sin(time * 8 + this.phase);
+    ctx.globalCompositeOperation = 'screen';
+    const thrusterColor = this.elite ? 'rgba(255,100,50,' : 'rgba(80,240,255,';
+    const tg = ctx.createRadialGradient(0, 18, 0, 0, 18, 22);
+    tg.addColorStop(0, thrusterColor + thrusterAlpha + ')');
+    tg.addColorStop(1, thrusterColor + '0)');
+    ctx.fillStyle = tg;
+    ctx.beginPath();
+    ctx.arc(0, 18, 22, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+
+    ctx.restore();
+    ctx.globalAlpha = 1;
+  }
+}
+
+// ── Asteroid (Phase: asteroid belt) ──────────────────────────
+class Asteroid {
+  constructor() {
+    this.big = Math.random() < 0.45;
+    this.radius = this.big ? rand(36, 46) : rand(22, 30);
+    this.x = W + this.radius + 20;
+    this.y = rand(50, H - 60);
+    this.vx = -rand(110, 190);
+    this.vy = rand(-25, 25);
+    this.rot = rand(0, Math.PI * 2);
+    this.rotSpeed = rand(-1.2, 1.2);
+    // Procedural fallback shape
+    this.verts = [];
+    const n = 9;
+    for (let i = 0; i < n; i++) {
+      this.verts.push({ a: (i / n) * Math.PI * 2, r: this.radius * rand(0.75, 1.1) });
+    }
+  }
+  update(dt) {
+    this.x += this.vx * dt;
+    this.y += this.vy * dt;
+    this.rot += this.rotSpeed * dt;
+  }
+  draw(ctx) {
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.rotate(this.rot);
+    const key = this.big ? 'meteorBig' : 'meteorMed';
+    if (spritesReady && assets.has(key)) {
+      assets.draw(ctx, key, 0, 0, this.radius * 2.1, this.radius * 2.1);
+    } else {
+      ctx.fillStyle = '#8a6a52';
+      ctx.strokeStyle = '#5c4436';
+      ctx.lineWidth = 3;
+      ctx.beginPath();
+      for (let i = 0; i < this.verts.length; i++) {
+        const v = this.verts[i];
+        const px = Math.cos(v.a) * v.r;
+        const py = Math.sin(v.a) * v.r;
+        if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+      }
+      ctx.closePath();
+      ctx.fill();
+      ctx.stroke();
+      ctx.fillStyle = 'rgba(0,0,0,0.25)';
+      ctx.beginPath();
+      ctx.arc(-this.radius * 0.3, this.radius * 0.15, this.radius * 0.28, 0, Math.PI * 2);
+      ctx.fill();
+    }
+    ctx.restore();
+  }
+}
+
+// ── Drone Carrier (mini-boss, 3 HP, pulse to damage) ─────────
+function spawnCarrier() {
+  carrier = {
+    x: W + 160, y: H * 0.4, targetX: W * 0.8,
+    radius: 66, hp: 3, maxHp: 3,
+    state: 'enter', timer: 3.0, bobT: rand(0, 6),
+    flash: false, hitFlash: 0, lastPulseId: -1,
+  };
+}
+function updateCarrier(dt) {
+  const c = carrier;
+  if (!c) return;
+  c.bobT += dt;
+  c.flash = false;
+  if (c.hitFlash > 0) c.hitFlash = Math.max(0, c.hitFlash - dt);
+
+  if (c.state === 'enter') {
+    c.x -= 140 * dt;
+    if (c.x <= c.targetX) { c.x = c.targetX; c.state = 'idle'; c.timer = 2.6; }
+  } else {
+    c.y = H * 0.45 + Math.sin(c.bobT * 0.55) * H * 0.26;
+    if (c.state === 'idle') {
+      c.timer -= dt;
+      if (c.timer <= 0) { c.state = 'windup'; c.timer = 0.7; }   // telegraphed spawn burst
+    } else if (c.state === 'windup') {
+      c.timer -= dt;
+      c.flash = Math.sin(c.timer * 30) > 0;
+      if (c.timer <= 0) {
+        // Release 3 drones — ghosted for 0.5s so a nearby player can't be sniped
+        for (let i = -1; i <= 1; i++) {
+          drones.push(new Drone(c.x - 50, clamp(c.y + i * 46, 40, H - 50), rand(140, 190), {
+            behaviour: 'drift', materialize: 0.5,
+          }));
+        }
+        sfx('hit');
+        if (particles.count < 200) {
+          particles.burst(c.x - 50, c.y, 14, {
+            colors: ['#ff8866', '#ffddaa'], minSpeed: 60, maxSpeed: 180, lifetime: 0.5, gravity: 0,
           });
-          return true;
         }
-        update(dt) {
-          const moveX = (keys['arrowright'] || keys['d'] ? 1 : 0) - (keys['arrowleft'] || keys['a'] ? 1 : 0);
-          const moveY = (keys['arrowdown']  || keys['s'] ? 1 : 0) - (keys['arrowup']   || keys['w'] ? 1 : 0);
-          if (focused) {
-            if (moveX !== 0) this.vx += moveX * this.accel * dt;
-            if (moveY !== 0) this.vy += moveY * this.accel * dt;
-          }
-          this.vx *= this.damping;
-          this.vy *= this.damping;
-          const maxSpeed = this.speed * (this.pulseActive > 0 ? 1.1 : 1);
-          this.vx = clamp(this.vx, -maxSpeed, maxSpeed);
-          this.vy = clamp(this.vy, -maxSpeed, maxSpeed);
-          this.x += this.vx * dt;
-          this.y += this.vy * dt;
-          const margin = 26;
-          this.x = clamp(this.x, margin, worldWidth * 0.88);
-          this.y = clamp(this.y, margin, worldHeight - margin * 1.4);
-          if (this.invincible > 0)     this.invincible     = Math.max(0, this.invincible - dt);
-          if (this.pulseCooldown > 0)  this.pulseCooldown  = Math.max(0, this.pulseCooldown - dt);
-          if (this.pulseActive > 0)    this.pulseActive     = Math.max(0, this.pulseActive - dt);
-          this.tailTime += dt;
-          // Advance pulse rings
-          for (let i = this.pulseRings.length - 1; i >= 0; i--) {
-            this.pulseRings[i].age += dt;
-            if (this.pulseRings[i].age > this.pulseRings[i].maxAge) {
-              this.pulseRings.splice(i, 1);
-            }
-          }
-        }
-        draw(time) {
-          ctx.save();
-          ctx.translate(this.x, this.y);
-          const bob = Math.sin(time * 2.6) * 4;
-
-          // Aura — richer three-band radial glow
-          const glow = ctx.createRadialGradient(0, bob, 8, 0, bob, 96);
-          glow.addColorStop(0,   'rgba(255, 255, 255, 0.30)');
-          glow.addColorStop(0.3, 'rgba(180, 120, 255, 0.18)');
-          glow.addColorStop(0.65,'rgba(255, 100, 255, 0.10)');
-          glow.addColorStop(1,   'rgba(30,  10,  55,  0)');
-          ctx.fillStyle = glow;
-          ctx.fillRect(-100, -100, 200, 200);
-
-          // Pulse expanding rings (3 colours)
-          const ringHues  = [180, 280, 0];
-          const ringAlpha = ['rgba(0,220,255,', 'rgba(200,80,255,', 'rgba(255,255,255,'];
-          for (let ri = 0; ri < this.pulseRings.length; ri++) {
-            const pr = this.pulseRings[ri];
-            const t = Math.max(0, pr.age / pr.maxAge);
-            if (t <= 0) continue;
-            const radius = 30 + 160 * t;
-            const alpha  = (1 - t) * 0.55;
-            ctx.strokeStyle = ringAlpha[ri % 3] + alpha + ')';
-            ctx.lineWidth = 3 - t * 2;
-            ctx.shadowColor = ringAlpha[ri % 3] + '0.8)';
-            ctx.shadowBlur  = 14;
-            ctx.beginPath();
-            ctx.arc(0, bob, radius, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-          }
-
-          // Tail stream — 3 wave components
-          const t1 = Math.sin(this.tailTime * 4)    * 14;
-          const t2 = Math.sin(this.tailTime * 7.2)  *  6;
-          const t3 = Math.sin(this.tailTime * 11.5) *  3;
-          const tailWave = t1 + t2 + t3;
-          const tailGrad = ctx.createLinearGradient(-90, 0, -10, 0);
-          tailGrad.addColorStop(0,   hexToRgba('#4de2ff', 0));
-          tailGrad.addColorStop(0.4, hexToRgba('#4de2ff', 0.45));
-          tailGrad.addColorStop(1,   hexToRgba('#ff8cf9', 0.9));
-          ctx.fillStyle = tailGrad;
-          ctx.beginPath();
-          ctx.moveTo(-70, bob - 6);
-          ctx.quadraticCurveTo(-110, bob + tailWave - 24, -20, bob - 8);
-          ctx.quadraticCurveTo(-100, bob + tailWave + 20, -18, bob + 12);
-          ctx.closePath();
-          ctx.fill();
-
-          // Wings
-          ctx.fillStyle = 'rgba(255,255,255,0.92)';
-          ctx.shadowColor = '#ccddff';
-          ctx.shadowBlur = 6;
-          ctx.beginPath();
-          ctx.moveTo(-12, bob - 10);
-          ctx.quadraticCurveTo(-30, bob - 54, 26, bob - 42);
-          ctx.quadraticCurveTo(-12, bob - 32, -12, bob - 10);
-          ctx.fill();
-          ctx.beginPath();
-          ctx.moveTo(-6, bob + 4);
-          ctx.quadraticCurveTo(-22, bob - 22, 30, bob - 8);
-          ctx.quadraticCurveTo(-8, bob + 12, -6, bob + 4);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-
-          // Body
-          const bodyGradient = ctx.createLinearGradient(-24, bob - 12, 40, bob + 24);
-          bodyGradient.addColorStop(0, '#fff6ff');
-          bodyGradient.addColorStop(1, '#c8b7ff');
-          ctx.fillStyle = bodyGradient;
-          ctx.beginPath();
-          ctx.ellipse(8, bob, 46, 28, 0.1 * Math.sin(time * 3), 0, Math.PI * 2);
-          ctx.fill();
-
-          // Mane — richer gradient, animated wave
-          const maneWave = Math.sin(time * 3.8) * 5;
-          const maneGradient = ctx.createLinearGradient(20, bob - 40, 48, bob + 12);
-          maneGradient.addColorStop(0,   '#ff8cf9');
-          maneGradient.addColorStop(0.45,'#ff44cc');
-          maneGradient.addColorStop(1,   '#6ef7ff');
-          ctx.fillStyle = maneGradient;
-          ctx.beginPath();
-          ctx.moveTo(22, bob - 18);
-          ctx.quadraticCurveTo(40 + maneWave * 0.4, bob - 42, 50, bob - 6 + maneWave * 0.3);
-          ctx.quadraticCurveTo(28, bob + 16, 12, bob + 12);
-          ctx.fill();
-
-          // Head
-          ctx.fillStyle = '#fff9ff';
-          ctx.beginPath();
-          ctx.arc(34, bob - 10, 14, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Horn — enhanced glow
-          ctx.shadowColor = '#ff88ff';
-          ctx.shadowBlur  = 18;
-          const hornGradient = ctx.createLinearGradient(38, bob - 32, 46, bob - 64);
-          hornGradient.addColorStop(0, '#ffe4ff');
-          hornGradient.addColorStop(1, '#fdb7ff');
-          ctx.fillStyle = hornGradient;
-          ctx.beginPath();
-          ctx.moveTo(38, bob - 14);
-          ctx.lineTo(46, bob - 64);
-          ctx.lineTo(32, bob - 18);
-          ctx.closePath();
-          ctx.fill();
-          ctx.shadowBlur = 0;
-
-          // Eye
-          ctx.fillStyle = '#1d0b3c';
-          ctx.beginPath();
-          ctx.arc(38, bob - 8, 3.4, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.fillStyle = 'rgba(255,255,255,0.9)';
-          ctx.beginPath();
-          ctx.arc(39.2, bob - 9.2, 1.4, 0, Math.PI * 2);
-          ctx.fill();
-
-          // Invincibility ring — strobe between white and magenta
-          if (this.invincible > 0) {
-            const phase = Math.sin(time * 14);
-            const r = phase > 0 ? 255 : 200;
-            const g = phase > 0 ? 255 :  50;
-            const b = 255;
-            ctx.strokeStyle = `rgba(${r},${g},${b},${0.7 + 0.3 * Math.abs(phase)})`;
-            ctx.lineWidth = 2.5;
-            ctx.shadowColor = `rgba(${r},${g},${b},0.9)`;
-            ctx.shadowBlur  = 12;
-            ctx.beginPath();
-            ctx.arc(8, bob, this.radius + 8, 0, Math.PI * 2);
-            ctx.stroke();
-            ctx.shadowBlur = 0;
-          }
-
-          ctx.restore();
-        }
+        c.state = 'recover'; c.timer = 0.6;
       }
+    } else if (c.state === 'recover') {
+      c.timer -= dt;
+      if (c.timer <= 0) { c.state = 'idle'; c.timer = 2.6; }
+    }
+  }
 
-      // ─── Crystal ─────────────────────────────────────────────────
-      class Crystal {
-        constructor(x, y, speed) {
-          this.x = x;
-          this.y = y;
-          this.baseY = y;
-          this.speed = speed;
-          this.radius = 18;
-          this.spin = rand(0, Math.PI * 2);
-          this.spinSpeed = rand(1.4, 2.8) * (Math.random() < 0.5 ? -1 : 1);
-          this.twinkle = rand(0.8, 1.6);
-          this.phase = rand(0, Math.PI * 2);
-        }
-        update(dt) {
-          this.x -= this.speed * dt;
-          this.spin += this.spinSpeed * dt;
-          this.y = this.baseY + Math.sin(elapsed * this.twinkle + this.spin) * 18;
-        }
-        draw() {
-          const breathe = 1 + 0.12 * Math.sin(elapsed * 4 + this.phase);
-          ctx.save();
-          ctx.translate(this.x, this.y);
-          ctx.rotate(this.spin * 0.6);
-          ctx.scale(breathe, breathe);
-
-          // Outer starburst halo (8 small points)
-          ctx.globalAlpha = 0.35;
-          ctx.fillStyle = '#fffbbf';
-          for (let i = 0; i < 8; i++) {
-            const angle = (i / 8) * Math.PI * 2;
-            const px = Math.cos(angle) * 26;
-            const py = Math.sin(angle) * 26;
-            ctx.beginPath();
-            ctx.arc(px, py, 2.5, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          ctx.globalAlpha = 1;
-
-          // Main diamond
-          const grad = ctx.createLinearGradient(0, -22, 0, 24);
-          grad.addColorStop(0,   '#fffbbf');
-          grad.addColorStop(0.3, '#ffe0ff');
-          grad.addColorStop(0.7, '#7effff');
-          grad.addColorStop(1,   '#53bfff');
-          ctx.fillStyle = grad;
-          ctx.shadowColor = '#aaffff';
-          ctx.shadowBlur  = 12;
-          ctx.beginPath();
-          ctx.moveTo(0, -22);
-          ctx.lineTo(16, -2);
-          ctx.lineTo(0, 24);
-          ctx.lineTo(-16, -2);
-          ctx.closePath();
-          ctx.fill();
-          ctx.shadowBlur = 0;
-
-          // Edge highlight
-          ctx.strokeStyle = 'rgba(255,255,255,0.75)';
-          ctx.lineWidth = 1.5;
-          ctx.stroke();
-
-          // Inner sparkle core
-          ctx.fillStyle = 'rgba(255,255,255,0.9)';
-          ctx.beginPath();
-          ctx.arc(0, -5, 4, 0, Math.PI * 2);
-          ctx.fill();
-
-          ctx.restore();
-        }
-      }
-
-      // ─── Drone ───────────────────────────────────────────────────
-      class Drone {
-        constructor(x, y, speed, elite) {
-          this.x = x;
-          this.y = y;
-          this.baseY = y;
-          this.speed = speed;
-          this.radius = 34;
-          this.phase = rand(0, Math.PI * 2);
-          this.amplitude = rand(20, 46);
-          this.elite = elite; // red UFO variant
-        }
-        update(dt) {
-          this.x -= this.speed * dt;
-          this.y = this.baseY + Math.sin(elapsed * 2.2 + this.phase) * this.amplitude;
-        }
-        draw(time) {
-          ctx.save();
-          ctx.translate(this.x, this.y);
-
-          // Additive glow behind sprite
-          ctx.globalCompositeOperation = 'screen';
-          const glowColor = this.elite ? 'rgba(255,80,80,' : 'rgba(0,200,255,';
-          const glowR = ctx.createRadialGradient(0, 0, 0, 0, 0, 48);
-          glowR.addColorStop(0, glowColor + '0.5)');
-          glowR.addColorStop(1, glowColor + '0)');
-          ctx.fillStyle = glowR;
-          ctx.beginPath();
-          ctx.arc(0, 0, 48, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.globalCompositeOperation = 'source-over';
-
-          // Sprite or fallback
-          const sprKey = this.elite ? 'ufoRed' : 'ufoBlue';
-          if (spritesReady && spriteCache[sprKey]) {
-            drawSprite(sprKey, 0, 0);
-          } else {
-            // Procedural fallback — keeps the UFO look if sprites fail
-            const hull = ctx.createLinearGradient(-34, -18, 36, 24);
-            hull.addColorStop(0, this.elite ? '#ff6060' : '#41d3ff');
-            hull.addColorStop(0.4, '#6f68ff');
-            hull.addColorStop(1, this.elite ? '#ff44aa' : '#ff86ff');
-            ctx.fillStyle = hull;
-            ctx.beginPath();
-            ctx.ellipse(0, 0, 40, 18, 0, 0, Math.PI * 2);
-            ctx.fill();
-            const dome = ctx.createLinearGradient(0, -28, 0, 12);
-            dome.addColorStop(0, 'rgba(170,220,255,0.9)');
-            dome.addColorStop(1, 'rgba(120,150,255,0.3)');
-            ctx.fillStyle = dome;
-            ctx.beginPath();
-            ctx.ellipse(0, -10, 22, 16, 0, 0, Math.PI * 2);
-            ctx.fill();
-            ctx.fillStyle = hexToRgba(this.elite ? '#ff7777' : '#29f4ff', 0.65 + 0.25 * Math.sin(time * 6 + this.phase));
-            ctx.beginPath();
-            ctx.ellipse(0, 14, 28, 10, 0, 0, Math.PI * 2);
-            ctx.fill();
-          }
-
-          // Thruster pulse below sprite (always visible)
-          const thrusterAlpha = 0.4 + 0.3 * Math.sin(time * 8 + this.phase);
-          ctx.globalCompositeOperation = 'screen';
-          const thrusterColor = this.elite ? 'rgba(255,100,50,' : 'rgba(80,240,255,';
-          const tg = ctx.createRadialGradient(0, 18, 0, 0, 18, 22);
-          tg.addColorStop(0, thrusterColor + thrusterAlpha + ')');
-          tg.addColorStop(1, thrusterColor + '0)');
-          ctx.fillStyle = tg;
-          ctx.beginPath();
-          ctx.arc(0, 18, 22, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.globalCompositeOperation = 'source-over';
-
-          ctx.restore();
-        }
-      }
-
-      // ─── Particle ────────────────────────────────────────────────
-      class Particle {
-        constructor(x, y, vx, vy, life, color, size, gravity) {
-          this.x = x;
-          this.y = y;
-          this.vx = vx;
-          this.vy = vy;
-          this.life = life;
-          this.maxLife = life;
-          this.color = color || '#7dfffd';
-          this.size = size || 5;
-          this.gravity = gravity || 0;
-        }
-        update(dt) {
-          this.x  += this.vx * dt;
-          this.y  += this.vy * dt;
-          this.vy += this.gravity * dt;
-          this.life -= dt;
-        }
-        draw() {
-          const t = clamp(this.life / this.maxLife, 0, 1);
-          ctx.globalAlpha = t * 0.85;
-          ctx.fillStyle = this.color;
-          ctx.shadowColor = this.color;
-          ctx.shadowBlur = 8;
-          ctx.beginPath();
-          ctx.arc(this.x, this.y, this.size * (0.5 + t * 0.5), 0, Math.PI * 2);
-          ctx.fill();
-          ctx.shadowBlur = 0;
-          ctx.globalAlpha = 1;
-        }
-      }
-
-      function spawnParticleBurst(x, y, count, opts) {
-        const colors  = opts.colors  || ['#7dfffd'];
-        const minS    = opts.minSpeed || 60;
-        const maxS    = opts.maxSpeed || 160;
-        const minSz   = opts.minSize  || 2;
-        const maxSz   = opts.maxSize  || 6;
-        const life    = opts.lifetime || 0.7;
-        const grav    = opts.gravity  || 0;
-        for (let i = 0; i < count; i++) {
-          const angle = Math.random() * Math.PI * 2;
-          const speed = rand(minS, maxS);
-          const color = colors[Math.floor(Math.random() * colors.length)];
-          particles.push(new Particle(
-            x, y,
-            Math.cos(angle) * speed,
-            Math.sin(angle) * speed,
-            life * rand(0.6, 1.2),
-            color,
-            rand(minSz, maxSz),
-            grav,
-          ));
-        }
-      }
-
-      // ─── Game objects & loop ─────────────────────────────────────
-      const unicorn = new Unicorn();
-
-      function resetGame() {
-        crystals.length = 0;
-        drones.length   = 0;
-        particles.length = 0;
-        spawnTimers.crystal = 0;
-        spawnTimers.drone   = 2.5;
-        spawnTimers.shard   = 6;
-        elapsed     = 0;
-        distance    = 0;
-        score       = 0;
-        streak      = 0;
-        bestStreak  = 0;
-        shields     = 3;
-        shakeIntensity = 0;
-        shakeDuration  = 0;
-        unicorn.resetPosition();
-        updateHud();
-        submitted = false;
-        submitStatus.textContent = '';
-        nameInput.value = '';
-        statusEl.textContent = 'Glide through harmony crystals, pulse the drones, and keep the streak alive!';
-        statusEl.classList.remove('alert');
-      }
-
-      function updateHud() {
-        scoreEl.textContent  = Math.round(score).toLocaleString();
-        streakEl.textContent = String(streak);
-        shieldsEl.textContent = String(shields);
-        pulseEl.textContent   = unicorn.pulseCooldown <= 0 ? 'Ready' : unicorn.pulseCooldown.toFixed(1) + 's';
-        distanceEl.textContent = (distance / 100).toFixed(1);
-      }
-
-      function spawnCrystalWave() {
-        const rows = 1 + Math.floor(Math.random() * 2);
-        const baseY = rand(worldHeight * 0.25, worldHeight * 0.75);
-        for (let i = 0; i < rows; i++) {
-          const offsetY = i * 32 - (rows - 1) * 16;
-          crystals.push(new Crystal(worldWidth + 60 + i * 36, baseY + offsetY, rand(120, 160) + elapsed * 12));
-        }
-      }
-
-      function spawnDrone() {
-        const difficulty = 1 + elapsed * 0.18;
-        const elite = difficulty > 1.8 && Math.random() < 0.35;
-        const speedBonus = elite ? rand(120, 170) * 0.15 : 0;
-        const y = rand(worldHeight * 0.2, worldHeight * 0.75);
-        drones.push(new Drone(worldWidth + 120, y, rand(120, 170) + elapsed * 10 + speedBonus, elite));
-      }
-
-      function spawnShardBurst(x, y) {
-        for (let i = 0; i < 5; i++) {
-          crystals.push(new Crystal(x + rand(-24, 24), y + rand(-18, 18), rand(140, 200)));
-        }
-      }
-
-      function updateGame(dt) {
-        elapsed  += dt;
-        distance += dt * (150 + elapsed * 22);
-        const difficulty = 1 + elapsed * 0.18;
-
-        // Shake decay
-        if (shakeDuration > 0) {
-          shakeDuration = Math.max(0, shakeDuration - dt);
-          if (shakeDuration <= 0) shakeIntensity = 0;
-        }
-
-        spawnTimers.crystal -= dt;
-        spawnTimers.drone   -= dt;
-        spawnTimers.shard   -= dt;
-
-        if (spawnTimers.crystal <= 0) {
-          spawnCrystalWave();
-          spawnTimers.crystal = rand(0.7, 1.4) / Math.min(difficulty, 2.6);
-        }
-        if (spawnTimers.drone <= 0) {
-          spawnDrone();
-          spawnTimers.drone = rand(2.2, 3.4) / Math.min(difficulty, 2.2);
-        }
-        if (spawnTimers.shard <= 0) {
-          spawnShardBurst(worldWidth + 120, rand(worldHeight * 0.2, worldHeight * 0.8));
-          spawnTimers.shard = rand(6, 9);
-        }
-
-        unicorn.update(dt);
-
-        // Crystal collisions
-        for (let i = crystals.length - 1; i >= 0; i--) {
-          const c = crystals[i];
-          c.update(dt);
-          if (c.x < -80) { crystals.splice(i, 1); continue; }
-          const dx = unicorn.x - c.x;
-          const dy = unicorn.y - c.y;
-          if (dx * dx + dy * dy < (unicorn.radius + c.radius) ** 2) {
-            crystals.splice(i, 1);
-            streak += 1;
-            bestStreak = Math.max(bestStreak, streak);
-            const bonus = 40 + streak * 6;
-            score += bonus;
-            statusEl.textContent = `Harmony crystal collected! Bonus +${bonus}.`;
-            shake(3, 0.1);
-            spawnParticleBurst(c.x, c.y, 16, {
-              colors: ['#ffe066', '#ffffff', '#66ffff', '#ff88ff'],
-              minSpeed: 50, maxSpeed: 140,
-              minSize: 2, maxSize: 5,
-              lifetime: 0.7, gravity: -30,
-            });
-            updateHud();
-          }
-        }
-
-        // Drone collisions
-        for (let i = drones.length - 1; i >= 0; i--) {
-          const d = drones[i];
-          d.update(dt);
-          if (d.x < -120) { drones.splice(i, 1); continue; }
-          const dx = unicorn.x - d.x;
-          const dy = unicorn.y - d.y;
-          const distSq = dx * dx + dy * dy;
-
-          if (unicorn.pulseActive > 0 && distSq < 150 * 150) {
-            drones.splice(i, 1);
-            spawnShardBurst(d.x, d.y);
-            score += d.elite ? 120 : 80;
-            streak += 2;
-            bestStreak = Math.max(bestStreak, streak);
-            statusEl.textContent = 'Pulse converted a drone into harmony shards!';
-            shake(4, 0.12);
-            spawnParticleBurst(d.x, d.y, 20, {
-              colors: ['#ffffff', '#ffdd44', '#66ffff'],
-              minSpeed: 80, maxSpeed: 200,
-              minSize: 3, maxSize: 6,
-              lifetime: 0.9, gravity: -60,
-            });
-            updateHud();
-            continue;
-          }
-
-          if (distSq < (unicorn.radius + d.radius) ** 2 && unicorn.invincible <= 0) {
-            drones.splice(i, 1);
-            streak = 0;
-            shields -= 1;
-            unicorn.invincible = 2.2;
-            shake(10, 0.3);
-            statusEl.textContent = 'Shield hit! Glide clear and regroup.';
-            statusEl.classList.add('alert');
-            setTimeout(() => statusEl.classList.remove('alert'), 1200);
-            spawnParticleBurst(unicorn.x, unicorn.y, 28, {
-              colors: ['#ff4488', '#ff8844', '#ff88ff', '#ffffff'],
-              minSpeed: 80, maxSpeed: 200,
-              minSize: 2, maxSize: 7,
-              lifetime: 0.7, gravity: 60,
-            });
-            if (shields <= 0) { endGame(); return; }
-            updateHud();
-          }
-        }
-
-        // Particle update
-        for (let i = particles.length - 1; i >= 0; i--) {
-          particles[i].update(dt);
-          if (particles[i].life <= 0) particles.splice(i, 1);
-        }
-
-        updateHud();
-      }
-
-      // ─── Background ───────────────────────────────────────────────
-      function drawBackground(time) {
-        // Base gradient
-        const gradient = ctx.createLinearGradient(0, 0, 0, worldHeight);
-        gradient.addColorStop(0,   '#07091e');
-        gradient.addColorStop(0.45,'#13123a');
-        gradient.addColorStop(1,   '#1a0e32');
-        ctx.fillStyle = gradient;
-        ctx.fillRect(0, 0, worldWidth, worldHeight);
-
-        // Nebulae — 3 patches
-        drawNebula(worldWidth * 0.32, worldHeight * 0.32, 280, '#5b1fd3', '#d08dff',  time * 0.08);
-        drawNebula(worldWidth * 0.78, worldHeight * 0.42, 320, '#1fb3ff', '#74ffd9', -time * 0.05);
-        drawNebula(worldWidth * 0.55, worldHeight * 0.72, 220, '#cc4400', '#ffaa55',  time * 0.06); // warm orange
-
-        // Ultra-far star layer (barely moves)
-        for (const star of starLayers[0]) {
-          star.x -= star.speed * 0.016;
-          if (star.x < -10) star.x = worldWidth + 10;
-          const tw = 0.7 + 0.3 * Math.sin(time * star.twinkle + star.phase);
-          ctx.fillStyle = `hsla(${star.hue}, 80%, 80%, ${0.25 + tw * 0.2})`;
-          ctx.beginPath();
-          ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // Mid star layer (main parallax)
-        for (const star of starLayers[1]) {
-          star.x -= star.speed * 0.016;
-          if (star.x < -40) star.x = worldWidth + 40;
-          const tw = 0.6 + 0.4 * Math.sin(time * star.twinkle + star.phase);
-          ctx.fillStyle = `hsla(${star.hue}, 90%, ${70 + tw * 20}%, ${0.45 + tw * 0.3})`;
-          ctx.beginPath();
-          ctx.arc(star.x, star.y, star.radius * (0.9 + tw * 0.4), 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // Planets with atmosphere glow
-        drawPlanet(worldWidth * 0.62, worldHeight * 0.22, 86, '#2ef6ff', '#784fff', true);
-        drawPlanet(worldWidth * 0.15, worldHeight * 0.16, 64, '#ff8cf9', '#ffcf87', false, true);
-
-        // Nebula floor strip
-        const floorGrad = ctx.createLinearGradient(0, worldHeight * 0.65, 0, worldHeight);
-        floorGrad.addColorStop(0,   'rgba(77, 39, 115, 0.0)');
-        floorGrad.addColorStop(0.4, 'rgba(77, 39, 115, 0.3)');
-        floorGrad.addColorStop(1,   'rgba(42, 16, 68,  0.88)');
-        ctx.fillStyle = floorGrad;
-        ctx.beginPath();
-        ctx.moveTo(0, worldHeight * 0.68);
-        ctx.quadraticCurveTo(worldWidth * 0.25, worldHeight * 0.72 + Math.sin(time * 0.6) * 8, worldWidth * 0.5, worldHeight * 0.75 + Math.cos(time * 0.5) * 8);
-        ctx.quadraticCurveTo(worldWidth * 0.75, worldHeight * 0.78 + Math.sin(time * 0.7) * 10, worldWidth, worldHeight * 0.74);
-        ctx.lineTo(worldWidth, worldHeight);
-        ctx.lineTo(0, worldHeight);
-        ctx.closePath();
-        ctx.fill();
-
-        // Horizon dashes
-        ctx.strokeStyle = hexToRgba('#70f9ff', 0.20);
-        ctx.lineWidth = 2;
-        ctx.setLineDash([12, 18]);
-        ctx.beginPath();
-        ctx.moveTo(0, worldHeight * 0.8);
-        ctx.quadraticCurveTo(worldWidth * 0.3, worldHeight * 0.78 + Math.sin(time) * 4, worldWidth, worldHeight * 0.82);
-        ctx.stroke();
-        ctx.setLineDash([]);
-
-        // Corner vignette — draws focus to play area
-        const vig = ctx.createRadialGradient(worldWidth / 2, worldHeight / 2, worldHeight * 0.3, worldWidth / 2, worldHeight / 2, worldWidth * 0.75);
-        vig.addColorStop(0, 'rgba(0,0,0,0)');
-        vig.addColorStop(1, 'rgba(0,0,0,0.4)');
-        ctx.fillStyle = vig;
-        ctx.fillRect(0, 0, worldWidth, worldHeight);
-      }
-
-      function drawNebula(x, y, radius, inner, outer, rotation) {
-        ctx.save();
-        ctx.translate(x, y);
-        ctx.rotate(rotation);
-        const gradient = ctx.createRadialGradient(0, 0, radius * 0.15, 0, 0, radius);
-        gradient.addColorStop(0,    hexToRgba(inner, 0.55));
-        gradient.addColorStop(0.4,  hexToRgba(outer, 0.22));
-        gradient.addColorStop(1,   'rgba(0,0,0,0)');
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.ellipse(0, 0, radius, radius * 0.55, 0.3, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.restore();
-      }
-
-      function drawPlanet(x, y, radius, inner, outer, hasAtmo, hasRing) {
-        // Atmosphere halo
-        if (hasAtmo) {
-          const atmo = ctx.createRadialGradient(x, y, radius * 0.8, x, y, radius * 1.5);
-          atmo.addColorStop(0, hexToRgba(inner, 0.15));
-          atmo.addColorStop(1, 'rgba(0,0,0,0)');
-          ctx.fillStyle = atmo;
-          ctx.beginPath();
-          ctx.arc(x, y, radius * 1.5, 0, Math.PI * 2);
-          ctx.fill();
-        }
-
-        // Planet body
-        const gradient = ctx.createRadialGradient(x - radius * 0.4, y - radius * 0.4, radius * 0.2, x, y, radius);
-        gradient.addColorStop(0, hexToRgba(inner, 0.95));
-        gradient.addColorStop(1, hexToRgba(outer, 0.85));
-        ctx.fillStyle = gradient;
-        ctx.beginPath();
-        ctx.arc(x, y, radius, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.strokeStyle = hexToRgba('#ffffff', 0.22);
-        ctx.lineWidth = 2;
-        ctx.stroke();
-
-        // Saturn ring
-        if (hasRing) {
-          ctx.save();
-          ctx.translate(x, y);
-          ctx.strokeStyle = hexToRgba(outer, 0.55);
-          ctx.lineWidth = 7;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, radius * 1.65, radius * 0.38, -0.35, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.strokeStyle = hexToRgba('#ffffff', 0.12);
-          ctx.lineWidth = 3;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, radius * 1.82, radius * 0.42, -0.35, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.restore();
-        }
-      }
-
-      // ─── HUD shield icons ────────────────────────────────────────
-      function drawShieldIcons(shields) {
-        const startX = 12;
-        const startY = 12;
-        for (let i = 0; i < 3; i++) {
-          const cx = startX + i * 22;
-          const cy = startY;
-          const active = i < shields;
-          ctx.save();
-          ctx.translate(cx, cy);
-          if (active) {
-            ctx.shadowColor = '#44ddff';
-            ctx.shadowBlur  = 10;
-          }
-          ctx.fillStyle = active ? '#44ddff' : 'rgba(100,100,120,0.4)';
-          // Pentagon shield shape
-          ctx.beginPath();
-          ctx.moveTo(0, -9);
-          ctx.lineTo(8, -5);
-          ctx.lineTo(8, 3);
-          ctx.lineTo(0, 9);
-          ctx.lineTo(-8, 3);
-          ctx.lineTo(-8, -5);
-          ctx.closePath();
-          ctx.fill();
-          ctx.shadowBlur = 0;
-          ctx.restore();
-        }
-      }
-
-      // ─── Render ──────────────────────────────────────────────────
-      function render(timestamp) {
-        const time = timestamp / 1000;
-
-        // Apply shake offset
-        let sx = 0, sy = 0;
-        if (shakeIntensity > 0 && shakeDuration > 0) {
-          sx = (Math.random() * 2 - 1) * shakeIntensity;
-          sy = (Math.random() * 2 - 1) * shakeIntensity;
-        }
-
-        ctx.save();
-        ctx.translate(sx, sy);
-
-        drawBackground(time);
-        crystals.forEach((c) => c.draw());
-        drones.forEach((d) => d.draw(time));
-        particles.forEach((p) => p.draw());
-        unicorn.draw(time);
-
-        // Canvas HUD shield icons (overlay on stage)
-        if (state === 'playing') {
-          drawShieldIcons(shields);
-        }
-
-        ctx.restore();
-      }
-
-      // ─── End game ────────────────────────────────────────────────
-      function endGame() {
-        state  = 'gameover';
-        focused = false;
-        statusEl.textContent = 'Mission failed — recharge and try again.';
-        updateHud();
-        finalScoreEl.textContent    = Math.round(score).toLocaleString();
-        finalStreakEl.textContent   = String(bestStreak);
-        finalDistanceEl.textContent = (distance / 100).toFixed(1) + ' km';
-        gameOverOverlay.classList.add('visible');
-        gameOverOverlay.setAttribute('aria-hidden', 'false');
-        nameInput.focus();
-      }
-
-      function trySubmitScore() {
-        const name = nameInput.value.trim();
-        if (!name) { submitStatus.textContent = 'Enter a commander name or nickname to share your score.'; return; }
-        if (submitted) { submitStatus.textContent = 'Score already submitted. Thank you!'; return; }
-        submitBtn.disabled = true;
-        submitStatus.textContent = 'Submitting score...';
-        fetch('/api/scores/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ slug: 'alien-unicorn-alliance', score: Math.round(score), name }),
-        })
-          .then((res) => {
-            if (!res.ok) throw new Error();
-            submitStatus.textContent = 'Score submitted! Check the leaderboard below the game.';
-            submitted = true;
-          })
-          .catch(() => { submitStatus.textContent = 'Could not submit score right now. Please try again later.'; })
-          .finally(() => { submitBtn.disabled = false; });
-      }
-
-      // ─── Resize ──────────────────────────────────────────────────
-      function resize() {
-        const rect    = canvas.parentElement.getBoundingClientRect();
-        const dpr     = Math.min(window.devicePixelRatio || 1, 2);
-        const oldW    = worldWidth  || rect.width;
-        const oldH    = worldHeight || rect.height;
-        canvas.width  = Math.floor(rect.width  * dpr);
-        canvas.height = Math.floor(rect.height * dpr);
-        ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-        worldWidth  = canvas.width  / dpr;
-        worldHeight = canvas.height / dpr;
-        const sx = worldWidth  / oldW;
-        const sy = worldHeight / oldH;
-        unicorn.x *= sx;
-        unicorn.y *= sy;
-        for (const layer of starLayers) {
-          for (const star of layer) { star.x *= sx; star.y *= sy; }
-        }
-      }
-
-      function requestFullscreen() {
-        const el = document.documentElement;
-        if (el.requestFullscreen) el.requestFullscreen().catch(() => {});
-      }
-
-      // ─── Event wiring ────────────────────────────────────────────
-      tryBtn.addEventListener('click', () => {
-        if (state !== 'menu') return;
-        requestFullscreen();
-        tryOverlay.classList.remove('visible');
-        startOverlay.classList.add('visible');
-        startOverlay.removeAttribute('aria-hidden');
+  // Pulse damage — one hit per pulse, must fly in close
+  if (unicorn.pulseActive > 0 && c.lastPulseId !== unicorn.pulseId &&
+      GameUtils.distance(unicorn.x, unicorn.y, c.x, c.y) < PULSE_RADIUS + c.radius * 0.5) {
+    c.lastPulseId = unicorn.pulseId;
+    c.hp -= 1;
+    c.hitFlash = 0.35;
+    triggerHitStop(0.05);
+    sfx('hit');
+    game.shake(5, 0.2);
+    floatText(c.x, c.y - 70, 'CARRIER HIT!', '#ffdd44', 20);
+    if (particles.count < 200) {
+      particles.burst(c.x, c.y, 20, {
+        colors: ['#ffdd44', '#ffffff', '#ff8866'], minSpeed: 100, maxSpeed: 280, lifetime: 0.6,
       });
-
-      startBtn.addEventListener('click', () => {
-        if (state !== 'menu') return;
-        startOverlay.classList.remove('visible');
-        startOverlay.setAttribute('aria-hidden', 'true');
-        state = 'countdown';
-        countdownEl.style.display = 'flex';
-        let timer = 5;
-        countdownEl.textContent = String(timer);
-        const interval = setInterval(() => {
-          timer -= 1;
-          countdownEl.textContent = timer > 0 ? String(timer) : 'GO!';
-          if (timer <= 0) {
-            clearInterval(interval);
-            setTimeout(() => {
-              countdownEl.style.display = 'none';
-              resetGame();
-              state   = 'playing';
-              focused = true;
-              statusEl.textContent = 'You are in control. Collect crystals and dodge the drones!';
-            }, 600);
-          }
-        }, 1000);
-      });
-
-      playAgainBtn.addEventListener('click', () => {
-        gameOverOverlay.classList.remove('visible');
-        gameOverOverlay.setAttribute('aria-hidden', 'true');
-        state = 'countdown';
-        countdownEl.style.display = 'flex';
-        let timer = 3;
-        countdownEl.textContent = String(timer);
-        const interval = setInterval(() => {
-          timer -= 1;
-          countdownEl.textContent = timer > 0 ? String(timer) : 'GO!';
-          if (timer <= 0) {
-            clearInterval(interval);
-            setTimeout(() => {
-              countdownEl.style.display = 'none';
-              resetGame();
-              state   = 'playing';
-              focused = true;
-            }, 500);
-          }
-        }, 1000);
-      });
-
-      submitBtn.addEventListener('click', () => trySubmitScore());
-      nameInput.addEventListener('keydown', (e) => {
-        if (e.key === 'Enter') { e.preventDefault(); trySubmitScore(); }
-      });
-
-      canvas.addEventListener('click', () => {
-        if (state === 'playing') {
-          focused = true;
-          statusEl.textContent = 'Controls active. Keep drifting through the aurora!';
-          statusEl.classList.remove('alert');
-        }
-      });
-
-      document.addEventListener('click', (e) => {
-        if (!canvas.contains(e.target) && !mobileControls.contains(e.target)) {
-          if (state === 'playing') {
-            focused = false;
-            statusEl.textContent = 'Game paused. Click or tap the stage to regain control.';
-          }
-        }
-      });
-
-      document.addEventListener('keydown', (e) => {
-        const key = e.key.toLowerCase();
-        if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key)) {
-          if (state === 'playing') {
-            focused = true;
-            statusEl.textContent = 'Controls active. Keep drifting through the aurora!';
-          }
-          e.preventDefault();
-          keys[key] = true;
-        }
-        if ((key === ' ' || key === 'space') && state === 'playing') {
-          e.preventDefault();
-          if (unicorn.triggerPulse()) updateHud();
-        }
-      });
-      document.addEventListener('keyup', (e) => {
-        const key = e.key.toLowerCase();
-        if (['arrowup', 'arrowdown', 'arrowleft', 'arrowright', 'w', 'a', 's', 'd'].includes(key)) {
-          keys[key] = false;
-        }
-      });
-
-      function bindControl(button, onDown, onUp) {
-        const start = (e) => { e.preventDefault(); focused = true; onDown(); };
-        const end   = (e) => { e.preventDefault(); onUp(); };
-        button.addEventListener('touchstart',  start, { passive: false });
-        button.addEventListener('touchend',    end,   { passive: false });
-        button.addEventListener('touchcancel', end,   { passive: false });
-        button.addEventListener('mousedown',   start);
-        button.addEventListener('mouseup',     end);
-        button.addEventListener('mouseleave',  end);
+    }
+    if (c.hp <= 0) {
+      // Big reward: points + FULL shields
+      triggerHitStop(0.06);
+      sfx('explosion');
+      game.addScore(500);
+      floatText(c.x, c.y - 40, '+500', '#ffd700', 24);
+      shields = 3;
+      floatText(unicorn.x, unicorn.y - 60, 'SHIELDS RESTORED!', '#44ddff', 20);
+      showBanner('CARRIER DOWN!', '#ffd700');
+      sfx('levelup');
+      game.shake(8, 0.3);
+      if (particles.count < 200) {
+        particles.burst(c.x, c.y, 45, {
+          colors: ['#ffd700', '#ffffff', '#ff8866', '#ff4444'],
+          minSpeed: 120, maxSpeed: 420, lifetime: 1.1,
+        });
       }
+      spawnShardBurst(c.x, c.y);
+      spawnShardBurst(c.x - 40, c.y + 30);
+      meta.carrierKills += 1;
+      saveMeta();
+      carrier = null;
+      return;
+    }
+  }
 
-      const mobileBtns = {
-        up:    mobileControls.querySelector('.btn-up'),
-        down:  mobileControls.querySelector('.btn-down'),
-        left:  mobileControls.querySelector('.btn-left'),
-        right: mobileControls.querySelector('.btn-right'),
-        pulse: mobileControls.querySelector('.btn-pulse'),
-      };
-      bindControl(mobileBtns.up,    () => (keys['arrowup']    = true), () => (keys['arrowup']    = false));
-      bindControl(mobileBtns.down,  () => (keys['arrowdown']  = true), () => (keys['arrowdown']  = false));
-      bindControl(mobileBtns.left,  () => (keys['arrowleft']  = true), () => (keys['arrowleft']  = false));
-      bindControl(mobileBtns.right, () => (keys['arrowright'] = true), () => (keys['arrowright'] = false));
-      bindControl(mobileBtns.pulse,
-        () => { if (state === 'playing' && unicorn.triggerPulse()) updateHud(); },
-        () => {}
-      );
+  // Contact damage
+  const dx = unicorn.x - c.x, dy = unicorn.y - c.y;
+  if (dx * dx + dy * dy < (unicorn.radius + c.radius * 0.8) ** 2) {
+    damagePlayer();
+  }
+}
+function drawCarrier(ctx, time) {
+  const c = carrier;
+  if (!c) return;
+  ctx.save();
+  ctx.translate(c.x, c.y);
+  const swell = c.flash ? 1.08 : 1;
+  ctx.scale(swell, swell);
 
-      window.addEventListener('resize', resize);
-      resize();
+  // Menacing red glow
+  ctx.globalCompositeOperation = 'screen';
+  const ga = c.flash ? 0.8 : (0.4 + 0.15 * Math.sin(time * 3));
+  const glowR = ctx.createRadialGradient(0, 0, 10, 0, 0, 110);
+  glowR.addColorStop(0, 'rgba(255,80,80,' + ga + ')');
+  glowR.addColorStop(1, 'rgba(255,80,80,0)');
+  ctx.fillStyle = glowR;
+  ctx.beginPath();
+  ctx.arc(0, 0, 110, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.globalCompositeOperation = 'source-over';
 
-      // ─── Main loop ───────────────────────────────────────────────
-      function step(timestamp) {
-        const delta = Math.min((timestamp - lastTime) / 1000 || 0, 0.1);
-        lastTime = timestamp;
-        if (state === 'playing') updateGame(delta);
-        render(timestamp);
-        requestAnimationFrame(step);
+  // Hull — big procedural saucer
+  const hull = ctx.createLinearGradient(-80, -30, 80, 40);
+  hull.addColorStop(0, '#ff5060');
+  hull.addColorStop(0.45, '#7a3aa0');
+  hull.addColorStop(1, '#ff44aa');
+  ctx.fillStyle = hull;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 86, 34, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(255,150,150,0.5)';
+  ctx.lineWidth = 2.5;
+  ctx.stroke();
+
+  // Dome
+  const dome = ctx.createLinearGradient(0, -52, 0, 8);
+  dome.addColorStop(0, 'rgba(255,190,200,0.95)');
+  dome.addColorStop(1, 'rgba(200,90,160,0.35)');
+  ctx.fillStyle = dome;
+  ctx.beginPath();
+  ctx.ellipse(0, -22, 42, 30, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Hangar bay (drones come out of here) — glows during wind-up
+  ctx.fillStyle = c.flash ? 'rgba(255,240,180,0.95)' : hexToRgba('#ff7777', 0.6 + 0.2 * Math.sin(time * 5));
+  ctx.beginPath();
+  ctx.ellipse(-48, 10, 20, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  // Running lights
+  for (let i = -2; i <= 2; i++) {
+    ctx.fillStyle = hexToRgba('#ffdd66', 0.5 + 0.4 * Math.sin(time * 6 + i));
+    ctx.beginPath();
+    ctx.arc(i * 30, 22, 4, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Hit flash
+  if (c.hitFlash > 0) {
+    ctx.globalCompositeOperation = 'screen';
+    ctx.fillStyle = 'rgba(255,255,255,' + (c.hitFlash / 0.35) * 0.6 + ')';
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 88, 36, 0, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+  }
+
+  // HP pips
+  for (let i = 0; i < c.maxHp; i++) {
+    ctx.fillStyle = i < c.hp ? '#ff4466' : 'rgba(120,120,140,0.4)';
+    ctx.beginPath();
+    ctx.arc(-20 + i * 20, -56, 6, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+}
+
+const unicorn = new Unicorn();
+
+// ════════════════════════════════════════════════════════════
+//  Spawning + phases
+// ════════════════════════════════════════════════════════════
+function tutorialFactor() {
+  // 1 → full training wheels, 0 → off. Blends out over 30→40s (60→70s in easy mode)
+  const end = meta.easyMode ? 70 : 40;
+  return clamp((end - elapsed) / 10, 0, 1);
+}
+function difficultyNow() {
+  let d = Math.min(2.5, 1 + (elapsed / 60) * 0.3);
+  if (stormMode) d = Math.min(2.5, d * 1.2);
+  return d;
+}
+
+function spawnCrystalWave() {
+  const rows = 1 + Math.floor(Math.random() * 2);
+  const baseY = rand(H * 0.25, H * 0.75);
+  const speed = rand(120, 160) * Math.min(difficultyNow(), 1.8);
+  for (let i = 0; i < rows; i++) {
+    const offsetY = i * 32 - (rows - 1) * 16;
+    crystals.push(new Crystal(W + 60 + i * 36, baseY + offsetY, speed));
+  }
+}
+
+function pickBehaviour() {
+  const r = Math.random();
+  if (ambusherOn && r < 0.18) return 'ambush';
+  if (swooperOn && r < 0.18 + 0.25) return 'swoop';   // familiar:new ≈ 3:1 mix
+  return 'drift';
+}
+
+function queueDroneSpawn(kind, y) {
+  warnings.push({ y, timer: 0.6, kind });              // 0.6s edge telegraph
+}
+function actuallySpawnDrone(kind, y) {
+  const tut = tutorialFactor();
+  const diff = difficultyNow();
+  const af = assistFactor();
+  if (kind === 'swoop') {
+    const amp = rand(90, 140);
+    const baseY = clamp(y, amp + 50, H - amp - 60);
+    const speed = Math.min(290, rand(170, 215) * diff) * af;
+    drones.push(new Drone(W + 80, baseY, speed, { behaviour: 'swoop', amp }));
+  } else if (kind === 'ambush') {
+    drones.push(new Drone(W + 80, clamp(y, 60, H - 70), 220, { behaviour: 'ambush' }));
+  } else {
+    const speed = Math.min(280, rand(130, 190) * diff * (1 - 0.25 * tut)) * af;
+    drones.push(new Drone(W + 120, y, speed, { behaviour: 'drift' }));
+  }
+}
+
+function spawnDrone() {
+  // Tutorial contract: max 2 live threats before t=30
+  if (elapsed < 30 && drones.length >= 2) return;
+  const kind = elapsed < 30 ? 'drift' : pickBehaviour();
+  const y = rand(H * 0.2, H * 0.75);
+  if (kind === 'drift') actuallySpawnDrone('drift', y);
+  else queueDroneSpawn(kind, y);
+}
+
+function spawnShardBurst(x, y) {
+  for (let i = 0; i < 5; i++) {
+    crystals.push(new Crystal(x + rand(-24, 24), y + rand(-18, 18), rand(140, 200)));
+  }
+}
+
+// ── Phase schedule — a qualitative change roughly every 40–50s ──
+const PHASE_DEFS = [
+  { t: 40,  type: 'swooper',  label: 'LEVEL 2 · SWOOPERS!'      },
+  { t: 80,  type: 'belt',     label: 'LEVEL 3 · ASTEROID BELT!' },
+  { t: 120, type: 'ambusher', label: 'LEVEL 4 · AMBUSHERS!'     },
+  { t: 160, type: 'carrier',  label: 'LEVEL 5 · DRONE CARRIER!' },
+  { t: 205, type: 'storm',    label: 'LEVEL 6 · NEBULA STORM!'  },
+];
+const CYCLE_EVENTS = ['belt', 'carrier', 'storm'];
+
+function announcePhase(label) {
+  level += 1;
+  showBanner(label, '#66ffff');
+  sfx('levelup');
+  game.shake(4, 0.2);
+  if (particles.count < 200) {
+    particles.burst(W / 2, H / 2, 30, {
+      colors: ['#66ffff', '#ff88ff', '#ffffff'],
+      spread: Math.PI * 2, maxSpeed: 400, lifetime: 0.9, gravity: 0,
+    });
+  }
+  // Grace: meet the new thing in relative calm
+  spawnTimers.drone = Math.max(spawnTimers.drone, 2.4);
+}
+
+function startStorm(dur) {
+  stormTimer = dur;
+  stormFog.length = 0;
+  for (let i = 0; i < 5; i++) {
+    stormFog.push({
+      x: rand(0, W * 1.6), y: rand(H * 0.1, H * 0.9),
+      r: rand(150, 230), vx: -rand(28, 48), seed: rand(0, 6),
+    });
+  }
+}
+
+function triggerPhase(type, label) {
+  announcePhase(label);
+  if (type === 'swooper') {
+    swooperOn = true;
+    queueDroneSpawn('swoop', rand(H * 0.3, H * 0.7));   // first one arrives solo
+  } else if (type === 'ambusher') {
+    ambusherOn = true;
+    queueDroneSpawn('ambush', rand(H * 0.3, H * 0.7));
+  } else if (type === 'belt') {
+    beltTimer = 20;
+    asteroidT = 0.4;
+  } else if (type === 'carrier') {
+    if (!carrier) spawnCarrier();
+  } else if (type === 'storm') {
+    startStorm(22);
+  }
+}
+
+function updatePhases() {
+  if (phaseIdx < PHASE_DEFS.length) {
+    const def = PHASE_DEFS[phaseIdx];
+    if (elapsed >= def.t) {
+      phaseIdx += 1;
+      // Storm-phase is redundant if Storm Mode is already on — swap in a belt
+      if (def.type === 'storm' && stormMode) triggerPhase('belt', 'LEVEL 6 · ASTEROID BELT!');
+      else triggerPhase(def.type, def.label);
+      if (phaseIdx >= PHASE_DEFS.length) cycleT = def.t + 45;
+    }
+  } else if (elapsed >= cycleT) {
+    cycleT += 45;
+    let type = CYCLE_EVENTS[cycleIdx % CYCLE_EVENTS.length];
+    cycleIdx += 1;
+    if (type === 'carrier' && carrier) { type = CYCLE_EVENTS[cycleIdx % CYCLE_EVENTS.length]; cycleIdx += 1; }
+    if (type === 'storm' && stormMode) type = 'belt';
+    const labels = { belt: 'ASTEROID BELT!', carrier: 'DRONE CARRIER!', storm: 'NEBULA STORM!' };
+    triggerPhase(type, 'LEVEL ' + (level + 1) + ' · ' + labels[type]);
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  Damage / death
+// ════════════════════════════════════════════════════════════
+function damagePlayer() {
+  if (unicorn.invincible > 0 || dying) return;
+  streak = 0;
+  shields -= 1;
+  unicorn.invincible = 2.2;
+  unicorn.flashTimer = 0.4;
+  if (shields <= 0) { killPlayer(); return; }
+  triggerHitStop(0.04);
+  sfx('hit');
+  game.shake(5, 0.2);
+  if (particles.count < 200) {
+    particles.burst(unicorn.x, unicorn.y, 18, {
+      colors: ['#ff4488', '#ff8844', '#ff88ff', '#ffffff'],
+      minSpeed: 80, maxSpeed: 280, minSize: 2, maxSize: 7,
+      lifetime: 0.6, gravity: 60,
+    });
+  }
+}
+
+function killPlayer() {
+  if (dying) return;
+  dying = true;
+  deathTimer = 0.9;
+  triggerHitStop(0.08);
+  sfx('explosion');
+  game.shake(8, 0.3);
+  particles.burst(unicorn.x, unicorn.y, 50, {
+    colors: ['#ffffff', '#ff4444', '#ffaa00', '#ff88ff'],
+    minSpeed: 120, maxSpeed: 450, lifetime: 1.2,
+  });
+}
+
+function finalizeRun() {
+  const score = game.getScore();
+  recordDeath(elapsed);
+  meta.totalRuns += 1;
+  meta.totalScore += score;
+  meta.improveStreak = score > meta.lastScore ? meta.improveStreak + 1 : 0;
+  meta.lastScore = score;
+  meta.bestScore = Math.max(meta.bestScore, score);
+  meta.bestStreak = Math.max(meta.bestStreak, bestStreak);
+  meta.bestDistance = Math.max(meta.bestDistance, distance);
+  checkUnlocks();
+  saveMeta();
+  updateGameOverExtras();
+  sfx('gameover');
+  game.endGame();
+}
+
+// ── Game-over overlay extras (injected, overlay structure untouched) ──
+function updateGameOverExtras() {
+  const modal = document.querySelector('#gij-gameover-overlay .gij-modal');
+  if (!modal) return;
+  let line = document.getElementById('aua-meta-line');
+  if (!line) {
+    line = document.createElement('p');
+    line.id = 'aua-meta-line';
+    line.style.cssText = 'margin:10px 0 4px;font-size:14px;line-height:1.5;opacity:0.95;';
+    const restartBtn = document.getElementById('gij-restart-btn');
+    modal.insertBefore(line, restartBtn);
+  }
+  const stats = [
+    'Mission #' + meta.totalRuns,
+    'Best streak ever: ' + meta.bestStreak,
+    'Furthest flight: ' + (meta.bestDistance / 100).toFixed(1) + ' km',
+    'Carriers destroyed: ' + meta.carrierKills,
+  ];
+  const stat = meta.totalRuns > 0 ? stats[meta.totalRuns % stats.length] : '';
+  line.innerHTML = nextGoalText(false) + (stat ? '<br><span style="opacity:0.7">' + stat + '</span>' : '');
+
+  // Palette cycle button (once a second palette exists)
+  let palBtn = document.getElementById('aua-palette-btn');
+  if (unlockedPalettes().length > 1) {
+    if (!palBtn) {
+      palBtn = document.createElement('button');
+      palBtn.id = 'aua-palette-btn';
+      palBtn.className = 'gij-btn';
+      palBtn.style.cssText = 'margin-top:8px;font-size:13px;';
+      palBtn.addEventListener('click', cyclePalette);
+      modal.appendChild(palBtn);
+    }
+    palBtn.textContent = 'Mane: ' + currentPalette().name + ' ▸';
+  }
+
+  // Storm Mode toggle (unlockable hard mode)
+  let stormBtn = document.getElementById('aua-storm-btn');
+  if (hasUnlock('mode-storm')) {
+    if (!stormBtn) {
+      stormBtn = document.createElement('button');
+      stormBtn.id = 'aua-storm-btn';
+      stormBtn.className = 'gij-btn';
+      stormBtn.style.cssText = 'margin-top:8px;margin-left:6px;font-size:13px;';
+      stormBtn.addEventListener('click', () => {
+        meta.stormOn = !meta.stormOn;
+        saveMeta();
+        sfx('click');
+        updateGameOverExtras();
+      });
+      modal.appendChild(stormBtn);
+    }
+    stormBtn.textContent = 'Storm Mode: ' + (meta.stormOn ? 'ON ⛈️' : 'OFF');
+  }
+
+  // "Try Easy?" after 2 consecutive fast deaths (or while easy mode active)
+  let easyBtn = document.getElementById('aua-easy-btn');
+  if (fastDeathCount() >= 2 || meta.easyMode) {
+    if (!easyBtn) {
+      easyBtn = document.createElement('button');
+      easyBtn.id = 'aua-easy-btn';
+      easyBtn.className = 'gij-btn';
+      easyBtn.style.cssText = 'margin-top:8px;margin-left:6px;font-size:13px;';
+      easyBtn.addEventListener('click', () => {
+        meta.easyMode = !meta.easyMode;
+        saveMeta();
+        sfx('click');
+        updateGameOverExtras();
+      });
+      modal.appendChild(easyBtn);
+    }
+    easyBtn.textContent = meta.easyMode ? 'Back to Normal' : 'Try Easy Mode?';
+  } else if (easyBtn) {
+    easyBtn.remove();
+  }
+}
+
+function updateHud() {
+  streakEl.textContent   = String(streak);
+  shieldsEl.textContent  = String(shields);
+  pulseEl.textContent    = unicorn.pulseCooldown <= 0 ? 'Ready' : unicorn.pulseCooldown.toFixed(1) + 's';
+  distanceEl.textContent = (distance / 100).toFixed(1);
+  goalEl.textContent     = nextGoalText(true);
+}
+
+// ════════════════════════════════════════════════════════════
+//  Restart
+// ════════════════════════════════════════════════════════════
+function reset() {
+  crystals.length  = 0;
+  drones.length    = 0;
+  asteroids.length = 0;
+  floaters.length  = 0;
+  warnings.length  = 0;
+  stormFog.length  = 0;
+  particles.clear();
+  spawnTimers.crystal = 2.0;
+  spawnTimers.drone   = 3.5;
+  spawnTimers.shard   = 6;
+  elapsed    = 0;
+  distance   = 0;
+  streak     = 0;
+  bestStreak = 0;
+  shields    = 3;
+  pulseHeld  = false;
+  hitStop    = 0;
+  dying      = false;
+  deathTimer = 0;
+  level      = 1;
+  phaseIdx   = 0;
+  cycleT     = 0;
+  cycleIdx   = 0;
+  swooperOn  = false;
+  ambusherOn = false;
+  beltTimer  = 0;
+  stormTimer = 0;
+  asteroidT  = 0;
+  carrier    = null;
+  bannerLife = 0;
+  stormMode  = hasUnlock('mode-storm') && meta.stormOn;
+  if (stormMode) startStorm(0.01); // spawns fog; stormMode keeps it active
+  unicorn.resetPosition();
+  // First reward within 5s: a welcome trio of crystals just ahead of Astra
+  for (let i = 0; i < 3; i++) {
+    crystals.push(new Crystal(unicorn.x + 200 + i * 70, unicorn.y + (i - 1) * 30, 130));
+  }
+  updateHud();
+}
+
+game.onRestart(reset);
+
+// ════════════════════════════════════════════════════════════
+//  Update (fixed 60 Hz, dt = 1/60 s)
+// ════════════════════════════════════════════════════════════
+game.onUpdate((dt) => {
+  if (game.state !== 'playing') return;
+
+  // Death spectacle plays out before the overlay
+  if (dying) {
+    deathTimer -= dt;
+    unicorn.deathSpin += dt * 7;
+    particles.update(dt);
+    for (let i = floaters.length - 1; i >= 0; i--) {
+      const f = floaters[i];
+      f.y -= 60 * dt; f.life -= dt;
+      if (f.life <= 0) floaters.splice(i, 1);
+    }
+    if (deathTimer <= 0) finalizeRun();
+    return;
+  }
+
+  // Hit-stop: freeze the world, keep rendering
+  if (hitStop > 0) { hitStop -= dt; return; }
+
+  elapsed  += dt;
+  distance += dt * (150 + Math.min(elapsed, 240) * 8);
+  const difficulty = difficultyNow();
+  const tut = tutorialFactor();
+  const af  = assistFactor();
+
+  updatePhases();
+
+  // Starlight pulse — edge-triggered so holding Space fires once
+  const pulsePressed = input.isPressed('space');
+  if (pulsePressed && !pulseHeld) unicorn.triggerPulse();
+  pulseHeld = pulsePressed;
+
+  // Parallax star drift
+  for (const star of starLayers[0]) {
+    star.x -= star.speed * dt;
+    if (star.x < -10) star.x = W + 10;
+  }
+  for (const star of starLayers[1]) {
+    star.x -= star.speed * dt;
+    if (star.x < -40) star.x = W + 40;
+  }
+
+  // Banner countdown
+  if (bannerLife > 0) bannerLife -= dt;
+
+  // Spawning
+  spawnTimers.crystal -= dt;
+  spawnTimers.drone   -= dt;
+  spawnTimers.shard   -= dt;
+  if (spawnTimers.crystal <= 0) {
+    spawnCrystalWave();
+    let iv = rand(0.7, 1.4) / Math.min(difficulty, 2.0);
+    iv *= (1 - 0.25 * tut);                      // generous pickups while learning
+    if (stormActive()) iv *= 0.7;                // storms rain crystals
+    spawnTimers.crystal = iv;
+  }
+  if (spawnTimers.drone <= 0) {
+    spawnDrone();
+    spawnTimers.drone = (rand(2.2, 3.4) / Math.min(difficulty, 2.2)) * (1 + 0.8 * tut) / af;
+  }
+  if (spawnTimers.shard <= 0) {
+    spawnShardBurst(W + 120, rand(H * 0.2, H * 0.8));
+    spawnTimers.shard = rand(6, 9);
+  }
+
+  // Telegraphed edge spawns (swoopers / ambushers)
+  for (let i = warnings.length - 1; i >= 0; i--) {
+    const wn = warnings[i];
+    wn.timer -= dt;
+    if (wn.timer <= 0) {
+      actuallySpawnDrone(wn.kind, wn.y);
+      warnings.splice(i, 1);
+    }
+  }
+
+  // Asteroid belt
+  if (beltTimer > 0) {
+    beltTimer -= dt;
+    asteroidT -= dt;
+    if (asteroidT <= 0 && asteroids.length < 9) {
+      asteroids.push(new Asteroid());
+      asteroidT = rand(0.9, 1.5);
+    }
+  }
+  // Nebula storm
+  if (stormTimer > 0) stormTimer -= dt;
+  if (stormActive()) {
+    for (const fog of stormFog) {
+      fog.x += fog.vx * dt;        // vx is negative → drifts left, wraps at the left edge
+      if (fog.x < -fog.r - 40) {
+        fog.x = W + fog.r + rand(0, 120);
+        fog.y = rand(H * 0.1, H * 0.9);
       }
-      requestAnimationFrame(step);
-    })();
-  </script>
+    }
+  }
+
+  unicorn.update(dt);
+  updateCarrier(dt);
+
+  // Crystal collisions — generous pickup circle
+  let collectedThisFrame = false;
+  for (let i = crystals.length - 1; i >= 0; i--) {
+    const c = crystals[i];
+    c.update(dt);
+    if (c.x < -80) { crystals.splice(i, 1); continue; }
+    const dx = unicorn.x - c.x;
+    const dy = unicorn.y - c.y;
+    if (dx * dx + dy * dy < (unicorn.collectRadius + c.radius) ** 2) {
+      crystals.splice(i, 1);
+      streak += 1;
+      bestStreak = Math.max(bestStreak, streak);
+      meta.totalCrystals += 1;
+      let bonus = 40 + streak * 6;
+      if (stormActive()) bonus *= 2;             // storm: double crystals
+      game.addScore(bonus);
+      floatText(c.x, c.y - 10, '+' + bonus, stormActive() ? '#ffd700' : '#aaffff', 16);
+      unicorn.rechargePulse(CRYSTAL_RECHARGE);   // collection feeds the panic button
+      if (!collectedThisFrame) { sfx('collect'); collectedThisFrame = true; }
+      if (particles.count < 200) {
+        particles.burst(c.x, c.y, 12, {
+          colors: ['#ffe066', '#ffffff', '#66ffff', '#ff88ff'],
+          minSpeed: 50, maxSpeed: 140,
+          minSize: 2, maxSize: 5,
+          lifetime: 0.6, gravity: -30,
+        });
+      }
+      // Combo milestone every 5
+      if (streak > 0 && streak % 5 === 0) {
+        sfx('combo');
+        floatText(unicorn.x, unicorn.y - 60, 'COMBO x' + streak + '!', '#ffd700', 22);
+        if (particles.count < 200) {
+          particles.burst(unicorn.x, unicorn.y - 30, 12, {
+            colors: ['#ffd700', '#ffee88', '#ffffff'], gravity: -50, lifetime: 0.8,
+          });
+        }
+      }
+      checkUnlocks();
+    }
+  }
+
+  // Drone collisions — forgiving 30%-width circle hitbox on the unicorn
+  let convertedThisFrame = false;
+  for (let i = drones.length - 1; i >= 0; i--) {
+    const d = drones[i];
+    d.update(dt);
+    if (d.x < -140 || d.x > W + 300 || d.y < -160 || d.y > H + 160) { drones.splice(i, 1); continue; }
+    const dx = unicorn.x - d.x;
+    const dy = unicorn.y - d.y;
+    const distSq = dx * dx + dy * dy;
+    d.minDistSq = Math.min(d.minDistSq, distSq);
+
+    // Pulse converts nearby drones into harmony shards
+    if (unicorn.pulseActive > 0 && distSq < PULSE_RADIUS * PULSE_RADIUS) {
+      drones.splice(i, 1);
+      spawnShardBurst(d.x, d.y);
+      const pts = d.behaviour === 'ambush' ? 160 : (d.behaviour === 'swoop' ? 100 : 80);
+      game.addScore(pts);
+      floatText(d.x, d.y - 20, '+' + pts, '#ffdd44', 18);
+      streak += 2;
+      bestStreak = Math.max(bestStreak, streak);
+      game.shake(4, 0.12);
+      triggerHitStop(0.03);
+      if (!convertedThisFrame) { sfx('explosion'); convertedThisFrame = true; }
+      if (particles.count < 200) {
+        particles.burst(d.x, d.y, 20, {
+          colors: ['#ffffff', '#ffdd44', '#66ffff'],
+          minSpeed: 80, maxSpeed: 200,
+          minSize: 3, maxSize: 6,
+          lifetime: 0.9, gravity: -60,
+        });
+      }
+      continue;
+    }
+
+    // Near-miss: drone passed close but didn't hit
+    if (!d.passed && d.x < unicorn.x - 60) {
+      d.passed = true;
+      const nearR = unicorn.radius + d.radius + 26;
+      if (d.minDistSq > (unicorn.radius + d.radius) ** 2 && d.minDistSq < nearR * nearR) {
+        floatText(unicorn.x + 30, unicorn.y - 40, 'Close!', '#ffffff', 13);
+        sfx('click');
+        if (particles.count < 200) {
+          particles.burst(unicorn.x + 20, unicorn.y, 5, {
+            colors: ['#ffffff'], minSpeed: 100, maxSpeed: 180, lifetime: 0.3, gravity: 0,
+          });
+        }
+      }
+    }
+
+    if (d.materialize <= 0 && distSq < (unicorn.radius + d.radius) ** 2 && unicorn.invincible <= 0) {
+      drones.splice(i, 1);
+      damagePlayer();
+      if (dying) { updateHud(); return; }
+    }
+  }
+
+  // Asteroids: terrain — hurt the player AND smash drones
+  let rockBoomThisFrame = false;
+  for (let i = asteroids.length - 1; i >= 0; i--) {
+    const a = asteroids[i];
+    a.update(dt);
+    if (a.x < -a.radius - 60) { asteroids.splice(i, 1); continue; }
+
+    // Pulse shatters SMALL rocks into shards (big ones are immune — weave!)
+    if (unicorn.pulseActive > 0 && !a.big &&
+        GameUtils.distance(unicorn.x, unicorn.y, a.x, a.y) < PULSE_RADIUS + a.radius) {
+      asteroids.splice(i, 1);
+      game.addScore(60);
+      floatText(a.x, a.y, '+60', '#ffcc88', 16);
+      spawnShardBurst(a.x, a.y);
+      if (!rockBoomThisFrame) { sfx('explosion'); rockBoomThisFrame = true; }
+      if (particles.count < 200) {
+        particles.burst(a.x, a.y, 16, {
+          colors: ['#c8a080', '#8a6a52', '#ffffff'], minSpeed: 80, maxSpeed: 240, lifetime: 0.7,
+        });
+      }
+      continue;
+    }
+
+    // Rocks smash drones too — the belt is everyone's problem
+    for (let j = drones.length - 1; j >= 0; j--) {
+      const d = drones[j];
+      if (GameUtils.distance(a.x, a.y, d.x, d.y) < a.radius + d.radius * 0.7) {
+        drones.splice(j, 1);
+        game.addScore(20);
+        floatText(d.x, d.y, '+20', '#c8a080', 14);
+        if (!rockBoomThisFrame) { sfx('explosion'); rockBoomThisFrame = true; }
+        if (particles.count < 200) {
+          particles.burst(d.x, d.y, 14, {
+            colors: ['#66ffff', '#c8a080', '#ffffff'], minSpeed: 60, maxSpeed: 220, lifetime: 0.6,
+          });
+        }
+      }
+    }
+
+    const dx = unicorn.x - a.x, dy = unicorn.y - a.y;
+    if (dx * dx + dy * dy < (unicorn.radius + a.radius * 0.85) ** 2) {
+      damagePlayer();
+      if (dying) { updateHud(); return; }
+    }
+  }
+
+  // Floating text
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i];
+    f.y -= 60 * dt;
+    f.life -= dt;
+    if (f.life <= 0) floaters.splice(i, 1);
+  }
+
+  particles.update(dt);
+  updateHud();
+});
+
+// ════════════════════════════════════════════════════════════
+//  Render
+// ════════════════════════════════════════════════════════════
+function drawNebula(ctx, x, y, radius, inner, outer, rotation) {
+  ctx.save();
+  ctx.translate(x, y);
+  ctx.rotate(rotation);
+  const gradient = ctx.createRadialGradient(0, 0, radius * 0.15, 0, 0, radius);
+  gradient.addColorStop(0,   hexToRgba(inner, 0.55));
+  gradient.addColorStop(0.4, hexToRgba(outer, 0.22));
+  gradient.addColorStop(1,   'rgba(0,0,0,0)');
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.ellipse(0, 0, radius, radius * 0.55, 0.3, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+function drawPlanet(ctx, x, y, radius, inner, outer, hasAtmo, hasRing) {
+  // Atmosphere halo
+  if (hasAtmo) {
+    const atmo = ctx.createRadialGradient(x, y, radius * 0.8, x, y, radius * 1.5);
+    atmo.addColorStop(0, hexToRgba(inner, 0.15));
+    atmo.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = atmo;
+    ctx.beginPath();
+    ctx.arc(x, y, radius * 1.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Planet body
+  const gradient = ctx.createRadialGradient(x - radius * 0.4, y - radius * 0.4, radius * 0.2, x, y, radius);
+  gradient.addColorStop(0, hexToRgba(inner, 0.95));
+  gradient.addColorStop(1, hexToRgba(outer, 0.85));
+  ctx.fillStyle = gradient;
+  ctx.beginPath();
+  ctx.arc(x, y, radius, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.strokeStyle = hexToRgba('#ffffff', 0.22);
+  ctx.lineWidth = 2;
+  ctx.stroke();
+
+  // Saturn ring
+  if (hasRing) {
+    ctx.save();
+    ctx.translate(x, y);
+    ctx.strokeStyle = hexToRgba(outer, 0.55);
+    ctx.lineWidth = 7;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, radius * 1.65, radius * 0.38, -0.35, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.strokeStyle = hexToRgba('#ffffff', 0.12);
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, radius * 1.82, radius * 0.42, -0.35, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawBackground(ctx, time) {
+  // Base gradient — shifts colder and darker during storms
+  const storm = stormActive();
+  const gradient = ctx.createLinearGradient(0, 0, 0, H);
+  if (storm) {
+    gradient.addColorStop(0,   '#0a0620');
+    gradient.addColorStop(0.45,'#1d0f42');
+    gradient.addColorStop(1,   '#12081f');
+  } else {
+    gradient.addColorStop(0,   '#07091e');
+    gradient.addColorStop(0.45,'#13123a');
+    gradient.addColorStop(1,   '#1a0e32');
+  }
+  ctx.fillStyle = gradient;
+  ctx.fillRect(0, 0, W, H);
+
+  // Nebulae — 3 patches
+  drawNebula(ctx, W * 0.32, H * 0.32, 280, '#5b1fd3', '#d08dff',  time * 0.08);
+  drawNebula(ctx, W * 0.78, H * 0.42, 320, '#1fb3ff', '#74ffd9', -time * 0.05);
+  drawNebula(ctx, W * 0.55, H * 0.72, 220, '#cc4400', '#ffaa55',  time * 0.06); // warm orange
+
+  // Ultra-far star layer (barely moves)
+  for (const star of starLayers[0]) {
+    const tw = 0.7 + 0.3 * Math.sin(time * star.twinkle + star.phase);
+    ctx.fillStyle = `hsla(${star.hue}, 80%, 80%, ${0.25 + tw * 0.2})`;
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, star.radius, 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Mid star layer (main parallax)
+  for (const star of starLayers[1]) {
+    const tw = 0.6 + 0.4 * Math.sin(time * star.twinkle + star.phase);
+    ctx.fillStyle = `hsla(${star.hue}, 90%, ${70 + tw * 20}%, ${0.45 + tw * 0.3})`;
+    ctx.beginPath();
+    ctx.arc(star.x, star.y, star.radius * (0.9 + tw * 0.4), 0, Math.PI * 2);
+    ctx.fill();
+  }
+
+  // Planets with atmosphere glow
+  drawPlanet(ctx, W * 0.62, H * 0.22, 86, '#2ef6ff', '#784fff', true);
+  drawPlanet(ctx, W * 0.15, H * 0.16, 64, '#ff8cf9', '#ffcf87', false, true);
+
+  // Nebula floor strip
+  const floorGrad = ctx.createLinearGradient(0, H * 0.65, 0, H);
+  floorGrad.addColorStop(0,   'rgba(77, 39, 115, 0.0)');
+  floorGrad.addColorStop(0.4, 'rgba(77, 39, 115, 0.3)');
+  floorGrad.addColorStop(1,   'rgba(42, 16, 68,  0.88)');
+  ctx.fillStyle = floorGrad;
+  ctx.beginPath();
+  ctx.moveTo(0, H * 0.68);
+  ctx.quadraticCurveTo(W * 0.25, H * 0.72 + Math.sin(time * 0.6) * 8, W * 0.5, H * 0.75 + Math.cos(time * 0.5) * 8);
+  ctx.quadraticCurveTo(W * 0.75, H * 0.78 + Math.sin(time * 0.7) * 10, W, H * 0.74);
+  ctx.lineTo(W, H);
+  ctx.lineTo(0, H);
+  ctx.closePath();
+  ctx.fill();
+
+  // Horizon dashes
+  ctx.strokeStyle = hexToRgba('#70f9ff', 0.20);
+  ctx.lineWidth = 2;
+  ctx.setLineDash([12, 18]);
+  ctx.beginPath();
+  ctx.moveTo(0, H * 0.8);
+  ctx.quadraticCurveTo(W * 0.3, H * 0.78 + Math.sin(time) * 4, W, H * 0.82);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  // Corner vignette — draws focus to play area
+  const vig = ctx.createRadialGradient(W / 2, H / 2, H * 0.3, W / 2, H / 2, W * 0.75);
+  vig.addColorStop(0, 'rgba(0,0,0,0)');
+  vig.addColorStop(1, 'rgba(0,0,0,0.4)');
+  ctx.fillStyle = vig;
+  ctx.fillRect(0, 0, W, H);
+}
+
+// In-canvas shield pips (part of the game's visual identity)
+function drawShieldIcons(ctx) {
+  const startX = 18;
+  const startY = H - 24;
+  for (let i = 0; i < 3; i++) {
+    const cx = startX + i * 22;
+    const cy = startY;
+    const active = i < shields;
+    ctx.save();
+    ctx.translate(cx, cy);
+    if (active) {
+      ctx.shadowColor = '#44ddff';
+      ctx.shadowBlur  = 10;
+    }
+    ctx.fillStyle = active ? '#44ddff' : 'rgba(100,100,120,0.4)';
+    // Pentagon shield shape
+    ctx.beginPath();
+    ctx.moveTo(0, -9);
+    ctx.lineTo(8, -5);
+    ctx.lineTo(8, 3);
+    ctx.lineTo(0, 9);
+    ctx.lineTo(-8, 3);
+    ctx.lineTo(-8, -5);
+    ctx.closePath();
+    ctx.fill();
+    ctx.shadowBlur = 0;
+    ctx.restore();
+  }
+}
+
+// Edge-spawn warning markers (0.6s telegraph)
+function drawWarnings(ctx, time) {
+  for (const wn of warnings) {
+    const blink = Math.sin(time * 18) > 0;
+    ctx.save();
+    ctx.globalAlpha = blink ? 1 : 0.45;
+    ctx.fillStyle = wn.kind === 'ambush' ? '#ff5566' : '#ffaa33';
+    ctx.shadowColor = ctx.fillStyle;
+    ctx.shadowBlur = 12;
+    ctx.font = 'bold 26px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText('!', W - 22, clamp(wn.y, 40, H - 30) + 9);
+    ctx.strokeStyle = ctx.fillStyle;
+    ctx.lineWidth = 2.5;
+    ctx.beginPath();
+    ctx.arc(W - 22, clamp(wn.y, 40, H - 30), 18, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// Nebula storm fog — visibility pockets
+function drawStormFog(ctx) {
+  if (!stormActive()) return;
+  const fadeOut = (!stormMode && stormTimer < 1.5) ? stormTimer / 1.5 : 1;
+  for (const fog of stormFog) {
+    const g = ctx.createRadialGradient(fog.x, fog.y, fog.r * 0.15, fog.x, fog.y, fog.r);
+    g.addColorStop(0, 'rgba(38, 18, 70, ' + 0.62 * fadeOut + ')');
+    g.addColorStop(0.6, 'rgba(52, 24, 92, ' + 0.42 * fadeOut + ')');
+    g.addColorStop(1, 'rgba(38, 18, 70, 0)');
+    ctx.fillStyle = g;
+    ctx.beginPath();
+    ctx.arc(fog.x, fog.y, fog.r, 0, Math.PI * 2);
+    ctx.fill();
+  }
+}
+
+function drawFloaters(ctx) {
+  for (const f of floaters) {
+    ctx.globalAlpha = f.life / f.maxLife;
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold ' + f.size + 'px monospace';
+    ctx.textAlign = 'center';
+    ctx.shadowColor = 'rgba(0,0,0,0.7)';
+    ctx.shadowBlur = 4;
+    ctx.fillText(f.text, f.x, f.y);
+    ctx.shadowBlur = 0;
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawBanner(ctx) {
+  if (bannerLife <= 0) return;
+  const a = bannerLife > 2.1 ? (2.5 - bannerLife) / 0.4 : Math.min(1, bannerLife / 0.6);
+  ctx.save();
+  ctx.globalAlpha = clamp(a, 0, 1);
+  ctx.fillStyle = bannerColor;
+  ctx.font = 'bold 34px monospace';
+  ctx.textAlign = 'center';
+  ctx.shadowColor = bannerColor;
+  ctx.shadowBlur = 18;
+  ctx.fillText(bannerText, W / 2, 84);
+  ctx.restore();
+}
+
+game.onRender((ctx) => {
+  const time = performance.now() / 1000;
+
+  drawBackground(ctx, time);
+  crystals.forEach((c) => c.draw(ctx));
+  asteroids.forEach((a) => a.draw(ctx));
+  drones.forEach((d) => d.draw(ctx, time));
+  drawCarrier(ctx, time);
+  particles.draw(ctx);
+  unicorn.draw(ctx, time);
+  drawStormFog(ctx);
+  drawWarnings(ctx, time);
+  drawFloaters(ctx);
+  drawBanner(ctx);
+
+  if (game.state === 'playing') {
+    drawShieldIcons(ctx);
+  }
+});
+
+reset();
+updateGameOverExtras();
+</script>
 </body>
 </html>

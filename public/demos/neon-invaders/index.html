@@ -9,6 +9,14 @@
     :root { --neon: #39ff14; --laser: #ff2d95; --ship: #33aaff; }
     #gij-stage { background: #0a0f1c; }
     canvas { background: radial-gradient(1200px 600px at 50% -200px, #1a2c57 0%, #0a0f1c 60%); }
+    .ni-meta-btn {
+      background: #16223f; color: #9fd4ff; border: 1px solid #33aaff55;
+      border-radius: 8px; padding: 6px 12px; margin: 4px; font-size: 13px;
+      cursor: pointer; font-family: inherit;
+    }
+    .ni-meta-btn:hover { background: #1e2f57; }
+    #ni-next-goal { color: #ffd24a; font-size: 14px; margin: 8px 0 2px; }
+    #ni-stat-line { color: #9fd4ff; font-size: 13px; margin: 2px 0; }
   </style>
 </head>
 <body>
@@ -37,7 +45,10 @@
         <span id="gij-final-score">Score: 0</span>
         <span id="gij-final-hs">Best: 0</span>
       </div>
+      <p id="ni-stat-line"></p>
+      <p id="ni-next-goal"></p>
       <button id="gij-restart-btn" class="gij-btn gij-btn-primary">Deploy Again</button>
+      <div id="ni-meta-row"></div>
     </div>
   </div>
 
@@ -47,6 +58,7 @@
       <div class="gij-badge">🏆 <strong id="gij-highscore">0</strong></div>
       <div class="gij-badge">❤️ <strong id="lives-disp">3</strong></div>
       <div class="gij-badge">🌊 <strong id="wave-disp">1</strong></div>
+      <div class="gij-badge">★ <strong id="goal-disp"></strong></div>
     </div>
     <canvas id="gij-canvas"></canvas>
     <div id="gij-controls"></div>
@@ -56,21 +68,25 @@
 
 <script src="/game-framework/game-engine.js"></script>
 <script src="/game-framework/game-utils.js"></script>
+<script src="/game-framework/game-audio.js"></script>
 <script>
 const GAME = {
   slug:  'neon-invaders',
   title: 'Neon Invaders',
-  description: 'Blast through waves of neon invaders in this retro arcade shooter!',
+  description: 'Blast the fleet, block bolts with your energy shield, and unleash the OVERDRIVE beam!',
   instructions: [
     '<strong>← → / A D:</strong> Move your ship',
     '<strong>Space / Fire:</strong> Shoot',
-    '<strong>Goal:</strong> Clear all invaders before they reach the bottom!',
-    '<strong>Tip:</strong> They speed up each wave — don\'t let them get past you!',
+    '<strong>↓ / S (hold):</strong> Energy shield — blocks enemy bolts but slows you down',
+    '<strong>OVERDRIVE:</strong> Every blocked bolt charges the meter. Full meter = a piercing beam that cuts a whole column!',
+    '<strong>Divers</strong> flash before they swoop — shoot them for weapon drops. Catch the drops!',
+    '<strong>Goal:</strong> Clear waves, hunt the Mothership, don\'t let the fleet reach your base.',
   ],
   controls: [
-    { label: '◀', action: 'left'  },
+    { label: '◀',  action: 'left'  },
+    { label: '🛡', action: 'down' },
     { label: '🔥', action: 'fire', cls: 'gij-ctrl-fire' },
-    { label: '▶', action: 'right' },
+    { label: '▶',  action: 'right' },
   ],
   width: 800, height: 600,
 };
@@ -81,6 +97,11 @@ const input  = new InputManager();
 const fx     = new ParticleSystem();
 
 const W = game.W, H = game.H;
+
+// GameAudio init on start/restart gestures (autoplay-safe; module also self-inits)
+document.getElementById('gij-start-btn')?.addEventListener('click', () => { if (typeof GameAudio !== 'undefined') GameAudio.init(); }, { once: true });
+document.getElementById('gij-restart-btn')?.addEventListener('click', () => { if (typeof GameAudio !== 'undefined') GameAudio.init(); });
+function sfx(name) { if (typeof GameAudio !== 'undefined') GameAudio.play(name); }
 
 // ── Sprite loading (Kenney Space Shooter Redux, CC0) ──────────
 const assets = new AssetLoader();
@@ -97,147 +118,642 @@ assets.load({
   laserRed:     '/assets/kenney/space/laserRed01.png',
   ufo:          '/assets/kenney/space/ufoRed.png',
 }, {
-  playerShip: 0.5,   // scale to ~55×42px
+  playerShip: 0.5,
   enemyBlack1: 0.5, enemyBlue2: 0.5, enemyGreen3: 0.5, enemyRed1: 0.5,
   laserBlue: 1.0, laserRed: 1.0,
-  ufo: 0.45,
+  ufo: 0.6,
 }).then(() => { spritesReady = true; });
 
-// ── Game state ─────────────────────────────────────────────
-let lives, wave, fleet, lasers;
-let fleetDir, fleetStepTimer, fleetStepInterval;
-let shootCooldown;
+// ── Meta-progression (localStorage, graceful degradation) ────
+const META_KEY = 'gij-meta:neon-invaders';
+function defaultMeta() {
+  return {
+    v: 1, totalRuns: 0, totalScore: 0, bestWaveCleared: 0, mothershipKills: 0,
+    fastDeaths: 0, easyMode: false, chaosOn: false, chaosBest: 0,
+    unlocks: {}, equipped: { tint: 'blue' },
+  };
+}
+function loadMeta() {
+  try {
+    const m = JSON.parse(localStorage.getItem(META_KEY));
+    return (m && m.v === 1) ? Object.assign(defaultMeta(), m) : defaultMeta();
+  } catch (e) { return defaultMeta(); }
+}
+function saveMeta() { try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {} }
+let meta = loadMeta();
 
-// Player dimensions tuned to match sprite size; hitbox = 30% of visual width (shmup standard)
+const TINTS = {
+  blue:    { label: 'Ion Blue',   filter: 'none',                              glow: '#33aaff', fill: '#33aaff' },
+  magenta: { label: 'Nova Rose',  filter: 'hue-rotate(130deg) saturate(1.4)',  glow: '#ff2d95', fill: '#ff2d95' },
+  gold:    { label: 'Solar Gold', filter: 'hue-rotate(165deg) saturate(1.6) brightness(1.1)', glow: '#ffd24a', fill: '#ffd24a' },
+};
+const UNLOCKS = [
+  { id: 'tint-magenta', name: 'Nova Rose ship tint',   desc: 'Clear wave 3',           prog: () => meta.bestWaveCleared,                 need: 3 },
+  { id: 'tint-gold',    name: 'Solar Gold ship tint',  desc: 'Clear wave 6',           prog: () => meta.bestWaveCleared,                 need: 6 },
+  { id: 'vengeance',    name: 'VENGEANCE (start with full Overdrive)', desc: 'Destroy a Mothership', prog: () => meta.mothershipKills,   need: 1 },
+  { id: 'chaos',        name: 'CHAOS MODE',            desc: '5,000 lifetime score',   prog: () => meta.totalScore + (runBanked ? 0 : game.getScore()), need: 5000 },
+];
+function unlocked(id) { return !!(meta.unlocks[id] && meta.unlocks[id].earned); }
+function checkUnlocks() {
+  for (const u of UNLOCKS) {
+    const slot = meta.unlocks[u.id] || (meta.unlocks[u.id] = { earned: false });
+    if (!slot.earned && u.prog() >= u.need) {
+      slot.earned = true;
+      saveMeta();
+      banners.push({ text: 'UNLOCKED: ' + u.name, life: 2.5, maxLife: 2.5 });
+      if (fxCount() < 200) fx.burst(W / 2, 80, 30, { colors: ['#ffd700', '#ffffff'], gravity: -50, lifetime: 0.8 });
+      game.shake(3, 0.15);
+      sfx('powerup');
+      refreshMetaButtons();
+    }
+  }
+}
+function nextGoalText() {
+  const locked = UNLOCKS.filter(u => !unlocked(u.id))
+    .sort((a, b) => (a.need - a.prog()) - (b.need - b.prog()));
+  if (!locked.length) return 'Beat your best: ' + game.getHigh();
+  const u = locked[0];
+  return u.name + ' — ' + u.desc + ' (' + Math.max(0, u.need - Math.floor(u.prog())) + ' to go)';
+}
+function nextGoalShort() {              // compact version for the HUD badge
+  const locked = UNLOCKS.filter(u => !unlocked(u.id))
+    .sort((a, b) => (a.need - a.prog()) - (b.need - b.prog()));
+  if (!locked.length) return 'Beat best ' + game.getHigh();
+  return locked[0].desc;
+}
+
+// Game-over overlay additions (injected, never rebuilt)
+const metaRow = document.getElementById('ni-meta-row');
+let tintBtn = null, chaosBtn = null, easyBtn = null;
+function refreshMetaButtons() {
+  if (!metaRow) return;
+  metaRow.innerHTML = '';
+  const tints = ['blue'];
+  if (unlocked('tint-magenta')) tints.push('magenta');
+  if (unlocked('tint-gold'))    tints.push('gold');
+  if (tints.length > 1) {
+    tintBtn = document.createElement('button');
+    tintBtn.className = 'ni-meta-btn';
+    tintBtn.textContent = 'Ship: ' + (TINTS[meta.equipped.tint] || TINTS.blue).label;
+    tintBtn.addEventListener('click', () => {
+      const i = tints.indexOf(meta.equipped.tint);
+      meta.equipped.tint = tints[(i + 1) % tints.length];
+      saveMeta();
+      tintBtn.textContent = 'Ship: ' + TINTS[meta.equipped.tint].label;
+      sfx('click');
+    });
+    metaRow.appendChild(tintBtn);
+  }
+  if (unlocked('chaos')) {
+    chaosBtn = document.createElement('button');
+    chaosBtn.className = 'ni-meta-btn';
+    chaosBtn.textContent = 'Chaos Mode: ' + (meta.chaosOn ? 'ON' : 'OFF') + (meta.chaosBest ? ' (best ' + meta.chaosBest + ')' : '');
+    chaosBtn.addEventListener('click', () => {
+      meta.chaosOn = !meta.chaosOn;
+      saveMeta();
+      chaosBtn.textContent = 'Chaos Mode: ' + (meta.chaosOn ? 'ON' : 'OFF') + (meta.chaosBest ? ' (best ' + meta.chaosBest + ')' : '');
+      sfx('click');
+    });
+    metaRow.appendChild(chaosBtn);
+  }
+  if (meta.fastDeaths >= 2 || meta.easyMode) {
+    easyBtn = document.createElement('button');
+    easyBtn.className = 'ni-meta-btn';
+    easyBtn.textContent = meta.easyMode ? 'Back to Normal' : 'Try Easy?';
+    easyBtn.addEventListener('click', () => {
+      meta.easyMode = !meta.easyMode;
+      saveMeta();
+      easyBtn.textContent = meta.easyMode ? 'Back to Normal' : 'Try Easy?';
+      sfx('click');
+    });
+    metaRow.appendChild(easyBtn);
+  }
+}
+refreshMetaButtons();
+
+// ── Game state ─────────────────────────────────────────────
+let lives, wave, fleet, lasers, divers, drops, ghosts, floaters, banners;
+let fleetDir, fleetStepTimer, fleetStepInterval, elapsed;
+let shootCooldown, overdrive, beamReady, twinTimer, rapidTimer;
+let hitStop, dying, deathTimer, flashTimer, diveTimer, mship, chaosRun;
+let shieldActive, goalTick, playerLean, waveKind;
+let runBanked = true;                    // current run's score already added to lifetime total?
+const OD_MAX = 100, OD_PER_BLOCK = 25;
+
+// Player: 54px ≈ 6.75% of 800 canvas; hitbox = 30% circle (shmup standard)
 const player = { x: W/2-27, y: H - 60, w: 54, h: 42,
                  speed: GAMEPLAY_PRESETS.shmup.playerSpeed };  // 380 px/s
+const HIT_R = player.w * 0.3;
+
+// Ambient starfield (two parallax layers) — pre-generated once
+const starsFar  = Array.from({ length: 40 }, () => ({ x: Math.random()*W, y: Math.random()*H, s: 1 }));
+const starsNear = Array.from({ length: 18 }, () => ({ x: Math.random()*W, y: Math.random()*H, s: 2 }));
+
+function fxCount() { return fx.count || (fx.particles ? fx.particles.length : 0) || 0; }
+function floatText(x, y, text, color = '#fff', size = 18) {
+  floaters.push({ x: x + (Math.random()*30 - 15), y, text, color, size, life: 0.7, maxLife: 0.7 });
+}
+function triggerHitStop(sec) { hitStop = Math.max(hitStop, sec); }
+function assist() { return meta.easyMode ? 0.75 : (meta.fastDeaths >= 2 ? 0.85 : 1.0); }
+// Effective wave for behaviour gates — Chaos mixes everything in early
+function bWave() { return chaosRun ? wave + 4 : wave; }
+
+// ── Formations ─────────────────────────────────────────────
+function buildSlots(kind, nCols, nRows, ew, eh) {
+  const gapX = ew + 24, gapY = eh + 18;
+  const startX = Math.max(20, (W - nCols * gapX) / 2);
+  const startY = 64;
+  const slots = [];
+  for (let r = 0; r < nRows; r++) {
+    for (let c = 0; c < nCols; c++) {
+      let x = startX + c * gapX;
+      let y = startY + r * gapY;
+      if (kind === 'wedge') y += Math.abs(c - (nCols - 1) / 2) * 14;
+      if (kind === 'twins') {
+        if (c >= nCols / 2) x += gapX * 1.6;
+        else x -= gapX * 0.8;
+      }
+      slots.push({ x, y, r, c });
+    }
+  }
+  return slots;
+}
 
 function spawnWave(w) {
-  fleet = [];
-  const nCols = 10, nRows = Math.min(5, 3 + Math.floor(w / 2));
-  // Use sprite size for spacing when sprites loaded, else fallback
+  fleet = []; divers = [];
+  const kinds = ['grid', 'wedge', 'twins', 'spiral'];
+  waveKind = chaosRun ? kinds[Math.floor(Math.random() * kinds.length)] : kinds[(w - 1) % kinds.length];
+  const nCols = waveKind === 'twins' ? 8 : 10;
+  const nRows = Math.min(5, (w === 1 ? 3 : 3 + Math.floor(w / 2)));
   const sprSize = spritesReady && assets.size('enemyBlack1');
   const ew = sprSize ? sprSize.w : 36;
   const eh = sprSize ? sprSize.h : 28;
-  const gapX = ew + 24, gapY = eh + 18;
-  const startX = Math.max(20, (W - nCols * gapX) / 2);
-  const startY = 60;
-  for (let r = 0; r < nRows; r++) {
-    // Each row gets a different enemy type for variety
-    const sprKey = ENEMY_TYPES[r % ENEMY_TYPES.length];
-    for (let c = 0; c < nCols; c++) {
-      fleet.push({
-        x: startX + c * gapX, y: startY + r * gapY,
-        w: ew, h: eh,
-        hp: 1 + Math.floor(w / 3),
-        hue: 120 - r * 20,  // colour tint for glow effect
-        sprKey,
-      });
-    }
-  }
+  const slots = buildSlots(waveKind, nCols, nRows, ew, eh);
+  // Shielder drones: wave 4+, front (bottom) row, a few of them
+  const nShield = bWave() >= 4 ? Math.min(4, 1 + Math.floor(bWave() / 3)) : 0;
+  const frontRow = nRows - 1;
+  const shieldCols = new Set();
+  while (shieldCols.size < nShield) shieldCols.add(Math.floor(Math.random() * nCols));
+
+  slots.forEach((s, i) => {
+    const isShielder = s.r === frontRow && shieldCols.has(s.c);
+    fleet.push({
+      x: s.x, y: -70 - s.r * 44, sy: -70 - s.r * 44, tx: s.x, ty: s.y, w: ew, h: eh,
+      hp: isShielder ? 2 : 1 + Math.floor(w / 4),
+      hue: isShielder ? 195 : 120 - s.r * 20,
+      sprKey: isShielder ? 'enemyBlue2' : ENEMY_TYPES[s.r % ENEMY_TYPES.length],
+      kind: isShielder ? 'shielder' : 'grunt',
+      shieldUp: true, shieldT: 2.0 + Math.random() * 1.5,
+      entryT: -(waveKind === 'spiral' ? i * 0.05 : s.r * 0.12 + s.c * 0.02),
+      sway: waveKind === 'spiral' ? 120 : 40,
+      arrived: false, flash: 0,
+    });
+  });
   fleetDir          = 1;
   fleetStepTimer    = 0;
-  fleetStepInterval = Math.max(0.08, 0.45 - w * 0.03);
+  fleetStepInterval = Math.max(0.09, (w === 1 ? 0.55 : 0.45 - w * 0.028)) / assist();
+  // Mothership: wave 6+, every 3rd wave (chaos: from wave 3)
+  const mStart = chaosRun ? 3 : 6;
+  if (w >= mStart && (w - mStart) % 3 === 0) {
+    mship = { x: W / 2, y: 44, w: 90, h: 56, hp: 3, t: Math.random() * 6,
+              phase: 'idle', timer: 2.2, flash: 0, fleeing: false };
+  } else if (!(mship && mship.fleeing)) {
+    mship = null;                        // let an escaping mothership finish its exit
+  }
+  diveTimer = 5.0;
 }
 
 function reset() {
-  lives         = 3;
-  wave          = 1;
-  lasers        = [];
-  shootCooldown = 0;
+  lives = 3; wave = 1; elapsed = 0;
+  lasers = []; drops = []; ghosts = []; floaters = []; banners = [];
+  shootCooldown = 0; overdrive = 0; beamReady = false;
+  twinTimer = 0; rapidTimer = 0;
+  hitStop = 0; dying = false; deathTimer = 0; flashTimer = 0;
+  shieldActive = false; goalTick = 0; playerLean = 0; runBanked = false;
+  player.x = W / 2 - player.w / 2;
+  mship = null;
+  chaosRun = unlocked('chaos') && meta.chaosOn;
+  if (unlocked('vengeance')) { overdrive = OD_MAX; beamReady = true; }
+  if (chaosRun) banners.push({ text: 'CHAOS MODE', life: 2.0, maxLife: 2.0 });
   document.getElementById('lives-disp').textContent = lives;
   document.getElementById('wave-disp').textContent  = wave;
+  const g = document.getElementById('goal-disp');
+  if (g) g.textContent = nextGoalShort();
   spawnWave(wave);
   fx.clear();
 }
 
 game.onRestart(reset);
 
+// ── Damage / death ─────────────────────────────────────────
+function playerHit() {
+  if (flashTimer > 0 || dying) return;
+  lives--;
+  document.getElementById('lives-disp').textContent = Math.max(0, lives);
+  if (fxCount() < 200) fx.burst(player.x + player.w/2, player.y + 10, 18, {
+    colors: ['#ff4444', '#ffaa00', '#33aaff'], maxSpeed: 300, lifetime: 0.6,
+  });
+  if (lives <= 0) { killPlayer(); return; }
+  sfx('hit');
+  triggerHitStop(0.04);
+  game.shake(5, 0.2);
+  flashTimer = 1.2;                       // blink + invulnerability window
+}
+
+function killPlayer() {
+  if (dying) return;
+  dying = true;
+  triggerHitStop(0.08);
+  sfx('explosion');
+  fx.burst(player.x + player.w/2, player.y + player.h/2, 50, {
+    colors: ['#ffffff', '#ff4444', '#ffaa00', '#33aaff'],
+    minSpeed: 120, maxSpeed: 450, lifetime: 1.2,
+  });
+  game.shake(8, 0.3);                     // the ONLY 8px shake
+  deathTimer = 0.8;
+}
+
+function endRun() {
+  // Meta bookkeeping before overlay
+  meta.totalScore += game.getScore();
+  runBanked = true;
+  meta.totalRuns++;
+  const fast = elapsed < 60;
+  meta.fastDeaths = fast ? meta.fastDeaths + 1 : 0;
+  if (chaosRun && game.getScore() > meta.chaosBest) meta.chaosBest = game.getScore();
+  saveMeta();
+  checkUnlocks();
+  const stat = document.getElementById('ni-stat-line');
+  if (stat) {
+    const stats = [
+      'Run #' + meta.totalRuns,
+      'Reached wave ' + wave + (chaosRun ? ' (Chaos)' : ''),
+      'Motherships destroyed (lifetime): ' + meta.mothershipKills,
+    ];
+    stat.textContent = stats[meta.totalRuns % stats.length];
+  }
+  const goal = document.getElementById('ni-next-goal');
+  if (goal) goal.textContent = '★ Next goal: ' + nextGoalText();
+  refreshMetaButtons();
+  sfx('gameover');
+  game.endGame();
+}
+
+function killEnemy(e, idx, byBeam) {
+  if (fxCount() < 200) fx.burst(e.x + e.w/2, e.y + e.h/2, 20, {
+    colors: [`hsl(${e.hue},100%,60%)`, '#ffffff'], maxSpeed: 350, lifetime: 0.7, gravity: 0,
+  });
+  ghosts.push({ x: e.x + e.w/2, y: e.y + e.h/2, w: e.w, h: e.h, sprKey: e.sprKey, hue: e.hue, life: 0.12 });
+  const pts = e.kind === 'shielder' ? 25 : 10 + wave * 2;
+  game.addScore(pts);
+  floatText(e.x + e.w/2, e.y, '+' + pts, `hsl(${e.hue},100%,70%)`);
+  fleet.splice(idx, 1);
+  if (!byBeam) { sfx('explosion'); triggerHitStop(0.03); game.shake(3, 0.15); }
+}
+
+function spawnDrop(x, y, guaranteed) {
+  if (!guaranteed && Math.random() > 0.45) return;
+  drops.push({ x, y, w: 22, h: 22, vy: 130, type: Math.random() < 0.5 ? 'twin' : 'rapid', t: 0 });
+}
+
 // ── Update ─────────────────────────────────────────────────
 game.onUpdate((dt) => {
   if (game.state !== 'playing') return;
 
-  // Player movement — no "focus" gate needed
-  if (input.isPressed('left'))  player.x = Math.max(8, player.x - player.speed * dt);
-  if (input.isPressed('right')) player.x = Math.min(W - player.w - 8, player.x + player.speed * dt);
+  // Hit-stop: freeze the world, keep rendering
+  if (hitStop > 0) { hitStop -= dt; return; }
 
-  // Player shoot
+  // Death spectacle plays out before the overlay
+  if (dying) {
+    deathTimer -= dt;
+    fx.update(dt);
+    for (let i = floaters.length - 1; i >= 0; i--) { floaters[i].y -= 60*dt; floaters[i].life -= dt; if (floaters[i].life <= 0) floaters.splice(i, 1); }
+    if (deathTimer <= 0) endRun();
+    return;
+  }
+
+  elapsed += dt;
+  flashTimer = Math.max(0, flashTimer - dt);
+  twinTimer  = Math.max(0, twinTimer - dt);
+  rapidTimer = Math.max(0, rapidTimer - dt);
+
+  // Starfield drift (parallax)
+  for (const s of starsFar)  { s.y += 14 * dt; if (s.y > H) { s.y -= H; s.x = Math.random()*W; } }
+  for (const s of starsNear) { s.y += 42 * dt; if (s.y > H) { s.y -= H; s.x = Math.random()*W; } }
+
+  // ── Player: move / shield / fire ──
+  shieldActive = input.isPressed('down');
+  const moveMul = shieldActive ? 0.5 : 1;                 // the trade-off
+  let dir = 0;
+  if (input.isPressed('left'))  dir -= 1;
+  if (input.isPressed('right')) dir += 1;
+  player.x = GameUtils.clamp(player.x + dir * player.speed * moveMul * dt, 8, W - player.w - 8);
+  playerLean = GameUtils.lerp(playerLean, dir * 0.15, 8 * dt);
+
   shootCooldown -= dt;
   if (input.isPressed('fire') && shootCooldown <= 0) {
-    lasers.push({ x: player.x + player.w/2 - 2, y: player.y - 6, w: 4, h: 12, vy: -580, owner: 'player' });
-    shootCooldown = 0.18;
-  }
-
-  // Fleet step
-  fleetStepTimer += dt;
-  if (fleetStepTimer >= fleetStepInterval) {
-    fleetStepTimer = 0;
-    let hitEdge = false;
-    for (const e of fleet) {
-      e.x += 14 * fleetDir;
-      if (e.x < 16 || e.x + e.w > W - 16) hitEdge = true;
-    }
-    if (hitEdge) {
-      for (const e of fleet) e.y += 18;
-      fleetDir *= -1;
-    }
-    // Random enemy shot
-    if (Math.random() < 0.3 && fleet.length) {
-      const shooter = fleet[Math.floor(Math.random() * fleet.length)];
-      lasers.push({ x: shooter.x + shooter.w/2 - 2, y: shooter.y + shooter.h + 2, w: 4, h: 10, vy: 260 + wave * 15, owner: 'enemy' });
+    const cx = player.x + player.w/2;
+    if (beamReady) {
+      lasers.push({ x: cx - 7, y: player.y - 10, w: 14, h: 34, vy: -1000, owner: 'player', beam: true, kills: 0 });
+      beamReady = false; overdrive = 0;
+      sfx('powerup');
+      game.shake(3, 0.12);
+      if (fxCount() < 200) fx.burst(cx, player.y, 14, { colors: ['#39ff14', '#ffffff'], maxSpeed: 250, lifetime: 0.4 });
+      shootCooldown = 0.35;
+    } else {
+      if (twinTimer > 0) {
+        lasers.push({ x: cx - 12, y: player.y - 6, w: 4, h: 12, vy: -580, owner: 'player' });
+        lasers.push({ x: cx + 8,  y: player.y - 6, w: 4, h: 12, vy: -580, owner: 'player' });
+      } else {
+        lasers.push({ x: cx - 2, y: player.y - 6, w: 4, h: 12, vy: -580, owner: 'player' });
+      }
+      sfx('jump');                                        // light "pew" (short rising square)
+      if (fxCount() < 200) fx.burst(cx, player.y - 4, 3, { colors: ['#9fd4ff'], maxSpeed: 90, lifetime: 0.2 });
+      shootCooldown = rapidTimer > 0 ? 0.09 : 0.18;
     }
   }
 
-  // Move lasers + collisions
+  // ── Fleet entry + stepping ──
+  let allIn = true;
+  for (const e of fleet) {
+    if (!e.arrived) {
+      e.entryT += dt / 1.1;
+      if (e.entryT >= 1) { e.arrived = true; e.x = e.tx; e.y = e.ty; }
+      else if (e.entryT > 0) {
+        const t = e.entryT, ease = t * t * (3 - 2 * t);
+        e.x = e.tx + Math.sin(t * Math.PI * 2) * e.sway * (1 - t);
+        e.y = GameUtils.lerp(e.sy, e.ty, ease);
+      }
+      if (!e.arrived) allIn = false;
+    }
+    // Shielder armour cycle: up 2.8s / down 1.6s, blink telegraph before switch
+    if (e.kind === 'shielder' && e.arrived) {
+      e.shieldT -= dt;
+      if (e.shieldT <= 0) { e.shieldUp = !e.shieldUp; e.shieldT = e.shieldUp ? 2.8 : 1.6; }
+    }
+    e.flash = Math.max(0, e.flash - dt);
+  }
+
+  if (allIn && fleet.length) {
+    fleetStepTimer += dt;
+    if (fleetStepTimer >= fleetStepInterval) {
+      fleetStepTimer = 0;
+      let hitEdge = false;
+      for (const e of fleet) {
+        e.x += 14 * fleetDir;
+        if (e.x < 16 || e.x + e.w > W - 16) hitEdge = true;
+      }
+      if (hitEdge) {
+        for (const e of fleet) e.y += 18;
+        fleetDir *= -1;
+      }
+      // Fleet bolt (wave 1 fires less, slower — tutorial contract)
+      const fireChance = wave === 1 ? 0.14 : Math.min(0.42, 0.24 + wave * 0.02);
+      if (Math.random() < fireChance) {
+        const shooter = fleet[Math.floor(Math.random() * fleet.length)];
+        const bv = Math.min(380, (wave === 1 ? 200 : 250 + wave * 12)) * assist();
+        lasers.push({ x: shooter.x + shooter.w/2 - 2, y: shooter.y + shooter.h + 2, w: 4, h: 10, vy: bv, owner: 'enemy' });
+      }
+    }
+  }
+
+  // ── Divers (wave 2+): telegraph, peel off, swoop through player zone ──
+  if (allIn && bWave() >= 2 && fleet.length) {
+    diveTimer -= dt;
+    if (diveTimer <= 0) {
+      diveTimer = Math.max(3.5, 8 - bWave() * 0.5);
+      const cand = fleet.filter(e => e.arrived && !e.diving && e.kind === 'grunt');
+      if (cand.length) {
+        const e = cand[Math.floor(Math.random() * cand.length)];
+        e.diving = true; e.diveWarn = 0.8;                // 0.8s flashing telegraph
+      }
+    }
+  }
+  for (let i = fleet.length - 1; i >= 0; i--) {
+    const e = fleet[i];
+    if (!e.diving) continue;
+    if (e.diveWarn > 0) {
+      e.diveWarn -= dt;
+      e.flash = 0.05;                                     // steady flashing while warning
+      if (e.diveWarn <= 0) {
+        fleet.splice(i, 1);
+        const exitX = e.x < W / 2 ? W - 60 : 60;
+        divers.push({ x: e.x, y: e.y, w: e.w, h: e.h, hue: e.hue, sprKey: e.sprKey,
+                      sx: e.x, sy: e.y, cx: player.x + player.w/2, cy: H - 110,
+                      ex: exitX, ey: -70, t: 0, dur: 2.3, fired: false });
+      }
+    }
+  }
+  for (let i = divers.length - 1; i >= 0; i--) {
+    const d = divers[i];
+    d.t += dt / d.dur;
+    const t = d.t, mt = 1 - t;
+    d.x = mt*mt*d.sx + 2*mt*t*d.cx + t*t*d.ex;
+    d.y = mt*mt*d.sy + 2*mt*t*d.cy + t*t*d.ey;
+    if (!d.fired && t > 0.4) {
+      d.fired = true;
+      lasers.push({ x: d.x + d.w/2 - 2, y: d.y + d.h, w: 4, h: 10, vy: Math.min(380, 280 * assist()), owner: 'enemy' });
+    }
+    // Contact damage
+    if (GameUtils.distance(d.x + d.w/2, d.y + d.h/2, player.x + player.w/2, player.y + player.h/2) < HIT_R + d.w * 0.35) {
+      playerHit();
+    }
+    if (d.t >= 1) {  // rejoin the fleet at the top
+      divers.splice(i, 1);
+      fleet.push({ x: GameUtils.clamp(d.ex, 20, W - 60), y: 64, tx: d.ex, ty: 64, w: d.w, h: d.h,
+                   hp: 1, hue: d.hue, sprKey: d.sprKey, kind: 'grunt', arrived: true, flash: 0,
+                   shieldUp: false, shieldT: 0, entryT: 1, sway: 0 });
+    }
+  }
+
+  // ── Mothership ──
+  if (mship) {
+    mship.t += dt;
+    mship.flash = Math.max(0, mship.flash - dt);
+    if (mship.fleeing) {
+      mship.y -= 220 * dt;
+      if (mship.y < -80) mship = null;
+    } else {
+      mship.x = W / 2 + Math.sin(mship.t * 0.7) * (W / 2 - 120);
+      if (fleet.length === 0 && divers.length === 0) {
+        mship.fleeing = true;                             // it escapes — kill it before the fleet!
+        floatText(mship.x, mship.y + 40, 'MOTHERSHIP ESCAPING!', '#ff8844', 20);
+      } else if (mship.phase === 'idle') {
+        mship.timer -= dt;
+        if (mship.timer <= 0) { mship.phase = 'windup'; mship.timer = 0.7; }
+      } else if (mship.phase === 'windup') {              // 0.7s telegraph: flash + swell
+        mship.timer -= dt;
+        if (mship.timer <= 0) {
+          mship.phase = 'recover'; mship.timer = 1.8;
+          for (let k = -2; k <= 2; k++) {
+            lasers.push({ x: mship.x - 2, y: mship.y + 30, w: 4, h: 10,
+                          vy: Math.min(380, 250 * assist()), vx: k * 90, owner: 'enemy' });
+          }
+          sfx('hit');
+        }
+      } else if (mship.phase === 'recover') {
+        mship.timer -= dt;
+        if (mship.timer <= 0) { mship.phase = 'idle'; mship.timer = 2.4; }
+      }
+    }
+  }
+
+  // ── Lasers, shield blocking, collisions ──
+  const pcx = player.x + player.w/2, pcy = player.y + player.h/2;
+  const shieldCx = pcx, shieldCy = player.y - 2, SHIELD_R = 40;
+
   for (let i = lasers.length - 1; i >= 0; i--) {
     const l = lasers[i];
     l.y += l.vy * dt;
-    if (l.y < -20 || l.y > H + 20) { lasers.splice(i, 1); continue; }
+    if (l.vx) l.x += l.vx * dt;
+    if (l.y < -40 || l.y > H + 20 || l.x < -20 || l.x > W + 20) {
+      if (l.beam && l.kills >= 3) {                       // column-clear celebration
+        floatText(GameUtils.clamp(l.x, 60, W - 60), 120, 'COLUMN CLEAR! x' + l.kills, '#39ff14', 24);
+        sfx('combo');
+      }
+      lasers.splice(i, 1); continue;
+    }
 
     if (l.owner === 'player') {
-      let hit = false;
+      let consumed = false;
+      // Fleet
       for (let j = fleet.length - 1; j >= 0; j--) {
         const e = fleet[j];
         if (l.x < e.x + e.w && l.x + l.w > e.x && l.y < e.y + e.h && l.y + l.h > e.y) {
-          hit = true;
-          e.hp--;
-          if (e.hp <= 0) {
-            fx.burst(e.x + e.w/2, e.y + e.h/2, 8, {
-              colors: [`hsl(${e.hue},100%,60%)`, '#ffffff'],
-              gravity: 0, lifetime: 0.5,
-            });
-            fleet.splice(j, 1);
-            game.addScore(10 + wave * 2);
+          if (e.kind === 'shielder' && e.shieldUp && !l.beam) {
+            // Front armour: clink, no damage
+            if (fxCount() < 200) fx.burst(l.x, e.y + e.h, 4, { colors: ['#88ccff'], maxSpeed: 120, lifetime: 0.3 });
+            sfx('click');
+            consumed = true;
+            break;
           }
-          break;
+          e.hp -= l.beam ? 99 : 1;
+          e.flash = 0.1;
+          if (e.hp <= 0) {
+            killEnemy(e, j, !!l.beam);
+            if (l.beam) l.kills++;
+          }
+          if (!l.beam) { consumed = true; break; }       // beam pierces on
         }
       }
-      if (hit) { lasers.splice(i, 1); continue; }
+      // Divers
+      if (!consumed) {
+        for (let j = divers.length - 1; j >= 0; j--) {
+          const d = divers[j];
+          if (l.x < d.x + d.w && l.x + l.w > d.x && l.y < d.y + d.h && l.y + l.h > d.y) {
+            if (fxCount() < 200) fx.burst(d.x + d.w/2, d.y + d.h/2, 22, { colors: [`hsl(${d.hue},100%,60%)`, '#ffffff'], maxSpeed: 350, lifetime: 0.7 });
+            game.addScore(60);
+            floatText(d.x + d.w/2, d.y, '+60', '#ffd24a', 20);
+            sfx('explosion'); triggerHitStop(0.03); game.shake(3, 0.15);
+            spawnDrop(d.x + d.w/2, d.y);
+            divers.splice(j, 1);
+            if (!l.beam) { consumed = true; } else { l.kills++; }
+            break;
+          }
+        }
+      }
+      // Mothership
+      if (!consumed && mship && !mship.fleeing &&
+          l.x < mship.x + mship.w/2 && l.x + l.w > mship.x - mship.w/2 &&
+          l.y < mship.y + mship.h/2 && l.y + l.h > mship.y - mship.h/2) {
+        mship.hp -= l.beam ? 3 : 1;
+        mship.flash = 0.12;
+        if (fxCount() < 200) fx.burst(l.x, mship.y + mship.h/2, 8, { colors: ['#ff8866', '#ffffff'], maxSpeed: 200, lifetime: 0.4 });
+        if (mship.hp <= 0) {
+          fx.burst(mship.x, mship.y, 45, { colors: ['#ff4444', '#ffaa00', '#ffffff'], minSpeed: 100, maxSpeed: 420, lifetime: 1.0 });
+          game.addScore(300);
+          floatText(mship.x, mship.y, '+300 MOTHERSHIP!', '#ffd24a', 24);
+          sfx('explosion'); triggerHitStop(0.05); game.shake(5, 0.25);
+          spawnDrop(mship.x, mship.y, true);
+          meta.mothershipKills++; saveMeta(); checkUnlocks();
+          mship = null;
+        } else {
+          sfx('hit');
+        }
+        if (!l.beam) consumed = true;
+      }
+      if (consumed) { lasers.splice(i, 1); continue; }
     } else {
-      if (l.x < player.x + player.w && l.x + l.w > player.x &&
-          l.y < player.y + player.h && l.y + l.h > player.y) {
+      // Enemy bolt vs shield (charges Overdrive) then vs player
+      if (shieldActive && GameUtils.distance(l.x + l.w/2, l.y + l.h/2, shieldCx, shieldCy) < SHIELD_R) {
         lasers.splice(i, 1);
-        lives--;
-        document.getElementById('lives-disp').textContent = lives;
-        game.shake(8, 0.3);
-        fx.burst(player.x + player.w/2, player.y, 12, { colors: ['#33aaff','#ffffff'], gravity: 30 });
-        if (lives <= 0) { game.endGame(); return; }
+        if (fxCount() < 200) fx.burst(l.x, shieldCy, 8, { colors: ['#39ff14', '#9fffb0'], maxSpeed: 180, lifetime: 0.4 });
+        sfx('collect');
+        if (!beamReady) {
+          overdrive = Math.min(OD_MAX, overdrive + OD_PER_BLOCK);
+          if (overdrive >= OD_MAX) {
+            beamReady = true;
+            floatText(pcx, player.y - 40, 'OVERDRIVE READY!', '#39ff14', 22);
+            sfx('powerup');
+            if (fxCount() < 200) fx.burst(pcx, pcy, 15, { colors: ['#39ff14', '#ffffff'], minSpeed: 180, maxSpeed: 220, lifetime: 0.5 });
+          }
+        }
+        continue;
+      }
+      if (GameUtils.distance(l.x + l.w/2, l.y + l.h/2, pcx, pcy) < HIT_R + 6) {
+        lasers.splice(i, 1);
+        playerHit();
+        if (dying) return;
       }
     }
   }
 
-  // Next wave
-  if (fleet.length === 0) {
-    wave++;
-    document.getElementById('wave-disp').textContent = wave;
-    game.addScore(50 * wave);
-    spawnWave(wave);
-    lasers.length = 0;
+  // ── Weapon drops: catch them! ──
+  for (let i = drops.length - 1; i >= 0; i--) {
+    const d = drops[i];
+    d.y += d.vy * dt; d.t += dt;
+    if (d.y > H + 30) { drops.splice(i, 1); continue; }
+    if (GameUtils.distance(d.x, d.y, pcx, pcy) < HIT_R + 20) {
+      if (d.type === 'twin') { twinTimer = 10; floatText(pcx, player.y - 30, 'TWIN SHOT 10s', '#66ccff', 20); }
+      else                   { rapidTimer = 8; floatText(pcx, player.y - 30, 'RAPID FIRE 8s', '#ff9944', 20); }
+      game.addScore(25);
+      sfx('powerup');
+      if (fxCount() < 200) fx.burst(d.x, d.y, 12, { colors: ['#ffd700', '#ffffff'], maxSpeed: 200, lifetime: 0.5, gravity: 100 });
+      drops.splice(i, 1);
+    }
   }
 
-  // Invaders reach bottom → lose a life
+  // ── Wave clear ──
+  if (fleet.length === 0 && divers.length === 0) {
+    meta.bestWaveCleared = Math.max(meta.bestWaveCleared, wave);
+    saveMeta(); checkUnlocks();
+    wave++;
+    document.getElementById('wave-disp').textContent = wave;
+    const bonus = 50 * wave;
+    game.addScore(bonus);
+    floatText(W/2, H/2 - 40, 'WAVE ' + wave, '#39ff14', 30);
+    floatText(W/2, H/2, '+' + bonus, '#ffd24a', 20);
+    sfx('levelup');
+    if (fxCount() < 200) fx.burst(W/2, H/2, 30, { colors: ['#39ff14', '#33aaff', '#ff2d95'], spread: Math.PI*2, maxSpeed: 400, lifetime: 0.8 });
+    spawnWave(wave);
+    lasers = lasers.filter(l => l.owner === 'player');
+  }
+
+  // Invaders reach the base → death
   for (const e of fleet) {
-    if (e.y + e.h > H - 30) { lives = 0; game.endGame(); return; }
+    if (e.arrived && e.y + e.h > H - 60) { lives = 0; killPlayer(); return; }
+  }
+
+  // Floaters / banners / ghosts
+  for (let i = floaters.length - 1; i >= 0; i--) {
+    const f = floaters[i]; f.y -= 60 * dt; f.life -= dt;
+    if (f.life <= 0) floaters.splice(i, 1);
+  }
+  for (let i = banners.length - 1; i >= 0; i--) {
+    banners[i].life -= dt;
+    if (banners[i].life <= 0) banners.splice(i, 1);
+  }
+  for (let i = ghosts.length - 1; i >= 0; i--) {
+    ghosts[i].life -= dt;
+    if (ghosts[i].life <= 0) ghosts.splice(i, 1);
+  }
+
+  // HUD goal line (throttled DOM write)
+  goalTick -= dt;
+  if (goalTick <= 0) {
+    goalTick = 0.5;
+    const g = document.getElementById('goal-disp');
+    if (g) g.textContent = nextGoalShort();
   }
 
   fx.update(dt);
@@ -245,7 +761,6 @@ game.onUpdate((dt) => {
 
 // ── Render ──────────────────────────────────────────────────
 game.onRender((ctx) => {
-  // Background
   ctx.fillStyle = '#08091a';
   ctx.fillRect(0, 0, W, H);
 
@@ -255,6 +770,12 @@ game.onRender((ctx) => {
   topGlow.addColorStop(1, 'rgba(0,0,0,0)');
   ctx.fillStyle = topGlow; ctx.fillRect(0, 0, W, H);
 
+  // Parallax starfield
+  ctx.fillStyle = 'rgba(160,190,255,0.35)';
+  for (const s of starsFar) ctx.fillRect(s.x, s.y, s.s, s.s);
+  ctx.fillStyle = 'rgba(210,230,255,0.6)';
+  for (const s of starsNear) ctx.fillRect(s.x, s.y, s.s, s.s);
+
   // Scanline grid
   ctx.strokeStyle = 'rgba(255,255,255,0.025)';
   ctx.lineWidth = 1;
@@ -262,28 +783,25 @@ game.onRender((ctx) => {
     ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
   }
 
-  // Player — Kenney sprite or triangle fallback
-  const pcx = player.x + player.w / 2, pcy = player.y + player.h / 2;
-  if (spritesReady && assets.has('playerShip')) {
-    ctx.globalCompositeOperation = 'screen';
-    const eg = ctx.createRadialGradient(pcx, pcy + player.h * 0.55, 0, pcx, pcy + player.h * 0.55, 18);
-    eg.addColorStop(0, 'rgba(80,200,255,0.9)'); eg.addColorStop(1, 'rgba(0,0,0,0)');
-    ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(pcx, pcy + player.h * 0.55, 18, 0, Math.PI * 2); ctx.fill();
-    ctx.globalCompositeOperation = 'source-over';
-    assets.draw(ctx, 'playerShip', pcx, pcy);
-  } else {
-    ctx.shadowColor = '#33aaff'; ctx.shadowBlur = 14; ctx.fillStyle = '#33aaff';
-    ctx.beginPath();
-    ctx.moveTo(pcx, pcy - player.h/2);
-    ctx.lineTo(pcx + player.w/2, pcy + player.h/2);
-    ctx.lineTo(pcx + player.w*0.1, pcy + player.h*0.2);
-    ctx.lineTo(pcx - player.w*0.1, pcy + player.h*0.2);
-    ctx.lineTo(pcx - player.w/2, pcy + player.h/2);
-    ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0;
+  // Weapon drops
+  for (const d of drops) {
+    const pulse = 1 + Math.sin(d.t * 8) * 0.15;
+    ctx.save();
+    ctx.translate(d.x, d.y);
+    ctx.rotate(d.t * 2);
+    ctx.shadowColor = d.type === 'twin' ? '#66ccff' : '#ff9944';
+    ctx.shadowBlur = 14;
+    ctx.fillStyle = d.type === 'twin' ? '#66ccff' : '#ff9944';
+    ctx.fillRect(-9 * pulse, -9 * pulse, 18 * pulse, 18 * pulse);
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#0a0f1c';
+    ctx.font = 'bold 12px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(d.type === 'twin' ? '2' : 'R', 0, 1);
+    ctx.restore();
   }
 
-  // Fleet — Kenney sprites + neon glow
-  for (const e of fleet) {
+  // Fleet + divers (shared draw)
+  const drawEnemy = (e) => {
     const ecx = e.x + e.w / 2, ecy = e.y + e.h / 2;
     ctx.globalCompositeOperation = 'screen';
     const glowR = Math.max(e.w, e.h) * 0.7;
@@ -291,6 +809,9 @@ game.onRender((ctx) => {
     eg2.addColorStop(0, `hsla(${e.hue},100%,60%,0.35)`); eg2.addColorStop(1, 'rgba(0,0,0,0)');
     ctx.fillStyle = eg2; ctx.beginPath(); ctx.arc(ecx, ecy, glowR, 0, Math.PI * 2); ctx.fill();
     ctx.globalCompositeOperation = 'source-over';
+    // Dive telegraph: rapid white flash
+    const flashing = (e.diveWarn > 0 && Math.floor(e.diveWarn * 12) % 2 === 0) || e.flash > 0;
+    if (flashing) { ctx.globalAlpha = 0.5; }
     if (spritesReady && assets.has(e.sprKey)) {
       assets.draw(ctx, e.sprKey, ecx, ecy);
     } else {
@@ -301,10 +822,130 @@ game.onRender((ctx) => {
       ctx.fillRect(e.x + e.w - 6, e.y + 6, 6, e.h - 10);
       ctx.shadowBlur = 0;
     }
+    ctx.globalAlpha = 1;
+    // Shielder front armour arc
+    if (e.kind === 'shielder') {
+      const blink = !e.shieldUp || e.shieldT > 0.4 || Math.floor(e.shieldT * 15) % 2 === 0;
+      if (e.shieldUp && blink) {
+        ctx.strokeStyle = 'rgba(120,210,255,0.9)';
+        ctx.lineWidth = 3;
+        ctx.beginPath();
+        ctx.arc(ecx, ecy, e.w * 0.7, Math.PI * 0.15, Math.PI * 0.85);
+        ctx.stroke();
+      }
+    }
+  };
+  for (const e of fleet)  drawEnemy(e);
+  for (const d of divers) drawEnemy(d);
+
+  // Enemy death pops (squash ghost)
+  for (const g of ghosts) {
+    ctx.globalAlpha = g.life / 0.12 * 0.8;
+    if (spritesReady && assets.has(g.sprKey)) assets.draw(ctx, g.sprKey, g.x, g.y, g.w * 1.4, g.h * 0.5);
+    else { ctx.fillStyle = `hsl(${g.hue},100%,70%)`; ctx.fillRect(g.x - g.w*0.7, g.y - g.h*0.25, g.w*1.4, g.h*0.5); }
+    ctx.globalAlpha = 1;
   }
 
-  // Lasers — Kenney sprites or glowing rects
+  // Mothership
+  if (mship) {
+    const swell = mship.phase === 'windup' ? 1 + (0.7 - mship.timer) * 0.25 : 1;
+    ctx.globalCompositeOperation = 'screen';
+    const mg = ctx.createRadialGradient(mship.x, mship.y, 0, mship.x, mship.y, 70);
+    const warm = mship.phase === 'windup' ? '255,80,60' : '255,60,120';
+    mg.addColorStop(0, `rgba(${warm},${mship.phase === 'windup' ? 0.55 : 0.3})`);
+    mg.addColorStop(1, 'rgba(0,0,0,0)');
+    ctx.fillStyle = mg; ctx.beginPath(); ctx.arc(mship.x, mship.y, 70, 0, Math.PI * 2); ctx.fill();
+    ctx.globalCompositeOperation = 'source-over';
+    if (mship.flash > 0 && Math.floor(mship.flash * 30) % 2 === 0) ctx.globalAlpha = 0.5;
+    if (spritesReady && assets.has('ufo')) {
+      assets.draw(ctx, 'ufo', mship.x, mship.y, 91 * swell * 0.99, 91 * swell * 0.66);
+    } else {
+      ctx.fillStyle = '#ff4477'; ctx.shadowColor = '#ff4477'; ctx.shadowBlur = 16;
+      ctx.beginPath(); ctx.ellipse(mship.x, mship.y, 45 * swell, 22 * swell, 0, 0, Math.PI * 2); ctx.fill();
+      ctx.shadowBlur = 0;
+    }
+    ctx.globalAlpha = 1;
+    // HP pips
+    for (let k = 0; k < mship.hp; k++) {
+      ctx.fillStyle = '#ff8899';
+      ctx.fillRect(mship.x - 18 + k * 14, mship.y - mship.h/2 - 10, 10, 4);
+    }
+  }
+
+  // Player — Kenney sprite (tinted) or triangle fallback; hidden while dying
+  const tint = TINTS[meta.equipped.tint] || TINTS.blue;
+  const pcx = player.x + player.w / 2;
+  const bob = Math.sin((elapsed || 0) * 4) * 2;
+  const pcy = player.y + player.h / 2 + bob;
+  if (!dying) {
+    const blink = flashTimer > 0 && Math.floor(flashTimer * 15) % 2 === 0;
+    if (blink) ctx.globalAlpha = 0.4;
+    ctx.save();
+    ctx.translate(pcx, pcy);
+    ctx.rotate(playerLean || 0);
+    ctx.translate(-pcx, -pcy);
+    if (spritesReady && assets.has('playerShip')) {
+      ctx.globalCompositeOperation = 'screen';
+      const eg = ctx.createRadialGradient(pcx, pcy + player.h * 0.55, 0, pcx, pcy + player.h * 0.55, 18);
+      eg.addColorStop(0, 'rgba(80,200,255,0.9)'); eg.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = eg; ctx.beginPath(); ctx.arc(pcx, pcy + player.h * 0.55, 18, 0, Math.PI * 2); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      if (tint.filter !== 'none') ctx.filter = tint.filter;
+      assets.draw(ctx, 'playerShip', pcx, pcy);
+      ctx.filter = 'none';
+    } else {
+      ctx.shadowColor = tint.glow; ctx.shadowBlur = 14; ctx.fillStyle = tint.fill;
+      ctx.beginPath();
+      ctx.moveTo(pcx, pcy - player.h/2);
+      ctx.lineTo(pcx + player.w/2, pcy + player.h/2);
+      ctx.lineTo(pcx + player.w*0.1, pcy + player.h*0.2);
+      ctx.lineTo(pcx - player.w*0.1, pcy + player.h*0.2);
+      ctx.lineTo(pcx - player.w/2, pcy + player.h/2);
+      ctx.closePath(); ctx.fill(); ctx.shadowBlur = 0;
+    }
+    ctx.restore();
+    ctx.globalAlpha = 1;
+
+    // Energy shield dome
+    if (shieldActive) {
+      ctx.globalCompositeOperation = 'screen';
+      const sg = ctx.createRadialGradient(pcx, player.y - 2, 8, pcx, player.y - 2, 44);
+      sg.addColorStop(0, 'rgba(57,255,20,0.05)');
+      sg.addColorStop(0.8, 'rgba(57,255,20,0.25)');
+      sg.addColorStop(1, 'rgba(57,255,20,0)');
+      ctx.fillStyle = sg;
+      ctx.beginPath(); ctx.arc(pcx, player.y - 2, 44, 0, Math.PI * 2); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.strokeStyle = 'rgba(57,255,20,0.8)';
+      ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(pcx, player.y - 2, 40, Math.PI * 1.15, Math.PI * 1.85); ctx.stroke();
+    }
+    // Overdrive glow when beam is ready
+    if (beamReady) {
+      ctx.globalCompositeOperation = 'screen';
+      const og = ctx.createRadialGradient(pcx, pcy, 0, pcx, pcy, 46);
+      const p = 0.25 + Math.abs(Math.sin((elapsed || 0) * 6)) * 0.25;
+      og.addColorStop(0, `rgba(57,255,20,${p})`); og.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = og; ctx.beginPath(); ctx.arc(pcx, pcy, 46, 0, Math.PI * 2); ctx.fill();
+      ctx.globalCompositeOperation = 'source-over';
+    }
+  }
+
+  // Lasers — beam, Kenney sprites, or glowing rects
   for (const l of lasers) {
+    if (l.beam) {
+      ctx.globalCompositeOperation = 'screen';
+      const bg = ctx.createLinearGradient(l.x, 0, l.x + l.w, 0);
+      bg.addColorStop(0, 'rgba(57,255,20,0)');
+      bg.addColorStop(0.5, 'rgba(200,255,180,0.95)');
+      bg.addColorStop(1, 'rgba(57,255,20,0)');
+      ctx.fillStyle = bg;
+      ctx.fillRect(l.x - 4, l.y - 20, l.w + 8, l.h + 40);
+      ctx.globalCompositeOperation = 'source-over';
+      ctx.fillStyle = '#eaffdd';
+      ctx.fillRect(l.x + l.w/2 - 3, l.y - 10, 6, l.h + 20);
+      continue;
+    }
     const lKey = l.owner === 'player' ? 'laserBlue' : 'laserRed';
     const lcx = l.x + l.w / 2, lcy = l.y + l.h / 2;
     if (spritesReady && assets.has(lKey)) {
@@ -319,6 +960,49 @@ game.onRender((ctx) => {
   }
 
   fx.draw(ctx);
+
+  // Overdrive meter (bottom-left)
+  const mx = 14, my = H - 18, mw = 150, mh = 10;
+  ctx.fillStyle = 'rgba(255,255,255,0.12)';
+  ctx.fillRect(mx, my, mw, mh);
+  const frac = beamReady ? 1 : overdrive / OD_MAX;
+  ctx.fillStyle = beamReady ? (Math.floor((elapsed || 0) * 6) % 2 === 0 ? '#39ff14' : '#c8ffb4') : '#2a9d3f';
+  ctx.fillRect(mx, my, mw * frac, mh);
+  ctx.strokeStyle = 'rgba(57,255,20,0.6)'; ctx.lineWidth = 1;
+  ctx.strokeRect(mx, my, mw, mh);
+  ctx.fillStyle = beamReady ? '#39ff14' : 'rgba(200,255,200,0.7)';
+  ctx.font = 'bold 11px monospace'; ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+  ctx.fillText(beamReady ? 'OVERDRIVE READY — FIRE!' : 'OVERDRIVE (hold ↓ to block bolts)', mx, my - 3);
+
+  // Weapon timers (bottom-right)
+  ctx.textAlign = 'right';
+  if (twinTimer > 0)  { ctx.fillStyle = '#66ccff'; ctx.fillText('TWIN ' + twinTimer.toFixed(1), W - 14, H - 22); }
+  if (rapidTimer > 0) { ctx.fillStyle = '#ff9944'; ctx.fillText('RAPID ' + rapidTimer.toFixed(1), W - 14, H - 8); }
+
+  // Floating score text (above everything)
+  for (const f of floaters) {
+    ctx.globalAlpha = f.life / f.maxLife;
+    ctx.fillStyle = f.color;
+    ctx.font = 'bold ' + f.size + 'px monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(f.text, f.x, f.y);
+  }
+  ctx.globalAlpha = 1;
+
+  // Unlock banners
+  for (const b of banners) {
+    const a = Math.min(1, b.life / 0.4, (b.maxLife - b.life) / 0.3 + 0.2);
+    ctx.globalAlpha = Math.max(0, Math.min(1, a));
+    ctx.fillStyle = 'rgba(10,20,40,0.85)';
+    ctx.fillRect(W/2 - 220, 24, 440, 34);
+    ctx.strokeStyle = '#ffd700'; ctx.lineWidth = 1;
+    ctx.strokeRect(W/2 - 220, 24, 440, 34);
+    ctx.fillStyle = '#ffd700';
+    ctx.font = 'bold 16px monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(b.text, W/2, 41);
+    ctx.globalAlpha = 1;
+  }
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
 });
 
 reset();

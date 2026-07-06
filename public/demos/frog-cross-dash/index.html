@@ -2,1519 +2,1755 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no" />
-  <title>Frog Cross Dash - Demo</title>`n  <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>Frog Cross Dash · Games Inc Jr</title>
+  <link rel="stylesheet" href="/game-framework/overlay-styles.css" />
   <style>
-    @import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600;700&display=swap');
-    
-    :root {
-      color-scheme: dark;
-      --emerald: #34d399;
-      --emerald-dark: #065f46;
-      --cyan: #22d3ee;
-      --amber: #fbbf24;
-      --rose: #fb7185;
+    #gij-stage { background: #0f172a; }
+    canvas { background: #0f172a; }
+    .fcd-meta-line { color: #94a3b8; font-size: 13px; margin: 8px 0 0; }
+    .fcd-goal-line { color: #fbbf24; font-size: 14px; font-weight: 700; margin: 4px 0 8px; }
+    #fcd-unlocks { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin: 8px 0 12px; }
+    .fcd-chip {
+      padding: 4px 12px; border-radius: 999px; font-size: 12px;
+      border: 1px solid #334155; color: #64748b; background: #1e293b;
+      cursor: default; font-family: inherit;
     }
-
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    body {
-      min-height: 100vh;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      background: linear-gradient(180deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
-      font-family: 'Fredoka', sans-serif;
-      overflow: hidden;
-    }
-
-    .game-container {
-      position: relative;
-      width: min(95vw, 900px);
-      aspect-ratio: 4 / 3;
-    }
-
-    canvas {
-      display: block;
-      width: 100%;
-      height: 100%;
-      border-radius: 24px;
-      box-shadow: 
-        0 0 0 4px rgba(52, 211, 153, 0.3),
-        0 0 60px rgba(52, 211, 153, 0.2),
-        0 30px 80px rgba(0, 0, 0, 0.5);
-    }
-
-    .hud {
-      position: absolute;
-      top: 16px;
-      left: 50%;
-      transform: translateX(-50%);
-      display: flex;
-      gap: 32px;
-      font-size: 1.3rem;
-      font-weight: 600;
-      color: white;
-      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-      z-index: 10;
-      pointer-events: none;
-    }
-
-    .hud-item {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      background: rgba(0, 0, 0, 0.4);
-      padding: 8px 16px;
-      border-radius: 999px;
-      backdrop-filter: blur(8px);
-    }
-
-    .hud-item span {
-      color: var(--amber);
-      font-weight: 700;
-      min-width: 50px;
-    }
-
-    .overlay {
-      position: absolute;
-      inset: 0;
-      background: rgba(15, 23, 42, 0.95);
-      backdrop-filter: blur(16px);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 24px;
-      padding: 32px;
-      text-align: center;
-      border-radius: 24px;
-      z-index: 20;
-      transition: opacity 0.4s ease, transform 0.4s ease;
-    }
-
-    .overlay.hidden {
-      opacity: 0;
-      pointer-events: none;
-      transform: scale(1.05);
-    }
-
-    .overlay h2 {
-      font-size: clamp(2.5rem, 6vw, 4rem);
-      font-weight: 700;
-      background: linear-gradient(135deg, var(--emerald), var(--cyan));
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
-      text-shadow: none;
-    }
-
-    .overlay p {
-      font-size: 1.2rem;
-      color: #cbd5e1;
-      max-width: 400px;
-      line-height: 1.6;
-    }
-
-    .overlay .frog-icon {
-      font-size: 5rem;
-      animation: bounce 1s ease-in-out infinite;
-    }
-
-    @keyframes bounce {
-      0%, 100% { transform: translateY(0); }
-      50% { transform: translateY(-15px); }
-    }
-
-    .btn {
-      padding: 16px 48px;
-      font-family: inherit;
-      font-size: 1.3rem;
-      font-weight: 700;
-      color: #0f172a;
-      background: linear-gradient(135deg, var(--emerald) 0%, #10b981 100%);
-      border: none;
-      border-radius: 999px;
-      cursor: pointer;
-      box-shadow: 
-        0 8px 32px rgba(52, 211, 153, 0.4),
-        inset 0 2px 0 rgba(255,255,255,0.2);
-      transition: all 0.2s ease;
-    }
-
-    .btn:hover {
-      transform: translateY(-3px) scale(1.02);
-      box-shadow: 0 12px 40px rgba(52, 211, 153, 0.5);
-    }
-
-    .btn:active {
-      transform: translateY(0) scale(0.98);
-    }
-
-    .controls-hint {
-      display: flex;
-      gap: 8px;
-      margin-top: 8px;
-    }
-
-    .key {
-      width: 40px;
-      height: 40px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: rgba(255,255,255,0.1);
-      border: 2px solid rgba(255,255,255,0.2);
-      border-radius: 8px;
-      font-size: 1.1rem;
-      color: #94a3b8;
-    }
-
-    .touch-controls {
-      display: none;
-      position: fixed;
-      bottom: 20px;
-      left: 50%;
-      transform: translateX(-50%);
-      gap: 8px;
-      z-index: 15;
-      pointer-events: none;
-      opacity: 0;
-      transition: opacity 0.3s ease;
-    }
-
-    .touch-controls.active {
-      pointer-events: auto;
-      opacity: 1;
-    }
-
-    .touch-btn {
-      width: 64px;
-      height: 64px;
-      border-radius: 16px;
-      border: 2px solid rgba(52, 211, 153, 0.4);
-      background: rgba(15, 23, 42, 0.9);
-      color: var(--emerald);
-      font-size: 1.5rem;
-      cursor: pointer;
-      backdrop-filter: blur(8px);
-      transition: all 0.1s ease;
-    }
-
-    .touch-btn:active {
-      background: var(--emerald);
-      color: #0f172a;
-      transform: scale(0.95);
-    }
-
-    @media (pointer: coarse), (max-width: 768px) {
-      .touch-controls {
-        display: grid;
-        grid-template-columns: repeat(3, 1fr);
-        grid-template-rows: repeat(2, 1fr);
-      }
-      .touch-controls .up { grid-column: 2; grid-row: 1; }
-      .touch-controls .left { grid-column: 1; grid-row: 2; }
-      .touch-controls .down { grid-column: 2; grid-row: 2; }
-      .touch-controls .right { grid-column: 3; grid-row: 2; }
-    }
-
-    .score-popup {
-      position: absolute;
-      font-size: 1.5rem;
-      font-weight: 700;
-      color: var(--amber);
-      text-shadow: 0 2px 8px rgba(0,0,0,0.5);
-      pointer-events: none;
-      animation: scoreFloat 1s ease-out forwards;
-      z-index: 15;
-    }
-
-    @keyframes scoreFloat {
-      0% { opacity: 1; transform: translateY(0) scale(1); }
-      100% { opacity: 0; transform: translateY(-40px) scale(1.3); }
-    }
+    .fcd-chip.earned { border-color: #fbbf24; color: #fbbf24; cursor: pointer; }
+    .fcd-chip.equipped { background: #fbbf24; color: #1e293b; font-weight: 700; }
   </style>
 </head>
 <body>
-  <div class="game-container">
-    <canvas id="game" width="900" height="675"></canvas>
-    
-    <div class="hud">
-      <div class="hud-item">🏆 Score: <span id="score">0</span></div>
-      <div class="hud-item">⭐ Best: <span id="best">0</span></div>
-    </div>
+<div id="gij-wrap">
 
-    <div id="startOverlay" class="overlay">
-      <div class="frog-icon">🐸</div>
-      <h2>Frog Cross Dash</h2>
-      <p>Hop across busy roads and rushing rivers! Dodge cars, ride logs, and reach the lily pads to score points!</p>
-      <button class="btn" id="startBtn">Start Hopping!</button>
-      <div class="controls-hint">
-        <div class="key">W</div>
-        <div class="key">A</div>
-        <div class="key">S</div>
-        <div class="key">D</div>
-        <span style="color: #64748b; margin-left: 8px;">or Arrow Keys</span>
+  <!-- ── Try-Now Overlay ── -->
+  <div id="gij-try-overlay" class="gij-overlay">
+    <div class="gij-modal">
+      <h1 data-game-title>Frog Cross Dash</h1>
+      <p id="gij-description">Hop across busy roads and rushing rivers! Dodge cars, ride logs, and reach the lily pads!</p>
+      <button id="gij-try-btn" class="gij-btn gij-btn-primary">▶ Play Now</button>
+    </div>
+  </div>
+
+  <!-- ── Instructions Overlay ── -->
+  <div id="gij-instructions-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>How to Play</h2>
+      <ul id="gij-instructions" class="gij-list"></ul>
+      <button id="gij-start-btn" class="gij-btn gij-btn-primary">Start Hopping!</button>
+    </div>
+  </div>
+
+  <!-- ── Game-Over Overlay ── -->
+  <div id="gij-gameover-overlay" class="gij-overlay hidden">
+    <div class="gij-modal">
+      <h2>Game Over</h2>
+      <p id="fcd-reason"></p>
+      <div class="gij-score-row">
+        <span id="gij-final-score">Score: 0</span>
+        <span id="gij-final-hs">Best: 0</span>
       </div>
-    </div>
-
-    <div id="gameOverOverlay" class="overlay hidden">
-      <div class="frog-icon">💀</div>
-      <h2>Game Over!</h2>
-      <p id="gameOverText">You scored 0 points!</p>
-      <button class="btn" id="retryBtn">Try Again</button>
+      <p id="fcd-stats" class="fcd-meta-line"></p>
+      <p id="fcd-nextgoal" class="fcd-goal-line"></p>
+      <div id="fcd-unlocks"></div>
+      <button id="gij-restart-btn" class="gij-btn gij-btn-primary">Try Again</button>
     </div>
   </div>
 
-  <div class="touch-controls">
-    <button class="touch-btn up" data-dir="up">▲</button>
-    <button class="touch-btn left" data-dir="left">◀</button>
-    <button class="touch-btn down" data-dir="down">▼</button>
-    <button class="touch-btn right" data-dir="right">▶</button>
-  </div>
+  <!-- ── Stage ── -->
+  <div id="gij-stage">
+    <div id="gij-hud" class="hidden">
+      <div class="gij-badge">⭐ <strong id="gij-score">0</strong></div>
+      <div class="gij-badge">🏆 <strong id="gij-highscore">0</strong></div>
+      <div class="gij-badge">🏁 <strong id="fcd-crossings">0</strong></div>
+    </div>
+    <canvas id="gij-canvas"></canvas>
+    <div id="gij-controls"></div>
+  </div><!-- /gij-stage -->
+</div><!-- /gij-wrap -->
 
-  <script>
-    (() => {
-      // ============== CONFIGURATION ==============
-      const CONFIG = {
-        CELL_SIZE: 50,
-        COLS: 18,
-        ROWS: 13,
-        SAFE_ROWS: 2,           // Safe zone rows at bottom
-        GOAL_ROWS: 1,           // Goal zone rows at top
-        BASE_SPEED: 25,         // MUCH slower base speed (was 50-150)
-        SPEED_VARIATION: 20,    // Speed variation (was 100)
-        HOP_DURATION: 0.12,     // Hop animation duration
-        PARTICLE_COUNT: 50,     // Ambient particles
-        SNAKE_DELAY: 3.5,       // Seconds before snake appears when idle
-        SNAKE_SPEED: 2.5,       // Snake movement speed (cells per second)
-        LOG_TIP_THRESHOLD: 0.7, // How close to edge before log starts tipping
-        LOG_CAPSIZE_TIME: 1.5,  // Seconds on edge before log capsizes
+<script src="/game-framework/game-engine.js"></script>
+<script src="/game-framework/game-utils.js"></script>
+<script src="/game-framework/game-audio.js"></script>
+<script>
+// ════════════════════════════════════════════════════════════
+//  GAME config
+// ════════════════════════════════════════════════════════════
+const GAME = {
+  slug:  'frog-cross-dash',
+  title: 'Frog Cross Dash',
+  description: 'Hop across busy roads and rushing rivers! Dodge cars, ride logs, and reach the lily pads!',
+  instructions: [
+    '<strong>Arrow Keys / WASD:</strong> Hop one square at a time',
+    '<strong>Roads:</strong> Dodge the traffic — bigger vehicles are slower but wider',
+    '<strong>Rivers:</strong> Ride the logs, but stay near the middle or they capsize!',
+    '<strong>🪰 Dragonflies:</strong> Detour to grab them for bonus points',
+    '<strong>Beware:</strong> Night falls at crossing 5, the river surges at 8, and a heron hunts from 12…',
+    '<strong>Goal:</strong> Cross again and again — lifetime crossings unlock skins, palettes and Turbo mode! 🐍',
+  ],
+  controls: [
+    { label: '◀', action: 'left'  },
+    { label: '▲', action: 'up'    },
+    { label: '▼', action: 'down'  },
+    { label: '▶', action: 'right' },
+  ],
+  width: 900, height: 650,
+};
+
+const canvas    = document.getElementById('gij-canvas');
+const game      = new GameEngine(canvas).setup(GAME);
+const input     = new InputManager();
+const particles = new ParticleSystem();
+
+// Audio: init on the framework buttons (a user gesture), per JUICE-CHECKLIST.
+// GameAudio.play is a safe no-op before init and if audio is unavailable.
+function sfx(name) { try { GameAudio.play(name); } catch (e) { /* never crash for a bleep */ } }
+['gij-try-btn', 'gij-start-btn', 'gij-restart-btn'].forEach((id) => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener('click', () => { try { GameAudio.init(); } catch (e) {} });
+});
+
+// ════════════════════════════════════════════════════════════
+//  Tuning
+// ════════════════════════════════════════════════════════════
+const CELL = 50, COLS = 18, ROWS = 13;
+const SAFE_ROWS = 2, GOAL_ROWS = 1;
+// Lane speeds: deliberately far below the RUNNER preset (240 px/s) — this is a
+// grid-hop game with 50px cells, so 25–45 px/s base keeps the first crossing
+// tutorial-easy. Difficulty ramps via speedMult()/density per crossing, and the
+// two axes are STAGGERED: speed rises after odd crossings, density after every
+// 4th crossing — never both in the same beat (DIFFICULTY doc §4).
+const BASE_SPEED = 25, SPEED_VARIATION = 20;
+const HOP_DURATION = 0.12;
+const SNAKE_DELAY = 3.5, SNAKE_SPEED = 2.5;        // cells/s
+const SNAKE_TELEGRAPH = 0.8, SNAKE_CHASE_TIME = 6; // s
+const LOG_TIP_THRESHOLD = 0.7, LOG_CAPSIZE_TIME = 1.5;
+const NIGHT_AT = 5, SURGE_AT = 8, HERON_AT = 12;   // phase milestones (crossings)
+
+// ════════════════════════════════════════════════════════════
+//  Meta-progression (localStorage, graceful degradation)
+// ════════════════════════════════════════════════════════════
+const META_KEY = 'gij-meta:frog-cross-dash';
+const UNLOCKS = [
+  { id: 'golden-frog', label: 'Golden Frog',       need: 5  },
+  { id: 'night-lily',  label: 'Night-Lily Palette', need: 10 },
+  { id: 'turbo',       label: 'Turbo Mode',         need: 25 },
+];
+
+function defaultMeta() {
+  return {
+    v: 1, totalRuns: 0, lifetimeCrossings: 0,
+    bestScore: 0, bestCrossings: 0, turboBest: 0,
+    unlocks: {},
+    equipped: { skin: 'default', palette: 'default', turbo: false },
+  };
+}
+function loadMeta() {
+  try {
+    const m = JSON.parse(localStorage.getItem(META_KEY));
+    if (!m || m.v !== 1) return defaultMeta();
+    const d = defaultMeta();
+    return Object.assign(d, m, {
+      unlocks: Object.assign({}, m.unlocks || {}),
+      equipped: Object.assign(d.equipped, m.equipped || {}),
+    });
+  } catch (e) { return defaultMeta(); }
+}
+function saveMeta() {
+  try { localStorage.setItem(META_KEY, JSON.stringify(meta)); } catch (e) {}
+}
+let meta = loadMeta();
+
+function isEquipped(id) {
+  if (id === 'golden-frog') return meta.equipped.skin === 'golden';
+  if (id === 'night-lily')  return meta.equipped.palette === 'nightlily';
+  if (id === 'turbo')       return !!meta.equipped.turbo;
+  return false;
+}
+function toggleEquip(id) {
+  if (id === 'golden-frog') meta.equipped.skin    = meta.equipped.skin === 'golden' ? 'default' : 'golden';
+  if (id === 'night-lily')  meta.equipped.palette = meta.equipped.palette === 'nightlily' ? 'default' : 'nightlily';
+  if (id === 'turbo')       meta.equipped.turbo   = !meta.equipped.turbo;
+  saveMeta();
+}
+function unlockEarned(id) {
+  const u = UNLOCKS.find((x) => x.id === id);
+  return !!u && meta.lifetimeCrossings >= u.need;
+}
+function checkUnlocks() {
+  for (const u of UNLOCKS) {
+    const slot = meta.unlocks[u.id] || (meta.unlocks[u.id] = { earned: false, celebrated: false });
+    if (!slot.earned && meta.lifetimeCrossings >= u.need) {
+      slot.earned = true;
+      slot.celebrated = true;
+      saveMeta();                                         // persist immediately
+      addBigText('UNLOCKED: ' + u.label + '!');
+      sfx('powerup');
+      if ((particles.count || 0) < 200) {
+        particles.burst(GAME.width / 2, 90, 25, {
+          colors: ['#ffd700', '#ffffff', '#fbbf24'], minSpeed: 60, maxSpeed: 240, gravity: -60,
+        });
+      }
+      game.shake(3, 0.15);
+    }
+  }
+}
+function nextGoalText() {
+  const locked = UNLOCKS.filter((u) => meta.lifetimeCrossings < u.need);
+  if (locked.length) {
+    const u = locked[0];
+    const left = u.need - meta.lifetimeCrossings;
+    return '★ Next goal: ' + u.label + ' — ' + left + ' lifetime crossing' + (left === 1 ? '' : 's') + ' to go';
+  }
+  return 'All unlocked! Beat your best: ' + Math.max(meta.bestScore, game.getHigh ? game.getHigh() : 0);
+}
+function renderChips() {
+  const wrap = document.getElementById('fcd-unlocks');
+  if (!wrap) return;
+  wrap.innerHTML = '';
+  for (const u of UNLOCKS) {
+    const earned = unlockEarned(u.id);
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'fcd-chip' + (earned ? ' earned' : '') + (earned && isEquipped(u.id) ? ' equipped' : '');
+    chip.textContent = earned ? u.label : '🔒 ' + u.label;
+    chip.title = earned
+      ? (u.id === 'turbo' ? 'Tap to toggle — applies next run (2× score!)' : 'Tap to equip')
+      : 'Unlock at ' + u.need + ' lifetime crossings';
+    if (earned) chip.addEventListener('click', () => { toggleEquip(u.id); renderChips(); sfx('click'); });
+    wrap.appendChild(chip);
+  }
+}
+function updateOverlayMeta() {
+  const goalEl = document.getElementById('fcd-nextgoal');
+  if (goalEl) goalEl.textContent = nextGoalText();
+  const statsEl = document.getElementById('fcd-stats');
+  if (statsEl) {
+    let s = 'Run #' + meta.totalRuns + ' · Lifetime crossings: ' + meta.lifetimeCrossings +
+            ' · Best run: ' + meta.bestCrossings + ' crossing' + (meta.bestCrossings === 1 ? '' : 's');
+    if (meta.turboBest > 0) s += ' · Turbo best: ' + meta.turboBest;
+    statsEl.textContent = s;
+  }
+  renderChips();
+}
+
+// ════════════════════════════════════════════════════════════
+//  Skins & palettes (cosmetic unlockables)
+// ════════════════════════════════════════════════════════════
+const SKINS = {
+  default: { body: ['#6ee7b7', '#34d399', '#059669'], spots: '#10b981', mouth: '#059669' },
+  golden:  { body: ['#fef08a', '#fbbf24', '#b45309'], spots: '#d97706', mouth: '#92400e' },
+};
+const PALETTES = {
+  default: {
+    sky:   ['#0f172a', '#1e3a5f', '#1e1b4b', '#312e81'],
+    grass: ['#166534', '#15803d', '#14532d'],
+    blades: ['#22c55e', '#16a34a'],
+    water: ['#0284c7', '#0ea5e9', '#0369a1'],
+    goal:  ['#047857', '#065f46'],
+    pad:   ['#4ade80', '#22c55e', '#15803d'],
+  },
+  nightlily: {
+    sky:   ['#1a0b2e', '#3b0f4f', '#4a044e', '#701a75'],
+    grass: ['#1e1b4b', '#312e81', '#1e1b4b'],
+    blades: ['#818cf8', '#6366f1'],
+    water: ['#7e22ce', '#a855f7', '#6b21a8'],
+    goal:  ['#831843', '#500724'],
+    pad:   ['#f9a8d4', '#ec4899', '#9d174d'],
+  },
+};
+function skin() { return SKINS[meta.equipped.skin === 'golden' && unlockEarned('golden-frog') ? 'golden' : 'default']; }
+function pal()  { return PALETTES[meta.equipped.palette === 'nightlily' && unlockEarned('night-lily') ? 'nightlily' : 'default']; }
+
+// ════════════════════════════════════════════════════════════
+//  Game state
+// ════════════════════════════════════════════════════════════
+const state = {
+  time: 0,
+  frog: null,
+  lanes: [],
+  fireflies: [],
+  ripples: [],
+  floatTexts: [],
+  bigTexts: [],
+  flies: [],
+  flyTimer: 2,
+  snake: null,
+  heron: null,
+  idleTime: 0,
+  lastFrogPos: null,
+  highestRow: 0,
+  crossings: 0,
+  turbo: false,
+  hitStop: 0,
+  dying: false,
+  deathTimer: 0,
+  deathReason: null,
+  nearMissCd: 0,
+};
+
+// ── Staggered difficulty (fixes the wave-5 cliff) ────────────
+// Speed rises in small steps completed after ODD crossings (1,3,5…), capped;
+// density (extra cars / shorter logs) rises only at crossings 4 and 8.
+// The two axes never move in the same crossing.
+function speedMult() {
+  const s = Math.min(1.8, 1 + Math.ceil(state.crossings / 2) * 0.08);
+  return s * (state.turbo ? 1.25 : 1);
+}
+function extraCars()  { return Math.min(2, Math.floor(state.crossings / 4)); }
+function logShrink()  { return Math.min(1.2, Math.floor(state.crossings / 4) * 0.5); }
+// River surge (phase 2): continuous sine build = inherently telegraphed.
+// Per-lane phase offsets make surges alternate between lanes/directions.
+function surgeFactor(lane) {
+  if (lane.type !== 'river' || state.crossings < SURGE_AT) return 1;
+  return 1 + 0.5 * Math.max(0, Math.sin(state.time * 0.7 + (lane.surgePhase || 0)));
+}
+function laneSpeed(lane) { return lane.speed * speedMult() * surgeFactor(lane); }
+function isNight() { return state.crossings >= NIGHT_AT; }
+
+// Score helper — everything still flows through game.addScore().
+function addPts(p, x, y) {
+  const pts = state.turbo ? p * 2 : p;
+  game.addScore(pts);
+  if (x !== undefined) addFloatText(x, y, '+' + pts);
+  return pts;
+}
+
+// ── Ambient firefly particles (decorative, dt-based) ─────────
+function makeFirefly() {
+  return {
+    x: Math.random() * GAME.width,
+    y: Math.random() * GAME.height,
+    size: Math.random() * 3 + 1,
+    vx: (Math.random() - 0.5) * 30,   // px/s
+    vy: -(Math.random() * 18 + 6),    // px/s upward
+    opacity: Math.random() * 0.5 + 0.2,
+    hue: Math.random() > 0.7 ? 160 : 45,
+  };
+}
+function updateFireflies(dt) {
+  for (const f of state.fireflies) {
+    f.x += f.vx * dt;
+    f.y += f.vy * dt;
+    if (f.y < 0) Object.assign(f, makeFirefly(), { y: GAME.height });
+    if (f.x < 0) f.x = GAME.width;
+    if (f.x > GAME.width) f.x = 0;
+  }
+}
+
+// ── Ripples (dt-based) ───────────────────────────────────────
+function addRipple(x, y) {
+  state.ripples.push({ x, y, radius: 5, opacity: 0.8 });
+}
+function updateRipples(dt) {
+  for (let i = state.ripples.length - 1; i >= 0; i--) {
+    const r = state.ripples[i];
+    r.radius  += 90 * dt;    // px/s
+    r.opacity -= 1.2 * dt;   // per second
+    if (r.opacity <= 0) state.ripples.splice(i, 1);
+  }
+}
+
+// ── Floating score texts + big announcements ─────────────────
+function addFloatText(x, y, txt, color) {
+  state.floatTexts.push({ x: x + (Math.random() - 0.5) * 20, y, txt, color: color || '#fbbf24', life: 1 });
+}
+function updateFloatTexts(dt) {
+  for (let i = state.floatTexts.length - 1; i >= 0; i--) {
+    const t = state.floatTexts[i];
+    t.y    -= 40 * dt;
+    t.life -= dt;
+    if (t.life <= 0) state.floatTexts.splice(i, 1);
+  }
+}
+function addBigText(txt) {
+  state.bigTexts.push({ txt, life: 1.8, maxLife: 1.8 });
+}
+function updateBigTexts(dt) {
+  for (let i = state.bigTexts.length - 1; i >= 0; i--) {
+    state.bigTexts[i].life -= dt;
+    if (state.bigTexts[i].life <= 0) state.bigTexts.splice(i, 1);
+  }
+}
+function announcePhase(txt) {
+  addBigText(txt);
+  sfx('levelup');
+  if ((particles.count || 0) < 200) {
+    particles.burst(GAME.width / 2, GAME.height / 2, 30, {
+      colors: ['#fbbf24', '#f472b6', '#22d3ee', '#ffffff'],
+      minSpeed: 100, maxSpeed: 400, lifetime: 0.9,
+    });
+  }
+  game.shake(4, 0.2);
+}
+
+// ════════════════════════════════════════════════════════════
+//  Frog
+// ════════════════════════════════════════════════════════════
+class Frog {
+  constructor(col, row) {
+    this.col = col;
+    this.row = row;
+    this.x = col * CELL + CELL / 2;
+    this.y = row * CELL + CELL / 2;
+    this.targetX = this.x;
+    this.targetY = this.y;
+    this.startX = this.x;
+    this.startY = this.y;
+    this.hopping = false;
+    this.hopProgress = 0;
+    this.direction = 0; // 0=up 1=right 2=down 3=left
+    this.onLog = null;
+    this.currentLog = null;
+    this.squish = 1;
+    this.landingGrace = 0.15;  // seconds of grace after landing
+    this.logEdgeTime = 0;
+    this.logTilt = 0;
+  }
+
+  moveTo(col, row) {
+    if (this.hopping) return false;
+    if (col < 0 || col >= COLS || row < 0 || row >= ROWS) return false;
+
+    if (row < this.row) this.direction = 0;
+    else if (col > this.col) this.direction = 1;
+    else if (row > this.row) this.direction = 2;
+    else if (col < this.col) this.direction = 3;
+
+    this.col = col;
+    this.row = row;
+    this.startX = this.x;
+    this.startY = this.y;
+    this.targetX = col * CELL + CELL / 2;
+    this.targetY = row * CELL + CELL / 2;
+    this.hopping = true;
+    this.hopProgress = 0;
+    this.onLog = null;
+    this.currentLog = null;
+    return true;
+  }
+
+  update(dt) {
+    if (this.hopping) {
+      this.hopProgress += dt / HOP_DURATION;
+      if (this.hopProgress >= 1) {
+        this.hopProgress = 1;
+        this.hopping = false;
+        this.x = this.targetX;
+        this.y = this.targetY;
+        this.landingGrace = 0.15;
+      } else {
+        const ease = GameUtils.easeInOut(this.hopProgress);
+        this.x = GameUtils.lerp(this.startX, this.targetX, ease);
+        this.y = GameUtils.lerp(this.startY, this.targetY, ease);
+      }
+      this.squish = 1 + 0.2 * Math.sin(this.hopProgress * Math.PI);
+    } else {
+      // Smooth settle toward target — dt-based exponential approach
+      const k = Math.min(1, 12 * dt);
+      this.x += (this.targetX - this.x) * k;
+      this.y += (this.targetY - this.y) * k;
+      this.squish += (1 - this.squish) * Math.min(1, 6 * dt);
+    }
+
+    if (this.landingGrace > 0) this.landingGrace -= dt;
+
+    // Ride the log
+    if (this.onLog) {
+      const logSpeed = this.onLog.speed * this.onLog.direction * dt / CELL;
+      this.col += logSpeed;
+      this.targetX = this.col * CELL + CELL / 2;
+      if (this.col < -0.5 || this.col >= COLS + 0.5) return 'drowned';
+    }
+    return null;
+  }
+
+  draw(ctx, fx) {
+    const hopHeight = this.hopping ? Math.sin(this.hopProgress * Math.PI) * 15 : 0;
+    const drawY = this.y - hopHeight + (fx && fx.dy ? fx.dy : 0);
+    const sk = skin();
+
+    ctx.save();
+    ctx.translate(this.x, drawY);
+    if (fx) {
+      if (fx.alpha !== undefined) ctx.globalAlpha = Math.max(0, fx.alpha);
+      if (fx.rot) ctx.rotate(fx.rot);
+      ctx.scale(fx.sx || 1, fx.sy || 1);
+    }
+
+    // Shadow
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.beginPath();
+    ctx.ellipse(0, 20 - hopHeight * 0.3, 18, 8, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.rotate([0, Math.PI / 2, Math.PI, -Math.PI / 2][this.direction]);
+    ctx.scale(1, this.squish);
+
+    // Idle bob (JUICE §3) — subtle, on top of hop animation
+    if (!this.hopping && !fx) ctx.translate(0, Math.sin(state.time * 4) * 2);
+
+    const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 25);
+    gradient.addColorStop(0, sk.body[0]);
+    gradient.addColorStop(0.6, sk.body[1]);
+    gradient.addColorStop(1, sk.body[2]);
+    ctx.fillStyle = gradient;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 18, 22, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Spots
+    ctx.fillStyle = sk.spots;
+    ctx.beginPath();
+    ctx.ellipse(-6, -5, 4, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(6, -5, 4, 5, 0, 0, Math.PI * 2);
+    ctx.ellipse(0, 5, 5, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Eyes
+    ctx.fillStyle = '#fef3c7';
+    ctx.beginPath();
+    ctx.arc(-8, -12, 8, 0, Math.PI * 2);
+    ctx.arc(8, -12, 8, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#fff';
+    ctx.beginPath();
+    ctx.arc(-10, -14, 3, 0, Math.PI * 2);
+    ctx.arc(6, -14, 3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath();
+    ctx.arc(-7, -11, 4, 0, Math.PI * 2);
+    ctx.arc(9, -11, 4, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Mouth
+    ctx.strokeStyle = sk.mouth;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 2, 6, 0.2, Math.PI - 0.2);
+    ctx.stroke();
+
+    ctx.restore();
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  Danger snake (idle punisher — now with a fair 0.8s telegraph)
+// ════════════════════════════════════════════════════════════
+class Snake {
+  constructor(frog) {
+    // Enters from the bottom edge in the frog's column, so the approach path
+    // is a visible straight line up the screen.
+    this.col = GameUtils.clamp ? GameUtils.clamp(Math.round(frog.col), 1, COLS - 2)
+                               : Math.min(COLS - 2, Math.max(1, Math.round(frog.col)));
+    this.row = ROWS + 1;
+    this.x = this.col * CELL + CELL / 2;
+    this.y = this.row * CELL + CELL / 2;
+    this.segments = [];
+    this.phase = 'telegraph';           // telegraph → chase → retreat
+    this.timer = SNAKE_TELEGRAPH;
+    this.chaseTime = SNAKE_CHASE_TIME;
+    sfx('hit');                         // the "hiss" cue at telegraph start
+  }
+
+  update(dt, targetCol, targetRow) {
+    if (this.phase === 'telegraph') {
+      this.timer -= dt;
+      // Rustling grass at the entry point
+      if (Math.random() < 0.35 && (particles.count || 0) < 200) {
+        particles.burst(this.x + (Math.random() - 0.5) * 30, GAME.height - 8, 2, {
+          colors: ['#4ade80', '#86efac', '#a3e635'],
+          minSpeed: 20, maxSpeed: 90, gravity: -60, lifetime: 0.5,
+        });
+      }
+      if (this.timer <= 0) this.phase = 'chase';
+      return null;                      // cannot kill during the telegraph
+    }
+
+    if (this.phase === 'retreat') {
+      if (this.segments.length >= 8) this.segments.pop();
+      this.segments.unshift({ x: this.x, y: this.y });
+      this.row += SNAKE_SPEED * 1.6 * dt;
+      this.y = this.row * CELL + CELL / 2;
+      if (this.row > ROWS + 2) return 'gone';
+      return null;
+    }
+
+    // chase
+    this.chaseTime -= dt;
+    if (this.chaseTime <= 0) { this.phase = 'retreat'; return null; }
+
+    const dx = targetCol - this.col;
+    const dy = targetRow - this.row;
+    const dist = Math.sqrt(dx * dx + dy * dy);
+
+    if (dist > 0.1) {
+      if (this.segments.length >= 8) this.segments.pop();
+      this.segments.unshift({ x: this.x, y: this.y });
+
+      const step = SNAKE_SPEED * dt;   // cells/s × s
+      this.col += (dx / dist) * step;
+      this.row += (dy / dist) * step;
+      this.x = this.col * CELL + CELL / 2;
+      this.y = this.row * CELL + CELL / 2;
+    }
+
+    if (dist < 0.6) return 'caught';
+    return null;
+  }
+
+  draw(ctx) {
+    const frog = state.frog;
+
+    // Approach path — dashed line so the player always sees where it's coming from
+    if (frog && (this.phase === 'telegraph' || this.phase === 'chase')) {
+      ctx.save();
+      ctx.strokeStyle = this.phase === 'telegraph' ? 'rgba(239,68,68,0.35)' : 'rgba(239,68,68,0.5)';
+      ctx.lineWidth = 2;
+      ctx.setLineDash([6, 9]);
+      ctx.beginPath();
+      ctx.moveTo(this.x, Math.min(this.y, GAME.height - 6));
+      ctx.lineTo(frog.x, frog.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+
+    if (this.phase === 'telegraph') {
+      // Shadow swelling at the bottom edge + pulsing warning
+      const p = 1 - this.timer / SNAKE_TELEGRAPH;
+      ctx.save();
+      ctx.globalAlpha = 0.35 + 0.35 * p;
+      ctx.fillStyle = '#052e16';
+      ctx.beginPath();
+      ctx.ellipse(this.x, GAME.height - 8, 16 + 20 * p, 6 + 4 * p, 0, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.globalAlpha = 0.6 + 0.4 * Math.sin(state.time * 12);
+      ctx.fillStyle = '#ef4444';
+      ctx.font = 'bold 22px sans-serif';
+      ctx.textAlign = 'center';
+      ctx.fillText('!', this.x, GAME.height - 20);
+      ctx.restore();
+      return;
+    }
+
+    for (let i = this.segments.length - 1; i >= 0; i--) {
+      const seg = this.segments[i];
+      const size = 12 - i * 1.2;
+      const alpha = 1 - (i / this.segments.length) * 0.5;
+      ctx.fillStyle = `rgba(34, 197, 94, ${alpha})`;
+      ctx.beginPath();
+      ctx.arc(seg.x, seg.y, size, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    ctx.save();
+    ctx.translate(this.x, this.y);
+    ctx.shadowColor = '#22c55e';
+    ctx.shadowBlur = 20;
+
+    const headGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 18);
+    headGrad.addColorStop(0, '#4ade80');
+    headGrad.addColorStop(0.7, '#22c55e');
+    headGrad.addColorStop(1, '#15803d');
+    ctx.fillStyle = headGrad;
+    ctx.beginPath();
+    ctx.ellipse(0, 0, 18, 14, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#166534';
+    ctx.beginPath();
+    ctx.ellipse(-5, -2, 4, 6, 0.3, 0, Math.PI * 2);
+    ctx.ellipse(5, -2, 4, 6, -0.3, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = '#fef08a';
+    ctx.beginPath();
+    ctx.ellipse(-7, -6, 5, 4, 0, 0, Math.PI * 2);
+    ctx.ellipse(7, -6, 5, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.fillStyle = '#1a1a1a';
+    ctx.beginPath();
+    ctx.ellipse(-7, -6, 1.5, 4, 0, 0, Math.PI * 2);
+    ctx.ellipse(7, -6, 1.5, 4, 0, 0, Math.PI * 2);
+    ctx.fill();
+
+    ctx.strokeStyle = '#ef4444';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, 8);
+    ctx.lineTo(0, 16);
+    ctx.lineTo(-4, 20);
+    ctx.moveTo(0, 16);
+    ctx.lineTo(4, 20);
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  Heron set-piece (phase 3, crossings ≥ 12)
+//  rest → telegraph (1.2s shadow at a FIXED spot) → strike → rest
+// ════════════════════════════════════════════════════════════
+function makeHeron() {
+  return { phase: 'rest', timer: 4, tx: 0, ty: 0 };
+}
+function updateHeron(dt) {
+  if (state.crossings < HERON_AT) return;
+  if (!state.heron) state.heron = makeHeron();
+  const h = state.heron;
+  const frog = state.frog;
+  h.timer -= dt;
+
+  if (h.phase === 'rest') {
+    if (h.timer <= 0 && frog && !frog.hopping) {
+      h.phase = 'telegraph';
+      h.timer = 1.2;
+      h.tx = frog.x;                    // snapshot — committed, so it's dodgeable
+      h.ty = frog.y;
+      sfx('hit');
+      addFloatText(h.tx, h.ty - 40, '🦩 !', '#f87171');
+    }
+  } else if (h.phase === 'telegraph') {
+    if (h.timer <= 0) {
+      h.phase = 'strike';
+      h.timer = 0.3;
+      sfx('explosion');
+      game.shake(4, 0.15);
+      if ((particles.count || 0) < 200) {
+        particles.burst(h.tx, h.ty, 14, {
+          colors: ['#e2e8f0', '#94a3b8', '#ffffff'], minSpeed: 80, maxSpeed: 260, lifetime: 0.5,
+        });
+      }
+    }
+  } else if (h.phase === 'strike') {
+    if (frog && GameUtils.distance(frog.x, frog.y, h.tx, h.ty) < 34) {
+      frogDies('heron');
+      return;
+    }
+    if (h.timer <= 0) {
+      h.phase = 'rest';
+      h.timer = 5 + Math.random() * 3;
+    }
+  }
+}
+function drawHeronShadow(ctx) {
+  const h = state.heron;
+  if (!h || h.phase !== 'telegraph') return;
+  const p = 1 - h.timer / 1.2;
+  ctx.save();
+  ctx.globalAlpha = 0.25 + 0.4 * p;
+  ctx.fillStyle = '#020617';
+  ctx.beginPath();
+  ctx.ellipse(h.tx, h.ty, 12 + 28 * p, 8 + 18 * p, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // target ring
+  ctx.globalAlpha = 0.5 + 0.5 * Math.sin(state.time * 14);
+  ctx.strokeStyle = '#f87171';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.arc(h.tx, h.ty, 26, 0, Math.PI * 2);
+  ctx.stroke();
+  ctx.restore();
+}
+function drawHeronBird(ctx) {
+  const h = state.heron;
+  if (!h || h.phase !== 'strike') return;
+  const p = 1 - h.timer / 0.3;          // 0 → 1 over the strike
+  const by = h.ty - 140 * (1 - p);
+  ctx.save();
+  ctx.translate(h.tx, by);
+  // wings
+  ctx.fillStyle = '#cbd5e1';
+  ctx.beginPath();
+  ctx.moveTo(0, -6);
+  ctx.lineTo(-34, -22 + Math.sin(state.time * 30) * 6);
+  ctx.lineTo(-10, 2);
+  ctx.closePath();
+  ctx.moveTo(0, -6);
+  ctx.lineTo(34, -22 - Math.sin(state.time * 30) * 6);
+  ctx.lineTo(10, 2);
+  ctx.closePath();
+  ctx.fill();
+  // body
+  ctx.fillStyle = '#e2e8f0';
+  ctx.beginPath();
+  ctx.ellipse(0, -4, 14, 10, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // beak — pointing down at the target
+  ctx.fillStyle = '#f59e0b';
+  ctx.beginPath();
+  ctx.moveTo(-3, 2);
+  ctx.lineTo(3, 2);
+  ctx.lineTo(0, 22);
+  ctx.closePath();
+  ctx.fill();
+  // eye
+  ctx.fillStyle = '#0f172a';
+  ctx.beginPath();
+  ctx.arc(4, -7, 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ════════════════════════════════════════════════════════════
+//  Dragonflies (risk/reward pickups)
+// ════════════════════════════════════════════════════════════
+function updateFlies(dt) {
+  state.flyTimer -= dt;
+  if (state.flyTimer <= 0 && state.flies.length < 2) {
+    state.flies.push({
+      col: 1 + Math.floor(Math.random() * (COLS - 2)),
+      row: 1 + Math.floor(Math.random() * (ROWS - SAFE_ROWS - 1)),  // obstacle rows 1..10
+      life: 7,
+      t: Math.random() * 10,
+    });
+    state.flyTimer = 3.5 + Math.random() * 2;
+  }
+  const frog = state.frog;
+  for (let i = state.flies.length - 1; i >= 0; i--) {
+    const fly = state.flies[i];
+    fly.t += dt;
+    fly.life -= dt;
+    if (fly.life <= 0) { state.flies.splice(i, 1); continue; }
+    if (frog && !frog.hopping &&
+        Math.round(frog.row) === fly.row &&
+        Math.abs(frog.col - fly.col) < 0.7) {
+      const base = isNight() ? 40 : 25;
+      const x = fly.col * CELL + CELL / 2, y = fly.row * CELL + CELL / 2;
+      addPts(base, x, y - 18);
+      sfx('collect');
+      if ((particles.count || 0) < 200) {
+        particles.burst(x, y, 10, {
+          colors: ['#22d3ee', '#fbbf24', '#ffffff'],
+          minSpeed: 80, maxSpeed: 200, lifetime: 0.5, gravity: 100,
+        });
+      }
+      state.flies.splice(i, 1);
+    }
+  }
+}
+function drawFly(ctx, fly) {
+  if (fly.life < 1.5 && Math.floor(fly.life * 8) % 2 === 0) return;  // blink before despawn
+  const x = fly.col * CELL + CELL / 2;
+  const y = fly.row * CELL + CELL / 2 + Math.sin(fly.t * 5) * 4;
+  ctx.save();
+  ctx.translate(x, y);
+  // soft halo so it reads as a pickup
+  ctx.fillStyle = 'rgba(251, 191, 36, 0.15)';
+  ctx.beginPath();
+  ctx.arc(0, 0, 15, 0, Math.PI * 2);
+  ctx.fill();
+  // wings
+  const flap = Math.sin(fly.t * 40) * 0.5;
+  ctx.fillStyle = 'rgba(224, 242, 254, 0.7)';
+  ctx.beginPath();
+  ctx.ellipse(-7, -3, 8, 3, -0.5 + flap, 0, Math.PI * 2);
+  ctx.ellipse(7, -3, 8, 3, 0.5 - flap, 0, Math.PI * 2);
+  ctx.fill();
+  // body
+  ctx.fillStyle = '#22d3ee';
+  ctx.beginPath();
+  ctx.ellipse(0, 0, 3, 9, 0, 0, Math.PI * 2);
+  ctx.fill();
+  // eyes
+  ctx.fillStyle = '#0e7490';
+  ctx.beginPath();
+  ctx.arc(-2, -8, 2, 0, Math.PI * 2);
+  ctx.arc(2, -8, 2, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.restore();
+}
+
+// ════════════════════════════════════════════════════════════
+//  Lane generation
+// ════════════════════════════════════════════════════════════
+function generateLanes() {
+  state.lanes = [];
+
+  for (let i = 0; i < SAFE_ROWS; i++) {
+    state.lanes.push({ type: 'safe', items: [], decorations: generateGrassDecorations() });
+  }
+
+  const obstacleRows = ROWS - SAFE_ROWS - GOAL_ROWS;
+  for (let i = 0; i < obstacleRows; i++) {
+    const isRoad = (Math.floor(i / 2) % 2 === 0);
+    const type = isRoad ? 'road' : 'river';
+    const direction = (i % 2 === 0) ? 1 : -1;
+    const speed = BASE_SPEED + Math.random() * SPEED_VARIATION;   // px/s, × speedMult()/surge at use time
+    const items = [];
+
+    if (type === 'road') {
+      const carTypes = [
+        { width: 1.2, color: '#f97316', name: 'motorcycle', speedMod: 1.4 },
+        { width: 1.8, color: '#ef4444', name: 'compact',    speedMod: 1.2 },
+        { width: 2.2, color: '#3b82f6', name: 'sedan',      speedMod: 1.0 },
+        { width: 2.8, color: '#8b5cf6', name: 'suv',        speedMod: 0.85 },
+        { width: 3.5, color: '#f59e0b', name: 'truck',      speedMod: 0.7 },
+        { width: 4.5, color: '#10b981', name: 'bus',        speedMod: 0.5 },
+      ];
+      const carCount = 2 + Math.floor(Math.random() * 2) + extraCars();
+      const spacing = COLS / carCount;
+      for (let j = 0; j < carCount; j++) {
+        const carType = carTypes[Math.floor(Math.random() * carTypes.length)];
+        items.push({
+          col: j * spacing + Math.random() * (spacing * 0.3),
+          width: carType.width,
+          color: carType.color,
+          type: carType.name,
+          speedMod: carType.speedMod,
+        });
+      }
+    } else {
+      const logCount = 3 + Math.floor(Math.random() * 2);
+      const spacing = COLS / logCount;
+      for (let j = 0; j < logCount; j++) {
+        const logWidth = Math.max(1.8, 2.5 + Math.random() * 2.5 - logShrink());
+        items.push({
+          col: j * spacing + Math.random() * (spacing * 0.2),
+          width: logWidth,
+          tippiness: Math.max(0.3, 1 - logWidth / 5),
+        });
+      }
+    }
+
+    state.lanes.push({ type, items, direction, speed, surgePhase: i * 1.4 });
+  }
+
+  state.lanes.push({ type: 'goal', items: generateLilyPads() });
+}
+
+function generateGrassDecorations() {
+  const decorations = [];
+  for (let i = 0; i < 8; i++) {
+    decorations.push({
+      x: Math.random() * GAME.width,
+      type: Math.random() > 0.7 ? 'flower' : 'grass',
+      size: 0.5 + Math.random() * 0.5,
+    });
+  }
+  return decorations;
+}
+
+function generateLilyPads() {
+  const pads = [];
+  for (let i = 0; i < 5; i++) pads.push({ col: 1 + i * 3.5 });
+  return pads;
+}
+
+// ════════════════════════════════════════════════════════════
+//  Movement / scoring
+// ════════════════════════════════════════════════════════════
+function handleMove(direction) {
+  const frog = state.frog;
+  let newCol = frog.col;
+  let newRow = frog.row;
+
+  switch (direction) {
+    case 'up':    newRow--; break;
+    case 'down':  newRow++; break;
+    case 'left':  newCol--; break;
+    case 'right': newCol++; break;
+  }
+
+  if (frog.moveTo(Math.round(newCol), newRow)) {
+    sfx('jump');
+    // Take-off dust
+    if ((particles.count || 0) < 200) {
+      particles.burst(frog.startX, frog.startY + 14, 4, {
+        colors: ['#a7f3d0', '#ffffff'], minSpeed: 20, maxSpeed: 90, lifetime: 0.3, gravity: 60,
+      });
+    }
+
+    if (newRow < state.highestRow) {
+      const points = (state.highestRow - newRow) * 10;
+      state.highestRow = newRow;
+      addPts(points, frog.targetX, frog.targetY - 20);
+    }
+
+    // Reached the lily pads!
+    if (newRow === 0) {
+      addPts(100, frog.targetX, 30);
+      state.crossings++;
+      meta.lifetimeCrossings++;
+      saveMeta();
+      checkUnlocks();
+      const cEl = document.getElementById('fcd-crossings');
+      if (cEl) cEl.textContent = state.crossings;
+      sfx('combo');
+      if ((particles.count || 0) < 200) {
+        particles.burst(frog.targetX, CELL / 2, 24, {
+          colors: ['#4ade80', '#fbbf24', '#22d3ee', '#f472b6'],
+          minSpeed: 60, maxSpeed: 260, gravity: 120,
+        });
+      }
+
+      // Phase milestones — one qualitative change at a time
+      if (state.crossings === NIGHT_AT) announcePhase('🌙 NIGHT FALLS!');
+      if (state.crossings === SURGE_AT) announcePhase('🌊 RIVER SURGE!');
+      if (state.crossings === HERON_AT) announcePhase('🦩 HERON HUNTS!');
+
+      // Fresh layout each crossing (density steps live in generateLanes)
+      generateLanes();
+      state.frog = new Frog(Math.floor(COLS / 2), ROWS - 2);
+      state.highestRow = ROWS - 2;
+      state.flies = [];
+    }
+  }
+}
+
+// Edge-detected taps from the framework InputManager (keyboard + touch)
+const MOVE_DIRS = ['up', 'down', 'left', 'right'];
+const prevPressed = { up: false, down: false, left: false, right: false };
+function pollMoves() {
+  for (const d of MOVE_DIRS) {
+    const now = input.isPressed(d);
+    if (now && !prevPressed[d]) handleMove(d);
+    prevPressed[d] = now;
+  }
+}
+
+// ════════════════════════════════════════════════════════════
+//  Collisions
+// ════════════════════════════════════════════════════════════
+function checkCollisions() {
+  const frog = state.frog;
+  if (frog.hopping) return null;          // reaction time while mid-hop
+  if (frog.landingGrace > 0) return null; // grace period after landing
+
+  const laneIndex = ROWS - 1 - frog.row;
+  if (laneIndex < 0 || laneIndex >= state.lanes.length) return null;
+
+  const lane = state.lanes[laneIndex];
+  const laneY = frog.row * CELL;
+
+  if (lane.type === 'road') {
+    const frogBox = { x: frog.x - 18, y: frog.y - 18, w: 36, h: 36 };
+    let nearMiss = false;
+    for (const car of lane.items) {
+      const carBox = {
+        x: car.col * CELL,
+        y: laneY + 5,
+        w: car.width * CELL,
+        h: CELL - 10,
       };
-
-      // ============== CANVAS SETUP ==============
-      const canvas = document.getElementById('game');
-      const ctx = canvas.getContext('2d');
-      const container = document.querySelector('.game-container');
-      
-      // Overlays
-      const startOverlay = document.getElementById('startOverlay');
-      const gameOverOverlay = document.getElementById('gameOverOverlay');
-      const gameOverText = document.getElementById('gameOverText');
-      const startBtn = document.getElementById('startBtn');
-      const retryBtn = document.getElementById('retryBtn');
-      const scoreEl = document.getElementById('score');
-      const bestEl = document.getElementById('best');
-      const touchControls = document.querySelector('.touch-controls');
-
-      // ============== GAME STATE ==============
-      const state = {
-        running: false,
-        paused: false,
-        score: 0,
-        best: parseInt(localStorage.getItem('frogCrossDash_best') || '0'),
-        frog: null,
-        lanes: [],
-        particles: [],
-        ripples: [],
-        screenShake: 0,
-        snake: null,           // Danger snake that chases idle players
-        idleTime: 0,           // How long player has been idle
-        lastFrogPos: null,     // Track if frog moved
-        time: 0,
-        highestRow: 0,
-      };
-
-      // ============== PARTICLE SYSTEM ==============
-      class Particle {
-        constructor() {
-          this.reset();
-        }
-        reset() {
-          this.x = Math.random() * canvas.width;
-          this.y = Math.random() * canvas.height;
-          this.size = Math.random() * 3 + 1;
-          this.speedX = (Math.random() - 0.5) * 0.5;
-          this.speedY = Math.random() * 0.3 + 0.1;
-          this.opacity = Math.random() * 0.5 + 0.2;
-          this.hue = Math.random() > 0.7 ? 160 : 45; // Green or gold
-        }
-        update() {
-          this.x += this.speedX;
-          this.y -= this.speedY;
-          if (this.y < 0) this.reset();
-          if (this.x < 0) this.x = canvas.width;
-          if (this.x > canvas.width) this.x = 0;
-        }
-        draw() {
-          ctx.save();
-          ctx.globalAlpha = this.opacity * (0.5 + 0.5 * Math.sin(state.time * 3 + this.x));
-          ctx.fillStyle = `hsl(${this.hue}, 80%, 70%)`;
-          ctx.beginPath();
-          ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
-          ctx.fill();
-          ctx.restore();
-        }
+      if (GameUtils.hitTest(frogBox, carBox, 0.75)) return 'hit';
+      const bigBox = { x: carBox.x - 14, y: carBox.y - 14, w: carBox.w + 28, h: carBox.h + 28 };
+      if (GameUtils.hitTest(frogBox, bigBox, 1)) nearMiss = true;
+    }
+    if (nearMiss && state.nearMissCd <= 0) {
+      state.nearMissCd = 0.8;
+      addFloatText(frog.x, frog.y - 28, 'Close!', '#ffffff');
+      sfx('click');
+      if ((particles.count || 0) < 200) {
+        particles.burst(frog.x, frog.y, 5, {
+          colors: ['#ffffff'], minSpeed: 60, maxSpeed: 140, lifetime: 0.3,
+        });
       }
-
-      // ============== RIPPLE EFFECT ==============
-      class Ripple {
-        constructor(x, y) {
-          this.x = x;
-          this.y = y;
-          this.radius = 5;
-          this.maxRadius = 40;
-          this.opacity = 0.8;
+    }
+  } else if (lane.type === 'river') {
+    let onLog = false;
+    for (const log of lane.items) {
+      const logLeft = log.col - 0.3;
+      const logRight = log.col + log.width + 0.1;
+      if (frog.col >= logLeft && frog.col <= logRight) {
+        onLog = true;
+        frog.onLog = { speed: laneSpeed(lane), direction: lane.direction };
+        frog.currentLog = log;
+        if (Math.random() > 0.95) {
+          addRipple(frog.x + (Math.random() - 0.5) * 30, frog.y + 20);
         }
-        update() {
-          this.radius += 1.5;
-          this.opacity -= 0.02;
-        }
-        draw() {
-          if (this.opacity <= 0) return;
-          ctx.save();
-          ctx.globalAlpha = this.opacity;
-          ctx.strokeStyle = '#67e8f9';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(this.x, this.y, this.radius, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.restore();
-        }
-        isDead() {
-          return this.opacity <= 0;
-        }
+        break;
       }
+    }
+    if (!onLog) {
+      frog.onLog = null;
+      frog.currentLog = null;
+      return 'drowned';
+    }
+  } else {
+    frog.onLog = null;
+    frog.currentLog = null;
+  }
 
-      // ============== FROG ==============
-      class Frog {
-        constructor(col, row) {
-          this.col = col;
-          this.row = row;
-          this.x = col * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
-          this.y = row * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
-          this.targetX = this.x;
-          this.targetY = this.y;
-          this.hopping = false;
-          this.hopProgress = 0;
-          this.direction = 0; // 0=up, 1=right, 2=down, 3=left
-          this.onLog = null;
-          this.squish = 1;
-          this.landingGrace = 10; // Invincibility frames after landing
-          this.logEdgeTime = 0;   // Time spent on edge of log
-          this.logTilt = 0;       // Current log tilt angle
-        }
+  return null;
+}
 
-        moveTo(col, row) {
-          if (this.hopping) return false;
-          
-          // Bounds check
-          if (col < 0 || col >= CONFIG.COLS || row < 0 || row >= CONFIG.ROWS) return false;
-          
-          // Set direction
-          if (row < this.row) this.direction = 0;
-          else if (col > this.col) this.direction = 1;
-          else if (row > this.row) this.direction = 2;
-          else if (col < this.col) this.direction = 3;
-          
-          this.col = col;
-          this.row = row;
-          this.targetX = col * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
-          this.targetY = row * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
-          this.hopping = true;
-          this.hopProgress = 0;
-          this.onLog = null;
-          
-          return true;
-        }
-
-        update(delta) {
-          if (this.hopping) {
-            this.hopProgress += delta / CONFIG.HOP_DURATION;
-            if (this.hopProgress >= 1) {
-              this.hopProgress = 1;
-              this.hopping = false;
-              this.x = this.targetX;
-              this.y = this.targetY;
-              this.landingGrace = 8; // Brief invincibility after landing
-            } else {
-              // Smooth hop with arc
-              const t = this.hopProgress;
-              const ease = t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
-              this.x = this.x + (this.targetX - this.x) * ease * 0.3;
-              this.y = this.y + (this.targetY - this.y) * ease * 0.3;
-            }
-            // Squish animation
-            this.squish = 1 + 0.2 * Math.sin(this.hopProgress * Math.PI);
-          } else {
-            // Smoothly move to target
-            this.x += (this.targetX - this.x) * 0.2;
-            this.y += (this.targetY - this.y) * 0.2;
-            this.squish += (1 - this.squish) * 0.1;
-          }
-
-          // Move with log if on one
-          if (this.onLog) {
-            const logSpeed = this.onLog.speed * this.onLog.direction * delta / CONFIG.CELL_SIZE;
-            this.col += logSpeed;
-            this.targetX = this.col * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
-            
-            // Check if fell off
-            if (this.col < -0.5 || this.col >= CONFIG.COLS + 0.5) {
-              return 'drowned';
-            }
-          }
-
-          return null;
-        }
-
-        draw() {
-          const hopHeight = this.hopping ? Math.sin(this.hopProgress * Math.PI) * 15 : 0;
-          const drawY = this.y - hopHeight;
-          
-          ctx.save();
-          ctx.translate(this.x, drawY);
-          
-          // Shadow
-          ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
-          ctx.beginPath();
-          ctx.ellipse(0, 20 - hopHeight * 0.3, 18, 8, 0, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Rotate based on direction
-          ctx.rotate([0, Math.PI/2, Math.PI, -Math.PI/2][this.direction]);
-          ctx.scale(1, this.squish);
-          
-          // Body glow
-          const gradient = ctx.createRadialGradient(0, 0, 0, 0, 0, 25);
-          gradient.addColorStop(0, '#6ee7b7');
-          gradient.addColorStop(0.6, '#34d399');
-          gradient.addColorStop(1, '#059669');
-          
-          // Body
-          ctx.fillStyle = gradient;
-          ctx.beginPath();
-          ctx.ellipse(0, 0, 18, 22, 0, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Spots
-          ctx.fillStyle = '#10b981';
-          ctx.beginPath();
-          ctx.ellipse(-6, -5, 4, 5, 0, 0, Math.PI * 2);
-          ctx.ellipse(6, -5, 4, 5, 0, 0, Math.PI * 2);
-          ctx.ellipse(0, 5, 5, 4, 0, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Eyes
-          ctx.fillStyle = '#fef3c7';
-          ctx.beginPath();
-          ctx.arc(-8, -12, 8, 0, Math.PI * 2);
-          ctx.arc(8, -12, 8, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Eye shine
-          ctx.fillStyle = '#fff';
-          ctx.beginPath();
-          ctx.arc(-10, -14, 3, 0, Math.PI * 2);
-          ctx.arc(6, -14, 3, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Pupils
-          ctx.fillStyle = '#1e293b';
-          ctx.beginPath();
-          ctx.arc(-7, -11, 4, 0, Math.PI * 2);
-          ctx.arc(9, -11, 4, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Mouth
-          ctx.strokeStyle = '#059669';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.arc(0, 2, 6, 0.2, Math.PI - 0.2);
-          ctx.stroke();
-          
-          ctx.restore();
-        }
+function updateLanes(dt) {
+  for (const lane of state.lanes) {
+    if (lane.type !== 'road' && lane.type !== 'river') continue;
+    const spd = laneSpeed(lane);
+    for (const item of lane.items) {
+      const spdMod = item.speedMod || 1;
+      item.col += (lane.direction * spd * spdMod * dt) / CELL;
+      if (lane.direction > 0 && item.col > COLS + item.width) {
+        item.col = -item.width - 1;
+      } else if (lane.direction < 0 && item.col + item.width < -1) {
+        item.col = COLS + 1;
       }
+    }
+  }
+}
 
-      // ============== DANGER SNAKE ==============
-      class Snake {
-        constructor() {
-          // Start from bottom of screen
-          this.col = Math.floor(CONFIG.COLS / 2);
-          this.row = CONFIG.ROWS + 1;
-          this.x = this.col * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
-          this.y = this.row * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
-          this.segments = []; // Trail segments
-          this.warningShown = false;
-        }
+// ════════════════════════════════════════════════════════════
+//  Death — spectacle first, overlay after (JUICE §4)
+// ════════════════════════════════════════════════════════════
+const DEATH_MESSAGES = {
+  hit:      'You got hit by a vehicle! 🚗',
+  drowned:  'You fell in the water! 🌊',
+  snake:    "The snake got you! 🐍 Don't stay still!",
+  capsized: 'The log capsized! 🪵 Stay in the middle!',
+  heron:    'The heron snatched you! 🦩 Watch the shadow!',
+};
 
-        update(delta, targetCol, targetRow) {
-          // Move towards the frog
-          const dx = targetCol - this.col;
-          const dy = targetRow - this.row;
-          const dist = Math.sqrt(dx * dx + dy * dy);
-          
-          if (dist > 0.1) {
-            // Store old position for trail
-            if (this.segments.length < 8) {
-              this.segments.unshift({ x: this.x, y: this.y });
-            } else {
-              this.segments.pop();
-              this.segments.unshift({ x: this.x, y: this.y });
-            }
-            
-            const speed = CONFIG.SNAKE_SPEED * delta;
-            this.col += (dx / dist) * speed;
-            this.row += (dy / dist) * speed;
-            this.x = this.col * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
-            this.y = this.row * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
-          }
-          
-          // Check if caught the frog
-          if (dist < 0.6) {
-            return 'caught';
-          }
-          return null;
-        }
+function frogDies(reason) {
+  if (state.dying) return;
+  const frog = state.frog;
+  state.dying = true;
+  state.deathReason = reason;
+  state.hitStop = 0.08;                 // 80ms freeze — death only
+  state.deathTimer = 0.9;               // let the spectacle play out
 
-        draw() {
-          // Draw trail segments
-          for (let i = this.segments.length - 1; i >= 0; i--) {
-            const seg = this.segments[i];
-            const size = 12 - i * 1.2;
-            const alpha = 1 - (i / this.segments.length) * 0.5;
-            ctx.fillStyle = `rgba(34, 197, 94, ${alpha})`;
-            ctx.beginPath();
-            ctx.arc(seg.x, seg.y, size, 0, Math.PI * 2);
-            ctx.fill();
-          }
-          
-          // Draw snake head
-          ctx.save();
-          ctx.translate(this.x, this.y);
-          
-          // Glow effect
-          ctx.shadowColor = '#22c55e';
-          ctx.shadowBlur = 20;
-          
-          // Head
-          const headGrad = ctx.createRadialGradient(0, 0, 0, 0, 0, 18);
-          headGrad.addColorStop(0, '#4ade80');
-          headGrad.addColorStop(0.7, '#22c55e');
-          headGrad.addColorStop(1, '#15803d');
-          ctx.fillStyle = headGrad;
+  sfx(reason === 'drowned' || reason === 'capsized' ? 'hit' : 'explosion');
+  const colors = (reason === 'drowned' || reason === 'capsized')
+    ? ['#38bdf8', '#0ea5e9', '#e0f2fe', '#ffffff']
+    : ['#ffffff', '#ff4444', '#ffaa00', '#34d399'];
+  particles.burst(frog.x, frog.y, 50, {
+    colors, minSpeed: 120, maxSpeed: 450, lifetime: 1.2, gravity: reason === 'drowned' ? -40 : 250,
+  });
+  game.shake(8, 0.3);                   // the ONLY 8px shake
+
+  const reasonEl = document.getElementById('fcd-reason');
+  if (reasonEl) reasonEl.textContent = DEATH_MESSAGES[reason] || 'Game Over!';
+}
+
+function finishDeath() {
+  // Meta bookkeeping before the overlay shows
+  meta.totalRuns++;
+  const score = game.getScore();
+  if (score > meta.bestScore) meta.bestScore = score;
+  if (state.turbo && score > meta.turboBest) meta.turboBest = score;
+  if (state.crossings > meta.bestCrossings) meta.bestCrossings = state.crossings;
+  saveMeta();
+  updateOverlayMeta();
+  sfx('gameover');
+  game.endGame();
+}
+
+// ════════════════════════════════════════════════════════════
+//  Restart
+// ════════════════════════════════════════════════════════════
+function reset() {
+  state.time = 0;
+  state.frog = new Frog(Math.floor(COLS / 2), ROWS - 2);
+  state.highestRow = ROWS - 2;
+  state.crossings = 0;
+  state.ripples = [];
+  state.floatTexts = [];
+  state.bigTexts = [];
+  state.flies = [];
+  state.flyTimer = 2;
+  state.snake = null;
+  state.heron = null;
+  state.idleTime = 0;
+  state.lastFrogPos = null;
+  state.hitStop = 0;
+  state.dying = false;
+  state.deathTimer = 0;
+  state.deathReason = null;
+  state.nearMissCd = 0;
+  state.turbo = !!meta.equipped.turbo && unlockEarned('turbo');
+  state.fireflies = Array.from({ length: 50 }, makeFirefly);
+  particles.clear();
+  generateLanes();
+  const cEl = document.getElementById('fcd-crossings');
+  if (cEl) cEl.textContent = '0';
+}
+
+game.onRestart(reset);
+
+// ════════════════════════════════════════════════════════════
+//  Update (fixed 60 Hz, dt = 1/60 s)
+// ════════════════════════════════════════════════════════════
+game.onUpdate((dt) => {
+  if (game.state !== 'playing') return;
+
+  // Hit-stop: freeze the world, keep rendering (JUICE §1)
+  if (state.hitStop > 0) { state.hitStop -= dt; return; }
+
+  // Death spectacle: particles live on, then the overlay
+  if (state.dying) {
+    state.deathTimer -= dt;
+    particles.update(dt);
+    updateRipples(dt);
+    updateFloatTexts(dt);
+    updateBigTexts(dt);
+    if (state.deathReason === 'drowned' && Math.random() < 0.2) {
+      addRipple(state.frog.x, state.frog.y + 10);
+    }
+    if (state.deathTimer <= 0) finishDeath();
+    return;
+  }
+
+  state.time += dt;
+  if (state.nearMissCd > 0) state.nearMissCd -= dt;
+
+  pollMoves();
+  updateFireflies(dt);
+  updateRipples(dt);
+  updateFloatTexts(dt);
+  updateBigTexts(dt);
+  particles.update(dt);
+  updateLanes(dt);
+  updateFlies(dt);
+  updateHeron(dt);
+  if (state.dying) return;              // heron may have struck
+
+  const frog = state.frog;
+  const frogResult = frog.update(dt);
+  if (frogResult === 'drowned') { frogDies('drowned'); return; }
+
+  // ── Idle snake logic (0.8s telegraph before it can hunt) ──
+  const currentPos = Math.round(frog.col) + ',' + Math.round(frog.row);
+  if (state.lastFrogPos === currentPos && !frog.hopping) {
+    state.idleTime += dt;
+    if (state.idleTime >= SNAKE_DELAY && !state.snake) state.snake = new Snake(frog);
+  } else {
+    state.idleTime = 0;
+    state.lastFrogPos = currentPos;
+  }
+
+  if (state.snake) {
+    const result = state.snake.update(dt, frog.col, frog.row);
+    if (result === 'caught') { frogDies('snake'); return; }
+    if (result === 'gone') state.snake = null;
+  }
+
+  // ── Log tipping logic ──
+  if (frog.onLog && frog.currentLog) {
+    const log = frog.currentLog;
+    const logCenter = log.col + log.width / 2;
+    const distFromCenter = Math.abs(frog.col - logCenter);
+    const edgeThreshold = (log.width / 2) * LOG_TIP_THRESHOLD;
+
+    if (distFromCenter > edgeThreshold) {
+      frog.logEdgeTime += dt * (log.tippiness || 0.5);
+      frog.logTilt = Math.min(1, frog.logEdgeTime / LOG_CAPSIZE_TIME);
+      if (frog.logEdgeTime >= LOG_CAPSIZE_TIME) { frogDies('capsized'); return; }
+    } else {
+      frog.logEdgeTime = Math.max(0, frog.logEdgeTime - dt * 2);
+      frog.logTilt = Math.max(0, frog.logTilt - dt * 2);
+    }
+  } else {
+    frog.logEdgeTime = 0;
+    frog.logTilt = 0;
+  }
+
+  const collision = checkCollisions();
+  if (collision) frogDies(collision);
+});
+
+// ════════════════════════════════════════════════════════════
+//  Render
+// ════════════════════════════════════════════════════════════
+function drawBackground(ctx) {
+  const P = pal();
+  const skyGrad = ctx.createLinearGradient(0, 0, 0, GAME.height);
+  skyGrad.addColorStop(0, P.sky[0]);
+  skyGrad.addColorStop(0.3, P.sky[1]);
+  skyGrad.addColorStop(0.7, P.sky[2]);
+  skyGrad.addColorStop(1, P.sky[3]);
+  ctx.fillStyle = skyGrad;
+  ctx.fillRect(0, 0, GAME.width, GAME.height);
+
+  ctx.fillStyle = '#fff';
+  for (let i = 0; i < 30; i++) {
+    const x = (i * 73 + state.time * 2) % GAME.width;
+    const y = (i * 47) % (GAME.height * 0.4);
+    const twinkle = 0.3 + 0.7 * Math.sin(state.time * 3 + i);
+    ctx.globalAlpha = Math.max(0, twinkle * 0.8);
+    ctx.beginPath();
+    ctx.arc(x, y, 1 + (i % 3) * 0.5, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.globalAlpha = 1;
+}
+
+function drawLane(ctx, lane, rowIndex) {
+  const y = rowIndex * CELL;
+  const height = CELL;
+  const P = pal();
+
+  if (lane.type === 'safe') {
+    const grassGrad = ctx.createLinearGradient(0, y, 0, y + height);
+    grassGrad.addColorStop(0, P.grass[0]);
+    grassGrad.addColorStop(0.5, P.grass[1]);
+    grassGrad.addColorStop(1, P.grass[2]);
+    ctx.fillStyle = grassGrad;
+    ctx.fillRect(0, y, GAME.width, height);
+
+    for (let i = 0; i < 30; i++) {
+      const gx = (i / 30) * GAME.width + Math.sin(state.time * 2 + i) * 3;
+      const sway = Math.sin(state.time * 1.5 + i * 0.5) * 3;
+      ctx.strokeStyle = i % 3 === 0 ? P.blades[0] : P.blades[1];
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(gx, y + height);
+      ctx.quadraticCurveTo(gx + sway, y + height - 15, gx + sway * 1.5, y + height - 25);
+      ctx.stroke();
+    }
+
+    if (lane.decorations) {
+      for (const dec of lane.decorations) {
+        if (dec.type === 'flower') {
+          ctx.fillStyle = ['#f472b6', '#fb923c', '#facc15', '#a78bfa'][Math.floor(dec.x) % 4];
           ctx.beginPath();
-          ctx.ellipse(0, 0, 18, 14, 0, 0, Math.PI * 2);
+          ctx.arc(dec.x, y + height - 10, 5 * dec.size, 0, Math.PI * 2);
           ctx.fill();
-          
-          // Pattern
-          ctx.fillStyle = '#166534';
-          ctx.beginPath();
-          ctx.ellipse(-5, -2, 4, 6, 0.3, 0, Math.PI * 2);
-          ctx.ellipse(5, -2, 4, 6, -0.3, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Eyes (menacing)
-          ctx.shadowBlur = 0;
           ctx.fillStyle = '#fef08a';
           ctx.beginPath();
-          ctx.ellipse(-7, -6, 5, 4, 0, 0, Math.PI * 2);
-          ctx.ellipse(7, -6, 5, 4, 0, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Slit pupils
-          ctx.fillStyle = '#1a1a1a';
-          ctx.beginPath();
-          ctx.ellipse(-7, -6, 1.5, 4, 0, 0, Math.PI * 2);
-          ctx.ellipse(7, -6, 1.5, 4, 0, 0, Math.PI * 2);
-          ctx.fill();
-          
-          // Tongue
-          ctx.strokeStyle = '#ef4444';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(0, 8);
-          ctx.lineTo(0, 16);
-          ctx.lineTo(-4, 20);
-          ctx.moveTo(0, 16);
-          ctx.lineTo(4, 20);
-          ctx.stroke();
-          
-          ctx.restore();
-        }
-      }
-
-      // ============== LANE GENERATION ==============
-      function generateLanes() {
-        state.lanes = [];
-        
-        // Safe zone at bottom (2 rows of grass)
-        for (let i = 0; i < CONFIG.SAFE_ROWS; i++) {
-          state.lanes.push({ 
-            type: 'safe', 
-            items: [],
-            decorations: generateGrassDecorations()
-          });
-        }
-        
-        // Calculate how many obstacle lanes we need
-        const obstacleRows = CONFIG.ROWS - CONFIG.SAFE_ROWS - CONFIG.GOAL_ROWS;
-        
-        // Generate obstacle lanes with guaranteed items
-        for (let i = 0; i < obstacleRows; i++) {
-          // Alternate between road and river sections
-          const isRoad = (Math.floor(i / 2) % 2 === 0);
-          const type = isRoad ? 'road' : 'river';
-          
-          // Alternate direction each lane for variety
-          const direction = (i % 2 === 0) ? 1 : -1;
-          const speed = CONFIG.BASE_SPEED + Math.random() * CONFIG.SPEED_VARIATION;
-          const items = [];
-          
-          if (type === 'road') {
-            // Cars - varied types: motorcycle, car, SUV, truck, bus
-            // Different sizes move at different speeds (bigger = slower but deadlier)
-            const carTypes = [
-              { width: 1.2, color: '#f97316', name: 'motorcycle', speedMod: 1.4 },
-              { width: 1.8, color: '#ef4444', name: 'compact', speedMod: 1.2 },
-              { width: 2.2, color: '#3b82f6', name: 'sedan', speedMod: 1.0 },
-              { width: 2.8, color: '#8b5cf6', name: 'suv', speedMod: 0.85 },
-              { width: 3.5, color: '#f59e0b', name: 'truck', speedMod: 0.7 },
-              { width: 4.5, color: '#10b981', name: 'bus', speedMod: 0.5 },
-            ];
-            
-            const carCount = 2 + Math.floor(Math.random() * 2);
-            const spacing = CONFIG.COLS / carCount;
-            for (let j = 0; j < carCount; j++) {
-              const carType = carTypes[Math.floor(Math.random() * carTypes.length)];
-              items.push({
-                col: j * spacing + Math.random() * (spacing * 0.3),
-                width: carType.width,
-                color: carType.color,
-                type: carType.name,
-                speedMod: carType.speedMod,
-              });
-            }
-          } else {
-            // Logs - varied sizes, smaller logs are tippier
-            const logCount = 3 + Math.floor(Math.random() * 2);
-            const spacing = CONFIG.COLS / logCount;
-            for (let j = 0; j < logCount; j++) {
-              const logWidth = 2.5 + Math.random() * 2.5; // 2.5 to 5 cells wide
-              items.push({
-                col: j * spacing + Math.random() * (spacing * 0.2),
-                width: logWidth,
-                tippiness: Math.max(0.3, 1 - logWidth / 5), // Smaller logs tip easier
-              });
-            }
-          }
-          
-          state.lanes.push({ type, items, direction, speed });
-        }
-        
-        // Goal zone with lily pads
-        state.lanes.push({ 
-          type: 'goal', 
-          items: generateLilyPads(),
-        });
-      }
-
-      function generateGrassDecorations() {
-        const decorations = [];
-        for (let i = 0; i < 8; i++) {
-          decorations.push({
-            x: Math.random() * canvas.width,
-            type: Math.random() > 0.7 ? 'flower' : 'grass',
-            size: 0.5 + Math.random() * 0.5,
-            hue: 100 + Math.random() * 40,
-          });
-        }
-        return decorations;
-      }
-
-      function generateLilyPads() {
-        const pads = [];
-        for (let i = 0; i < 5; i++) {
-          pads.push({
-            col: 1 + i * 3.5,
-            occupied: false,
-          });
-        }
-        return pads;
-      }
-
-      // ============== DRAWING FUNCTIONS ==============
-      function drawBackground() {
-        // Sky gradient
-        const skyGrad = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        skyGrad.addColorStop(0, '#0f172a');
-        skyGrad.addColorStop(0.3, '#1e3a5f');
-        skyGrad.addColorStop(0.7, '#1e1b4b');
-        skyGrad.addColorStop(1, '#312e81');
-        ctx.fillStyle = skyGrad;
-        ctx.fillRect(0, 0, canvas.width, canvas.height);
-        
-        // Stars
-        ctx.fillStyle = '#fff';
-        for (let i = 0; i < 30; i++) {
-          const x = (i * 73 + state.time * 2) % canvas.width;
-          const y = (i * 47) % (canvas.height * 0.4);
-          const twinkle = 0.3 + 0.7 * Math.sin(state.time * 3 + i);
-          ctx.globalAlpha = twinkle * 0.8;
-          ctx.beginPath();
-          ctx.arc(x, y, 1 + (i % 3) * 0.5, 0, Math.PI * 2);
+          ctx.arc(dec.x, y + height - 10, 2 * dec.size, 0, Math.PI * 2);
           ctx.fill();
         }
-        ctx.globalAlpha = 1;
       }
+    }
 
-      function drawLane(lane, rowIndex) {
-        const y = rowIndex * CONFIG.CELL_SIZE;
-        const height = CONFIG.CELL_SIZE;
-        
-        if (lane.type === 'safe') {
-          // Grass with texture
-          const grassGrad = ctx.createLinearGradient(0, y, 0, y + height);
-          grassGrad.addColorStop(0, '#166534');
-          grassGrad.addColorStop(0.5, '#15803d');
-          grassGrad.addColorStop(1, '#14532d');
-          ctx.fillStyle = grassGrad;
-          ctx.fillRect(0, y, canvas.width, height);
-          
-          // Grass blades
-          for (let i = 0; i < 30; i++) {
-            const gx = (i / 30) * canvas.width + Math.sin(state.time * 2 + i) * 3;
-            const sway = Math.sin(state.time * 1.5 + i * 0.5) * 3;
-            ctx.strokeStyle = i % 3 === 0 ? '#22c55e' : '#16a34a';
-            ctx.lineWidth = 2;
-            ctx.beginPath();
-            ctx.moveTo(gx, y + height);
-            ctx.quadraticCurveTo(gx + sway, y + height - 15, gx + sway * 1.5, y + height - 25);
-            ctx.stroke();
-          }
-          
-          // Decorations
-          if (lane.decorations) {
-            for (const dec of lane.decorations) {
-              if (dec.type === 'flower') {
-                ctx.fillStyle = ['#f472b6', '#fb923c', '#facc15', '#a78bfa'][Math.floor(dec.x) % 4];
-                ctx.beginPath();
-                ctx.arc(dec.x, y + height - 10, 5 * dec.size, 0, Math.PI * 2);
-                ctx.fill();
-                ctx.fillStyle = '#fef08a';
-                ctx.beginPath();
-                ctx.arc(dec.x, y + height - 10, 2 * dec.size, 0, Math.PI * 2);
-                ctx.fill();
-              }
-            }
-          }
-          
-        } else if (lane.type === 'road') {
-          // Asphalt
-          const roadGrad = ctx.createLinearGradient(0, y, 0, y + height);
-          roadGrad.addColorStop(0, '#1f2937');
-          roadGrad.addColorStop(0.5, '#374151');
-          roadGrad.addColorStop(1, '#1f2937');
-          ctx.fillStyle = roadGrad;
-          ctx.fillRect(0, y, canvas.width, height);
-          
-          // Road lines
-          ctx.strokeStyle = '#fbbf24';
-          ctx.lineWidth = 3;
-          ctx.setLineDash([20, 20]);
-          ctx.beginPath();
-          ctx.moveTo(0, y + height / 2);
-          ctx.lineTo(canvas.width, y + height / 2);
-          ctx.stroke();
-          ctx.setLineDash([]);
-          
-          // Edge lines
-          ctx.strokeStyle = '#9ca3af';
-          ctx.lineWidth = 2;
-          ctx.beginPath();
-          ctx.moveTo(0, y + 2);
-          ctx.lineTo(canvas.width, y + 2);
-          ctx.moveTo(0, y + height - 2);
-          ctx.lineTo(canvas.width, y + height - 2);
-          ctx.stroke();
-          
-        } else if (lane.type === 'river') {
-          // Water with animated waves
-          const waterGrad = ctx.createLinearGradient(0, y, 0, y + height);
-          waterGrad.addColorStop(0, '#0284c7');
-          waterGrad.addColorStop(0.5, '#0ea5e9');
-          waterGrad.addColorStop(1, '#0369a1');
-          ctx.fillStyle = waterGrad;
-          ctx.fillRect(0, y, canvas.width, height);
-          
-          // Animated waves
-          ctx.strokeStyle = 'rgba(125, 211, 252, 0.4)';
-          ctx.lineWidth = 2;
-          for (let w = 0; w < 5; w++) {
-            ctx.beginPath();
-            for (let x = 0; x < canvas.width; x += 10) {
-              const waveY = y + height / 2 + Math.sin((x + state.time * 50 + w * 30) * 0.05) * 5;
-              if (x === 0) ctx.moveTo(x, waveY + w * 8);
-              else ctx.lineTo(x, waveY + w * 8);
-            }
-            ctx.stroke();
-          }
-          
-        } else if (lane.type === 'goal') {
-          // Goal zone with lily pads
-          const goalGrad = ctx.createLinearGradient(0, y, 0, y + height);
-          goalGrad.addColorStop(0, '#047857');
-          goalGrad.addColorStop(1, '#065f46');
-          ctx.fillStyle = goalGrad;
-          ctx.fillRect(0, y, canvas.width, height);
-          
-          // Lily pads
-          if (lane.items) {
-            for (const pad of lane.items) {
-              const px = pad.col * CONFIG.CELL_SIZE + CONFIG.CELL_SIZE / 2;
-              const py = y + height / 2;
-              
-              // Pad shadow
-              ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
-              ctx.beginPath();
-              ctx.ellipse(px + 3, py + 3, 22, 18, 0, 0, Math.PI * 2);
-              ctx.fill();
-              
-              // Main pad
-              const padGrad = ctx.createRadialGradient(px - 5, py - 5, 0, px, py, 25);
-              padGrad.addColorStop(0, '#4ade80');
-              padGrad.addColorStop(0.7, '#22c55e');
-              padGrad.addColorStop(1, '#15803d');
-              ctx.fillStyle = padGrad;
-              ctx.beginPath();
-              ctx.ellipse(px, py, 22, 18, 0, 0, Math.PI * 2);
-              ctx.fill();
-              
-              // Pad cut
-              ctx.fillStyle = '#065f46';
-              ctx.beginPath();
-              ctx.moveTo(px, py);
-              ctx.lineTo(px + 22, py - 5);
-              ctx.lineTo(px + 22, py + 5);
-              ctx.closePath();
-              ctx.fill();
-              
-              // Pad veins
-              ctx.strokeStyle = '#16a34a';
-              ctx.lineWidth = 1;
-              for (let v = 0; v < 5; v++) {
-                const angle = (v / 5) * Math.PI * 1.5 - Math.PI * 0.25;
-                ctx.beginPath();
-                ctx.moveTo(px, py);
-                ctx.lineTo(px + Math.cos(angle) * 18, py + Math.sin(angle) * 14);
-                ctx.stroke();
-              }
-            }
-          }
-        }
+  } else if (lane.type === 'road') {
+    const roadGrad = ctx.createLinearGradient(0, y, 0, y + height);
+    roadGrad.addColorStop(0, '#1f2937');
+    roadGrad.addColorStop(0.5, '#374151');
+    roadGrad.addColorStop(1, '#1f2937');
+    ctx.fillStyle = roadGrad;
+    ctx.fillRect(0, y, GAME.width, height);
+
+    ctx.strokeStyle = '#fbbf24';
+    ctx.lineWidth = 3;
+    ctx.setLineDash([20, 20]);
+    ctx.beginPath();
+    ctx.moveTo(0, y + height / 2);
+    ctx.lineTo(GAME.width, y + height / 2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    ctx.strokeStyle = '#9ca3af';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(0, y + 2);
+    ctx.lineTo(GAME.width, y + 2);
+    ctx.moveTo(0, y + height - 2);
+    ctx.lineTo(GAME.width, y + height - 2);
+    ctx.stroke();
+
+  } else if (lane.type === 'river') {
+    const waterGrad = ctx.createLinearGradient(0, y, 0, y + height);
+    waterGrad.addColorStop(0, P.water[0]);
+    waterGrad.addColorStop(0.5, P.water[1]);
+    waterGrad.addColorStop(1, P.water[2]);
+    ctx.fillStyle = waterGrad;
+    ctx.fillRect(0, y, GAME.width, height);
+
+    const surge = surgeFactor(lane);
+
+    ctx.strokeStyle = 'rgba(125, 211, 252, 0.4)';
+    ctx.lineWidth = 2;
+    for (let w = 0; w < 5; w++) {
+      ctx.beginPath();
+      for (let x = 0; x < GAME.width; x += 10) {
+        const waveY = y + height / 2 + Math.sin((x + state.time * 50 * surge + w * 30) * 0.05) * 5;
+        if (x === 0) ctx.moveTo(x, waveY + w * 8);
+        else ctx.lineTo(x, waveY + w * 8);
       }
+      ctx.stroke();
+    }
 
-      function drawCar(car, y) {
-        const x = car.col * CONFIG.CELL_SIZE;
-        const width = car.width * CONFIG.CELL_SIZE;
-        const height = CONFIG.CELL_SIZE - 10;
-        const cy = y + 5;
-        
-        ctx.save();
-        
-        // Shadow
-        ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    // Surge visuals: brightening + fast streaks + direction chevrons
+    if (surge > 1.15) {
+      const s = (surge - 1) / 0.5;      // 0.3..1
+      ctx.fillStyle = 'rgba(255,255,255,' + (s * 0.10).toFixed(3) + ')';
+      ctx.fillRect(0, y, GAME.width, height);
+      ctx.strokeStyle = 'rgba(255,255,255,' + (s * 0.5).toFixed(3) + ')';
+      ctx.lineWidth = 2;
+      for (let k = 0; k < 6; k++) {
+        const sx = ((k * 160 + state.time * 300 * lane.direction) % (GAME.width + 80) + GAME.width + 80) % (GAME.width + 80) - 40;
+        const sy = y + 8 + (k % 3) * 15;
         ctx.beginPath();
-        ctx.roundRect(x + 4, cy + 4, width, height, 8);
-        ctx.fill();
-        
-        // Car body
-        const carGrad = ctx.createLinearGradient(x, cy, x, cy + height);
-        carGrad.addColorStop(0, car.color);
-        carGrad.addColorStop(0.5, car.color);
-        carGrad.addColorStop(1, shadeColor(car.color, -30));
-        ctx.fillStyle = carGrad;
-        ctx.beginPath();
-        ctx.roundRect(x, cy, width, height, 8);
-        ctx.fill();
-        
-        // Roof
-        ctx.fillStyle = shadeColor(car.color, -20);
-        ctx.beginPath();
-        ctx.roundRect(x + width * 0.2, cy + 2, width * 0.5, height * 0.4, 6);
-        ctx.fill();
-        
-        // Windows
-        ctx.fillStyle = '#93c5fd';
-        ctx.beginPath();
-        ctx.roundRect(x + width * 0.25, cy + 5, width * 0.4, height * 0.3, 4);
-        ctx.fill();
-        
-        // Window shine
-        ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
-        ctx.beginPath();
-        ctx.roundRect(x + width * 0.26, cy + 6, width * 0.15, height * 0.25, 2);
-        ctx.fill();
-        
-        // Headlights
-        ctx.fillStyle = '#fef08a';
-        ctx.shadowColor = '#fef08a';
-        ctx.shadowBlur = 10;
-        ctx.beginPath();
-        ctx.ellipse(x + width - 8, cy + height * 0.3, 4, 3, 0, 0, Math.PI * 2);
-        ctx.ellipse(x + width - 8, cy + height * 0.7, 4, 3, 0, 0, Math.PI * 2);
-        ctx.fill();
-        ctx.shadowBlur = 0;
-        
-        // Taillights
-        ctx.fillStyle = '#ef4444';
-        ctx.beginPath();
-        ctx.ellipse(x + 6, cy + height * 0.3, 3, 2, 0, 0, Math.PI * 2);
-        ctx.ellipse(x + 6, cy + height * 0.7, 3, 2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Wheels
-        ctx.fillStyle = '#1f2937';
-        ctx.beginPath();
-        ctx.arc(x + width * 0.2, cy + height, 6, 0, Math.PI * 2);
-        ctx.arc(x + width * 0.8, cy + height, 6, 0, Math.PI * 2);
-        ctx.fill();
-        
-        ctx.restore();
+        ctx.moveTo(sx, sy);
+        ctx.lineTo(sx + 30 * lane.direction, sy);
+        ctx.stroke();
       }
+      // chevrons at the lane edge showing surge direction
+      ctx.fillStyle = 'rgba(255,255,255,' + (s * 0.7).toFixed(3) + ')';
+      const cx0 = lane.direction > 0 ? 12 : GAME.width - 12;
+      for (let c = 0; c < 2; c++) {
+        const cx = cx0 + c * 14 * lane.direction;
+        ctx.beginPath();
+        ctx.moveTo(cx, y + height / 2 - 7);
+        ctx.lineTo(cx + 8 * lane.direction, y + height / 2);
+        ctx.lineTo(cx, y + height / 2 + 7);
+        ctx.stroke();
+      }
+    }
 
-      function drawLog(log, y) {
-        const x = log.col * CONFIG.CELL_SIZE;
-        const width = log.width * CONFIG.CELL_SIZE;
-        const height = CONFIG.CELL_SIZE - 14;
-        const ly = y + 7;
-        
-        ctx.save();
-        
-        // Apply tilt if frog is on this log and on edge
-        const frog = state.frog;
-        if (frog && frog.currentLog === log && frog.logTilt > 0) {
-          const tiltAngle = frog.logTilt * 0.15; // Max 15 degree tilt
-          const tiltDir = frog.col < log.col + log.width / 2 ? -1 : 1;
-          ctx.translate(x + width / 2, ly + height / 2);
-          ctx.rotate(tiltAngle * tiltDir);
-          ctx.translate(-(x + width / 2), -(ly + height / 2));
-        }
-        
-        // Water shadow
-        ctx.fillStyle = 'rgba(0, 50, 80, 0.4)';
+  } else if (lane.type === 'goal') {
+    const goalGrad = ctx.createLinearGradient(0, y, 0, y + height);
+    goalGrad.addColorStop(0, P.goal[0]);
+    goalGrad.addColorStop(1, P.goal[1]);
+    ctx.fillStyle = goalGrad;
+    ctx.fillRect(0, y, GAME.width, height);
+
+    if (lane.items) {
+      for (const pad of lane.items) {
+        const px = pad.col * CELL + CELL / 2;
+        const py = y + height / 2;
+
+        ctx.fillStyle = 'rgba(0, 0, 0, 0.2)';
         ctx.beginPath();
-        ctx.ellipse(x + width / 2, ly + height + 5, width / 2 - 5, 6, 0, 0, Math.PI * 2);
+        ctx.ellipse(px + 3, py + 3, 22, 18, 0, 0, Math.PI * 2);
         ctx.fill();
-        
-        // Log body
-        const logGrad = ctx.createLinearGradient(x, ly, x, ly + height);
-        logGrad.addColorStop(0, '#a16207');
-        logGrad.addColorStop(0.3, '#ca8a04');
-        logGrad.addColorStop(0.7, '#a16207');
-        logGrad.addColorStop(1, '#713f12');
-        ctx.fillStyle = logGrad;
+
+        const padGrad = ctx.createRadialGradient(px - 5, py - 5, 0, px, py, 25);
+        padGrad.addColorStop(0, P.pad[0]);
+        padGrad.addColorStop(0.7, P.pad[1]);
+        padGrad.addColorStop(1, P.pad[2]);
+        ctx.fillStyle = padGrad;
         ctx.beginPath();
-        ctx.roundRect(x, ly, width, height, height / 2);
+        ctx.ellipse(px, py, 22, 18, 0, 0, Math.PI * 2);
         ctx.fill();
-        
-        // Log ends
-        ctx.fillStyle = '#92400e';
+
+        ctx.fillStyle = P.goal[1];
         ctx.beginPath();
-        ctx.ellipse(x + 8, ly + height / 2, 8, height / 2, 0, 0, Math.PI * 2);
+        ctx.moveTo(px, py);
+        ctx.lineTo(px + 22, py - 5);
+        ctx.lineTo(px + 22, py + 5);
+        ctx.closePath();
         ctx.fill();
-        ctx.beginPath();
-        ctx.ellipse(x + width - 8, ly + height / 2, 8, height / 2, 0, 0, Math.PI * 2);
-        ctx.fill();
-        
-        // Rings on ends
-        ctx.strokeStyle = '#78350f';
+
+        ctx.strokeStyle = P.pad[2];
         ctx.lineWidth = 1;
-        for (let r = 2; r < 7; r += 2) {
+        for (let v = 0; v < 5; v++) {
+          const angle = (v / 5) * Math.PI * 1.5 - Math.PI * 0.25;
           ctx.beginPath();
-          ctx.ellipse(x + 8, ly + height / 2, r, r * 0.8, 0, 0, Math.PI * 2);
-          ctx.stroke();
-          ctx.beginPath();
-          ctx.ellipse(x + width - 8, ly + height / 2, r, r * 0.8, 0, 0, Math.PI * 2);
-          ctx.stroke();
-        }
-        
-        // Bark texture
-        ctx.strokeStyle = '#78350f';
-        ctx.lineWidth = 2;
-        for (let i = 0; i < 4; i++) {
-          const bx = x + 20 + i * (width - 40) / 4;
-          ctx.beginPath();
-          ctx.moveTo(bx, ly + 5);
-          ctx.lineTo(bx + 3, ly + height - 5);
+          ctx.moveTo(px, py);
+          ctx.lineTo(px + Math.cos(angle) * 18, py + Math.sin(angle) * 14);
           ctx.stroke();
         }
-        
-        ctx.restore();
       }
+    }
+  }
+}
 
-      function shadeColor(color, percent) {
-        const num = parseInt(color.replace('#', ''), 16);
-        const amt = Math.round(2.55 * percent);
-        const R = Math.min(255, Math.max(0, (num >> 16) + amt));
-        const G = Math.min(255, Math.max(0, (num >> 8 & 0x00FF) + amt));
-        const B = Math.min(255, Math.max(0, (num & 0x0000FF) + amt));
-        return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
-      }
+function shadeColor(color, percent) {
+  const num = parseInt(color.replace('#', ''), 16);
+  const amt = Math.round(2.55 * percent);
+  const R = Math.min(255, Math.max(0, (num >> 16) + amt));
+  const G = Math.min(255, Math.max(0, (num >> 8 & 0x00FF) + amt));
+  const B = Math.min(255, Math.max(0, (num & 0x0000FF) + amt));
+  return '#' + (0x1000000 + R * 0x10000 + G * 0x100 + B).toString(16).slice(1);
+}
 
-      // ============== GAME LOGIC ==============
-      function handleMove(direction) {
-        if (!state.running || state.paused) return;
-        
-        const frog = state.frog;
-        let newCol = frog.col;
-        let newRow = frog.row;
-        
-        switch (direction) {
-          case 'up': newRow--; break;
-          case 'down': newRow++; break;
-          case 'left': newCol--; break;
-          case 'right': newCol++; break;
-        }
-        
-        if (frog.moveTo(Math.round(newCol), newRow)) {
-          // Check for score
-          if (newRow < state.highestRow) {
-            const points = (state.highestRow - newRow) * 10;
-            state.score += points;
-            state.highestRow = newRow;
-            showScorePopup(points);
-            updateHUD();
-          }
-          
-          // Check if reached goal
-          if (newRow === 0) {
-            state.score += 100;
-            showScorePopup(100);
-            // Reset frog to start
-            state.frog = new Frog(Math.floor(CONFIG.COLS / 2), CONFIG.ROWS - 2);
-            state.highestRow = CONFIG.ROWS - 2;
-            updateHUD();
-          }
-        }
-      }
+function drawCar(ctx, car, y) {
+  const x = car.col * CELL;
+  const width = car.width * CELL;
+  const height = CELL - 10;
+  const cy = y + 5;
 
-      function showScorePopup(points) {
-        const popup = document.createElement('div');
-        popup.className = 'score-popup';
-        popup.textContent = `+${points}`;
-        popup.style.left = `${state.frog.x / canvas.width * 100}%`;
-        popup.style.top = `${state.frog.y / canvas.height * 100}%`;
-        container.appendChild(popup);
-        setTimeout(() => popup.remove(), 1000);
-      }
+  ctx.save();
 
-      function checkCollisions() {
-        const frog = state.frog;
-        
-        // Don't check collisions while hopping - gives player reaction time
-        if (frog.hopping) return null;
-        
-        // Grace period after landing (invincibility frames)
-        if (frog.landingGrace > 0) {
-          frog.landingGrace--;
-          return null;
-        }
-        
-        const laneIndex = CONFIG.ROWS - 1 - frog.row;
-        if (laneIndex < 0 || laneIndex >= state.lanes.length) return null;
-        
-        const lane = state.lanes[laneIndex];
-        
-        if (lane.type === 'road') {
-          for (const car of lane.items) {
-            // Smarter collision: tight box, no buffer behind the car
-            // Car hitbox is slightly smaller than visual for fairness
-            const carLeft = car.col + 0.2;  // Shrink hitbox from left edge
-            const carRight = car.col + car.width - 0.2;  // Shrink from right edge
-            
-            // Only count as hit if frog center is inside the car bounds
-            if (frog.col >= carLeft && frog.col <= carRight) {
-              return 'hit';
-            }
-          }
-        } else if (lane.type === 'river') {
-          let onLog = false;
-          for (const log of lane.items) {
-            // More forgiving log detection - easier to land on logs
-            const logLeft = log.col - 0.3;  // Extend grab range slightly
-            const logRight = log.col + log.width + 0.1;
-            
-            if (frog.col >= logLeft && frog.col <= logRight) {
-              onLog = true;
-              frog.onLog = { speed: lane.speed, direction: lane.direction };
-              frog.currentLog = log; // Store log reference for tipping
-              // Add ripple effect
-              if (Math.random() > 0.95) {
-                state.ripples.push(new Ripple(
-                  frog.x + (Math.random() - 0.5) * 30,
-                  frog.y + 20
-                ));
-              }
-              break;
-            }
-          }
-          if (!onLog) {
-            frog.onLog = null;
-            frog.currentLog = null;
-            return 'drowned';
-          }
-        } else {
-          frog.onLog = null;
-          frog.currentLog = null;
-        }
-        
-        return null;
-      }
+  ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+  ctx.beginPath();
+  ctx.roundRect(x + 4, cy + 4, width, height, 8);
+  ctx.fill();
 
-      function updateLanes(delta) {
-        for (const lane of state.lanes) {
-          if (lane.type === 'road' || lane.type === 'river') {
-            for (const item of lane.items) {
-              item.col += (lane.direction * lane.speed * delta) / CONFIG.CELL_SIZE;
-              
-              // Wrap around
-              if (lane.direction > 0 && item.col > CONFIG.COLS + item.width) {
-                item.col = -item.width - 1;
-              } else if (lane.direction < 0 && item.col + item.width < -1) {
-                item.col = CONFIG.COLS + 1;
-              }
-            }
-          }
-        }
-      }
+  const carGrad = ctx.createLinearGradient(x, cy, x, cy + height);
+  carGrad.addColorStop(0, car.color);
+  carGrad.addColorStop(0.5, car.color);
+  carGrad.addColorStop(1, shadeColor(car.color, -30));
+  ctx.fillStyle = carGrad;
+  ctx.beginPath();
+  ctx.roundRect(x, cy, width, height, 8);
+  ctx.fill();
 
-      function update(delta) {
-        state.time += delta;
-        
-        // Update particles
-        for (const particle of state.particles) {
-          particle.update();
-        }
-        
-        // Update ripples
-        for (let i = state.ripples.length - 1; i >= 0; i--) {
-          state.ripples[i].update();
-          if (state.ripples[i].isDead()) {
-            state.ripples.splice(i, 1);
-          }
-        }
-        
-        // Update lanes
-        updateLanes(delta);
-        
-        // Update frog
-        const frogResult = state.frog.update(delta);
-        if (frogResult === 'drowned') {
-          gameOver('drowned');
-          return;
-        }
-        
-        // ============== IDLE SNAKE LOGIC ==============
-        // Track if frog has moved
-        const frog = state.frog;
-        const currentPos = `${Math.round(frog.col)},${Math.round(frog.row)}`;
-        
-        if (state.lastFrogPos === currentPos && !frog.hopping) {
-          state.idleTime += delta;
-          
-          // Spawn snake after being idle too long
-          if (state.idleTime >= CONFIG.SNAKE_DELAY && !state.snake) {
-            state.snake = new Snake();
-          }
-        } else {
-          state.idleTime = 0;
-          state.lastFrogPos = currentPos;
-          // Snake slowly retreats when player moves
-          if (state.snake && state.snake.row > CONFIG.ROWS) {
-            state.snake = null;
-          }
-        }
-        
-        // Update snake
-        if (state.snake) {
-          const snakeResult = state.snake.update(delta, frog.col, frog.row);
-          if (snakeResult === 'caught') {
-            gameOver('snake');
-            return;
-          }
-        }
-        
-        // ============== LOG TIPPING LOGIC ==============
-        if (frog.onLog && frog.currentLog) {
-          const log = frog.currentLog;
-          const logCenter = log.col + log.width / 2;
-          const distFromCenter = Math.abs(frog.col - logCenter);
-          const edgeThreshold = (log.width / 2) * CONFIG.LOG_TIP_THRESHOLD;
-          
-          if (distFromCenter > edgeThreshold) {
-            // On the edge - log starts tipping
-            const tippiness = log.tippiness || 0.5;
-            frog.logEdgeTime += delta * tippiness;
-            frog.logTilt = Math.min(1, frog.logEdgeTime / CONFIG.LOG_CAPSIZE_TIME);
-            
-            // Capsized!
-            if (frog.logEdgeTime >= CONFIG.LOG_CAPSIZE_TIME) {
-              gameOver('capsized');
-              return;
-            }
-          } else {
-            // Safe in the middle - recover
-            frog.logEdgeTime = Math.max(0, frog.logEdgeTime - delta * 2);
-            frog.logTilt = Math.max(0, frog.logTilt - delta * 2);
-          }
-        } else {
-          frog.logEdgeTime = 0;
-          frog.logTilt = 0;
-        }
-        
-        // Check collisions
-        const collision = checkCollisions();
-        if (collision) {
-          gameOver(collision);
-        }
-        
-        // Screen shake decay
-        if (state.screenShake > 0) {
-          state.screenShake *= 0.9;
-        }
-      }
+  ctx.fillStyle = shadeColor(car.color, -20);
+  ctx.beginPath();
+  ctx.roundRect(x + width * 0.2, cy + 2, width * 0.5, height * 0.4, 6);
+  ctx.fill();
 
-      function render() {
-        ctx.save();
-        
-        // Apply screen shake
-        if (state.screenShake > 0.5) {
-          ctx.translate(
-            (Math.random() - 0.5) * state.screenShake,
-            (Math.random() - 0.5) * state.screenShake
-          );
-        }
-        
-        // Draw background
-        drawBackground();
-        
-        // Draw lanes from top to bottom
-        for (let i = CONFIG.ROWS - 1; i >= 0; i--) {
-          const laneIndex = CONFIG.ROWS - 1 - i;
-          if (laneIndex < state.lanes.length) {
-            drawLane(state.lanes[laneIndex], i);
-            
-            const lane = state.lanes[laneIndex];
-            if (lane.type === 'road') {
-              for (const car of lane.items) {
-                drawCar(car, i * CONFIG.CELL_SIZE);
-              }
-            } else if (lane.type === 'river') {
-              for (const log of lane.items) {
-                drawLog(log, i * CONFIG.CELL_SIZE);
-              }
-            }
-          }
-        }
-        
-        // Draw ripples
-        for (const ripple of state.ripples) {
-          ripple.draw();
-        }
-        
-        // Draw particles
-        for (const particle of state.particles) {
-          particle.draw();
-        }
-        
-        // Draw frog
-        if (state.frog) {
-          state.frog.draw();
-        }
-        
-        // Draw snake
-        if (state.snake) {
-          state.snake.draw();
-        }
-        
-        // Draw snake warning
-        if (state.idleTime > CONFIG.SNAKE_DELAY * 0.6 && !state.snake) {
-          ctx.save();
-          ctx.globalAlpha = 0.5 + 0.5 * Math.sin(state.time * 10);
-          ctx.fillStyle = '#ef4444';
-          ctx.font = 'bold 20px Fredoka';
-          ctx.textAlign = 'center';
-          ctx.fillText('🐍 MOVE! Snake approaching...', canvas.width / 2, 40);
-          ctx.restore();
-        }
-        
-        // Draw log tipping warning
-        if (state.frog && state.frog.logTilt > 0.3) {
-          ctx.save();
-          ctx.globalAlpha = state.frog.logTilt;
-          ctx.fillStyle = '#f59e0b';
-          ctx.font = 'bold 18px Fredoka';
-          ctx.textAlign = 'center';
-          ctx.fillText('⚠️ Log tipping! Move to center!', canvas.width / 2, 60);
-          ctx.restore();
-        }
-        
-        ctx.restore();
-      }
+  ctx.fillStyle = '#93c5fd';
+  ctx.beginPath();
+  ctx.roundRect(x + width * 0.25, cy + 5, width * 0.4, height * 0.3, 4);
+  ctx.fill();
 
-      function updateHUD() {
-        scoreEl.textContent = state.score;
-        if (state.score > state.best) {
-          state.best = state.score;
-          localStorage.setItem('frogCrossDash_best', state.best.toString());
-        }
-        bestEl.textContent = state.best;
-      }
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.3)';
+  ctx.beginPath();
+  ctx.roundRect(x + width * 0.26, cy + 6, width * 0.15, height * 0.25, 2);
+  ctx.fill();
 
-      function gameOver(reason) {
-        state.running = false;
-        state.screenShake = 20;
-        state.snake = null; // Reset snake
-        state.idleTime = 0;
-        touchControls.classList.remove('active'); // Hide touch controls
-        
-        const messages = {
-          hit: "You got hit by a vehicle! 🚗",
-          drowned: "You fell in the water! 🌊",
-          snake: "The snake got you! 🐍 Don't stay still!",
-          capsized: "The log capsized! 🪵 Stay in the middle!",
-        };
-        
-        gameOverText.textContent = `${messages[reason] || 'Game Over!'} Score: ${state.score}`;
-        gameOverOverlay.classList.remove('hidden');
-        
-        // Save best score
-        if (state.score > state.best) {
-          state.best = state.score;
-          localStorage.setItem('frogCrossDash_best', state.best.toString());
-          bestEl.textContent = state.best;
-        }
-      }
+  ctx.fillStyle = '#fef08a';
+  ctx.shadowColor = '#fef08a';
+  ctx.shadowBlur = 10;
+  ctx.beginPath();
+  ctx.ellipse(x + width - 8, cy + height * 0.3, 4, 3, 0, 0, Math.PI * 2);
+  ctx.ellipse(x + width - 8, cy + height * 0.7, 4, 3, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.shadowBlur = 0;
 
-      function requestFullscreen() {
-        const elem = document.documentElement;
-        if (elem.requestFullscreen) {
-          elem.requestFullscreen().catch(() => {});
-        } else if (elem.webkitRequestFullscreen) {
-          elem.webkitRequestFullscreen();
-        } else if (elem.msRequestFullscreen) {
-          elem.msRequestFullscreen();
-        }
-      }
+  ctx.fillStyle = '#ef4444';
+  ctx.beginPath();
+  ctx.ellipse(x + 6, cy + height * 0.3, 3, 2, 0, 0, Math.PI * 2);
+  ctx.ellipse(x + 6, cy + height * 0.7, 3, 2, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-      function startGame() {
-        // Go fullscreen
-        requestFullscreen();
-        
-        state.running = true;
-        state.score = 0;
-        state.highestRow = CONFIG.ROWS - 2;
-        state.frog = new Frog(Math.floor(CONFIG.COLS / 2), CONFIG.ROWS - 2);
-        state.ripples = [];
-        state.snake = null;
-        state.idleTime = 0;
-        state.lastFrogPos = null;
-        generateLanes();
-        updateHUD();
-        
-        startOverlay.classList.add('hidden');
-        gameOverOverlay.classList.add('hidden');
-        touchControls.classList.add('active'); // Show touch controls
-        
-        // Reset timing to prevent huge delta on first frame
-        lastTime = 0;
-        loop();
-      }
+  ctx.fillStyle = '#1f2937';
+  ctx.beginPath();
+  ctx.arc(x + width * 0.2, cy + height, 6, 0, Math.PI * 2);
+  ctx.arc(x + width * 0.8, cy + height, 6, 0, Math.PI * 2);
+  ctx.fill();
 
-      // #region agent log
-      let _fcdLogged=false;
-      // #endregion
-      let lastTime = 0;
-      function loop(timestamp = 0) {
-        if (!state.running) return;
-        // #region agent log
-        if(!_fcdLogged && timestamp>500){_fcdLogged=true;const tc=document.querySelector('.touch-btn');fetch('http://127.0.0.1:7245/ingest/21c7b4be-62c9-4a72-9713-3ad5f82a3a6e',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({location:'frog-cross-dash/index.html:loop',message:'Loop running + touch control check',data:{usesDeltaTime:true,hasTouchBtns:!!tc,touchBtnCount:document.querySelectorAll('.touch-btn').length,overlayPattern:'custom-absolute-inside-container',overlayMatchesFramework:false,usesFrameworkCSS:false},timestamp:Date.now(),hypothesisId:'H3_H4'})}).catch(()=>{})}
-        // #endregion
-        
-        // On first frame after restart, just set lastTime and skip update
-        // This prevents a huge delta that would teleport all items off screen
-        if (lastTime === 0 || timestamp - lastTime > 1000) {
-          lastTime = timestamp;
-          render();
-          requestAnimationFrame(loop);
-          return;
-        }
-        
-        const delta = Math.min((timestamp - lastTime) / 1000, 0.05);
-        lastTime = timestamp;
-        
-        update(delta);
-        render();
-        
-        requestAnimationFrame(loop);
-      }
+  ctx.restore();
+}
 
-      // ============== INPUT HANDLING ==============
-      const keys = {};
-      window.addEventListener('keydown', e => {
-        if (keys[e.key]) return;
-        keys[e.key] = true;
-        
-        const key = e.key.toLowerCase();
-        if (key === 'arrowup' || key === 'w') handleMove('up');
-        else if (key === 'arrowdown' || key === 's') handleMove('down');
-        else if (key === 'arrowleft' || key === 'a') handleMove('left');
-        else if (key === 'arrowright' || key === 'd') handleMove('right');
-        else if (key === 'p') state.paused = !state.paused;
-      });
-      
-      window.addEventListener('keyup', e => {
-        keys[e.key] = false;
-      });
+function drawLog(ctx, log, y) {
+  const x = log.col * CELL;
+  const width = log.width * CELL;
+  const height = CELL - 14;
+  const ly = y + 7;
 
-      // Touch controls
-      document.querySelectorAll('.touch-btn').forEach(btn => {
-        btn.addEventListener('touchstart', e => {
-          e.preventDefault();
-          handleMove(btn.dataset.dir);
-        });
-        btn.addEventListener('click', e => {
-          e.preventDefault();
-          handleMove(btn.dataset.dir);
-        });
-      });
+  ctx.save();
 
-      // Button handlers
-      startBtn.addEventListener('click', startGame);
-      retryBtn.addEventListener('click', startGame);
+  const frog = state.frog;
+  if (frog && frog.currentLog === log && frog.logTilt > 0) {
+    const tiltAngle = frog.logTilt * 0.15;
+    const tiltDir = frog.col < log.col + log.width / 2 ? -1 : 1;
+    ctx.translate(x + width / 2, ly + height / 2);
+    ctx.rotate(tiltAngle * tiltDir);
+    ctx.translate(-(x + width / 2), -(ly + height / 2));
+  }
 
-      // ============== INITIALIZATION ==============
-      // Create particles
-      for (let i = 0; i < CONFIG.PARTICLE_COUNT; i++) {
-        state.particles.push(new Particle());
-      }
+  ctx.fillStyle = 'rgba(0, 50, 80, 0.4)';
+  ctx.beginPath();
+  ctx.ellipse(x + width / 2, ly + height + 5, width / 2 - 5, 6, 0, 0, Math.PI * 2);
+  ctx.fill();
 
-      // Initial render
-      updateHUD();
-      drawBackground();
-      
-      // Draw a preview frog
-      ctx.save();
-      ctx.translate(canvas.width / 2, canvas.height / 2);
-      const previewFrog = new Frog(0, 0);
-      previewFrog.x = 0;
-      previewFrog.y = 0;
-      ctx.restore();
-    })();
-  </script>
+  const logGrad = ctx.createLinearGradient(x, ly, x, ly + height);
+  logGrad.addColorStop(0, '#a16207');
+  logGrad.addColorStop(0.3, '#ca8a04');
+  logGrad.addColorStop(0.7, '#a16207');
+  logGrad.addColorStop(1, '#713f12');
+  ctx.fillStyle = logGrad;
+  ctx.beginPath();
+  ctx.roundRect(x, ly, width, height, height / 2);
+  ctx.fill();
+
+  ctx.fillStyle = '#92400e';
+  ctx.beginPath();
+  ctx.ellipse(x + 8, ly + height / 2, 8, height / 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(x + width - 8, ly + height / 2, 8, height / 2, 0, 0, Math.PI * 2);
+  ctx.fill();
+
+  ctx.strokeStyle = '#78350f';
+  ctx.lineWidth = 1;
+  for (let r = 2; r < 7; r += 2) {
+    ctx.beginPath();
+    ctx.ellipse(x + 8, ly + height / 2, r, r * 0.8, 0, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.ellipse(x + width - 8, ly + height / 2, r, r * 0.8, 0, 0, Math.PI * 2);
+    ctx.stroke();
+  }
+
+  ctx.strokeStyle = '#78350f';
+  ctx.lineWidth = 2;
+  for (let i = 0; i < 4; i++) {
+    const bx = x + 20 + i * (width - 40) / 4;
+    ctx.beginPath();
+    ctx.moveTo(bx, ly + 5);
+    ctx.lineTo(bx + 3, ly + height - 5);
+    ctx.stroke();
+  }
+
+  ctx.restore();
+}
+
+// Night: darkness with a visibility band around the frog, then headlight cones
+function drawNight(ctx) {
+  if (!isNight() || !state.frog) return;
+  const frog = state.frog;
+  const g = ctx.createRadialGradient(frog.x, frog.y, 75, frog.x, frog.y, 250);
+  g.addColorStop(0, 'rgba(2, 6, 23, 0)');
+  g.addColorStop(1, 'rgba(2, 6, 23, 0.72)');
+  ctx.fillStyle = g;
+  ctx.fillRect(0, 0, GAME.width, GAME.height);
+
+  // Headlight cones — drawn over the darkness so cars announce themselves
+  ctx.save();
+  ctx.fillStyle = 'rgba(254, 243, 199, 0.16)';
+  for (let i = ROWS - 1; i >= 0; i--) {
+    const laneIndex = ROWS - 1 - i;
+    if (laneIndex >= state.lanes.length) continue;
+    const lane = state.lanes[laneIndex];
+    if (lane.type !== 'road') continue;
+    const cy = i * CELL + CELL / 2;
+    for (const car of lane.items) {
+      const frontX = lane.direction > 0 ? (car.col + car.width) * CELL : car.col * CELL;
+      ctx.beginPath();
+      ctx.moveTo(frontX, cy);
+      ctx.lineTo(frontX + lane.direction * 130, cy - 26);
+      ctx.lineTo(frontX + lane.direction * 130, cy + 26);
+      ctx.closePath();
+      ctx.fill();
+    }
+  }
+  ctx.restore();
+}
+
+function drawDyingFrog(ctx) {
+  const frog = state.frog;
+  const p = Math.min(1, Math.max(0, 1 - state.deathTimer / 0.9));
+  const r = state.deathReason;
+  let fx;
+  if (r === 'hit') {
+    fx = { sx: 1 + 0.7 * p, sy: Math.max(0.15, 1 - 0.9 * p) };          // squash
+  } else if (r === 'drowned') {
+    fx = { alpha: 1 - p, dy: p * 24, sx: 1 - 0.3 * p, sy: 1 - 0.3 * p }; // sink + fade
+  } else {
+    fx = { rot: p * 6, sx: Math.max(0.2, 1 - 0.7 * p), sy: Math.max(0.2, 1 - 0.7 * p), alpha: 1 - 0.5 * p }; // spin away
+  }
+  frog.draw(ctx, fx);
+}
+
+game.onRender((ctx) => {
+  drawBackground(ctx);
+
+  // Lanes from top to bottom
+  for (let i = ROWS - 1; i >= 0; i--) {
+    const laneIndex = ROWS - 1 - i;
+    if (laneIndex >= state.lanes.length) continue;
+    const lane = state.lanes[laneIndex];
+    drawLane(ctx, lane, i);
+    if (lane.type === 'road') {
+      for (const car of lane.items) drawCar(ctx, car, i * CELL);
+    } else if (lane.type === 'river') {
+      for (const log of lane.items) drawLog(ctx, log, i * CELL);
+    }
+  }
+
+  // Dragonflies
+  for (const fly of state.flies) drawFly(ctx, fly);
+
+  // Ripples
+  for (const r of state.ripples) {
+    if (r.opacity <= 0) continue;
+    ctx.save();
+    ctx.globalAlpha = r.opacity;
+    ctx.strokeStyle = '#67e8f9';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.radius, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Fireflies
+  ctx.save();
+  for (const f of state.fireflies) {
+    ctx.globalAlpha = Math.max(0, f.opacity * (0.5 + 0.5 * Math.sin(state.time * 3 + f.x)));
+    ctx.fillStyle = `hsl(${f.hue}, 80%, 70%)`;
+    ctx.beginPath();
+    ctx.arc(f.x, f.y, f.size, 0, Math.PI * 2);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Heron shadow under the frog; bird above it
+  drawHeronShadow(ctx);
+
+  if (state.frog) {
+    if (state.dying) drawDyingFrog(ctx);
+    else state.frog.draw(ctx);
+  }
+  if (state.snake) state.snake.draw(ctx);
+  drawHeronBird(ctx);
+
+  particles.draw(ctx);
+
+  // Night overlay + headlights (above actors, below UI text)
+  drawNight(ctx);
+
+  // Floating score texts
+  ctx.save();
+  ctx.font = 'bold 22px sans-serif';
+  ctx.textAlign = 'center';
+  for (const t of state.floatTexts) {
+    ctx.globalAlpha = Math.max(0, t.life);
+    ctx.fillStyle = t.color;
+    ctx.fillText(t.txt, t.x, t.y);
+  }
+  ctx.restore();
+
+  // Big phase / unlock announcements
+  ctx.save();
+  ctx.textAlign = 'center';
+  for (const b of state.bigTexts) {
+    const p = 1 - b.life / b.maxLife;              // 0 → 1
+    const scaleIn = Math.min(1, p * 6);            // pop in over first 0.3s
+    ctx.globalAlpha = Math.min(1, b.life / 0.4);   // fade out over last 0.4s
+    ctx.font = 'bold ' + Math.round(34 * scaleIn + 1) + 'px sans-serif';
+    ctx.fillStyle = '#fbbf24';
+    ctx.strokeStyle = 'rgba(15, 23, 42, 0.8)';
+    ctx.lineWidth = 5;
+    ctx.strokeText(b.txt, GAME.width / 2, GAME.height * 0.35);
+    ctx.fillText(b.txt, GAME.width / 2, GAME.height * 0.35);
+  }
+  ctx.restore();
+
+  // Snake warning
+  if (state.idleTime > SNAKE_DELAY * 0.5 && !state.snake) {
+    ctx.save();
+    ctx.globalAlpha = 0.5 + 0.5 * Math.sin(state.time * 10);
+    ctx.fillStyle = '#ef4444';
+    ctx.font = 'bold 20px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('🐍 MOVE! Snake approaching...', GAME.width / 2, 40);
+    ctx.restore();
+  }
+
+  // Log tipping warning
+  if (state.frog && state.frog.logTilt > 0.3 && !state.dying) {
+    ctx.save();
+    ctx.globalAlpha = state.frog.logTilt;
+    ctx.fillStyle = '#f59e0b';
+    ctx.font = 'bold 18px sans-serif';
+    ctx.textAlign = 'center';
+    ctx.fillText('⚠️ Log tipping! Move to center!', GAME.width / 2, 65);
+    ctx.restore();
+  }
+
+  // Next-goal line (always visible during play) + Turbo badge
+  if (game.state === 'playing') {
+    ctx.save();
+    ctx.font = 'bold 13px sans-serif';
+    ctx.textAlign = 'left';
+    ctx.fillStyle = 'rgba(251, 191, 36, 0.85)';
+    ctx.fillText(nextGoalText(), 10, GAME.height - 8);
+    if (state.turbo) {
+      ctx.textAlign = 'right';
+      ctx.fillStyle = '#f87171';
+      ctx.font = 'bold 15px sans-serif';
+      ctx.fillText('🔥 TURBO ×2', GAME.width - 10, GAME.height - 8);
+    }
+    ctx.restore();
+  }
+});
+
+updateOverlayMeta();
+reset();
+</script>
 </body>
 </html>

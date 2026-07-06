@@ -98,20 +98,22 @@ JUICE-CHECKLIST.md. Never default to space twice in a row.
 
 ## Ledger — current library coordinates (update when adding games)
 
-| Game | Skeleton | Twist | Theme |
-|---|---|---|---|
-| Frog Cross Dash | Runner (lane-hop) | none | River/road |
-| Alien Unicorn Alliance | Shmup | none | Space |
-| Neon Invaders | Shmup | none | Space/neon |
-| Vector Asteroids | Shmup (inertia) | Momentum only | Space |
-| Turbo Outracer | Racing | none | Circuit |
-| Banana Bonanza | Catcher | none | Jungle |
-| Tower Frenzy '90 | Puzzle-grid (stack) | none | Retro |
-| Rogue Dungeon Mini | Arena-survivor | none | Dungeon |
-| Gravity/Cargo Lander | Lander | none | Space |
-| Pixel Pac Run / Space Runner | Runner | none | Maze/space |
-| Robots vs Unicorns | Platformer | none | Fantasy |
-| Brick Blitz '84 | Breakout | none | Retro |
+| Game | Skeleton | Twist | Theme | Depth pass |
+|---|---|---|---|---|
+| Frog Cross Dash | Runner (lane-hop) | Day/night cycle | River/road | ✅ Jul-26 (night phase, current, heron set-piece, unlocks) |
+| Alien Unicorn Alliance | Shmup | Cooldown economy | Space | ✅ Jul-26 (crystal-fed pulse, 3 drone behaviours, carrier boss) |
+| Neon Invaders | Shmup | Shield-as-2nd-verb | Space/neon | ✅ Jul-26 (energy shield + overdrive beam, divers, mothership) |
+| Vector Asteroids | Shmup (inertia) | Momentum only | Space | ✅ Jul-26 (UFO turret, power-ups, boss rock, comet risk/reward) |
+| Turbo Outracer | Racing | Boost-meter timing | Circuit/rain | ✅ Jul-26 (spend-boost, rival racecraft, 3 tracks) |
+| Banana Bonanza | Catcher | none | Jungle | — |
+| Tower Frenzy '90 | Puzzle-grid (stack) | none | Retro | — |
+| Rogue Dungeon Mini | Arena-survivor | none | Dungeon | — |
+| Gravity/Cargo Lander | Lander | none | Space | — |
+| Pixel Pac Run / Space Runner | Runner | none | Maze/space | — |
+| Robots vs Unicorns | Platformer | none | Fantasy | — |
+| Brick Blitz '84 | Breakout | none | Retro | — |
 
-Note the pattern: almost no twists, space over-represented. Every remediation pass should
-add a twist column entry; every new game must fill all three columns before coding starts.
+The 5 flagship games got the July 2026 depth pass (DEPTH-STANDARD + JUICE + audio +
+meta-progression). The remaining games are the next remediation batch. Note the pattern:
+space still over-represented — new games must diversify theme, and every new game must fill
+all three axis columns before coding starts.
