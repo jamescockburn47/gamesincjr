@@ -7,10 +7,43 @@
 done 2026-07-06 — see commit 35478ea: Frog Cross Dash, Alien Unicorn Alliance, Turbo
 Outracer, Vector Asteroids, Neon Invaders all rebuilt to DEPTH-STANDARD, adversarially
 reviewed (depth 8–9/10) and runtime-verified; fixed a critical wave-5 boss softlock in
-Vector Asteroids and a frozen storm-fog bug in Alien Unicorn. Phases 4–5 outstanding
-(education product / schools pack), plus second remediation batch (Banana Bonanza,
-Tower Frenzy, Rogue Dungeon Mini, Pixel Pac Run, Space Runner) and an optional true
-second verb for Frog Cross Dash (currently 1-verb, shippable at 8/10).
+Vector Asteroids and a frozen storm-fog bug in Alien Unicorn.
+
+Second remediation batch done 2026-07-06 — see commit 1ad1109: Banana Bonanza, Tower
+Frenzy '90, Rogue Dungeon Mini, Pixel Pac Run, Space Runner all rebuilt to
+DEPTH-STANDARD (depth 6–9/10), adversarially reviewed, and runtime-verified. Confirmed
+and fixed: a crash in Tower Frenzy (tower collapse could clear its block array the
+same frame a new block was about to spawn), a high-severity fairness bug in Pixel Pac
+Run (ghost telegraph spatially decoupled from the actual off-screen threat, giving
+~100-200ms real reaction time — now a visible 0.6s windup), a stacked-damage bug in
+Rogue Dungeon Mini (stale per-frame invulnerability snapshot), and a meta-progression
+integrity bug present in both Banana Bonanza and Space Runner (totalRuns incremented
+on page load/refresh, before Play was ever clicked — corrupting runs-gated unlocks).
+Space Runner's Void Mode was also a dead stub (unlock fired but nothing read it) —
+wired to a real 1.25x-difficulty/2x-score hard variant with an actual toggle.
+CAVEAT: banana-bonanza, tower-frenzy-90 and rogue-dungeon-mini had pre-existing
+uncommitted local edits (present since before 2026-06-10, predating this whole
+engagement) that the full-file remediation rewrites overwrote; no recovery path was
+found (checked stash/reflog/fsck), James confirmed proceeding was fine.
+
+Phase 4 (education product) done 2026-07-06 — see commit 1ad1109: `/make-your-game`
+rebuilt from a dropdown-picker vending machine into a guided iterative flow (brief
+with two required free-text fields — "second verb" and "twist" — → single-pass AI
+draft → play it in a sandboxed iframe → describe a change → revised draft → submit
+when ready). New stateless API: POST /api/games/draft, /api/games/draft/revise,
+/api/games/draft/submit; shared prompt-building logic extracted to
+src/lib/games/generator.ts (also used by the legacy /api/games/generate route).
+Verified end-to-end against the live Anthropic API. Front-page/tutorials
+repositioning from Phase 1–2 stands as-is; no further front-page changes made this
+session beyond what commit db41809 already did.
+
+Outstanding: Phase 5 (schools pack — scheme of work, teacher dashboard, compliance
+docs), an optional true second verb for Frog Cross Dash (currently 1-verb, shippable
+at 8/10), and Crystal Caverns TD (a 1,529-line tower-defence game sitting in
+public/demos/ with no framework wiring and no games.json entry — needs a framework
+port before it can get a depth pass; not started, tracked in VARIETY-MATRIX.md).
+Remaining un-remediated games: Gravity/Cargo Lander, Robots vs Unicorns, Brick
+Blitz '84.
 
 **DEPLOY BLOCKER (unchanged):** `next build` still fails on the Prisma "unpaidPlanInvoice"
 hold at the /tables/practice prerender, so NONE of this reaches production (Vercel) until
